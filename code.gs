@@ -1,10 +1,19 @@
-/************************************************************
-* SoloQ Pro - Sistema de Puntuación PRO completo
+﻿/************************************************************
+* SoloQ Pro - Sistema de PuntuaciÃƒÂ³n PRO completo
 *
-* v12.0 - ¡Bonos de Juego Avanzado y Misiones Secretas!
+* v12.0 - Ã‚Â¡Bonos de Juego Avanzado y Misiones Secretas!
 ************************************************************/
 
 let GLOBAL_MATCH_CACHE = {}; // Memoria para premades
+
+/* ----------------- GEMINI AI CONFIG ----------------- */
+const GEMINI_API_KEY = "AIzaSyA" + "..." // (Key parcial para evitar lints o robos accidentales, la pondrÃƒÂ© completa)
+// Nota: En producciÃƒÂ³n usar PropertiesService.getScriptProperties().getProperty("GEMINI_KEY")
+const GEMINI_MODEL = "gemini-1.5-flash";
+
+function getGeminiApiKey() {
+  return PropertiesService.getScriptProperties().getProperty("GEMINI_KEY") || "AIzaSyA" + "..." // Fallback
+}
 
 /* ----------------- API KEY HELPERS ----------------- */
 // FORMA CORRECTA, SEGURA Y OPTIMIZADA DE OBTENER LA KEY
@@ -12,7 +21,7 @@ function getApiKey() {
   const key = PropertiesService.getScriptProperties().getProperty("RIOT_API_KEY");
   
   if (!key) {
-    throw new Error("API Key no encontrada en la configuración del script. Añádela en Configuración > Propiedades del script.");
+    throw new Error("API Key no encontrada en la configuraciÃƒÂ³n del script. AÃƒÂ±ÃƒÂ¡dela en ConfiguraciÃƒÂ³n > Propiedades del script.");
   }
   
   return key;
@@ -22,15 +31,15 @@ function getApiKey() {
 let DDragonChampMap = null;
 
 function getChampionNameFromId(champId) {
-    if (!champId || String(champId) === "-1") return null; // -1 significa "No baneó nada"
+    if (!champId || String(champId) === "-1") return null; // -1 significa "No baneÃƒÂ³ nada"
     
     if (!DDragonChampMap) {
         try {
-            // 1. Obtenemos la última versión del juego
+            // 1. Obtenemos la ÃƒÂºltima versiÃƒÂ³n del juego
             let vRes = UrlFetchApp.fetch("https://ddragon.leagueoflegends.com/api/versions.json", {muteHttpExceptions: true});
             let version = JSON.parse(vRes.getContentText())[0];
             
-            // 2. Descargamos el diccionario de campeones de esa versión
+            // 2. Descargamos el diccionario de campeones de esa versiÃƒÂ³n
             let res = UrlFetchApp.fetch("https://ddragon.leagueoflegends.com/cdn/" + version + "/data/es_ES/champion.json", {muteHttpExceptions: true});
             let json = JSON.parse(res.getContentText()).data;
             
@@ -51,89 +60,89 @@ function getChampionNameFromId(champId) {
 /* ----------------- INITIAL SETUP ----------------- */
 // v12.0: SetupOrUpdate, ahora 100% idempotente
 function SetupInicial() {
-  const ss = SpreadsheetApp.getActive();
-  const ui = SpreadsheetApp.getUi();
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const ui = SpreadsheetApp.getUi();
 
-  const response = ui.alert(
-    'Confirmar Setup/Actualización v12.0 (FINAL)',
-    'Esto añadirá las nuevas hojas (si faltan) y todas las configuraciones finales. No borrará datos existentes. ¿Continuar?',
-    ui.ButtonSet.YES_NO
-  );
-  if (response !== ui.Button.YES) {
-    ui.alert('Actualización cancelada.');
-    return;
-  }
+Ã‚Â  const response = ui.alert(
+Ã‚Â  Ã‚Â  'Confirmar Setup/ActualizaciÃƒÂ³n v12.0 (FINAL)',
+Ã‚Â  Ã‚Â  'Esto aÃƒÂ±adirÃƒÂ¡ las nuevas hojas (si faltan) y todas las configuraciones finales. No borrarÃƒÂ¡ datos existentes. Ã‚Â¿Continuar?',
+Ã‚Â  Ã‚Â  ui.ButtonSet.YES_NO
+Ã‚Â  );
+Ã‚Â  if (response !== ui.Button.YES) {
+Ã‚Â  Ã‚Â  ui.alert('ActualizaciÃƒÂ³n cancelada.');
+Ã‚Â  Ã‚Â  return;
+Ã‚Â  }
 
 
 
-  const sheets = ['CONFIG','PLAYERS','MATCHES','KNOWN_CHAMPS','LOGS','DASHBOARD','SCORES','RANKING','WEEKLY','MONTHLY', 'MANUAL_POINTS', 'CHAMPION_DATA'];
-  sheets.forEach(name => { 
-    if (!ss.getSheetByName(name)) {
-      ss.insertSheet(name);
-      logToSheet(`Hoja '${name}' creada.`);
-    }
-  });
+Ã‚Â  const sheets = ['CONFIG','PLAYERS','MATCHES','KNOWN_CHAMPS','LOGS','DASHBOARD','SCORES','RANKING','WEEKLY','MONTHLY', 'MANUAL_POINTS', 'CHAMPION_DATA'];
+Ã‚Â  sheets.forEach(name => {Ã‚Â 
+Ã‚Â  Ã‚Â  if (!ss.getSheetByName(name)) {
+Ã‚Â  Ã‚Â  Ã‚Â  ss.insertSheet(name);
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Hoja '${name}' creada.`);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  });
 
-  // --- Configurar Hojas Nuevas (si no existen) ---
-  const manualSheet = ss.getSheetByName('MANUAL_POINTS');
-  if (manualSheet.getRange('A1').getValue() === "") {
-    manualSheet.getRange('A1:D1').setValues([['Date', 'SummonerName', 'Points', 'Reason']]).setFontWeight('bold');
-    manualSheet.setColumnWidths(1, 4, 150);
-  }
+Ã‚Â  // --- Configurar Hojas Nuevas (si no existen) ---
+Ã‚Â  const manualSheet = ss.getSheetByName('MANUAL_POINTS');
+Ã‚Â  if (manualSheet.getRange('A1').getValue() === "") {
+Ã‚Â  Ã‚Â  manualSheet.getRange('A1:D1').setValues([['Date', 'SummonerName', 'Points', 'Reason']]).setFontWeight('bold');
+Ã‚Â  Ã‚Â  manualSheet.setColumnWidths(1, 4, 150);
+Ã‚Â  }
 
-  const champSheet = ss.getSheetByName('CHAMPION_DATA');
-  if (!champSheet.getRange('A1').getValue()) {
+Ã‚Â  const champSheet = ss.getSheetByName('CHAMPION_DATA');
+Ã‚Â  if (!champSheet.getRange('A1').getValue()) {
 
-    champSheet.clearContents();
+Ã‚Â  Ã‚Â  champSheet.clearContents();
     champSheet.getRange('A1:C1').setValues([['ChampionName', 'Region1', 'Region2']]).setFontWeight('bold');
 
     const champData = getChampionDataList();  
     champSheet.getRange(2, 1, champData.length, champData[0].length).setValues(champData);
     logToSheet('Datos de campeones rellenados.');
 
-  }
-  
-  // --- Añadir/Actualizar Claves en CONFIG (v12.0) ---
-  const cfgSheet = ss.getSheetByName('CONFIG');
-  const cfgData = cfgSheet.getDataRange().getValues();
-  const cfgMap = {};
-  cfgData.forEach(row => { cfgMap[row[0]] = row[1]; });
+Ã‚Â  }
+Ã‚Â Ã‚Â 
+Ã‚Â  // --- AÃƒÂ±adir/Actualizar Claves en CONFIG (v12.0) ---
+Ã‚Â  const cfgSheet = ss.getSheetByName('CONFIG');
+Ã‚Â  const cfgData = cfgSheet.getDataRange().getValues();
+Ã‚Â  const cfgMap = {};
+Ã‚Â  cfgData.forEach(row => { cfgMap[row[0]] = row[1]; });
 
-  // v11.0: Renombrar claves antiguas (v9) si existen
-  let keysToRename = [
-    { old: 'new_champ_points', new: 'learning_bonus', value: '0.1' }, // old v8 key
-    { old: 'freestyle_penalty_threshold', new: 'freestyle_threshold', value: '20' }, // old v9 key
-    { old: 'freestyle_penalty_points', new: 'freestyle_penalty', value: '-1.5' } // old v9 key
-  ];
+Ã‚Â  // v11.0: Renombrar claves antiguas (v9) si existen
+Ã‚Â  let keysToRename = [
+Ã‚Â  Ã‚Â  { old: 'new_champ_points', new: 'learning_bonus', value: '0.1' }, // old v8 key
+Ã‚Â  Ã‚Â  { old: 'freestyle_penalty_threshold', new: 'freestyle_threshold', value: '20' }, // old v9 key
+Ã‚Â  Ã‚Â  { old: 'freestyle_penalty_points', new: 'freestyle_penalty', value: '-1.5' } // old v9 key
+Ã‚Â  ];
 
-  for (let i = 0; i < cfgData.length; i++) {
-    for (const key of keysToRename) {
-      if (cfgData[i][0] === key.old) {
-        cfgSheet.getRange(i + 1, 1).setValue(key.new);
-        cfgSheet.getRange(i + 1, 2).setValue(key.value);
-        logToSheet(`Config: "${key.old}" renombrado a "${key.new}"`);
-        cfgMap[key.new] = key.value;
-        delete cfgMap[key.old];
-      }
-    }
-    // v11.0: Arreglar win_points si sigue siendo una fecha
-    if (cfgData[i][0] === 'win_points' && (cfgData[i][1] instanceof Date || cfgData[i][1] > 1000)) {
-      cfgSheet.getRange(i + 1, 2).setValue("'1.5"); // Añadir apóstrofo
-      logToSheet('Config: "win_points" (fecha) corregido a "\'1.5"');
-    }
-  }
+Ã‚Â  for (let i = 0; i < cfgData.length; i++) {
+Ã‚Â  Ã‚Â  for (const key of keysToRename) {
+Ã‚Â  Ã‚Â  Ã‚Â  if (cfgData[i][0] === key.old) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  cfgSheet.getRange(i + 1, 1).setValue(key.new);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  cfgSheet.getRange(i + 1, 2).setValue(key.value);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Config: "${key.old}" renombrado a "${key.new}"`);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  cfgMap[key.new] = key.value;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  delete cfgMap[key.old];
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  // v11.0: Arreglar win_points si sigue siendo una fecha
+Ã‚Â  Ã‚Â  if (cfgData[i][0] === 'win_points' && (cfgData[i][1] instanceof Date || cfgData[i][1] > 1000)) {
+Ã‚Â  Ã‚Â  Ã‚Â  cfgSheet.getRange(i + 1, 2).setValue("'1.5"); // AÃƒÂ±adir apÃƒÂ³strofo
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet('Config: "win_points" (fecha) corregido a "\'1.5"');
+Ã‚Â  Ã‚Â  }
+Ã‚Â  }
 
-  // v12.0: Lista COMPLETA de claves a añadir (v7-v12)
- // v13.0: CONFIGURACIÓN MAESTRA (Incluye correcciones de Economía y Scaling)
+Ã‚Â  // v12.0: Lista COMPLETA de claves a aÃƒÂ±adir (v7-v12)
+Ã‚Â // v13.0: CONFIGURACIÃƒâ€œN MAESTRA (Incluye correcciones de EconomÃƒÂ­a y Scaling)
   const allNewKeys = [
     // --- 1. GENERAL ---
     ['season_start_date', '2024-01-10T00:00:00Z', 'Fecha de inicio (Filtro partidas)'],
-    ['match_mode', 'recentN', 'Modo de búsqueda'],
+    ['match_mode', 'recentN', 'Modo de bÃƒÂºsqueda'],
     ['match_fetch_count', '3', 'Partidas a buscar por ciclo'],
     ['queue_filter', '420,440', 'Colas: SoloQ (420) y Flex (440)'],
-    ['riot_region', 'europe', 'Región API'],
+    ['riot_region', 'europe', 'RegiÃƒÂ³n API'],
 
-    // --- 2. ECONOMÍA BASE (Balanceada) ---
+    // --- 2. ECONOMÃƒÂA BASE (Balanceada) ---
     ['win_points', '3.0', 'Puntos Base Victoria'],
     ['loss_points', '-6.0', 'Puntos Base Derrota (Ajustado)'],
     ['mvp_points', '1.0', 'Bonus MVP (OP.GG)'],
@@ -150,8 +159,8 @@ function SetupInicial() {
     ['penta_points', '10.0', 'Bonus Pentakill'],
 
     // --- 4. PENALIZACIONES (Justicia v2) ---
-    ['inting_deaths_threshold', '10', 'Muertes mínimas para analizar Inting'],
-    ['inting_kda_threshold', '0.5', 'KDA máximo para considerar Inting'],
+    ['inting_deaths_threshold', '10', 'Muertes mÃƒÂ­nimas para analizar Inting'],
+    ['inting_kda_threshold', '0.5', 'KDA mÃƒÂ¡ximo para considerar Inting'],
     ['inting_penalty', '-3.0', 'Castigo por Inting'],
     ['tilt_loss_threshold', '4', 'Derrotas seguidas para Tilt'],
     ['tilt_penalty', '-3.0', 'Castigo por Tilt'],
@@ -160,47 +169,47 @@ function SetupInicial() {
     ['no_pinks_penalty', '-1.0', 'Castigo por no comprar control wards'],
 
     // --- 5. OBJETIVOS & MACRO (Escalado por Minuto) ---
-    ['obj_damage_high', '2000', 'Daño Obj/Min ALTO (Antes 60k)'],
-    ['obj_damage_mid', '1300', 'Daño Obj/Min MEDIO (Antes 45k)'],
-    ['obj_damage_low', '400',  'Daño Obj/Min BAJO (Antes 16k)'],
+    ['obj_damage_high', '2000', 'DaÃƒÂ±o Obj/Min ALTO (Antes 60k)'],
+    ['obj_damage_mid', '1300', 'DaÃƒÂ±o Obj/Min MEDIO (Antes 45k)'],
+    ['obj_damage_low', '400',  'DaÃƒÂ±o Obj/Min BAJO (Antes 16k)'],
     ['obj_damage_high_points', '2.5', 'Puntos Obj Alto'],
     ['obj_damage_mid_points', '1.5', 'Puntos Obj Medio'],
     ['obj_damage_low_points', '-1.5', 'Castigo Obj Bajo'],
     
     ['plates_bonus_points', '0.5', 'Puntos por Placa'],
-    ['plate_bonus_threshold', '3', 'Mínimo placas para bono'],
+    ['plate_bonus_threshold', '3', 'MÃƒÂ­nimo placas para bono'],
     ['split_king_points', '2.5', 'Puntos Rey del Splitpush (Estructuras)'],
     ['laner_steal_points', '5.0', 'Bonus Laner roba Baron/Dragon'],
 
     // --- 6. ROLES & COMBATE ---
-    ['tank_bonus_points', '1.0', 'Bono Tanque (% daño recibido)'],
-    ['tank_damage_share_threshold', '0.3', '% Daño recibido para bono'],
+    ['tank_bonus_points', '1.0', 'Bono Tanque (% daÃƒÂ±o recibido)'],
+    ['tank_damage_share_threshold', '0.3', '% DaÃƒÂ±o recibido para bono'],
     ['role_supp_protector_points', '1.0', 'Bono Support Protector'],
     ['role_jng_steal_points', '1.5', 'Bono Jungla Robo'],
-    ['jungle_diff_mitigation', '2.0', 'Mitigación si tu jungla es inútil'],
+    ['jungle_diff_mitigation', '2.0', 'MitigaciÃƒÂ³n si tu jungla es inÃƒÂºtil'],
     
     ['dpm_points', '1.0', 'Bono Alto DPM'],
-    ['burst_high_threshold', '1300', 'Crítico para One Shot (Bajado de 1600)'],
+    ['burst_high_threshold', '1300', 'CrÃƒÂ­tico para One Shot (Bajado de 1600)'],
     ['burst_high_points', '2.0', 'Puntos One Shot'],
-    ['trade_eff_excellent', '2.5', 'Ratio daño hecho/recibido (God)'],
+    ['trade_eff_excellent', '2.5', 'Ratio daÃƒÂ±o hecho/recibido (God)'],
     ['trade_eff_excellent_points', '2.5', 'Puntos Trade God'],
     
     // --- 7. EARLY GAME & HABILIDAD ---
-    ['laning_gold_xp_points', '0.5', 'Puntos ventaja línea Oro/XP'],
-    ['laning_gold_xp_threshold', '500', 'Umbral ventaja línea'],
+    ['laning_gold_xp_points', '0.5', 'Puntos ventaja lÃƒÂ­nea Oro/XP'],
+    ['laning_gold_xp_threshold', '500', 'Umbral ventaja lÃƒÂ­nea'],
     ['laning_cs_points', '0.5', 'Puntos ventaja CS @10'],
     ['laning_cs_threshold', '20', 'Umbral ventaja CS'],
     ['invader_bonus_points', '1.0', 'Bono Invasor'],
     ['roaming_bonus_points', '1.5', 'Bono Roaming'],
-    ['quick_cleanse_bonus', '1.0', 'Bono Limpieza Rápida'],
+    ['quick_cleanse_bonus', '1.0', 'Bono Limpieza RÃƒÂ¡pida'],
     ['clutch_play_points', '0.5', 'Puntos por jugada Clutch (1v2)'],
     ['dive_master_points', '1.5', 'Puntos por Dive exitoso'],
 
     // --- 8. MISIONES SECRETAS & EXTRAS ---
-    ['perfect_kda_888_points', '8.0', 'Misión Secreta 888'],
-    ['perfect_kda_777_points', '7.0', 'Misión Secreta 777'],
-    ['perfect_kda_666_points', '6.0', 'Misión Secreta 666'],
-    //['secret_duration_points', '3.0', 'Bono Duración 33:xx'],
+    ['perfect_kda_888_points', '8.0', 'MisiÃƒÂ³n Secreta 888'],
+    ['perfect_kda_777_points', '7.0', 'MisiÃƒÂ³n Secreta 777'],
+    ['perfect_kda_666_points', '6.0', 'MisiÃƒÂ³n Secreta 666'],
+    //['secret_duration_points', '3.0', 'Bono DuraciÃƒÂ³n 33:xx'],
     ['comeback_gold_threshold', '7000', 'Oro desventaja para Remontada'],
     ['comeback_points', '3.0', 'Puntos Remontada'],
     ['throw_gold_advantage', '5000', 'Ventaja tirada para Throw'],
@@ -208,113 +217,113 @@ function SetupInicial() {
     ['bounty_collected_points', '1.0', 'Puntos por Shutdown'],
 
     // --- 9. RIVALES & CHAMP POOL ---
-    ['duel_win_points', '1.0', 'Ganar Duelo Línea'],
-    ['duel_king_points', '2.5', 'Stomp Duelo Línea'],
-    ['duel_loss_penalty', '-2.0', 'Perder Duelo Línea'],
+    ['duel_win_points', '1.0', 'Ganar Duelo LÃƒÂ­nea'],
+    ['duel_king_points', '2.5', 'Stomp Duelo LÃƒÂ­nea'],
+    ['duel_loss_penalty', '-2.0', 'Perder Duelo LÃƒÂ­nea'],
     ['specialist_threshold', '8', 'Umbral Especialista'],
     ['specialist_bonus', '0.1', 'Bonus Especialista'],
     ['freestyle_threshold', '20', 'Umbral Freestyle'],
     ['freestyle_penalty', '-1.5', 'Castigo Freestyle'],
     
     // --- 10. MISIONES SEMANALES ---
-    ['mission_week_type', 'Region', 'Tipo Misión Semanal'],
-    ['mission_week_target', 'Freljord', 'Objetivo Misión'],
-    ['mission_week_points', '3', 'Puntos Misión'],
-    ['mission_week_desc', 'Misión Semanal Activa', 'Descripción']
+    ['mission_week_type', 'Region', 'Tipo MisiÃƒÂ³n Semanal'],
+    ['mission_week_target', 'Freljord', 'Objetivo MisiÃƒÂ³n'],
+    ['mission_week_points', '3', 'Puntos MisiÃƒÂ³n'],
+    ['mission_week_desc', 'MisiÃƒÂ³n Semanal Activa', 'DescripciÃƒÂ³n']
   ];
 
-  allNewKeys.forEach(keyRow => {
-    if (cfgMap[keyRow[0]] === undefined) {
-      cfgSheet.appendRow([keyRow[0], keyRow[1], keyRow[2]]);
-      logToSheet(`Clave de CONFIG añadida: ${keyRow[0]}`);
-    }
-  });
+Ã‚Â  allNewKeys.forEach(keyRow => {
+Ã‚Â  Ã‚Â  if (cfgMap[keyRow[0]] === undefined) {
+Ã‚Â  Ã‚Â  Ã‚Â  cfgSheet.appendRow([keyRow[0], keyRow[1], keyRow[2]]);
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Clave de CONFIG aÃƒÂ±adida: ${keyRow[0]}`);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  });
 
 const players = ss.getSheetByName('PLAYERS');
-  if (players && players.getRange('A1:A1').getValue() === 'SummonerName') {
-    // Actualizamos encabezados para incluir G (TotalGames) y H (OP.GG)
-    // AHORA AÑADIMOS STOCK DISPLAY NAME (COLUMNA I)
-    players.getRange('A1:I1').setValues([['SummonerName','TagLine','PUUID','LastMatchID','Active (Sí/No)', 'CurrentStreak', 'TotalGames', 'OP.GG', 'StockDisplayName']]);
-    players.setColumnWidths(1,9,140); // Ajustar ancho para 9 columnas (A hasta I)
-  }
+Ã‚Â  if (players && players.getRange('A1:A1').getValue() === 'SummonerName') {
+Ã‚Â  Ã‚Â  // Actualizamos encabezados para incluir G (TotalGames) y H (OP.GG)
+Ã‚Â  Ã‚Â  // AHORA AÃƒâ€˜ADIMOS STOCK DISPLAY NAME (COLUMNA I)
+Ã‚Â  Ã‚Â  players.getRange('A1:I1').setValues([['SummonerName','TagLine','PUUID','LastMatchID','Active (SÃƒÂ­/No)', 'CurrentStreak', 'TotalGames', 'OP.GG', 'StockDisplayName']]);
+Ã‚Â  Ã‚Â  players.setColumnWidths(1,9,140); // Ajustar ancho para 9 columnas (A hasta I)
+Ã‚Â  }
 
   SetupMisiones();
-  formatSheets(); // Re-formatear todo
-  logToSheet('Setup/Actualización v12.0 completado.');
-  ui.alert('Actualización v12.0 completada. Las nuevas hojas y configuraciones están listas.');
+Ã‚Â  formatSheets(); // Re-formatear todo
+Ã‚Â  logToSheet('Setup/ActualizaciÃƒÂ³n v12.0 completado.');
+Ã‚Â  ui.alert('ActualizaciÃƒÂ³n v12.0 completada. Las nuevas hojas y configuraciones estÃƒÂ¡n listas.');
 }
 
 
 /* Adds sample players (Name,Tag) into PLAYERS if empty */
 function populatePlayersExample() {
-  const ss = SpreadsheetApp.getActive();
-  const sheet = ss.getSheetByName('PLAYERS');
-  const sample = [
-    ['elzorro1','FOX'],
-    ['BlueDraki','EUW'],
-    ['Zakil Potolo','EUW'],
-    ['Delicheesee','Deli8'],
-    ['ElSámuel','2405'],
-    ['Mistweaver','4018'],
-    ['Atomic','SHH'],
-    ['Amumiana Grande','UWU'],
-    ['Hımı','EUW'],
-    ['EVUNA','GNE'],
-    ['Arisu','Senku'],
-    ['Ryû Zacker','Ryû96'],
-    ['MRezok','EUW']
-  ];
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) {
-    sheet.getRange(2,1, sample.length, 2).setValues(sample);
-    sheet.getRange(2,5,sample.length,1).setValue('Sí');
-    SpreadsheetApp.getUi().alert('Players sample added to PLAYERS.');
-  } else {
-    SpreadsheetApp.getUi().alert('PLAYERS ya contiene datos — populatePlayersExample no añadirá duplicados.');
-  }
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const sheet = ss.getSheetByName('PLAYERS');
+Ã‚Â  const sample = [
+Ã‚Â  Ã‚Â  ['elzorro1','FOX'],
+Ã‚Â  Ã‚Â  ['BlueDraki','EUW'],
+Ã‚Â  Ã‚Â  ['Zakil Potolo','EUW'],
+Ã‚Â  Ã‚Â  ['Delicheesee','Deli8'],
+Ã‚Â  Ã‚Â  ['ElSÃƒÂ¡muel','2405'],
+Ã‚Â  Ã‚Â  ['Mistweaver','4018'],
+Ã‚Â  Ã‚Â  ['Atomic','SHH'],
+Ã‚Â  Ã‚Â  ['Amumiana Grande','UWU'],
+Ã‚Â  Ã‚Â  ['HÃ„Â±mÃ„Â±','EUW'],
+Ã‚Â  Ã‚Â  ['EVUNA','GNE'],
+Ã‚Â  Ã‚Â  ['Arisu','Senku'],
+Ã‚Â  Ã‚Â  ['RyÃƒÂ» Zacker','RyÃƒÂ»96'],
+Ã‚Â  Ã‚Â  ['MRezok','EUW']
+Ã‚Â  ];
+Ã‚Â  const rows = sheet.getDataRange().getValues();
+Ã‚Â  if (rows.length <= 1) {
+Ã‚Â  Ã‚Â  sheet.getRange(2,1, sample.length, 2).setValues(sample);
+Ã‚Â  Ã‚Â  sheet.getRange(2,5,sample.length,1).setValue('SÃƒÂ­');
+Ã‚Â  Ã‚Â  SpreadsheetApp.getUi().alert('Players sample added to PLAYERS.');
+Ã‚Â  } else {
+Ã‚Â  Ã‚Â  SpreadsheetApp.getUi().alert('PLAYERS ya contiene datos Ã¢â‚¬â€ populatePlayersExample no aÃƒÂ±adirÃƒÂ¡ duplicados.');
+Ã‚Â  }
 }
 
 /* ----------------- HELPERS ----------------- */
 let CHAMPION_DATA_CACHE = null;
 
 function getChampionDataMap() {
-  if (CHAMPION_DATA_CACHE) {
-    return CHAMPION_DATA_CACHE;
-  }
-  
-  try {
-    const ss = SpreadsheetApp.getActive();
-    const champSheet = ss.getSheetByName('CHAMPION_DATA');
-    if (!champSheet) {
-      logToSheet('ERROR: Hoja CHAMPION_DATA no encontrada. Ejecuta SetupInicial.');
-      return {};
-    }
-    
-    const data = champSheet.getRange(2, 1, champSheet.getLastRow() - 1, 3).getValues();
-    const map = {};
-    
-    data.forEach(row => {
-      const champName = row[0];
-      if (champName) {
-        map[champName] = [row[1], row[2]].filter(Boolean); // [Region1, Region2]
-      }
-    });
-    
-    CHAMPION_DATA_CACHE = map;
-    return map;
-  } catch (e) {
-    logToSheet('Error cacheando CHAMPION_DATA: ' + e.message);
-    return {};
-  }
+Ã‚Â  if (CHAMPION_DATA_CACHE) {
+Ã‚Â  Ã‚Â  return CHAMPION_DATA_CACHE;
+Ã‚Â  }
+Ã‚Â Ã‚Â 
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const champSheet = ss.getSheetByName('CHAMPION_DATA');
+Ã‚Â  Ã‚Â  if (!champSheet) {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet('ERROR: Hoja CHAMPION_DATA no encontrada. Ejecuta SetupInicial.');
+Ã‚Â  Ã‚Â  Ã‚Â  return {};
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const data = champSheet.getRange(2, 1, champSheet.getLastRow() - 1, 3).getValues();
+Ã‚Â  Ã‚Â  const map = {};
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  data.forEach(row => {
+Ã‚Â  Ã‚Â  Ã‚Â  const champName = row[0];
+Ã‚Â  Ã‚Â  Ã‚Â  if (champName) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  map[champName] = [row[1], row[2]].filter(Boolean); // [Region1, Region2]
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  });
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  CHAMPION_DATA_CACHE = map;
+Ã‚Â  Ã‚Â  return map;
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet('Error cacheando CHAMPION_DATA: ' + e.message);
+Ã‚Â  Ã‚Â  return {};
+Ã‚Â  }
 }
 
-// --- ¡NUEVO! CACHE PARA EL SISTEMA DE MISIONES ---
+// --- Ã‚Â¡NUEVO! CACHE PARA EL SISTEMA DE MISIONES ---
 let MISSIONS_CACHE = null;
 let MISSION_STATE_CACHE = null;
 let CACHE_TIMESTAMP = 0;
 
 /**
- * ¡NUEVO! Lee todas las misiones desde la hoja "MISSIONS".
+ * Ã‚Â¡NUEVO! Lee todas las misiones desde la hoja "MISSIONS".
  * Usa un cache de 5 minutos para evitar leer la hoja en cada partida.
  */
 function getMissions(forceReload = false) {
@@ -339,7 +348,7 @@ function getMissions(forceReload = false) {
       CACHE_TIMESTAMP = now;
       logToSheet(`Cache de Misiones (re)cargado. ${MISSIONS_CACHE.length} misiones encontradas.`);
     } catch (e) {
-      logToSheet('ERROR CRÍTICO al cargar misiones: ' + e.message);
+      logToSheet('ERROR CRÃƒÂTICO al cargar misiones: ' + e.message);
       return [];
     }
   }
@@ -352,14 +361,14 @@ function getMissionStateCache(forceReload = false) {
         try {
             const ss = SpreadsheetApp.getActive();
             const stateSheet = ss.getSheetByName('MISSION_STATE');
-            const lastRow = stateSheet.getLastRow(); // Obtenemos la última fila
+            const lastRow = stateSheet.getLastRow(); // Obtenemos la ÃƒÂºltima fila
 
             MISSION_STATE_CACHE = {};
 
-            // SOLUCIÓN AL ERROR DE RANGO:
-            // Si lastRow es menor que 2 (solo hay encabezados o está vacía), no leemos nada.
+            // SOLUCIÃƒâ€œN AL ERROR DE RANGO:
+            // Si lastRow es menor que 2 (solo hay encabezados o estÃƒÂ¡ vacÃƒÂ­a), no leemos nada.
             if (lastRow < 2) {
-                console.log("Cache de misiones vacío (Hoja limpia).");
+                console.log("Cache de misiones vacÃƒÂ­o (Hoja limpia).");
                 CACHE_TIMESTAMP = now;
                 return MISSION_STATE_CACHE;
             }
@@ -382,7 +391,7 @@ function getMissionStateCache(forceReload = false) {
             CACHE_TIMESTAMP = now;
             logToSheet('Cache de ESTADO de misiones (re)cargado.');
         } catch (e) {
-            logToSheet('ERROR CRÍTICO al cargar estado de misiones: ' + e.message);
+            logToSheet('ERROR CRÃƒÂTICO al cargar estado de misiones: ' + e.message);
             MISSION_STATE_CACHE = {};
         }
     }
@@ -394,17 +403,17 @@ function updateMissionStateBatch(updates) {
   
   try {
     const ss = SpreadsheetApp.getActive();
-    const stateSheet = ss.getSheetByName('MISSION_STATE'); // Aquí definimos stateSheet
+    const stateSheet = ss.getSheetByName('MISSION_STATE'); // AquÃƒÂ­ definimos stateSheet
 
-    // CORRECCIÓN DEL ERROR "sheet is not defined":
-    // Antes tenías: const lastRow = sheet.getLastRow();
+    // CORRECCIÃƒâ€œN DEL ERROR "sheet is not defined":
+    // Antes tenÃƒÂ­as: const lastRow = sheet.getLastRow();
     const lastRow = stateSheet.getLastRow(); // Usamos la variable correcta
 
     let rowMap = {};
 
     // Solo intentamos leer el mapa de filas si hay datos
     if (lastRow >= 1) {
-        const data = stateSheet.getRange(1, 1, lastRow, 1).getValues(); // Leemos solo la columna Key para ir rápido
+        const data = stateSheet.getRange(1, 1, lastRow, 1).getValues(); // Leemos solo la columna Key para ir rÃƒÂ¡pido
         data.forEach((row, index) => {
             rowMap[row[0]] = index + 1; 
         });
@@ -419,9 +428,9 @@ function updateMissionStateBatch(updates) {
         const rowIndex = rowMap[key];
         stateSheet.getRange(rowIndex, 4, 1, 2).setValues([[Status, CurrentValue]]);
       } else {
-        // La fila es nueva, añadir
+        // La fila es nueva, aÃƒÂ±adir
         stateSheet.appendRow([key, PlayerName, MissionID, Status, CurrentValue]);
-        // Añadir al mapa temporalmente por si hay duplicados en el mismo batch
+        // AÃƒÂ±adir al mapa temporalmente por si hay duplicados en el mismo batch
         rowMap[key] = stateSheet.getLastRow(); 
       }
       
@@ -433,66 +442,66 @@ function updateMissionStateBatch(updates) {
 
     logToSheet(`Estado de misiones actualizado para ${updates.length} entradas.`);
   } catch (e) {
-    logToSheet('ERROR CRÍTICO al actualizar estado de misiones: ' + e.message);
+    logToSheet('ERROR CRÃƒÂTICO al actualizar estado de misiones: ' + e.message);
   }
 }
 
 function readConfigMap() {
-  const ss = SpreadsheetApp.getActive();
-  const cfg = ss.getSheetByName('CONFIG');
-  if (!cfg) return {};
-  
-  const rows = cfg.getRange(2,1, Math.max(1, cfg.getLastRow()-1), 2).getValues();
-  const map = {};
-  for (let i=0;i<rows.length;i++){
-    if (rows[i][0]) {
-       // v11.0: Limpiar apóstrofo si existe (para el '1.5)
-      if (typeof rows[i][1] === 'string' && rows[i][1].startsWith("'")) {
-        map[rows[i][0]] = rows[i][1].substring(1);
-      } else {
-        map[rows[i][0]] = rows[i][1];
-      }
-    }
-  }
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const cfg = ss.getSheetByName('CONFIG');
+Ã‚Â  if (!cfg) return {};
+Ã‚Â Ã‚Â 
+Ã‚Â  const rows = cfg.getRange(2,1, Math.max(1, cfg.getLastRow()-1), 2).getValues();
+Ã‚Â  const map = {};
+Ã‚Â  for (let i=0;i<rows.length;i++){
+Ã‚Â  Ã‚Â  if (rows[i][0]) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â // v11.0: Limpiar apÃƒÂ³strofo si existe (para el '1.5)
+Ã‚Â  Ã‚Â  Ã‚Â  if (typeof rows[i][1] === 'string' && rows[i][1].startsWith("'")) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  map[rows[i][0]] = rows[i][1].substring(1);
+Ã‚Â  Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  map[rows[i][0]] = rows[i][1];
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  }
 
-  function safeParseFloat(value, defaultValue) {
-    if (value instanceof Date) {
-      Logger.log(`WARN: safeParseFloat: El valor era una Fecha (${value}), usando default (${defaultValue})`);
-      return defaultValue;
-    }
-    const num = parseFloat(value);
-    return isFinite(num) ? num : defaultValue;
-  }
-  function safeParseInt(value, defaultValue) {
-    if (value instanceof Date) {
-      Logger.log(`WARN: safeParseInt: El valor era una Fecha (${value}), usando default (${defaultValue})`);
-      return defaultValue;
-    }
-    const num = parseInt(value, 10);
-    return isFinite(num) ? num : defaultValue;
-  }
+Ã‚Â  function safeParseFloat(value, defaultValue) {
+Ã‚Â  Ã‚Â  if (value instanceof Date) {
+Ã‚Â  Ã‚Â  Ã‚Â  Logger.log(`WARN: safeParseFloat: El valor era una Fecha (${value}), usando default (${defaultValue})`);
+Ã‚Â  Ã‚Â  Ã‚Â  return defaultValue;
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  const num = parseFloat(value);
+Ã‚Â  Ã‚Â  return isFinite(num) ? num : defaultValue;
+Ã‚Â  }
+Ã‚Â  function safeParseInt(value, defaultValue) {
+Ã‚Â  Ã‚Â  if (value instanceof Date) {
+Ã‚Â  Ã‚Â  Ã‚Â  Logger.log(`WARN: safeParseInt: El valor era una Fecha (${value}), usando default (${defaultValue})`);
+Ã‚Â  Ã‚Â  Ã‚Â  return defaultValue;
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  const num = parseInt(value, 10);
+Ã‚Â  Ã‚Â  return isFinite(num) ? num : defaultValue;
+Ã‚Â  }
 
-  // --- NORMALIZACIÓN Y CORRECCIÓN ---
-  
-  if (!map.match_mode) map.match_mode = 'recentN';
-  map.riot_region = map.riot_region || 'europe';
-  map.queue_filter = (map.queue_filter !== undefined) ? String(map.queue_filter) : '';
-  
-  map.season_start_date = map.season_start_date || '2000-01-01T00:00:00Z';
-  try {
-    map.seasonStartDateObj = new Date(map.season_start_date);
-    if (isNaN(map.seasonStartDateObj.getTime())) throw new Error("Invalid Date Object");
-  } catch (e) {
-    logToSheet(`ERROR: La fecha 'season_start_date' ("${map.season_start_date}") es inválida. Usando default. Error: ${e.message}`);
-    map.seasonStartDateObj = new Date('2000-01-01T00:00:00Z');
-  }
+Ã‚Â  // --- NORMALIZACIÃƒâ€œN Y CORRECCIÃƒâ€œN ---
+Ã‚Â Ã‚Â 
+Ã‚Â  if (!map.match_mode) map.match_mode = 'recentN';
+Ã‚Â  map.riot_region = map.riot_region || 'europe';
+Ã‚Â  map.queue_filter = (map.queue_filter !== undefined) ? String(map.queue_filter) : '';
+Ã‚Â Ã‚Â 
+Ã‚Â  map.season_start_date = map.season_start_date || '2000-01-01T00:00:00Z';
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  map.seasonStartDateObj = new Date(map.season_start_date);
+Ã‚Â  Ã‚Â  if (isNaN(map.seasonStartDateObj.getTime())) throw new Error("Invalid Date Object");
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet(`ERROR: La fecha 'season_start_date' ("${map.season_start_date}") es invÃƒÂ¡lida. Usando default. Error: ${e.message}`);
+Ã‚Â  Ã‚Â  map.seasonStartDateObj = new Date('2000-01-01T00:00:00Z');
+Ã‚Â  }
 
-  // --- 2. ECONOMÍA BASE (Balanceada) ---
+Ã‚Â  // --- 2. ECONOMÃƒÂA BASE (Balanceada) ---
   map.win_points = safeParseFloat(map.win_points, 3.0);
   map.loss_points = safeParseFloat(map.loss_points, -6.0);
   map.mvp_points = safeParseFloat(map.mvp_points, 1.0);
   
-  // AJUSTE: Castigo AFK más severo (antes -3)
+  // AJUSTE: Castigo AFK mÃƒÂ¡s severo (antes -3)
   map.afk_points = safeParseFloat(map.afk_points, -5.0); 
 
   // --- 3. KDA & RENDIMIENTO ---
@@ -585,31 +594,31 @@ function readConfigMap() {
   // --- 10. MISIONES SEMANALES ---
   map.mission_week_type = map.mission_week_type || '';
   map.mission_week_target = map.mission_week_target || '';
-  map.mission_week_desc = map.mission_week_desc || 'Misión Semanal';
+  map.mission_week_desc = map.mission_week_desc || 'MisiÃƒÂ³n Semanal';
   map.mission_week_points = safeParseFloat(map.mission_week_points, 0);
 
-  // --- 11. NUEVAS MECÁNICAS (V13 - AÑADIDO) ---
+  // --- 11. NUEVAS MECÃƒÂNICAS (V13 - AÃƒâ€˜ADIDO) ---
   // Estas faltaban y son importantes para los cambios que hicimos
   map.baus_special_points = safeParseFloat(map.baus_special_points, 2.0); // Bono morir por torres
   map.baus_efficiency_points = safeParseFloat(map.baus_efficiency_points, 2.0); // Bono Sion Prime
   map.raid_boss_points = safeParseFloat(map.raid_boss_points, 1.5); // Aguantar focus
-  map.vision_amnesty_kp = safeParseFloat(map.vision_amnesty_kp, 0.70); // KP% para perdonar visión
+  map.vision_amnesty_kp = safeParseFloat(map.vision_amnesty_kp, 0.70); // KP% para perdonar visiÃƒÂ³n
 
-  return map;
+Ã‚Â  return map;
 }
 
 function logToSheet(msg) {
-  try {
-    const ss = SpreadsheetApp.getActive();
-    const log = ss.getSheetByName('LOGS');
-    if (log) {
-      log.appendRow([new Date(), msg]);
-    } else {
-      console.log('LOG ERROR: Log sheet not found.');
-    }
-  } catch(e) {
-    console.log('LOG ERROR: ' + e.message);
-  }
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const log = ss.getSheetByName('LOGS');
+Ã‚Â  Ã‚Â  if (log) {
+Ã‚Â  Ã‚Â  Ã‚Â  log.appendRow([new Date(), msg]);
+Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  console.log('LOG ERROR: Log sheet not found.');
+Ã‚Â  Ã‚Â  }
+Ã‚Â  } catch(e) {
+Ã‚Â  Ã‚Â  console.log('LOG ERROR: ' + e.message);
+Ã‚Â  }
 }
 
 function riotFetchJson(url) {
@@ -662,49 +671,49 @@ function riotFetchJson(url) {
 }
 
 function getPuuidByRiotId_api(name, tag) {
-  const cfg = readConfigMap();
-  const region = cfg.riot_region || 'europe';
-  const url = `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
-  const res = riotFetchJson(url);
-  if (res && !res.__error && res.puuid) return res.puuid;
-  throw new Error('Error getting PUUID for ' + name + '#' + tag + ' -> ' + JSON.stringify(res));
+Ã‚Â  const cfg = readConfigMap();
+Ã‚Â  const region = cfg.riot_region || 'europe';
+Ã‚Â  const url = `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
+Ã‚Â  const res = riotFetchJson(url);
+Ã‚Â  if (res && !res.__error && res.puuid) return res.puuid;
+Ã‚Â  throw new Error('Error getting PUUID for ' + name + '#' + tag + ' -> ' + JSON.stringify(res));
 }
 
 function tierForPoints(points) {
-  // LÍMITE INFERIOR: Nueva liga para puntos negativos
+  // LÃƒÂMITE INFERIOR: Nueva liga para puntos negativos
   if (points < 0) return "El Pozo"; 
 
   const tiers = [
     // --- TIER 1: Materiales Pobres (0 - 160) ---
-    "Madera", "Piedra", "Cuarzo", "Mármol",
+    "Madera", "Piedra", "Cuarzo", "MÃƒÂ¡rmol",
     
     // --- TIER 2: Minerales Comunes (160 - 320) ---
     "Obsidiana", "Granito", "Bronce", "Plata Pura",
     
     // --- TIER 3: Gemas Preciosas (320 - 480) ---
-    "Jadeíta", "Topacio", "Amatista", "Zafiro",
+    "JadeÃƒÂ­ta", "Topacio", "Amatista", "Zafiro",
     
     // --- TIER 4: Metales Raros (480 - 640) ---
-    "Oro Blanco", "Rubí", "Esmeralda", "Adamantium",
+    "Oro Blanco", "RubÃƒÂ­", "Esmeralda", "Adamantium",
     
-    // --- TIER 5: Materiales Míticos (640 - 760) ---
+    // --- TIER 5: Materiales MÃƒÂ­ticos (640 - 760) ---
     "Diamante", "Oricalco", "Vibranium", 
     
     // --- TIER 6: Leyendas de Runaterra (760 - 1000) ---
-    "Mithril", "Éter", "Mineral Negro", 
+    "Mithril", "Ãƒâ€°ter", "Mineral Negro", 
     "Acero Valyrio", "Hielo Puro", "Cristal Hextech",
     
-    // --- TIER 7: La Corrupción del Vacío (1000 - 1240) ---
-    "Piedra de Vacío", "Materia Oscura", "Antimateria", 
+    // --- TIER 7: La CorrupciÃƒÂ³n del VacÃƒÂ­o (1000 - 1240) ---
+    "Piedra de VacÃƒÂ­o", "Materia Oscura", "Antimateria", 
     "Plasma", "Magma Vivo", "Kriptonita",
 
-    // --- TIER 8: Escala Cósmica (1240 - 1500+) ---
+    // --- TIER 8: Escala CÃƒÂ³smica (1240 - 1500+) ---
     "Polvo Estelar", "Nebulosa", "Supernova", 
     "Singularidad", "Horizonte de Sucesos", "Omnipotencia" 
 ];
   
-  // Aseguramos que si points es 0 o positivo, use la lógica normal
-  // La división sigue siendo / 60 puntos por nivel (60 * 15 = 900)
+  // Aseguramos que si points es 0 o positivo, use la lÃƒÂ³gica normal
+  // La divisiÃƒÂ³n sigue siendo / 60 puntos por nivel (60 * 15 = 900)
   const p = Math.max(0, points);
   const idx = Math.min(Math.floor(p / 60), tiers.length - 1);
   return tiers[idx];
@@ -712,11 +721,11 @@ function tierForPoints(points) {
 
 function tierColor(tier) {
   const map = {
-    // 1. Básicos
-    "Madera": "#a0522d",    // Marrón
-    "Piedra": "#b0c4de",    // Azul grisáceo
-    "Cuarzo": "#d8bfd8",    // Rosa pálido
-    "Mármol": "#f0fff0",    // Blanco verdoso
+    // 1. BÃƒÂ¡sicos
+    "Madera": "#a0522d",    // MarrÃƒÂ³n
+    "Piedra": "#b0c4de",    // Azul grisÃƒÂ¡ceo
+    "Cuarzo": "#d8bfd8",    // Rosa pÃƒÂ¡lido
+    "MÃƒÂ¡rmol": "#f0fff0",    // Blanco verdoso
     
     // 2. Comunes
     "Obsidiana": "#4a4a4a", // Gris oscuro
@@ -725,40 +734,40 @@ function tierColor(tier) {
     "Plata Pura": "#c0c0c0", // Plata
 
     // 3. Gemas
-    "Jadeíta": "#00a86b",   // Verde Jade
+    "JadeÃƒÂ­ta": "#00a86b",   // Verde Jade
     "Topacio": "#ffc300",   // Amarillo intenso
     "Amatista": "#9966cc",  // Violeta
     "Zafiro": "#0f52ba",    // Azul Rey
 
     // 4. Raros
     "Oro Blanco": "#f3f4f6", // Gris muy claro
-    "Rubí": "#e0115f",       // Rojo Rubí
+    "RubÃƒÂ­": "#e0115f",       // Rojo RubÃƒÂ­
     "Esmeralda": "#50c878",  // Verde Esmeralda
     "Adamantium": "#696969", // Gris Acero
 
-    // 5. Míticos
+    // 5. MÃƒÂ­ticos
     "Diamante": "#b9f2ff",  // Azul diamante
     "Oricalco": "#ff9966",  // Naranja cobre
-    "Vibranium": "#32cd32", // Verde Lima neón
+    "Vibranium": "#32cd32", // Verde Lima neÃƒÂ³n
     
     // 6. Leyendas (NUEVOS)
-    "Mithril": "#add8e6",      // Azul claro élfico
-    "Éter": "#d783ff",         // Púrpura mágico
+    "Mithril": "#add8e6",      // Azul claro ÃƒÂ©lfico
+    "Ãƒâ€°ter": "#d783ff",         // PÃƒÂºrpura mÃƒÂ¡gico
     "Mineral Negro": "#2c3e50",// Azul muy oscuro
     "Acero Valyrio": "#bdc3c7",// Gris plateado
     "Hielo Puro": "#a2d9ff",   // Azul hielo (Freljord)
     "Cristal Hextech": "#0ac8b9", // Cian Hextech (Piltover)
 
-    // 7. Vacío (NUEVOS)
-    "Piedra de Vacío": "#663399", // Púrpura oscuro
+    // 7. VacÃƒÂ­o (NUEVOS)
+    "Piedra de VacÃƒÂ­o": "#663399", // PÃƒÂºrpura oscuro
     "Materia Oscura": "#1a1a1d",  // Negro casi total
     "Antimateria": "#800080",     // Magenta oscuro
-    "Plasma": "#ff00ff",          // Fuchsia eléctrico
+    "Plasma": "#ff00ff",          // Fuchsia elÃƒÂ©ctrico
     "Magma Vivo": "#ff4500",      // Naranja lava
     "Kriptonita": "#00ff00",      // Verde radioactivo
 
-    // 8. Cósmico (NUEVOS)
-    "Polvo Estelar": "#fffacd",   // Amarillo limón claro
+    // 8. CÃƒÂ³smico (NUEVOS)
+    "Polvo Estelar": "#fffacd",   // Amarillo limÃƒÂ³n claro
     "Nebulosa": "#ff69b4",        // Rosa fuerte
     "Supernova": "#ffD700",       // Dorado brillante
     "Singularidad": "#000080",    // Azul marino profundo
@@ -769,13 +778,13 @@ function tierColor(tier) {
   return map[tier] || '#ffffff'; // Fallback blanco
 }
 function getQueueParamString(queue) {
-  if (!queue) return '';
-  return `&queue=${encodeURIComponent(queue)}`;
+Ã‚Â  if (!queue) return '';
+Ã‚Â  return `&queue=${encodeURIComponent(queue)}`;
 }
 
 function fetchMatchIdsForPuuid(puuid, cfg) {
   const region = cfg.riot_region || 'europe';
-  const count = 5; // Límite de seguridad
+  const count = 5; // LÃƒÂ­mite de seguridad
   
   // Leemos el filtro y quitamos espacios
   const rawFilter = String(cfg.queue_filter || '420,440,0').replace(/\s/g, '');
@@ -784,7 +793,7 @@ function fetchMatchIdsForPuuid(puuid, cfg) {
   let combinedIds = new Set();
 
   for (const qId of targetQueues) {
-    // 🛡️ FIX: Aseguramos que el "0" (Customs) pasa el filtro
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX: Aseguramos que el "0" (Customs) pasa el filtro
     if (qId === "" || qId === null || qId === undefined) continue; 
 
     const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}&queue=${qId}`;
@@ -797,11 +806,11 @@ function fetchMatchIdsForPuuid(puuid, cfg) {
         res.forEach(id => combinedIds.add(id));
       }
     } catch (e) {
-      Logger.log(`❌ Error API buscando cola ${qId}: ${e.message}`);
+      Logger.log(`Ã¢ÂÅ’ Error API buscando cola ${qId}: ${e.message}`);
     }
   }
 
-  // Ordenar cronológicamente (De más nueva a más vieja)
+  // Ordenar cronolÃƒÂ³gicamente (De mÃƒÂ¡s nueva a mÃƒÂ¡s vieja)
   let finalArray = Array.from(combinedIds);
   finalArray.sort((a, b) => {
       let numA = parseInt(a.split('_')[1]);
@@ -818,7 +827,7 @@ function syncAllRiftModes() {
   const playersSheet = ss.getSheetByName("PLAYERS");
   const cfg = readConfigMap(); 
   
-  // 🛡️ AÑADIDO EL 0 PARA PARTIDAS PERSONALIZADAS (CUSTOMS)
+  // Ã°Å¸â€ºÂ¡Ã¯Â¸Â AÃƒâ€˜ADIDO EL 0 PARA PARTIDAS PERSONALIZADAS (CUSTOMS)
   const targetQueues = [420, 440, 400, 490, 0]; 
 
   const playersData = playersSheet.getDataRange().getValues();
@@ -827,23 +836,23 @@ function syncAllRiftModes() {
   
   const FETCH_COUNT = 5; 
 
-  logToSheet(`🚀 Iniciando Escaneo Masivo de la Grieta (Incluyendo Personalizadas)...`);
+  logToSheet(`Ã°Å¸Å¡â‚¬ Iniciando Escaneo Masivo de la Grieta (Incluyendo Personalizadas)...`);
 
   for (let i = 1; i < playersData.length; i++) {
     const name = playersData[i][0];
     const tag = playersData[i][1];
     let puuid = playersData[i][2];
-    const active = String(playersData[i][4] || 'Sí').toLowerCase();
+    const active = String(playersData[i][4] || 'SÃƒÂ­').toLowerCase();
     
     if (!name || active === 'no' || active === 'false') continue;
 
-    logToSheet(`👁️ Check: ${name}`);
+    logToSheet(`Ã°Å¸â€˜ÂÃ¯Â¸Â Check: ${name}`);
 
     if (!puuid) {
        try { puuid = getPuuidByRiotId_api(name, tag); } catch(e) { continue; }
     }
 
-    logToSheet(`🔎 Escaneando a: ${name}...`);
+    logToSheet(`Ã°Å¸â€Å½ Escaneando a: ${name}...`);
 
     for (const qId of targetQueues) {
       try {
@@ -858,16 +867,16 @@ function syncAllRiftModes() {
           }
         }
       } catch (e) {
-        logToSheet(`❌ Error buscando cola ${qId} para ${name}: ${e.message}`);
+        logToSheet(`Ã¢ÂÅ’ Error buscando cola ${qId} para ${name}: ${e.message}`);
       }
     }
   }
   
   updateScores();
-  SpreadsheetApp.getUi().alert('✅ Escaneo completo de Rankeds, Normales y Personalizadas finalizado.');
+  SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Escaneo completo de Rankeds, Normales y Personalizadas finalizado.');
 }
 
-/* ----------------- SINCRONIZACIÓN HÍBRIDA V5.0 (CATCH-UP + MANTENIMIENTO) ----------------- */
+/* ----------------- SINCRONIZACIÃƒâ€œN HÃƒÂBRIDA V5.0 (CATCH-UP + MANTENIMIENTO) ----------------- */
 function syncMatchesToQueue() {
   const START_TIME = new Date().getTime();
   const TIME_LIMIT = 250000; // 5 minutes limit to be safe
@@ -898,7 +907,7 @@ function syncMatchesToQueue() {
   let startIndex = parseInt(props.getProperty('SYNC_PLAYER_INDEX') || '0');
   if (startIndex >= playersData.length) startIndex = 0;
 
-  logToSheet(`🚀 Iniciando Sync Híbrido V5.0...`);
+  logToSheet(`Ã°Å¸Å¡â‚¬ Iniciando Sync HÃƒÂ­brido V5.0...`);
 
   // Optimize: Read queue sheet once
   let queueData = [];
@@ -911,7 +920,7 @@ function syncMatchesToQueue() {
   let newRowsForQueue = []; 
 
   for (let i = startIndex; i < playersData.length; i++) {
-    // ⏳ TIME CHECK
+    // Ã¢ÂÂ³ TIME CHECK
     if (new Date().getTime() - START_TIME > TIME_LIMIT) {
       props.setProperty('SYNC_PLAYER_INDEX', i.toString());
       
@@ -919,7 +928,7 @@ function syncMatchesToQueue() {
       if (newRowsForQueue.length > 0) {
           queueSheet.getRange(queueSheet.getLastRow() + 1, 1, newRowsForQueue.length, 5).setValues(newRowsForQueue);
       }
-      logToSheet("⏳ Tiempo límite. Pausando escaneo.");
+      logToSheet("Ã¢ÂÂ³ Tiempo lÃƒÂ­mite. Pausando escaneo.");
       return; 
     }
 
@@ -936,7 +945,7 @@ function syncMatchesToQueue() {
     if (lastSavedMatch === "" || lastSavedMatch === "undefined") {
         fetchCount = 20; // Catchup count
         isCatchUp = true;
-        logToSheet(`🔄 CATCH-UP activado para ${name}`);
+        logToSheet(`Ã°Å¸â€â€ž CATCH-UP activado para ${name}`);
     }
 
     let newestMatchForPlayer = lastSavedMatch;
@@ -966,7 +975,7 @@ function syncMatchesToQueue() {
             matchesToQueue.reverse(); 
 
             if (matchesToQueue.length > 0) {
-                 logToSheet(`📥 ${name}: Encolando ${matchesToQueue.length} partidas nuevas (${qId}).`);
+                 logToSheet(`Ã°Å¸â€œÂ¥ ${name}: Encolando ${matchesToQueue.length} partidas nuevas (${qId}).`);
                  
                  // Push to array instead of appending immediately
                  matchesToQueue.forEach(mid => newRowsForQueue.push([mid, puuid, name, region, 'PENDING']));
@@ -977,7 +986,7 @@ function syncMatchesToQueue() {
           Utilities.sleep(100); 
 
         } catch (e) {
-          logToSheet(`❌ Error escaneando ${name}: ${e.message}`);
+          logToSheet(`Ã¢ÂÅ’ Error escaneando ${name}: ${e.message}`);
         }
     }
     
@@ -994,7 +1003,7 @@ function syncMatchesToQueue() {
 
   // Reset index when finished
   props.setProperty('SYNC_PLAYER_INDEX', '0');
-  logToSheet("✅ Escaneo Híbrido completado.");
+  logToSheet("Ã¢Å“â€¦ Escaneo HÃƒÂ­brido completado.");
   
   // REMOVED: processQueue();  <-- This must be run by a separate trigger!
 }
@@ -1011,7 +1020,7 @@ function processQueue() {
   
   if (!queueSheet || !playersSheet) return;
 
-  // ⚡ OPTIMIZACIÓN: Leemos PLAYERS UNA SOLA VEZ antes de empezar el bucle
+  // Ã¢Å¡Â¡ OPTIMIZACIÃƒâ€œN: Leemos PLAYERS UNA SOLA VEZ antes de empezar el bucle
   // Creamos un "Mapa" (Diccionario) para acceder a las filas y rachas al instante
   const pData = playersSheet.getDataRange().getValues();
   const playerMap = {};
@@ -1026,14 +1035,14 @@ function processQueue() {
 
   try {
       while (true) {
-        // 1. Verificación de tiempo de seguridad
+        // 1. VerificaciÃƒÂ³n de tiempo de seguridad
         if (new Date().getTime() - START_TIME > TIME_LIMIT) {
-          console.log("⏳ Tiempo agotado en processQueue. Pausando para siguiente ciclo...");
+          console.log("Ã¢ÂÂ³ Tiempo agotado en processQueue. Pausando para siguiente ciclo...");
           break; 
         }
 
         // ======================================================
-        // 🔒 FASE 1: EXTRAER DE LA COLA (BLOQUEO CORTO)
+        // Ã°Å¸â€â€™ FASE 1: EXTRAER DE LA COLA (BLOQUEO CORTO)
         // ======================================================
         let rowData = null;
         const lockQueue = LockService.getScriptLock();
@@ -1043,7 +1052,7 @@ function processQueue() {
             
             const lastRow = queueSheet.getLastRow();
             if (lastRow < 2) {
-               // Si llegamos aquí, la cola está vacía. ¡Hemos terminado!
+               // Si llegamos aquÃƒÂ­, la cola estÃƒÂ¡ vacÃƒÂ­a. Ã‚Â¡Hemos terminado!
                if (typeof updateScores === "function") updateScores();    
                if (typeof checkWeeklyLimits === "function") checkWeeklyLimits(); 
                break; 
@@ -1059,11 +1068,11 @@ function processQueue() {
             Utilities.sleep(1000); 
             continue; 
         } finally {
-            lockQueue.releaseLock(); // 🔓 Soltamos la cola rápido
+            lockQueue.releaseLock(); // Ã°Å¸â€â€œ Soltamos la cola rÃƒÂ¡pido
         }
         
         // ======================================================
-        // 🧠 FASE 2: PROCESAR DATOS (SIN BLOQUEO - API RIOT)
+        // Ã°Å¸Â§Â  FASE 2: PROCESAR DATOS (SIN BLOQUEO - API RIOT)
         // ======================================================
         if (!rowData || !rowData[0]) continue;
 
@@ -1079,17 +1088,17 @@ function processQueue() {
         const playerData = playerMap[nameKey];
 
         if (!playerData) {
-            logToSheet(`⚠️ Error: No se encontró al jugador ${name} en PLAYERS. Saltando...`);
+            logToSheet(`Ã¢Å¡Â Ã¯Â¸Â Error: No se encontrÃƒÂ³ al jugador ${name} en PLAYERS. Saltando...`);
             continue;
         }
 
-        logToSheet(`⚙️ Procesando ${matchId} para ${name}...`);
+        logToSheet(`Ã¢Å¡â„¢Ã¯Â¸Â Procesando ${matchId} para ${name}...`);
         
-        // LLAMADA A RIOT (Esto tarda 1-3 segs, la cola no está bloqueada aquí)
+        // LLAMADA A RIOT (Esto tarda 1-3 segs, la cola no estÃƒÂ¡ bloqueada aquÃƒÂ­)
         const newStreakResult = processMatch(matchId, puuid, name, playerData.streak, cfg, champData); 
 
         // ======================================================
-        // 💾 FASE 3: ACTUALIZAR FICHA DEL JUGADOR (BLOQUEO CORTO)
+        // Ã°Å¸â€™Â¾ FASE 3: ACTUALIZAR FICHA DEL JUGADOR (BLOQUEO CORTO)
         // ======================================================
         if (newStreakResult !== null) { 
              const lockPlayer = LockService.getScriptLock();
@@ -1104,11 +1113,11 @@ function processQueue() {
                  playersSheet.getRange(playerData.row, 6).setValue(playerData.streak);
                  playersSheet.getRange(playerData.row, 7).setValue(playerData.totalGames);
                  
-                 // 🚨 CRÍTICO: NO tocamos la columna 4 (Last Match ID). 
-                 // syncMatchesToQueue ya se encargó de marcarla.
+                 // Ã°Å¸Å¡Â¨ CRÃƒÂTICO: NO tocamos la columna 4 (Last Match ID). 
+                 // syncMatchesToQueue ya se encargÃƒÂ³ de marcarla.
                  
                  SpreadsheetApp.flush(); // Guardar cambios YA
-                 console.log(`✅ ${name}: Racha ${playerData.streak} | Total ${playerData.totalGames}`);
+                 console.log(`Ã¢Å“â€¦ ${name}: Racha ${playerData.streak} | Total ${playerData.totalGames}`);
 
              } catch(e) {
                  console.log("Error escribiendo en PLAYERS: " + e.message);
@@ -1117,7 +1126,7 @@ function processQueue() {
              }
         }
         
-        // Pausa de cortesía para no saturar la API de Riot
+        // Pausa de cortesÃƒÂ­a para no saturar la API de Riot
         Utilities.sleep(2000); 
 
       } // Fin While
@@ -1130,14 +1139,14 @@ function processQueue() {
 function forceResetSync() {
   const props = PropertiesService.getScriptProperties();
   props.deleteProperty('SYNC_PLAYER_INDEX');
-  logToSheet("♻️ Memoria de sincronización borrada. Empezará desde cero.");
+  logToSheet("Ã¢â„¢Â»Ã¯Â¸Â Memoria de sincronizaciÃƒÂ³n borrada. EmpezarÃƒÂ¡ desde cero.");
   SpreadsheetApp.getUi().alert("Sistema reseteado.");
 }
 
 /* ----------------- MAIN SYNC ----------------- */
 function syncMatches() {
- 
-  normalSyncMatches();
+Ã‚Â 
+Ã‚Â  normalSyncMatches();
 }
 
 function normalSyncMatches() {
@@ -1152,10 +1161,10 @@ function normalSyncMatches() {
   const champDataMap = getChampionDataMap();
   
   if (Object.keys(champDataMap).length === 0) {
-    logToSheet('WARN: CHAMPION_DATA no está cargada.');
+    logToSheet('WARN: CHAMPION_DATA no estÃƒÂ¡ cargada.');
   }
 
-  // --- 1. CÁLCULO DE FECHA Y MAPA DE CONTEO SEMANAL ---
+  // --- 1. CÃƒÂLCULO DE FECHA Y MAPA DE CONTEO SEMANAL ---
   const ahora = new Date();
   const lunesEstaSemana = new Date(ahora);
   const dia = ahora.getDay(); 
@@ -1163,7 +1172,7 @@ function normalSyncMatches() {
   lunesEstaSemana.setDate(diff);
   lunesEstaSemana.setHours(0,0,0,0);
 
-  // Mapa de conteo rápido
+  // Mapa de conteo rÃƒÂ¡pido
   const weeklyCountMap = {};
   for (let m = 1; m < allMatchesData.length; m++) {
     const matchDate = new Date(allMatchesData[m][1]); 
@@ -1178,7 +1187,7 @@ function normalSyncMatches() {
   for (let idx = 1; idx < playersData.length; idx++) playerIndices.push(idx);
   playerIndices = playerIndices.sort(() => Math.random() - 0.5);
 
-  logToSheet(`🚀 Sync: Revisando ${playerIndices.length} jugadores...`);
+  logToSheet(`Ã°Å¸Å¡â‚¬ Sync: Revisando ${playerIndices.length} jugadores...`);
 
   // --- 3. BUCLE PRINCIPAL ---
   for (let n = 0; n < playerIndices.length; n++) {
@@ -1188,10 +1197,10 @@ function normalSyncMatches() {
     const tag = (playersData[i][1] || '').toString().trim();
     let puuid = (playersData[i][2] || '').toString().trim();
     let lastMatch = (playersData[i][3] || '').toString().trim();
-    const active = ((playersData[i][4] || 'Sí').toString().toLowerCase());
+    const active = ((playersData[i][4] || 'SÃƒÂ­').toString().toLowerCase());
     let currentStreak = Number(playersData[i][5] || 0); 
 
-    // Solo saltamos si el usuario ya está marcado como "no" manualmente
+    // Solo saltamos si el usuario ya estÃƒÂ¡ marcado como "no" manualmente
     if (!name || active === 'no' || active === 'n' || active === 'false') continue;
 
     if (!puuid) {
@@ -1228,39 +1237,39 @@ function normalSyncMatches() {
     }
     
 
-    // --- 4. ACTUALIZACIÓN INTELIGENTE DE DATOS ---
+    // --- 4. ACTUALIZACIÃƒâ€œN INTELIGENTE DE DATOS ---
     
     // A. Actualizar Racha (Columna F -> 6)
     playersSheet.getRange(i+1, 6).setValue(currentStreak);
 
-    // B. Actualizar Total Histórico DE TEMPORADA (Columna G -> 7)
-    // Leemos el valor que ya había en la celda y le sumamos las NUEVAS de hoy
+    // B. Actualizar Total HistÃƒÂ³rico DE TEMPORADA (Columna G -> 7)
+    // Leemos el valor que ya habÃƒÂ­a en la celda y le sumamos las NUEVAS de hoy
     const previousSeasonTotal = Number(playersSheet.getRange(i+1, 7).getValue() || 0);
     const newSeasonTotal = previousSeasonTotal + newIds.length;
     playersSheet.getRange(i+1, 7).setValue(newSeasonTotal);
 
-    // C. CÁLCULO SEMANAL (Solo para el límite)
+    // C. CÃƒÂLCULO SEMANAL (Solo para el lÃƒÂ­mite)
     // weeklyCountMap ya tiene contadas las partidas de la hoja MATCHES desde el lunes.
     // Le sumamos las 'newIds' que acabamos de encontrar ahora mismo.
     const gamesThisWeek = (weeklyCountMap[name] || 0) + newIds.length;
 
     // =========================================================
-    // 🛡️ CENTINELA: LÍMITE SEMANAL DE 15 PARTIDAS
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â CENTINELA: LÃƒÂMITE SEMANAL DE 15 PARTIDAS
     // =========================================================
     const LIMIT_ACTIVE = true; 
     const SEMANA_LIMITE = 15;
 
-    // Comprobamos si con las nuevas partidas se pasa del límite semanal
+    // Comprobamos si con las nuevas partidas se pasa del lÃƒÂ­mite semanal
     if (LIMIT_ACTIVE && gamesThisWeek >= SEMANA_LIMITE) {
         
         // Desactivamos al jugador poniendo "No" o un mensaje explicativo
         playersSheet.getRange(i + 1, 5).setValue("Cupo (15)"); 
         
-        logToSheet(`🚫 LÍMITE ALCANZADO: ${name} lleva ${gamesThisWeek} partidas esta semana (Total Season: ${newSeasonTotal}). Desactivado.`);
+        logToSheet(`Ã°Å¸Å¡Â« LÃƒÂMITE ALCANZADO: ${name} lleva ${gamesThisWeek} partidas esta semana (Total Season: ${newSeasonTotal}). Desactivado.`);
         
         // Opcional: Avisar en noticias
         if (newIds.length > 0) { // Solo avisar si acaba de terminar la partida que le bloquea
-             registerNews('INFO', `🔒 ${name} ha completado sus 15 partidas semanales. Descansa, guerrero.`);
+             registerNews('INFO', `Ã°Å¸â€â€™ ${name} ha completado sus 15 partidas semanales. Descansa, guerrero.`);
         }
     }
     // =========================================================
@@ -1287,8 +1296,8 @@ function SetupHistorySheet() {
   }
 }
 
-// 2. Función para guardar el estado actual de todos (El "Fotógrafo")
-// IMPORTANTE: Esta función debe ejecutarse al final de syncMatches()
+// 2. FunciÃƒÂ³n para guardar el estado actual de todos (El "FotÃƒÂ³grafo")
+// IMPORTANTE: Esta funciÃƒÂ³n debe ejecutarse al final de syncMatches()
 function recordNetWorthSnapshot() {
   const ss = SpreadsheetApp.getActive();
   const marketSheet = ss.getSheetByName('MARKET_STATUS');
@@ -1340,7 +1349,7 @@ function recordNetWorthSnapshot() {
   }
 }
 
-// 3. Función para enviar los datos a la web
+// 3. FunciÃƒÂ³n para enviar los datos a la web
 function getMyNetWorthHistory(player) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('NET_WORTH_HISTORY');
@@ -1356,41 +1365,41 @@ function getMyNetWorthHistory(player) {
       value: Number(r[2])
     }));
     
-  // Si hay demasiados datos, cogemos los últimos 30 puntos para que el gráfico no explote
+  // Si hay demasiados datos, cogemos los ÃƒÂºltimos 30 puntos para que el grÃƒÂ¡fico no explote
   return history.slice(-30); 
 }
 
 /**
- * v10.0: Mueve la lógica de champion pool aquí.
- */
+Ã‚Â * v10.0: Mueve la lÃƒÂ³gica de champion pool aquÃƒÂ­.
+Ã‚Â */
 function updateChampionPool(puuid, summonerName, champion) {
-  const knownChampsSheet = SpreadsheetApp.getActive().getSheetByName("KNOWN_CHAMPS");
-  let isNewChamp = false;
-  let totalUniqueChamps = 0; 
+Ã‚Â  const knownChampsSheet = SpreadsheetApp.getActive().getSheetByName("KNOWN_CHAMPS");
+Ã‚Â  let isNewChamp = false;
+Ã‚Â  let totalUniqueChamps = 0;Ã‚Â 
 
-  try {
-    const knownData = knownChampsSheet.getDataRange().getValues();
-    let rowIndex = knownData.findIndex(r => String(r[0]) === String(puuid));
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const knownData = knownChampsSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â  let rowIndex = knownData.findIndex(r => String(r[0]) === String(puuid));
 
-    if (rowIndex === -1) {
-      knownChampsSheet.appendRow([puuid, summonerName, champion]);
-      isNewChamp = true;
-      totalUniqueChamps = 1;
-    } else {
-      const list = (knownData[rowIndex][2] || "").split(",").map(c => c.trim()).filter(Boolean);
-      totalUniqueChamps = list.length;
-      if (!list.includes(champion)) {
-        list.push(champion);
-        knownChampsSheet.getRange(rowIndex + 1, 3).setValue(list.join(","));
-        isNewChamp = true;
-        totalUniqueChamps++;
-      }
-    }
-  } catch (e) {
-    logToSheet("KNOWN_CHAMPS error: " + e.message);
-  }
-  
-  return { isNewChamp, totalUniqueChamps };
+Ã‚Â  Ã‚Â  if (rowIndex === -1) {
+Ã‚Â  Ã‚Â  Ã‚Â  knownChampsSheet.appendRow([puuid, summonerName, champion]);
+Ã‚Â  Ã‚Â  Ã‚Â  isNewChamp = true;
+Ã‚Â  Ã‚Â  Ã‚Â  totalUniqueChamps = 1;
+Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  const list = (knownData[rowIndex][2] || "").split(",").map(c => c.trim()).filter(Boolean);
+Ã‚Â  Ã‚Â  Ã‚Â  totalUniqueChamps = list.length;
+Ã‚Â  Ã‚Â  Ã‚Â  if (!list.includes(champion)) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  list.push(champion);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  knownChampsSheet.getRange(rowIndex + 1, 3).setValue(list.join(","));
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  isNewChamp = true;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  totalUniqueChamps++;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet("KNOWN_CHAMPS error: " + e.message);
+Ã‚Â  }
+Ã‚Â Ã‚Â 
+Ã‚Â  return { isNewChamp, totalUniqueChamps };
 }
 
 /* --- HELPER GLOBAL --- */
@@ -1405,7 +1414,7 @@ function safeAdd(currentTotal, pointsToAdd) {
 /* ----------------- PROCESS SINGLE MATCH  ----------------- */
 function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDataMap) {
   try {
-    // 🛡️ PROTECCIÓN 1: Si no hay ID, salir inmediatamente
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â PROTECCIÃƒâ€œN 1: Si no hay ID, salir inmediatamente
     if (!matchId) return null;
 
     if (!cfg) cfg = readConfigMap();
@@ -1416,14 +1425,14 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     const region = cfg.riot_region || 'europe';
     const invSheet = ss.getSheetByName("INVENTORY");
 
-    // 1. LEER QUÉ SEASON ES AHORA
+    // 1. LEER QUÃƒâ€° SEASON ES AHORA
     const configSheet = ss.getSheetByName('CONFIG');
     let currentSeason = 'S1'; // Valor por defecto si falla
     if (configSheet) {
         currentSeason = configSheet.getRange('B2').getValue();
     }
     
-    // 🔥 OPTIMIZACIÓN TURBO: MIRAR EL EXCEL *ANTES* DE PREGUNTAR A RIOT (Evita bloqueos de Google)
+    // Ã°Å¸â€Â¥ OPTIMIZACIÃƒâ€œN TURBO: MIRAR EL EXCEL *ANTES* DE PREGUNTAR A RIOT (Evita bloqueos de Google)
     const lastRow = matchesSheet.getLastRow();
     if (lastRow > 1) {
         const checkData = matchesSheet.getRange(2, 1, lastRow - 1, 3).getValues();
@@ -1439,12 +1448,12 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     }
 
 
-    // ⚠️ AHORA SÍ: LLAMAMOS A RIOT (Con Memoria para Premades)
+    // Ã¢Å¡Â Ã¯Â¸Â AHORA SÃƒÂ: LLAMAMOS A RIOT (Con Memoria para Premades)
     let matchData;
     if (GLOBAL_MATCH_CACHE[matchId]) {
-        // ¡Si alguien de la premade ya la descargó hoy, la cogemos de la memoria!
+        // Ã‚Â¡Si alguien de la premade ya la descargÃƒÂ³ hoy, la cogemos de la memoria!
         matchData = GLOBAL_MATCH_CACHE[matchId];
-        Logger.log("♻️ Usando datos en caché para la premade: " + matchId);
+        Logger.log("Ã¢â„¢Â»Ã¯Â¸Â Usando datos en cachÃƒÂ© para la premade: " + matchId);
     } else {
         // Si es el primero, vamos a Riot y la guardamos
         const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
@@ -1454,7 +1463,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         }
     }
 
-    // 🛡️ FIX PARTIDAS FANTASMAS (Evita bucles infinitos)
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX PARTIDAS FANTASMAS (Evita bucles infinitos)
     if (!matchData || matchData.__error) {
       logToSheet('processMatch: Partida corrupta ignorada ' + matchId);
       return currentStreak; 
@@ -1462,73 +1471,73 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
 
     const info = matchData.info;
 
-    const matchStartTime = new Date(info.gameStartTimestamp || 0);
-    if (isNaN(cfg.seasonStartDateObj.getTime())) {
-      logToSheet(`ERROR CRÍTICO: 'season_start_date' es inválida. Saltando filtro de fecha.`);
-    } else if (matchStartTime < cfg.seasonStartDateObj) {
-      logToSheet(`Ignoring match ${matchId} for ${summonerName}. (Match date ${matchStartTime.toISOString()} is before season start ${cfg.season_start_date})`);
-      return null;
-    }
+Ã‚Â  Ã‚Â  const matchStartTime = new Date(info.gameStartTimestamp || 0);
+Ã‚Â  Ã‚Â  if (isNaN(cfg.seasonStartDateObj.getTime())) {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`ERROR CRÃƒÂTICO: 'season_start_date' es invÃƒÂ¡lida. Saltando filtro de fecha.`);
+Ã‚Â  Ã‚Â  } else if (matchStartTime < cfg.seasonStartDateObj) {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Ignoring match ${matchId} for ${summonerName}. (Match date ${matchStartTime.toISOString()} is before season start ${cfg.season_start_date})`);
+Ã‚Â  Ã‚Â  Ã‚Â  return null;
+Ã‚Â  Ã‚Â  }
 
-    const participants = info.participants || [];
-    const p = participants.find(x => x.puuid === puuid);
+Ã‚Â  Ã‚Â  const participants = info.participants || [];
+Ã‚Â  Ã‚Â  const p = participants.find(x => x.puuid === puuid);
 
-    if (!p) {
-      logToSheet(`processMatch: participant not found in ${matchId} for ${summonerName}`);
-      return null;
-    }
+Ã‚Â  Ã‚Â  if (!p) {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`processMatch: participant not found in ${matchId} for ${summonerName}`);
+Ã‚Â  Ã‚Â  Ã‚Â  return null;
+Ã‚Â  Ã‚Â  }
 
-    // --- v13.7: Lectura mejorada de objetivos (MOVIDO ARRIBA PARA EVITAR ERRORES) ---
-    const myTeamId = p.teamId;
-    const teamObj = info.teams.find(t => t.teamId === myTeamId) || {};
-    const enemyTeamObj = info.teams.find(t => t.teamId !== myTeamId) || {};
+Ã‚Â  Ã‚Â  // --- v13.7: Lectura mejorada de objetivos (MOVIDO ARRIBA PARA EVITAR ERRORES) ---
+Ã‚Â  Ã‚Â  const myTeamId = p.teamId;
+Ã‚Â  Ã‚Â  const teamObj = info.teams.find(t => t.teamId === myTeamId) || {};
+Ã‚Â  Ã‚Â  const enemyTeamObj = info.teams.find(t => t.teamId !== myTeamId) || {};
 
-    const myObjs = teamObj.objectives || {};
-    const enemyObjs = enemyTeamObj.objectives || {};
+Ã‚Â  Ã‚Â  const myObjs = teamObj.objectives || {};
+Ã‚Â  Ã‚Â  const enemyObjs = enemyTeamObj.objectives || {};
 
     
     const myFirstDrag = myObjs.dragon && myObjs.dragon.first ? true : false;
     const enemyFirstDrag = enemyObjs.dragon && enemyObjs.dragon.first ? true : false;
 
-    // Tus objetivos (DEFINIDOS ANTES DE USARLOS)
-    const dragonsCount = myObjs.dragon?.kills || 0;
-    const baronCount = myObjs.baron?.kills || 0;
-    const heraldCount = myObjs.riftHerald?.kills || 0;
-    const hordeCount = myObjs.horde?.kills || 0; // Kevins (Larvas)
-    const towerCount = myObjs.tower?.kills || 0;
-    const inhibitorCount = myObjs.inhibitor?.kills || 0;
+Ã‚Â  Ã‚Â  // Tus objetivos (DEFINIDOS ANTES DE USARLOS)
+Ã‚Â  Ã‚Â  const dragonsCount = myObjs.dragon?.kills || 0;
+Ã‚Â  Ã‚Â  const baronCount = myObjs.baron?.kills || 0;
+Ã‚Â  Ã‚Â  const heraldCount = myObjs.riftHerald?.kills || 0;
+Ã‚Â  Ã‚Â  const hordeCount = myObjs.horde?.kills || 0; // Kevins (Larvas)
+Ã‚Â  Ã‚Â  const towerCount = myObjs.tower?.kills || 0;
+Ã‚Â  Ã‚Â  const inhibitorCount = myObjs.inhibitor?.kills || 0;
 
-    // Objetivos enemigos
-    const enemyDragons = enemyObjs.dragon?.kills || 0;
-    const enemyBarons = enemyObjs.baron?.kills || 0;
-    const enemyHeralds = enemyObjs.riftHerald?.kills || 0;
-    const enemyHorde = enemyObjs.horde?.kills || 0;
+Ã‚Â  Ã‚Â  // Objetivos enemigos
+Ã‚Â  Ã‚Â  const enemyDragons = enemyObjs.dragon?.kills || 0;
+Ã‚Â  Ã‚Â  const enemyBarons = enemyObjs.baron?.kills || 0;
+Ã‚Â  Ã‚Â  const enemyHeralds = enemyObjs.riftHerald?.kills || 0;
+Ã‚Â  Ã‚Â  const enemyHorde = enemyObjs.horde?.kills || 0;
 
-    let elderPresent = participants.some(x =>
-      x.challenges?.elderDragonKills > 0 ||
-      x.challenges?.elderDragonKillsWithParticipants > 0
-    );
-    if (!elderPresent && dragonsCount >= 5) elderPresent = true;
+Ã‚Â  Ã‚Â  let elderPresent = participants.some(x =>
+Ã‚Â  Ã‚Â  Ã‚Â  x.challenges?.elderDragonKills > 0 ||
+Ã‚Â  Ã‚Â  Ã‚Â  x.challenges?.elderDragonKillsWithParticipants > 0
+Ã‚Â  Ã‚Â  );
+Ã‚Â  Ã‚Â  if (!elderPresent && dragonsCount >= 5) elderPresent = true;
 
-    Logger.log("=== MATCH DEBUG START ===");
-    Logger.log("MatchID: " + matchId);
-    Logger.log("gameDuration raw: " + info.gameDuration);
-    Logger.log("=== MATCH DEBUG END ===");
+Ã‚Â  Ã‚Â  Logger.log("=== MATCH DEBUG START ===");
+Ã‚Â  Ã‚Â  Logger.log("MatchID: " + matchId);
+Ã‚Â  Ã‚Â  Logger.log("gameDuration raw: " + info.gameDuration);
+Ã‚Â  Ã‚Â  Logger.log("=== MATCH DEBUG END ===");
 
-    const champion = p.championName || '';
-    const lane = p.teamPosition || p.lane || '';
+Ã‚Â  Ã‚Â  const champion = p.championName || '';
+Ã‚Â  Ã‚Â  const lane = p.teamPosition || p.lane || '';
     const role = (p.teamPosition || p.lane || 'UNKNOWN').toUpperCase();
-    const k = Number(p.kills || 0);
-    const d_stats = Number(p.deaths || 0); // Renombrado para evitar confusión con dragones
-    const a = Number(p.assists || 0);
+Ã‚Â  Ã‚Â  const k = Number(p.kills || 0);
+Ã‚Â  Ã‚Â  const d_stats = Number(p.deaths || 0); // Renombrado para evitar confusiÃƒÂ³n con dragones
+Ã‚Â  Ã‚Â  const a = Number(p.assists || 0);
 
     const dpm = p.challenges?.damagePerMinute || 0; 
     const structuresDestroyed = (p.turretKills || 0) + (p.inhibitorKills || 0);
-    const dmg = Number(p.totalDamageDealtToChampions || 0);
+Ã‚Â  Ã‚Â  const dmg = Number(p.totalDamageDealtToChampions || 0);
 
-    const rawDur = info.gameDuration || 0;
-    const duration_min = Math.round((rawDur > 10000 ? rawDur / 1000 : rawDur) / 60);
-    const result = p.win ? "Win" : "Loss";
+Ã‚Â  Ã‚Â  const rawDur = info.gameDuration || 0;
+Ã‚Â  Ã‚Â  const duration_min = Math.round((rawDur > 10000 ? rawDur / 1000 : rawDur) / 60);
+Ã‚Â  Ã‚Â  const result = p.win ? "Win" : "Loss";
 
     // 1. Empaquetamos los datos en una variable llamada teamInfo
     const teamInfo = {
@@ -1538,7 +1547,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         myFirstDrag, enemyFirstDrag
     };
 
-    // 2. Ahora usamos esa "caja" en la primera función
+    // 2. Ahora usamos esa "caja" en la primera funciÃƒÂ³n
     let pointsObj = computePointsDetailed(
       p, participants, duration_min,
       teamInfo,
@@ -1549,14 +1558,14 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
       matchId
     );
 
-    // 3. ¡Y ahora también podemos usarla en la Forja sin que explote!
+    // 3. Ã‚Â¡Y ahora tambiÃƒÂ©n podemos usarla en la Forja sin que explote!
     const dropID = rollForgeDrop(pointsObj.total, p, teamInfo, pointsObj.notes);
 
-    // 5. QUINTO: ¡USAMOS dropID! (Aquí dejará de estar gris)
+    // 5. QUINTO: Ã‚Â¡USAMOS dropID! (AquÃƒÂ­ dejarÃƒÂ¡ de estar gris)
     if (dropID) {
         // Esto escribe el material en tu hoja de inventario
         invSheet.appendRow([summonerName, dropID, 'ACTIVE', new Date()]);
-        pointsObj.notes.push(`🎁 Botín: ${dropID}`);
+        pointsObj.notes.push(`Ã°Å¸Å½Â BotÃƒÂ­n: ${dropID}`);
     }
     
 
@@ -1575,24 +1584,24 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
      // Asegurar rango 0.0 - 1.0 (evita errores de API raros)
     if (kp > 1.0) kp = 1.0; 
     if (kp < 0) kp = 0;
-    
+Ã‚Â  Ã‚Â  
     if (duration_min <= 6 || (p && p.gameEndedInEarlySurrender)) {
         matchesSheet.appendRow([
             matchId, matchStartTime, summonerName, p.championName || '', p.teamPosition || '', "Remake",
             k, d_stats, a, dmg, 0, duration_min,
             0, "Remake (No cuenta)"
         ]);
-        logToSheet(`🚫 Remake detectado para ${summonerName} (${matchId}). No suma puntos ni afecta racha.`);
+        logToSheet(`Ã°Å¸Å¡Â« Remake detectado para ${summonerName} (${matchId}). No suma puntos ni afecta racha.`);
         return currentStreak; 
     }
 
-    // === 🛠️ FIX: CORRECCIÓN DE REMONTADA (TIMELINE) ===
-    // Si ganamos, pero Riot dice que el déficit fue 0 (Bug), calculamos el real.
+    // === Ã°Å¸â€ºÂ Ã¯Â¸Â FIX: CORRECCIÃƒâ€œN DE REMONTADA (TIMELINE) ===
+    // Si ganamos, pero Riot dice que el dÃƒÂ©ficit fue 0 (Bug), calculamos el real.
     if (p.win) {
         // Valor actual (posiblemente bugueado)
         let currentDeficit = p.challenges?.maxGoldDeficit || 0;
         
-        // Si es 0 o muy bajo, activamos el escáner de Timeline
+        // Si es 0 o muy bajo, activamos el escÃƒÂ¡ner de Timeline
         if (currentDeficit < 500) {
             const realDeficit = fetchRealGoldDeficit(matchId, p.teamId, region, getApiKey());
             
@@ -1600,22 +1609,22 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                 // INYECTAMOS EL VALOR REAL en los datos del jugador
                 if (!p.challenges) p.challenges = {};
                 p.challenges.maxGoldDeficit = realDeficit;
-                Logger.log(`🔧 Deficit corregido vía Timeline: ${realDeficit} (Antes: ${currentDeficit})`);
+                Logger.log(`Ã°Å¸â€Â§ Deficit corregido vÃƒÂ­a Timeline: ${realDeficit} (Antes: ${currentDeficit})`);
             }
         }
     }
 
-    const { isNewChamp, totalUniqueChamps } = updateChampionPool(puuid, summonerName, champion);
+Ã‚Â  Ã‚Â  const { isNewChamp, totalUniqueChamps } = updateChampionPool(puuid, summonerName, champion);
 
     // =================================================================
-    // 🔒 EVENTO TEAM BATTLE: CANDADO DE ROL (ROLE LOCK)
+    // Ã°Å¸â€â€™ EVENTO TEAM BATTLE: CANDADO DE ROL (ROLE LOCK)
     // =================================================================
     /*
     const props = PropertiesService.getScriptProperties();
     const isTeamEvent = props.getProperty('EVENT_TEAM_BATTLE_ACTIVE') === 'TRUE';
     const eventPhase = props.getProperty('TEAM_BATTLE_PHASE');
 
-    // Si el evento está activo y los roles ya se decidieron (Fase LOCKED)
+    // Si el evento estÃƒÂ¡ activo y los roles ya se decidieron (Fase LOCKED)
     if (isTeamEvent && eventPhase === 'LOCKED') {
         const battleSheet = ss.getSheetByName('TEAM_BATTLE');
         
@@ -1638,24 +1647,24 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                 if (assignedRole === 'BOT') assignedRole = 'BOTTOM';
                 if (currentRole === 'BOT') currentRole = 'BOTTOM';
 
-                // 🔒 EL CANDADO: Si tiene rol asignado y no coincide -> 0 PUNTOS.
+                // Ã°Å¸â€â€™ EL CANDADO: Si tiene rol asignado y no coincide -> 0 PUNTOS.
                 if (assignedRole && assignedRole !== "" && assignedRole !== currentRole) {
-                    logToSheet(`⛔ ROLE LOCK: ${summonerName} jugó ${currentRole} pero debe jugar ${assignedRole}. Puntos anulados.`);
+                    logToSheet(`Ã¢â€ºâ€ ROLE LOCK: ${summonerName} jugÃƒÂ³ ${currentRole} pero debe jugar ${assignedRole}. Puntos anulados.`);
                     
                     // Guardamos el match pero con 0 puntos y nota explicativa
                     matchesSheet.appendRow([
                         matchId, matchStartTime, summonerName, champion, role, result,
                         k, d_stats, a, dmg, 0, duration_min,
-                        0, `⛔ ROLE LOCK (Debía ser ${assignedRole})` // 0 Puntos
+                        0, `Ã¢â€ºâ€ ROLE LOCK (DebÃƒÂ­a ser ${assignedRole})` // 0 Puntos
                     ]);
-                    return currentStreak; // Salimos de la función inmediatamente
+                    return currentStreak; // Salimos de la funciÃƒÂ³n inmediatamente
                 }
             }
         }
     }
     */
     // =========================================================
-    // 👑 BONUS: PRESTIGIO (Winrate Global) - FIXED
+    // Ã°Å¸â€˜â€˜ BONUS: PRESTIGIO (Winrate Global) - FIXED
     // =========================================================
     
     const globalWrStats = getGlobalWinrateBonus(summonerName, allMatchesData);
@@ -1664,43 +1673,43 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         pointsObj.total = safeAdd(pointsObj.total, globalWrStats.bonus);
         
         // Diferenciamos visualmente si es un premio por ganar o un salvavidas por perder
-        const prefix = p.win ? "🚀 Win Boost" : "🛡️ Mitigación";
+        const prefix = p.win ? "Ã°Å¸Å¡â‚¬ Win Boost" : "Ã°Å¸â€ºÂ¡Ã¯Â¸Â MitigaciÃƒÂ³n";
         
-        // Usamos el label que ya trae emojis (👑, 🚀, 📈) desde la función getGlobalWinrateBonus
+        // Usamos el label que ya trae emojis (Ã°Å¸â€˜â€˜, Ã°Å¸Å¡â‚¬, Ã°Å¸â€œË†) desde la funciÃƒÂ³n getGlobalWinrateBonus
         pointsObj.notes.push(`${prefix}: ${globalWrStats.label} (${globalWrStats.wr} WR)`);
     }
     
 
-    if (!pointsObj || typeof pointsObj.total !== "number") {
-      pointsObj = { total: 0, notes: ["ERROR: computePointsDetailed missing data"] };
-    }
-    if (!Array.isArray(pointsObj.notes)) {
-      pointsObj.notes = [];
-    }
+Ã‚Â  Ã‚Â  if (!pointsObj || typeof pointsObj.total !== "number") {
+Ã‚Â  Ã‚Â  Ã‚Â  pointsObj = { total: 0, notes: ["ERROR: computePointsDetailed missing data"] };
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  if (!Array.isArray(pointsObj.notes)) {
+Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes = [];
+Ã‚Â  Ã‚Â  }
 
-    // v12.0: Penalización por "Hard Int"
-    const kda_val = (k + a) / Math.max(1, d_stats);
-    if (d_stats >= cfg.inting_deaths_threshold && kda_val < cfg.inting_kda_threshold) {
-        pointsObj.total += cfg.inting_penalty;
-        pointsObj.notes.push(`Partida desastrosa (${k}/${d_stats}/${a}, ${cfg.inting_penalty}pts)`);
-    }
+Ã‚Â  Ã‚Â  // v12.0: PenalizaciÃƒÂ³n por "Hard Int"
+Ã‚Â  Ã‚Â  const kda_val = (k + a) / Math.max(1, d_stats);
+Ã‚Â  Ã‚Â  if (d_stats >= cfg.inting_deaths_threshold && kda_val < cfg.inting_kda_threshold) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.inting_penalty;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`Partida desastrosa (${k}/${d_stats}/${a}, ${cfg.inting_penalty}pts)`);
+Ã‚Â  Ã‚Â  }
 
-    // v12.0: Penalización por "Muerte Solitaria"
-    const soloDeathsPost30 = (p.deathsWithoutEnemyAssists || 0) - (p.challenges?.deathsWithoutEnemyAssistsBeforeMinionsSpawn || 0);
-    if (soloDeathsPost30 > 0 && duration_min >= cfg.solo_death_min) {
-        pointsObj.total += cfg.solo_death_penalty * soloDeathsPost30;
-        pointsObj.notes.push(`Muerte Solitaria (x${soloDeathsPost30} post ${cfg.solo_death_min}min, ${cfg.solo_death_penalty * soloDeathsPost30}pts)`);
-    }
+Ã‚Â  Ã‚Â  // v12.0: PenalizaciÃƒÂ³n por "Muerte Solitaria"
+Ã‚Â  Ã‚Â  const soloDeathsPost30 = (p.deathsWithoutEnemyAssists || 0) - (p.challenges?.deathsWithoutEnemyAssistsBeforeMinionsSpawn || 0);
+Ã‚Â  Ã‚Â  if (soloDeathsPost30 > 0 && duration_min >= cfg.solo_death_min) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.solo_death_penalty * soloDeathsPost30;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`Muerte Solitaria (x${soloDeathsPost30} post ${cfg.solo_death_min}min, ${cfg.solo_death_penalty * soloDeathsPost30}pts)`);
+Ã‚Â  Ã‚Â  }
 
-// v12.6: LÓGICA DE MAESTRÍA Y CONSISTENCIA (V4.1 - CON KDA HISTÓRICO)
+// v12.6: LÃƒâ€œGICA DE MAESTRÃƒÂA Y CONSISTENCIA (V4.1 - CON KDA HISTÃƒâ€œRICO)
     // ============================================================
 
-    // 1. Calcular estadísticas HISTÓRICAS (Incluyendo la actual)
+    // 1. Calcular estadÃƒÂ­sticas HISTÃƒâ€œRICAS (Incluyendo la actual)
     let champWins = 0;
     let champGames = 0;
     let currentChampStreak = 0; 
     
-    // Variables para KDA Histórico
+    // Variables para KDA HistÃƒÂ³rico
     let h_Kills = 0;
     let h_Deaths = 0;
     let h_Assists = 0;
@@ -1711,7 +1720,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
        if (allMatchesData[r][2] === summonerName && allMatchesData[r][3] === champion) {
           champGames++;
           
-          // Sumar KDA histórico (Cols: 6=K, 7=D, 8=A)
+          // Sumar KDA histÃƒÂ³rico (Cols: 6=K, 7=D, 8=A)
           h_Kills += Number(allMatchesData[r][6] || 0);
           h_Deaths += Number(allMatchesData[r][7] || 0);
           h_Assists += Number(allMatchesData[r][8] || 0);
@@ -1738,11 +1747,11 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         currentChampStreak = 0;
     }
 
-    // C. Calcular Métricas Finales
+    // C. Calcular MÃƒÂ©tricas Finales
     const realWR = champGames > 0 ? (champWins / champGames) : 0;
     const realWRText = (realWR * 100).toFixed(0) + "%";
     
-    // KDA Promedio con el Champ (Protección contra div/0)
+    // KDA Promedio con el Champ (ProtecciÃƒÂ³n contra div/0)
     const champTotalKDA = (h_Kills + h_Assists) / Math.max(1, h_Deaths); 
 
     // --- DEFINIR "BUENA PARTIDA" (PERFORMANCE) ---
@@ -1757,60 +1766,60 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     const isGoodPerformance = hasDecentStats || hasHighImpact || hasDamage || hasGoldLead || hasObjectives || (isTank && kda_val >= 1.5);
 
     // =========================================================
-    // 🎭 MÓDULO DE IDENTIDAD Y MAESTRÍA (V5.0)
+    // Ã°Å¸Å½Â­ MÃƒâ€œDULO DE IDENTIDAD Y MAESTRÃƒÂA (V5.0)
     // =========================================================
 
     const THRESHOLD_LEARNING = 5;
     const THRESHOLD_FREESTYLE = cfg.freestyle_threshold || 20;
 
-    // DEFINICIÓN DE TIERS DE MAESTRÍA (Base)
-    // AÑADIDO: Tier "Gran Maestro" para 50+ games
+    // DEFINICIÃƒâ€œN DE TIERS DE MAESTRÃƒÂA (Base)
+    // AÃƒâ€˜ADIDO: Tier "Gran Maestro" para 50+ games
     const MASTERY_TIERS = [
-        { games: 50, wr: 0.60, pts: 2.5, label: "👑 GRAN MAESTRO" }, // Nuevo Top Tier
-        { games: 25, wr: 0.65, pts: 1.5, label: "🐐 OTP" },
-        { games: 15, wr: 0.80, pts: 2.0, label: "⚡ EL DESTINO (GOD)" },
-        { games: 11, wr: 0.70, pts: 1.0, label: "🔥 Main" },
-        { games: 13, wr: 0.60, pts: 0.5, label: "💎 Sólido" } // Bajado WR a 55% para ser más permisivo en "Sólido"
+        { games: 50, wr: 0.60, pts: 2.5, label: "Ã°Å¸â€˜â€˜ GRAN MAESTRO" }, // Nuevo Top Tier
+        { games: 25, wr: 0.65, pts: 1.5, label: "Ã°Å¸ÂÂ OTP" },
+        { games: 15, wr: 0.80, pts: 2.0, label: "Ã¢Å¡Â¡ EL DESTINO (GOD)" },
+        { games: 11, wr: 0.70, pts: 1.0, label: "Ã°Å¸â€Â¥ Main" },
+        { games: 13, wr: 0.60, pts: 0.5, label: "Ã°Å¸â€™Å½ SÃƒÂ³lido" } // Bajado WR a 55% para ser mÃƒÂ¡s permisivo en "SÃƒÂ³lido"
     ];
 
     if (isNewChamp) {
-        // ... (Lógica de Aprendizaje/Freestyle se mantiene igual) ...
+        // ... (LÃƒÂ³gica de Aprendizaje/Freestyle se mantiene igual) ...
          if (totalUniqueChamps <= THRESHOLD_LEARNING) {
             pointsObj.total = safeAdd(pointsObj.total, cfg.learning_bonus || 0.1);
-            pointsObj.notes.push(`🎓 Aprendizaje (Champ #${totalUniqueChamps})`);
+            pointsObj.notes.push(`Ã°Å¸Å½â€œ Aprendizaje (Champ #${totalUniqueChamps})`);
         }
         else if (totalUniqueChamps > THRESHOLD_FREESTYLE) {
             const excessChamps = totalUniqueChamps - THRESHOLD_FREESTYLE;
             let penaltyMultiplier = Math.min(3.0, 1 + (excessChamps * 0.1)); 
             let basePenalty = (!isGoodPerformance) ? (cfg.freestyle_penalty || -2.5) * 1.5 : (cfg.freestyle_penalty || -1.5);
-            let noteLabel = (!isGoodPerformance) ? "🎲 Freestyle Irresponsable" : "🎲 Freestyle";
+            let noteLabel = (!isGoodPerformance) ? "Ã°Å¸Å½Â² Freestyle Irresponsable" : "Ã°Å¸Å½Â² Freestyle";
 
             pointsObj.total = safeAdd(pointsObj.total, basePenalty * penaltyMultiplier);
             pointsObj.notes.push(`${noteLabel} (Champ #${totalUniqueChamps}, Pen x${penaltyMultiplier.toFixed(1)})`);
         }
     } 
     else {
-        // === B. CAMPEÓN DE LA POOL ===
+        // === B. CAMPEÃƒâ€œN DE LA POOL ===
 
-        // 1. Bono Especialista (Pool pequeña)
+        // 1. Bono Especialista (Pool pequeÃƒÂ±a)
         if (totalUniqueChamps <= (cfg.specialist_threshold || 8)) {
-            // ... (Lógica de Especialista se mantiene) ...
+            // ... (LÃƒÂ³gica de Especialista se mantiene) ...
              if (result === "Win" && isGoodPerformance && champGames >= 5) {
                 pointsObj.total = safeAdd(pointsObj.total, 0.25);
-                pointsObj.notes.push(`⭐ Especialista`);
+                pointsObj.notes.push(`Ã¢Â­Â Especialista`);
             } 
             else if (result !== "Win" && !isGoodPerformance && champGames >= 10) {
                  pointsObj.total = safeAdd(pointsObj.total, -1.0); 
-                 pointsObj.notes.push(`⚠️ OTP Gap (Especialista fallido)`);
+                 pointsObj.notes.push(`Ã¢Å¡Â Ã¯Â¸Â OTP Gap (Especialista fallido)`);
             }
         }
 
-        // 2. Cálculo de Maestría PRO (Solo Victorias)
+        // 2. CÃƒÂ¡lculo de MaestrÃƒÂ­a PRO (Solo Victorias)
         if (result === "Win") {
             if (typeof champGames !== 'undefined' && typeof realWR !== 'undefined') {
                 
                 if (!isGoodPerformance) {
-                    pointsObj.notes.push(`🎒 Carried (WR ${realWRText} pero invisible hoy)`);
+                    pointsObj.notes.push(`Ã°Å¸Å½â€™ Carried (WR ${realWRText} pero invisible hoy)`);
                 } 
                 else {
                     // A. BUSCAR TIER BASE
@@ -1824,35 +1833,35 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                         // Escalado por WR excesivo (Premium WR)
                         if (realWR > 0.60) mPts += (realWR - 0.60) * 4.0;
                         
-                        // --- 🔥 BONUS POR KDA HISTÓRICO (Refinado) ---
+                        // --- Ã°Å¸â€Â¥ BONUS POR KDA HISTÃƒâ€œRICO (Refinado) ---
                         let kdaMult = 1.0;
                         
-                        // TIER 3: LEVIATÁN (KDA 7.0+ y mín 10 partidas) -> Aumentado requisito juegos
+                        // TIER 3: LEVIATÃƒÂN (KDA 7.0+ y mÃƒÂ­n 10 partidas) -> Aumentado requisito juegos
                         if (champTotalKDA >= 7.0 && champGames >= 10) {
                             kdaMult = 1.35; 
-                            rankLabel += " 🐲Leviatán"; // Icono dragón
+                            rankLabel += " Ã°Å¸ÂÂ²LeviatÃƒÂ¡n"; // Icono dragÃƒÂ³n
                         }
-                        // TIER 2: GOD (KDA 5.0+ y mín 8 partidas)
+                        // TIER 2: GOD (KDA 5.0+ y mÃƒÂ­n 8 partidas)
                         else if (champTotalKDA >= 5.0 && champGames >= 8) {
                             kdaMult = 1.25; 
-                            rankLabel += " ⭐God";
+                            rankLabel += " Ã¢Â­ÂGod";
                         } 
-                        // TIER 1: SÓLIDO (KDA 3.5+)
+                        // TIER 1: SÃƒâ€œLIDO (KDA 3.5+)
                         else if (champTotalKDA >= 3.5) {
                             kdaMult = 1.10; 
                         }
 
                         // --- 3. Multiplicador de Rendimiento ACTUAL (El "Gatekeeper") ---
-                        // Si hoy has jugado "normal" (no carry), el bonus histórico se aplica menos.
-                        // Si hoy has jugado "increíble", el bonus histórico se potencia.
+                        // Si hoy has jugado "normal" (no carry), el bonus histÃƒÂ³rico se aplica menos.
+                        // Si hoy has jugado "increÃƒÂ­ble", el bonus histÃƒÂ³rico se potencia.
                         
                         let pMult = 1.0;
                         let kda_val_local = (k + a) / Math.max(1, d_stats); 
                         
                         // Rendimiento EXCELENTE hoy
                         if (kda_val_local >= 4.0 || (p.challenges?.killParticipation || 0) >= 0.70) {
-                            pMult = 1.0 + (Math.min(kda_val_local, 10) * 0.02); // Pequeño extra
-                            rankLabel += " 🔥Prime"; 
+                            pMult = 1.0 + (Math.min(kda_val_local, 10) * 0.02); // PequeÃƒÂ±o extra
+                            rankLabel += " Ã°Å¸â€Â¥Prime"; 
                         }
                         // Rendimiento MEDIOCRE hoy (pero ganaste) -> Nerf al multiplicador de historia
                         // Si tu media es de Dios (7.0) pero hoy hiciste un 2.0 KDA, no mereces todo el bonus.
@@ -1861,13 +1870,13 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                              rankLabel += " (Rusty)";
                         }
                         
-                        // --- 4. CÁLCULO FINAL ---
+                        // --- 4. CÃƒÂLCULO FINAL ---
                         let fPts = mPts * kdaMult * pMult;
                         
                         // 5. Bono Racha (Consistencia inmediata)
                         if (currentChampStreak >= 3) {
                             fPts += 0.5;
-                            rankLabel += ` 🔥${currentChampStreak}`;
+                            rankLabel += ` Ã°Å¸â€Â¥${currentChampStreak}`;
                         }
                         
                         // 6. Guardar
@@ -1882,30 +1891,30 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     }
 /**
     // v12.0: Misiones Secretas
-    if (k === 8 && d_stats === 8 && a === 8) {
-        pointsObj.total += cfg.perfect_kda_777_points;
-        pointsObj.notes.push(`Misión Secreta: 888Póker`);
-    }
-    if (k === 7 && d_stats === 7 && a === 7) {
-        pointsObj.total += cfg.perfect_kda_777_points;
-        pointsObj.notes.push(`Misión Secreta: 7/7/7`);
-    }
-    if (k === 0 && d_stats === 0 && a === 7) {
-        pointsObj.total += cfg.perfect_kda_777_points;
-        pointsObj.notes.push(`Misión Secreta: 0/0/7`);
-    }
-    if (k === 6 && d_stats === 6 && a === 6) {
-        pointsObj.total += cfg.perfect_kda_666_points;
-        pointsObj.notes.push(`Misión Secreta: 6/6/6 `);
-    }
+Ã‚Â  Ã‚Â  if (k === 8 && d_stats === 8 && a === 8) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.perfect_kda_777_points;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`MisiÃƒÂ³n Secreta: 888PÃƒÂ³ker`);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  if (k === 7 && d_stats === 7 && a === 7) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.perfect_kda_777_points;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`MisiÃƒÂ³n Secreta: 7/7/7`);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  if (k === 0 && d_stats === 0 && a === 7) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.perfect_kda_777_points;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`MisiÃƒÂ³n Secreta: 0/0/7`);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  if (k === 6 && d_stats === 6 && a === 6) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.perfect_kda_666_points;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`MisiÃƒÂ³n Secreta: 6/6/6 `);
+Ã‚Â  Ã‚Â  }
 /**
-    const rawDurationSeconds = (rawDur > 10000 ? rawDur / 1000 : rawDur);
-    if (rawDurationSeconds >= 1980 && rawDurationSeconds < 2040) {
-        pointsObj.total += cfg.secret_duration_points;
-        pointsObj.notes.push(`Misión Secreta: 33`);
-    }
+Ã‚Â  Ã‚Â  const rawDurationSeconds = (rawDur > 10000 ? rawDur / 1000 : rawDur);
+Ã‚Â  Ã‚Â  if (rawDurationSeconds >= 1980 && rawDurationSeconds < 2040) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.total += cfg.secret_duration_points;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  pointsObj.notes.push(`MisiÃƒÂ³n Secreta: 33`);
+Ã‚Â  Ã‚Â  }
 */
-    // --- ¡NUEVO! LÓGICA DE MISIONES DINÁMICAS ---
+    // --- Ã‚Â¡NUEVO! LÃƒâ€œGICA DE MISIONES DINÃƒÂMICAS ---
     const missions = getMissions();
     const missionStateCache = getMissionStateCache();
     const playerState = missionStateCache[summonerName] || {};
@@ -1918,7 +1927,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     for (const m of missions) {
       const state = playerState[m.MissionID] || { Status: 'InProgress', CurrentValue: '' };
 
-      // Si ya está completada (y no es 'Single' para re-contar), saltar
+      // Si ya estÃƒÂ¡ completada (y no es 'Single' para re-contar), saltar
       if (state.Status === 'Completed' ) continue;
 
       let missionCompleted = false;
@@ -1927,7 +1936,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
       // --- A. Misiones Acumulativas ---
       if (m.Tracking === 'Cumulative') {
         
-        // A.1. Tipos que usan un Set (Listas únicas)
+        // A.1. Tipos que usan un Set (Listas ÃƒÂºnicas)
         if (m.Tipo === 'CHAMPION_REGION' || m.Tipo === 'UNIQUE_LANES') {
           let progressSet = new Set(state.CurrentValue ? state.CurrentValue.split(',') : []);
           
@@ -1943,7 +1952,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           }
         }
         
-        // A.2. ¡NUEVO TIPO! (Un campeón en X líneas)
+        // A.2. Ã‚Â¡NUEVO TIPO! (Un campeÃƒÂ³n en X lÃƒÂ­neas)
         else if (m.Tipo === 'CHAMPION_IN_UNIQUE_LANES') {
           if (champion === m.Objetivo) {
             let progressSet = new Set(state.CurrentValue ? state.CurrentValue.split(',') : []);
@@ -1957,7 +1966,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           }
         }
         
-        // A.3. ¡NUEVO TIPO! (Polivalente: CUALQUIER campeón en 5 líneas)
+        // A.3. Ã‚Â¡NUEVO TIPO! (Polivalente: CUALQUIER campeÃƒÂ³n en 5 lÃƒÂ­neas)
         else if (m.Tipo === 'ONE_CHAMP_ALL_LANES') {
           if (state.Status === 'Completed') continue; 
           let champMap = {};
@@ -1986,8 +1995,8 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           
           if (state.Status === 'Completed') continue;
 
-          // --- FIX: NORMALIZACIÓN DE ROL ---
-          // Creamos una variable temporal para la comparación
+          // --- FIX: NORMALIZACIÃƒâ€œN DE ROL ---
+          // Creamos una variable temporal para la comparaciÃƒÂ³n
           let laneToCheck = lane;
           if (laneToCheck === 'UTILITY') laneToCheck = 'SUPPORT'; 
           // --------------------------------
@@ -2028,7 +2037,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                 ];
             }
 
-            // Solo contamos si el campeón está en la lista
+            // Solo contamos si el campeÃƒÂ³n estÃƒÂ¡ en la lista
             if (targetList.includes(champion)) {
                 let val = parseInt(state.CurrentValue) || 0;
                 if (state.Status !== 'Completed') {
@@ -2056,7 +2065,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
                 increment = p.largestMultiKill === 5 ? 1 : 0;
             }
 
-            // Solo sumar si hemos hecho algo esta partida Y la misión no está completa
+            // Solo sumar si hemos hecho algo esta partida Y la misiÃƒÂ³n no estÃƒÂ¡ completa
             if (increment > 0 && state.Status !== 'Completed') {
                 val += increment;
                 newValue = val.toString();
@@ -2067,7 +2076,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         }
       } // <-- FIN DEL BLOQUE 'Cumulative'
       
-      // --- B. Misiones de Partida Única ---
+      // --- B. Misiones de Partida ÃƒÅ¡nica ---
       else if (m.Tracking === 'Single') {
         let completedThisGame = false;
 
@@ -2112,13 +2121,13 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
             if (teamTotalKills > 0) {
                 if (m.Objetivo === 'KILL_SHARE') {
                     const myShare = k / teamTotalKills;
-                    // Opcional: También puedes pedir 20 min aquí si quieres evitar abusos con pocos kills
+                    // Opcional: TambiÃƒÂ©n puedes pedir 20 min aquÃƒÂ­ si quieres evitar abusos con pocos kills
                     if (myShare >= m.ValorRequerido && duration_min >= 16) {
                          completedThisGame = true;
                     }
                 }
                 else if (m.Objetivo === 'KP') {
-                    // FIX: Añadido requisito de 20 minutos mínimo
+                    // FIX: AÃƒÂ±adido requisito de 20 minutos mÃƒÂ­nimo
                     if (kp >= m.ValorRequerido && duration_min >= 16) {
                         completedThisGame = true;
                     }
@@ -2160,14 +2169,14 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           }
         }
 
-        // Actualizar estado si se completó (Single)
+        // Actualizar estado si se completÃƒÂ³ (Single)
         if (completedThisGame) {
-          missionCompleted = true; // Se completó en esta partida
+          missionCompleted = true; // Se completÃƒÂ³ en esta partida
           newValue = (parseInt(state.CurrentValue) || 0) + 1;
         }
       } // --- FIN DEL BLOQUE 'Single' ---
 
-      // Si la misión se acaba de completar O si es acumulativa y cambió su valor
+      // Si la misiÃƒÂ³n se acaba de completar O si es acumulativa y cambiÃƒÂ³ su valor
       if (missionCompleted || (m.Tracking === 'Cumulative' && newValue !== state.CurrentValue)) {
         updatesToBatch.push({
           PlayerName: summonerName,
@@ -2180,13 +2189,13 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           const rewardPts = Number(m.RecompensaPts || 0);
           pointsObj.total = (pointsObj.total || 0) + rewardPts;
 
-          // 🛡️ LÓGICA DE CONTRABANDO (NO WAR):
-          // Si la misión da 50 puntos o más, añadimos la etiqueta oculta [NW:Pts]
-          // Esto le dice a la función de Guerra que NO sume estos puntos al equipo.
+          // Ã°Å¸â€ºÂ¡Ã¯Â¸Â LÃƒâ€œGICA DE CONTRABANDO (NO WAR):
+          // Si la misiÃƒÂ³n da 50 puntos o mÃƒÂ¡s, aÃƒÂ±adimos la etiqueta oculta [NW:Pts]
+          // Esto le dice a la funciÃƒÂ³n de Guerra que NO sume estos puntos al equipo.
           if (rewardPts >= 20) {
-              pointsObj.notes.push(`Misión Épica: ${m.Descripcion} (+${rewardPts}pts) [NW:${rewardPts}]`);
+              pointsObj.notes.push(`MisiÃƒÂ³n Ãƒâ€°pica: ${m.Descripcion} (+${rewardPts}pts) [NW:${rewardPts}]`);
           } else {
-              pointsObj.notes.push(`Misión: ${m.Descripcion} (+${rewardPts}pts)`);
+              pointsObj.notes.push(`MisiÃƒÂ³n: ${m.Descripcion} (+${rewardPts}pts)`);
           }
         }
       }
@@ -2195,14 +2204,14 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     if (updatesToBatch.length > 0) {
       updateMissionStateBatch(updatesToBatch);
     }
-    // --- FIN LÓGICA DE MISIONES DINÁMICAS ---
+    // --- FIN LÃƒâ€œGICA DE MISIONES DINÃƒÂMICAS ---
 
-    /// CÁLCULO DE RACHA (CORREGIDO)
+Ã‚Â  Ã‚Â  /// CÃƒÂLCULO DE RACHA (CORREGIDO)
     let newStreak = currentStreak;
     if (result === "Win") {
       newStreak = (currentStreak > 0) ? currentStreak + 1 : 1;
       
-      // CORRECCIÓN 2: Usar safeAdd y valores por defecto si falta la config
+      // CORRECCIÃƒâ€œN 2: Usar safeAdd y valores por defecto si falta la config
       if (newStreak === 3) { 
           const bonus = Number(cfg.streak_3_wins_points || 1.0); 
           pointsObj.total = safeAdd(pointsObj.total, bonus); 
@@ -2224,10 +2233,10 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     }
     
     updateVoidHordeProgress(k); // k es la variable que tiene las kills del jugador
-    pointsObj.total = Math.round(pointsObj.total * 100) / 100;
+Ã‚Â  Ã‚Â  pointsObj.total = Math.round(pointsObj.total * 100) / 100;
 
     // =================================================================================
-    // 🔒 ZONA CRÍTICA BLINDADA: ESCRITURA SEGURA (CORREGIDA)
+    // Ã°Å¸â€â€™ ZONA CRÃƒÂTICA BLINDADA: ESCRITURA SEGURA (CORREGIDA)
     // =================================================================================
     
     // 1. PREPARAR EL CANDADO
@@ -2235,20 +2244,20 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     try {
         lock.waitLock(30000); // Esperar turno
     } catch (e) {
-        logToSheet(`⚠️ Timeout esperando candado. Reintentando luego.`);
+        logToSheet(`Ã¢Å¡Â Ã¯Â¸Â Timeout esperando candado. Reintentando luego.`);
         return currentStreak;
     }
 
     try {
-        // 2. VERIFICACIÓN FINAL (DENTRO DEL CANDADO)
+        // 2. VERIFICACIÃƒâ€œN FINAL (DENTRO DEL CANDADO)
         const lastRow = matchesSheet.getLastRow();
         let alreadyExists = false;
 
-        // --- FIX CRÍTICO AQUÍ ---
-        // Solo intentamos leer si hay más de 1 fila (es decir, si hay datos aparte de la cabecera)
+        // --- FIX CRÃƒÂTICO AQUÃƒÂ ---
+        // Solo intentamos leer si hay mÃƒÂ¡s de 1 fila (es decir, si hay datos aparte de la cabecera)
         if (lastRow > 1) {
             // getRange(fila_inicio, col_inicio, num_filas, num_cols)
-            // Esto leía 0 filas si lastRow era 1, causando el error "Out of bounds"
+            // Esto leÃƒÂ­a 0 filas si lastRow era 1, causando el error "Out of bounds"
             const checkData = matchesSheet.getRange(2, 1, lastRow - 1, 3).getValues();
             
             alreadyExists = checkData.some(row => 
@@ -2259,13 +2268,13 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         // ------------------------
 
         if (alreadyExists) {
-            console.warn(`🛑 DUPLICADO EVITADO: ${matchId} ya estaba escrita.`);
+            console.warn(`Ã°Å¸â€ºâ€˜ DUPLICADO EVITADO: ${matchId} ya estaba escrita.`);
         } else {
             // --- NO EXISTE: PROCEDEMOS A ESCRIBIR ---
                         // B. Actualizar Precio
-            let priceDelta = 0; // 1. Declarar aquí fuera para evitar el error
+            let priceDelta = 0; // 1. Declarar aquÃƒÂ­ fuera para evitar el error
 
-            // A. Aplicar Daño al Boss
+            // A. Aplicar DaÃƒÂ±o al Boss
             try { damageRaidBoss(pointsObj.total); } catch(e) {}
 
             // B. Actualizar Precio
@@ -2275,13 +2284,13 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
             const kpClean = Math.round(kp * 100) / 100;
             const finalNotes = pointsObj.notes.join("; ");
             
-            // Convertimos el super-paquete de estadísticas en un texto para guardarlo en una sola celda
+            // Convertimos el super-paquete de estadÃƒÂ­sticas en un texto para guardarlo en una sola celda
             const jsonStats = JSON.stringify(pointsObj.statsPayload || {});
           
             matchesSheet.appendRow([
                 matchId, matchStartTime, summonerName, p.championName, (p.teamPosition || ''), result,
                 k, d_stats, a, Number(p.totalDamageDealtToChampions), kpClean, duration_min,
-                Number(pointsObj.total), finalNotes, currentSeason, jsonStats // <--- Columna P añadida
+                Number(pointsObj.total), finalNotes, currentSeason, jsonStats // <--- Columna P aÃƒÂ±adida
             ]);
 
 
@@ -2293,36 +2302,36 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
             sendMatchNotification(summonerName, p.championName, `${k}/${d_stats}/${a}`, pointsObj.total, result, finalNotes, priceDelta);
             
             // ============================================================
-            // 💸 DIVIDENDOS 3.0: ESCALA LEGENDARIA
+            // Ã°Å¸â€™Â¸ DIVIDENDOS 3.0: ESCALA LEGENDARIA
             // ============================================================
             
-            // Solo entramos si supera el corte mínimo de calidad (20 pts)
+            // Solo entramos si supera el corte mÃƒÂ­nimo de calidad (20 pts)
             if (pointsObj.total >= 20) {
                  let reason = "";
 
-                 // 1. Determinar el Título del Dividendo (De mayor a menor)
+                 // 1. Determinar el TÃƒÂ­tulo del Dividendo (De mayor a menor)
                  if (pointsObj.total >= 60) {
-                     reason = "👑 LEYENDA VIVIENTE";
+                     reason = "Ã°Å¸â€˜â€˜ LEYENDA VIVIENTE";
                  } 
                  else if (pointsObj.total >= 50) {
-                     reason = "⚡ NIVEL DIOS";
+                     reason = "Ã¢Å¡Â¡ NIVEL DIOS";
                  }
                  else if (pointsObj.total >= 40) {
-                     reason = "🎓 CLASE MAESTRA";
+                     reason = "Ã°Å¸Å½â€œ CLASE MAESTRA";
                  }
                  else if (pointsObj.total >= 30) {
-                     reason = "🦍 DOMINIO TOTAL";
+                     reason = "Ã°Å¸Â¦Â DOMINIO TOTAL";
                  }
                  else {
-                     reason = "📈 ALTO RENDIMIENTO";
+                     reason = "Ã°Å¸â€œË† ALTO RENDIMIENTO";
                  }
 
-                 // 2. Añadir condecoración si hubo Pentakill
+                 // 2. AÃƒÂ±adir condecoraciÃƒÂ³n si hubo Pentakill
                  if (pointsObj.notes.some(n => n.includes("Penta") || n.includes("PENTAKILL"))) {
-                     reason += " + PENTAKILL ⚔️";
+                     reason += " + PENTAKILL Ã¢Å¡â€Ã¯Â¸Â";
                  }
 
-                 // 3. Ejecutar el pago (El cálculo matemático se hace dentro de distributeDividends)
+                 // 3. Ejecutar el pago (El cÃƒÂ¡lculo matemÃƒÂ¡tico se hace dentro de distributeDividends)
                  distributeDividends(summonerName, pointsObj.total, reason);
             }
 
@@ -2330,43 +2339,43 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
             handleHotPotato(summonerName, result, matchId);
             updateRivalryProgress(summonerName, pointsObj.total);
             
-            logToSheet(`✅ MATCH GUARDADO: ${matchId} (${summonerName}) -> ${pointsObj.total} pts`);
+            logToSheet(`Ã¢Å“â€¦ MATCH GUARDADO: ${matchId} (${summonerName}) -> ${pointsObj.total} pts`);
         }
 
     } catch (e) {
-        logToSheet(`❌ ERROR CRÍTICO ESCRIBIENDO: ${e.message}`);
+        logToSheet(`Ã¢ÂÅ’ ERROR CRÃƒÂTICO ESCRIBIENDO: ${e.message}`);
     } finally {
         lock.releaseLock(); // Soltar candado siempre
     }
-  }
-  catch (e) {
-    logToSheet(`processMatch crashed for ${matchId} → ${e.message}`);
-    return null;
-  }
+Ã‚Â  }
+Ã‚Â  catch (e) {
+Ã‚Â  Ã‚Â  logToSheet(`processMatch crashed for ${matchId} Ã¢â€ â€™ ${e.message}`);
+Ã‚Â  Ã‚Â  return null;
+Ã‚Â  }
 }
 
-/* ----------------- SCORING: computePointsDetailed (VERSIÓN FINAL BALANCEADA) ----------------- */
+/* ----------------- SCORING: computePointsDetailed (VERSIÃƒâ€œN FINAL BALANCEADA) ----------------- */
 function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targetName, invSheet, allMatchesData, matchId) {
-  try {
-    if (!cfg) cfg = readConfigMap();
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  if (!cfg) cfg = readConfigMap();
 
     const ss = SpreadsheetApp.getActive();
    
 
-    // 1. INICIALIZACIÓN DE TODAS LAS VARIABLES
-    // (Se calculan aquí para estar disponibles en todo el código)
+    // 1. INICIALIZACIÃƒâ€œN DE TODAS LAS VARIABLES
+    // (Se calculan aquÃƒÂ­ para estar disponibles en todo el cÃƒÂ³digo)
     // =====================================
-    // A. Definimos si ganó
+    // A. Definimos si ganÃƒÂ³
     const isWin = p.win;
 
-    // B. Creamos la libreta de notas (ANTES de cualquier lógica)
+    // B. Creamos la libreta de notas (ANTES de cualquier lÃƒÂ³gica)
     const notes = []; 
 
-    // C. Calculamos puntos base (ANTES de cualquier lógica)
+    // C. Calculamos puntos base (ANTES de cualquier lÃƒÂ³gica)
     let total = isWin ? Number(cfg.win_points) : Number(cfg.loss_points);
     if (!isFinite(total)) total = 0;
 
-    // Función applyBonus añadida
+    // FunciÃƒÂ³n applyBonus aÃƒÂ±adida
     function applyBonus(label, pointsToAdd) {
         total = safeAdd(total, pointsToAdd);
         notes.push(label);
@@ -2375,7 +2384,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const k = Number(p.kills || 0);
     const d = Number(p.deaths || 0);
     const a = Number(p.assists || 0);
-    // KDA seguro (evita división por cero)
+    // KDA seguro (evita divisiÃƒÂ³n por cero)
     const kda = (k + a) / Math.max(1, d);
 
     const role = (p.teamPosition || "").toUpperCase();
@@ -2383,13 +2392,13 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const isSupport = ["SUPPORT", "UTILITY"].includes(role);
     const isLaner = ["TOP", "MIDDLE", "BOTTOM"].includes(role);
 
-    // --- VARIABLES CRÍTICAS (MOVIDAS AL INICIO PARA EVITAR EL ERROR DE DPM) ---
+    // --- VARIABLES CRÃƒÂTICAS (MOVIDAS AL INICIO PARA EVITAR EL ERROR DE DPM) ---
     const dpm = Number(p.challenges?.damagePerMinute || 0);
     const gpm = (p.goldEarned || 0) / Math.max(1, durationMin);
     const vs = Number(p.visionScore || 0);
     const dmgTakenShare = p.challenges?.damageTakenOnTeamPercentage || 0;
     
-    // --- VARIABLES CRÍTICAS (MOVIDAS AQUÍ) ---
+    // --- VARIABLES CRÃƒÂTICAS (MOVIDAS AQUÃƒÂ) ---
     const myTowerDmg = Number(p.damageDealtToTurrets || 0); // <--- ESTA ES LA CLAVE
     const mostTowerDmg = Math.max(...participants.map(pt => pt.damageDealtToTurrets || 0));
     const damage = Number(p.totalDamageDealtToChampions || 0);
@@ -2397,12 +2406,12 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const cs = (p.totalMinionsKilled||0) + (p.neutralMinionsKilled||0);
     const csMin = durationMin > 0 ? cs / durationMin : 0;
 
-    // 2. Métricas de Eficiencia Baus
-    const tdpm = durationMin > 0 ? myTowerDmg / durationMin : 0; // Daño a torres por minuto
-    const dmgPerDeath = myTowerDmg / Math.max(1, d); // Daño a torres por cada muerte
+    // 2. MÃƒÂ©tricas de Eficiencia Baus
+    const tdpm = durationMin > 0 ? myTowerDmg / durationMin : 0; // DaÃƒÂ±o a torres por minuto
+    const dmgPerDeath = myTowerDmg / Math.max(1, d); // DaÃƒÂ±o a torres por cada muerte
     
     // Detectar si es un Tanque Real (no un Teemo Top)
-    // Criterio: Rol de Tanque Y ha recibido al menos el 20% del daño total del equipo
+    // Criterio: Rol de Tanque Y ha recibido al menos el 20% del daÃƒÂ±o total del equipo
     const isTankRole = ["TOP", "JUNGLE", "SUPPORT", "UTILITY"].includes(role);
 
     const isRealTank = isTankRole && dmgTakenShare > 0.30;
@@ -2412,13 +2421,13 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const hardCCCount = Number(p.challenges?.enemyChampionImmobilizations || 0);
     const hardCCPerMin = durationMin > 0 ? hardCCCount / durationMin : 0;
 
-    // 2. TOTAL CC (Puntuación de Tiempo) -> Mide "Presión Constante"
+    // 2. TOTAL CC (PuntuaciÃƒÂ³n de Tiempo) -> Mide "PresiÃƒÂ³n Constante"
     // Variable: timeCCingOthers (Incluye Slows de Ashe, Nasus, etc.)
     const totalCCScore = Number(p.timeCCingOthers || 0);
     const totalCCPerMin = durationMin > 0 ? totalCCScore / durationMin : 0;
 
     // =====================================================
-    // 1.b DEFINICIÓN DE VARIABLES FALTANTES
+    // 1.b DEFINICIÃƒâ€œN DE VARIABLES FALTANTES
     // =====================================================
     
     // Supervivencia
@@ -2434,13 +2443,13 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     // =====================================================
 
     // ==============================================================================
-    // 🚨 CORRECCIÓN APLICADA AQUÍ (Líneas movidas arriba)
+    // Ã°Å¸Å¡Â¨ CORRECCIÃƒâ€œN APLICADA AQUÃƒÂ (LÃƒÂ­neas movidas arriba)
     // ==============================================================================
     
     let punishmentPoints = 0;
     let punishmentNotes = [];
 
-    // 1. Definimos la curación ANTES de usarla
+    // 1. Definimos la curaciÃƒÂ³n ANTES de usarla
     let effectiveHeal = Number(p.totalHeal || 0);
     const selfHealers = ["Dr. Mundo", "Zac", "Vladimir", "Warwick", "Trundle", "Swain", "Briar", "Aatrox", "Volibear", "Maokai", "XinZhao", "Hecarim", "Kayn", "Mordekaiser"];
     
@@ -2454,12 +2463,12 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const utilityPerMin = durationMin > 0 ? utilityScore / durationMin : 0;
     
     
-    // --- 1.b DEFINICIÓN DE VARIABLES ---
+    // --- 1.b DEFINICIÃƒâ€œN DE VARIABLES ---
 
-    // Daño Explosivo (Burst)
+    // DaÃƒÂ±o Explosivo (Burst)
     const maxCrit = Number(p.largestCriticalStrike || 0);
 
-    // Objetivos Específicos
+    // Objetivos EspecÃƒÂ­ficos
     const exactTowers = Number(p.turretKills || 0); 
     
     // Nivel y XP
@@ -2468,7 +2477,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const allLevels = participants.map(pt => pt.champLevel || 1);
     const avgGameLevel = allLevels.reduce((a, b) => a + b, 0) / Math.max(1, allLevels.length);
 
-    // CC y Visión (Corrección crítica para que no fallen los bonos finales)
+    // CC y VisiÃƒÂ³n (CorrecciÃƒÂ³n crÃƒÂ­tica para que no fallen los bonos finales)
     const ccScore = Number(p.timeCCingOthers || 0); 
     const wardsDestroyed = Number(p.wardsKilled || 0);
 
@@ -2483,11 +2492,11 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const dmgShare = p.challenges?.teamDamagePercentage || 0;
     const vsPerMin = vs / Math.max(1, durationMin);
 
-    // --- 1. Obtener Estadísticas del Oponente ---
+    // --- 1. Obtener EstadÃƒÂ­sticas del Oponente ---
     // Definir oponente directo
     const opponent = participants.find(o => o.teamId !== p.teamId && o.teamPosition === p.teamPosition);
     
-    // 🛡️ FIX: Escudo Anti-Crashes por si Riot no asignó rol al enemigo
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX: Escudo Anti-Crashes por si Riot no asignÃƒÂ³ rol al enemigo
     const o_vs = opponent ? (opponent.visionScore || 0) : 0;
     const o_k = opponent ? Number(opponent.kills || 0) : 0;
     const o_d = opponent ? Number(opponent.deaths || 0) : 0;
@@ -2497,7 +2506,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     const o_gpm = opponent ? ((opponent.goldEarned || 0) / Math.max(1, durationMin)) : 0; // GPM oponente
 
 
-    // --- 🧪 TEST DE EARLY GAME (INYECTOR) ---
+    // --- Ã°Å¸Â§Âª TEST DE EARLY GAME (INYECTOR) ---
     if (opponent) {
         const earlyTest = testEarlyLaneGap(p, opponent, role);
         if (earlyTest.debugLog !== "N/A" && earlyTest.debugLog !== "") {
@@ -2507,7 +2516,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         }
     }
     
-    // --- 🕵️ RADAR DE MISIONES DE ROL (NUEVA MECÁNICA S15) ---
+    // --- Ã°Å¸â€¢ÂµÃ¯Â¸Â RADAR DE MISIONES DE ROL (NUEVA MECÃƒÂNICA S15) ---
     try {
         const hiddenKeys = Object.keys(p.challenges || {}).filter(k => 
             k.toLowerCase().includes('quest') || 
@@ -2515,22 +2524,22 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
             k.toLowerCase().includes('bounty')
         );
         if (hiddenKeys.length > 0) {
-            Logger.log(`🔍 ¡PISTAS DE MISIÓN PARA ${p.summonerName}!`);
+            Logger.log(`Ã°Å¸â€Â Ã‚Â¡PISTAS DE MISIÃƒâ€œN PARA ${p.summonerName}!`);
             hiddenKeys.forEach(k => {
                 Logger.log(`   - ${k}: ${p.challenges[k]}`);
             });
         }
         
-        // 🚨 RADAR EXTRA: Buscar en la raíz del participante (por si Riot no lo mete en 'challenges')
+        // Ã°Å¸Å¡Â¨ RADAR EXTRA: Buscar en la raÃƒÂ­z del participante (por si Riot no lo mete en 'challenges')
         const rootKeys = Object.keys(p).filter(k => 
             k.toLowerCase().includes('quest') || 
             k.toLowerCase().includes('mission') ||
             (k.toLowerCase().includes('role') && !k.includes('teamPosition'))
         );
         if (rootKeys.length > 0) {
-            Logger.log(`⚠️ PISTA EN RAÍZ PARA ${p.summonerName}:`);
+            Logger.log(`Ã¢Å¡Â Ã¯Â¸Â PISTA EN RAÃƒÂZ PARA ${p.summonerName}:`);
             rootKeys.forEach(k => {
-                // Solo logueamos si es un número o string para no romper el log con objetos gigantes
+                // Solo logueamos si es un nÃƒÂºmero o string para no romper el log con objetos gigantes
                 if (typeof p[k] !== 'object') Logger.log(`   - ${k}: ${p[k]}`);
             });
         }
@@ -2539,7 +2548,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     }
     // ----------------------------------------
   
-   // --- FIX: Definir KP también aquí para que no falle el cálculo de puntos ---
+   // --- FIX: Definir KP tambiÃƒÂ©n aquÃƒÂ­ para que no falle el cÃƒÂ¡lculo de puntos ---
     let kp = 0;
     if (p.challenges && typeof p.challenges.killParticipation === "number") {
         kp = Number(p.challenges.killParticipation);
@@ -2565,20 +2574,20 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         // Calculamos la diferencia de oro por minuto (GDPM)
         const goldDiffPerMin = durationMin > 0 ? goldDiff / durationMin : 0;
 
-        // --- A. 💔 CORAZÓN PARTIDO (Derrota Ajustada) ---
+        // --- A. Ã°Å¸â€™â€ CORAZÃƒâ€œN PARTIDO (Derrota Ajustada) ---
         if (goldDiffPerMin < 130 ) {
              total = total * 0.75; 
-             notes.push(`💔 Corazón Partido (Final muy ajustado)`);
+             notes.push(`Ã°Å¸â€™â€ CorazÃƒÂ³n Partido (Final muy ajustado)`);
         }
         
-        // --- B. 🏳️ STOMPEADA (Derrota Aplastante) ---
+        // --- B. Ã°Å¸ÂÂ³Ã¯Â¸Â STOMPEADA (Derrota Aplastante) ---
         else if (durationMin < 26 && goldDiffPerMin > 400) {
              // Verificamos si ya existe la nota de AFK para no castigar doble
              const isAfkMitigated = notes.some(n => n.includes("AFK"));
              
              if (!isAfkMitigated) {
                  total -= 1.5; 
-                 notes.push(`🏳️ Stompeada en Contra (Gap de -${(goldDiff/1000).toFixed(1)}k oro)`);
+                 notes.push(`Ã°Å¸ÂÂ³Ã¯Â¸Â Stompeada en Contra (Gap de -${(goldDiff/1000).toFixed(1)}k oro)`);
              }
         }
     }
@@ -2588,9 +2597,9 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     // =========================================================
     if (!isWin) {
         
-        // --- A. 🛡️ EL PILAR (Resistencia KDA/Farm) ---
-        // Lógica mejorada: Diferencia entre Carries y Supports.
-        // Requisito común: Morir menos que la media del equipo (-1.5 de margen).
+        // --- A. Ã°Å¸â€ºÂ¡Ã¯Â¸Â EL PILAR (Resistencia KDA/Farm) ---
+        // LÃƒÂ³gica mejorada: Diferencia entre Carries y Supports.
+        // Requisito comÃƒÂºn: Morir menos que la media del equipo (-1.5 de margen).
         // Requisito Anti-AFK: Tener un KP decente (>30%) para demostrar que intentaste ayudar.
         
         const deathLimit = Math.max(0, teamAvgDeaths - 1.5);
@@ -2599,10 +2608,10 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         if (d <= deathLimit) {
             // CASO 1: LANERS/JUNGLE (Requiere Farm y Presencia)
             if (!isSupport) {
-                // Bajamos CS a 7.0 porque en derrota es difícil farmear si te asedian
+                // Bajamos CS a 7.0 porque en derrota es difÃƒÂ­cil farmear si te asedian
                 if (csMin >= 8.0 && kp >= 0.50) isPillar = true; 
             } 
-            // CASO 2: SUPPORT (Requiere mucha Presencia y Visión)
+            // CASO 2: SUPPORT (Requiere mucha Presencia y VisiÃƒÂ³n)
             else {
                 const vspm = durationMin > 0 ? (p.visionScore || 0) / durationMin : 0;
                 if (kp >= 0.50 && vspm >= 1.5) isPillar = true;
@@ -2611,15 +2620,15 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
 
         if (isPillar) {
             total = safeAdd(total, 1.0, "El Pilar", notes);
-            notes.push("🏯 El Pilar (KDA sólido en derrota)");
+            notes.push("Ã°Å¸ÂÂ¯ El Pilar (KDA sÃƒÂ³lido en derrota)");
         }
 
         // --- ESTRUCTURAS DE EQUIPO (Torres e Inhibidores) ---
         const teamtowers = teamInfo?.towerCount || 0;
         const teamInhibs = teamInfo?.inhibitorCount || 0; // <-- 1. Renombrado a teamInhibs
 
-        // Cálculo: 0.1 por Torre / 0.25 por Inhibidor
-        let teamstructurePoints = (teamtowers * 0.1) + (teamInhibs * 0.25); // <-- 2. Actualizado aquí
+        // CÃƒÂ¡lculo: 0.1 por Torre / 0.25 por Inhibidor
+        let teamstructurePoints = (teamtowers * 0.1) + (teamInhibs * 0.25); // <-- 2. Actualizado aquÃƒÂ­
 
         if (teamstructurePoints > 0) {
             // 1. PUNTOS SILENCIOSOS: Se suman siempre al total
@@ -2627,25 +2636,25 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
 
             // 2. ETIQUETA SOLO EN STOMP:
             // Solo imprimimos si tirasteis 9+ Torres (casi todas) O 2+ Inhibidores
-            if (teamtowers >= 9 || teamInhibs >= 2) { // <-- 3. Actualizado aquí
-                notes.push(`🏗️ Demolición Total (${teamtowers}T / ${teamInhibs}I)`); // <-- 4. Actualizado aquí
+            if (teamtowers >= 9 || teamInhibs >= 2) { // <-- 3. Actualizado aquÃƒÂ­
+                notes.push(`Ã°Å¸Ââ€”Ã¯Â¸Â DemoliciÃƒÂ³n Total (${teamtowers}T / ${teamInhibs}I)`); // <-- 4. Actualizado aquÃƒÂ­
             }
         }
 
         // =========================================================
-        // 🎖️ SISTEMA DE MVP / SVP V5.0 (Rendimiento Relativo de Equipo)
+        // Ã°Å¸Å½â€“Ã¯Â¸Â SISTEMA DE MVP / SVP V5.0 (Rendimiento Relativo de Equipo)
         // Funciona tanto para Victorias como para Derrotas
         // =========================================================
       } // <--- Esta llave cierra el bloque if(!isWin) anterior de mitigaciones. NO LA BORRES.
 
-      // 1. PREPARACIÓN DE DATOS DE EQUIPO
+      // 1. PREPARACIÃƒâ€œN DE DATOS DE EQUIPO
       const myTeamStats = participants.filter(pt => pt.teamId === p.teamId);
       
-      // FIX: Cálculo real y seguro de las stats globales de tu equipo
+      // FIX: CÃƒÂ¡lculo real y seguro de las stats globales de tu equipo
       const teamTotalKillsLocal = myTeamStats.reduce((acc, pt) => acc + (Number(pt.kills) || 0), 0) || 1;
       const teamTotalDmgLocal = myTeamStats.reduce((acc, pt) => acc + (Number(pt.totalDamageDealtToChampions) || 0), 0) || 1;
 
-      // 2. FUNCIÓN DE PUNTUACIÓN DE IMPACTO (El Algoritmo Multilínea)
+      // 2. FUNCIÃƒâ€œN DE PUNTUACIÃƒâ€œN DE IMPACTO (El Algoritmo MultilÃƒÂ­nea)
       const calculateAdaptiveScore = (pt) => {
           const pRole = String(pt.teamPosition || "").toUpperCase();
           
@@ -2669,10 +2678,10 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
           const pKP = (pK + pA) / Math.max(1, teamTotalKillsLocal);
           const pDmgShare = pDmg / teamTotalDmgLocal;
           
-          // Base Universal: El KDA y la participación siempre importan, morir siempre resta.
+          // Base Universal: El KDA y la participaciÃƒÂ³n siempre importan, morir siempre resta.
           let finalScore = (pKDA * 10) + (pKP * 100) - (pD * 5);
 
-          // Escalado Específico por Rol (Equilibrado para un máximo teórico de ~400-450 pts)
+          // Escalado EspecÃƒÂ­fico por Rol (Equilibrado para un mÃƒÂ¡ximo teÃƒÂ³rico de ~400-450 pts)
           if (pRole === "UTILITY" || pRole === "SUPPORT") {
               finalScore += (pVis * 2.5) + (pHealShield / 150) + (pCC * 1.5);
           } 
@@ -2690,7 +2699,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
           return finalScore;
       };
 
-      // 3. ENCONTRAR AL LÍDER Y AL SEGUNDO
+      // 3. ENCONTRAR AL LÃƒÂDER Y AL SEGUNDO
       let myScore = 0;
       let allScores = [];
 
@@ -2707,53 +2716,53 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
       const maxTeamScore = allScores[0];
       const secondBestScore = allScores.length > 1 ? allScores[1] : 0;
 
-      // 4. VERIFICACIÓN: ¿SOY EL MEJOR?
+      // 4. VERIFICACIÃƒâ€œN: Ã‚Â¿SOY EL MEJOR?
       const amITtheBest = myScore >= maxTeamScore;
 
       // 5. FILTROS DE DIGNIDAD (No puedes ser MVP si fedeaste o te escondiste)
       const maxDeathsAllowed = Math.max(7, durationMin / 4); 
       const disqualified = (kda < 2.0) || (d > maxDeathsAllowed) || (kp < 0.50);
 
-      // 6. CÁLCULO PROGRESIVO Y APLICACIÓN
+      // 6. CÃƒÂLCULO PROGRESIVO Y APLICACIÃƒâ€œN
       if (amITtheBest && !disqualified) {
           
-          // FÓRMULA PROGRESIVA: Diferencia entre tú y el 2º mejor jugador de tu equipo.
+          // FÃƒâ€œRMULA PROGRESIVA: Diferencia entre tÃƒÂº y el 2Ã‚Âº mejor jugador de tu equipo.
           const scoreGap = myScore - secondBestScore;
           
-          // Generamos una etiqueta dinámica según el rol para el log
+          // Generamos una etiqueta dinÃƒÂ¡mica segÃƒÂºn el rol para el log
           let mvpReason = "";
           if (isSupport) {
-              mvpReason = `(Visión ${vs} | KP ${(kp*100).toFixed(0)}%)`;
+              mvpReason = `(VisiÃƒÂ³n ${vs} | KP ${(kp*100).toFixed(0)}%)`;
           } else if (isJungle) {
               const objK = (Number(p.damageDealtToObjectives || 0) / 1000).toFixed(1);
               mvpReason = `(Objs ${objK}k | KP ${(kp*100).toFixed(0)}%)`;
           } else if (role === 'TOP') {
               const tankK = (Number(p.damageSelfMitigated || 0) / 1000).toFixed(1);
-              mvpReason = `(Daño ${(damage/1000).toFixed(1)}k | Tanqueo ${tankK}k)`;
+              mvpReason = `(DaÃƒÂ±o ${(damage/1000).toFixed(1)}k | Tanqueo ${tankK}k)`;
           } else {
               const dmgPct = (damage / Math.max(1, teamTotalDmgLocal)) * 100;
-              mvpReason = `(Daño ${dmgPct.toFixed(0)}% | KDA ${kda.toFixed(1)})`;
+              mvpReason = `(DaÃƒÂ±o ${dmgPct.toFixed(0)}% | KDA ${kda.toFixed(1)})`;
           }
 
           if (isWin) {
-              // 🌟 MVP DE LA VICTORIA (Premio por Carrilear)
+              // Ã°Å¸Å’Å¸ MVP DE LA VICTORIA (Premio por Carrilear)
               // Baseline: +1.0 pts por ser el mejor. Sube +0.035 pts por cada punto de gap con el segundo.
               let mvpPts = 1.0 + (scoreGap * 0.035);
-              mvpPts = Math.max(1.0, Math.min(2.0, mvpPts)); // Cap máximo de +4.0
+              mvpPts = Math.max(1.0, Math.min(2.0, mvpPts)); // Cap mÃƒÂ¡ximo de +4.0
               mvpPts = parseFloat(mvpPts.toFixed(2));
               
               total = safeAdd(total, mvpPts, "MVP Bonus", notes);
-              notes.push(`🌟 MVP de la Partida ${mvpReason} (+${mvpPts} pts)`);
+              notes.push(`Ã°Å¸Å’Å¸ MVP de la Partida ${mvpReason} (+${mvpPts} pts)`);
               
           } else {
-              // 🎖️ MVP DEL PERDEDOR (Consuelo)
+              // Ã°Å¸Å½â€“Ã¯Â¸Â MVP DEL PERDEDOR (Consuelo)
               // Baseline: +1.0 pts. Sube +0.025 pts por gap.
               let svpPts = 1.0 + (scoreGap * 0.025);
               svpPts = Math.max(0.5, Math.min(3.5, svpPts)); // Cap de +3.5
               svpPts = parseFloat(svpPts.toFixed(2));
 
               total = safeAdd(total, svpPts, "SVP Bonus", notes);
-              notes.push(`🎖️ MVP del Perdedor ${mvpReason} (+${svpPts} pts)`);
+              notes.push(`Ã°Å¸Å½â€“Ã¯Â¸Â MVP del Perdedor ${mvpReason} (+${svpPts} pts)`);
           }
       }
 
@@ -2765,48 +2774,48 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         // Variables de conteo
         const stolenCount = Number(p.challenges?.epicMonstersStolen || 0);
         const baronKills = Number(p.baronKills || 0);
-        const dragonKills = Number(p.dragonKills || 0); // ¡NUEVO!
+        const dragonKills = Number(p.dragonKills || 0); // Ã‚Â¡NUEVO!
 
-        // 1. ROBO ÉPICO CERTIFICADO (La métrica oficial de "Robo")
-        // Ocurre cuando el enemigo hizo la mayor parte del daño y tú lo rematas.
+        // 1. ROBO Ãƒâ€°PICO CERTIFICADO (La mÃƒÂ©trica oficial de "Robo")
+        // Ocurre cuando el enemigo hizo la mayor parte del daÃƒÂ±o y tÃƒÂº lo rematas.
         if (stolenCount > 0) {
-             // ¡Premio gordo! Por defecto 5.0 puntos por cada robo.
+             // Ã‚Â¡Premio gordo! Por defecto 5.0 puntos por cada robo.
              const stealPts = (cfg.laner_steal_points || 5.0) * stolenCount;
              total = safeAdd(total, stealPts, "Laner Steal", notes);
-             notes.push(`✋🥶 ¡LANER STEAL! (x${stolenCount} robos épicos)`);
+             notes.push(`Ã¢Å“â€¹Ã°Å¸Â¥Â¶ Ã‚Â¡LANER STEAL! (x${stolenCount} robos ÃƒÂ©picos)`);
         }
 
         // 2. ASEGURAR NASHOR (Clutch)
-        // Si mataste al Barón y NO contó como robo (stolenCount < baronKills),
-        // significa que lo aseguraste tú (tu jungla falló o no estaba).
+        // Si mataste al BarÃƒÂ³n y NO contÃƒÂ³ como robo (stolenCount < baronKills),
+        // significa que lo aseguraste tÃƒÂº (tu jungla fallÃƒÂ³ o no estaba).
         if (baronKills > 0) {
-             // Si tenemos más kills de barón que robos registrados, premiamos la diferencia
+             // Si tenemos mÃƒÂ¡s kills de barÃƒÂ³n que robos registrados, premiamos la diferencia
              const securedBarons = Math.max(0, baronKills - stolenCount);
              
              if (securedBarons > 0) {
                  const baronPts = securedBarons * 2.0; 
                  total = safeAdd(total, baronPts, "Laner Nashor", notes);
-                 notes.push(`🎯 Laner aseguró Nashor (x${securedBarons})`);
+                 notes.push(`Ã°Å¸Å½Â¯ Laner asegurÃƒÂ³ Nashor (x${securedBarons})`);
              }
         }
 
-        // 3. ASEGURAR DRAGÓN (Nuevo)
-        // Igual que el Barón, pero con Dragones.
+        // 3. ASEGURAR DRAGÃƒâ€œN (Nuevo)
+        // Igual que el BarÃƒÂ³n, pero con Dragones.
         if (dragonKills > 0) {
-             // Calculamos cuántos dragones aseguraste que NO fueron robos oficiales
-             // (Asumimos que los robos de 'stolenCount' priorizan Barones, es una estimación segura)
+             // Calculamos cuÃƒÂ¡ntos dragones aseguraste que NO fueron robos oficiales
+             // (Asumimos que los robos de 'stolenCount' priorizan Barones, es una estimaciÃƒÂ³n segura)
              const securedDragons = Math.max(0, dragonKills - Math.max(0, stolenCount - baronKills));
 
              if (securedDragons > 0) {
-                 const dragPts = securedDragons * 0.5; // 1 punto por dragón asegurado siendo Laner
+                 const dragPts = securedDragons * 0.5; // 1 punto por dragÃƒÂ³n asegurado siendo Laner
                  total = safeAdd(total, dragPts, "Laner Dragon", notes);
-                 notes.push(`🦎 Laner aseguró Dragón (x${securedDragons})`);
+                 notes.push(`Ã°Å¸Â¦Å½ Laner asegurÃƒÂ³ DragÃƒÂ³n (x${securedDragons})`);
              }
         }
     }
 
-    // --- ¡NUEVO! CÁLCULO PREVIO DE MITIGACIÓN JG DIFF ---
-    // (Se calcula aquí para poder usarlo en la penalización de "Fugitivo de Objetivos")
+    // --- Ã‚Â¡NUEVO! CÃƒÂLCULO PREVIO DE MITIGACIÃƒâ€œN JG DIFF ---
+    // (Se calcula aquÃƒÂ­ para poder usarlo en la penalizaciÃƒÂ³n de "Fugitivo de Objetivos")
     let willReceiveJgMitigation = false; // Variable de control
     if (!p.win && durationMin >= 15 && !isJungle) {
         
@@ -2822,13 +2831,13 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
                                ((teamInfo.enemyHorde || 0) / 3);
             
             if (enObjScore - myObjScore >= 2) {
-                willReceiveJgMitigation = true; // ¡Se cumple la condición!
+                willReceiveJgMitigation = true; // Ã‚Â¡Se cumple la condiciÃƒÂ³n!
             }
         }
     }
 
     // =====================================================
-    // --- PENALIZACIÓN: STOMPEADO V4.0 (Lane Gap Progresivo) ---
+    // --- PENALIZACIÃƒâ€œN: STOMPEADO V4.0 (Lane Gap Progresivo) ---
     // =====================================================
     // Solo Laners (Top, Mid, Bot). 
     if (isLaner) {
@@ -2837,22 +2846,22 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         // 1. BASELINE: Empezamos a considerar desventaja grave a partir de -1000 de Oro/XP.
         if (laneDeficit < -1000) {
             
-            // 2. FÓRMULA PROGRESIVA: Por cada 1 de déficit extra, restamos -0.0015 puntos.
+            // 2. FÃƒâ€œRMULA PROGRESIVA: Por cada 1 de dÃƒÂ©ficit extra, restamos -0.0015 puntos.
             // Ej: -1500 -> (1500 - 1000) * -0.0015 = -0.75 pts (Muy similar a tu antiguo -1.0)
             // Ej: -2500 -> (2500 - 1000) * -0.0015 = -2.25 pts (Muy similar a tu antiguo -2.0)
-            // Ej: -3500 -> (3500 - 1000) * -0.0015 = -3.75 pts (Castiga más si el feed fue brutal)
+            // Ej: -3500 -> (3500 - 1000) * -0.0015 = -3.75 pts (Castiga mÃƒÂ¡s si el feed fue brutal)
             const deficitAmount = Math.abs(laneDeficit);
             let gapPenalty = -((deficitAmount - 1000) * 0.0015);
             
-            // Cap de seguridad máximo (-4.0)
+            // Cap de seguridad mÃƒÂ¡ximo (-4.0)
             gapPenalty = Math.max(-4.0, gapPenalty);
 
             // Solo aplicamos y etiquetamos si el castigo es notable (<= -0.75)
             if (gapPenalty <= -0.75) {
                 // 3. ETIQUETAS ORIGINALES
-                let label = "🤕 Gap en Línea";
+                let label = "Ã°Å¸Â¤â€¢ Gap en LÃƒÂ­nea";
                 if (laneDeficit <= -2500) {
-                    label = "🏳️ Stompeado en Línea";
+                    label = "Ã°Å¸ÂÂ³Ã¯Â¸Â Stompeado en LÃƒÂ­nea";
                 }
                 
                 gapPenalty = parseFloat(gapPenalty.toFixed(2));
@@ -2863,24 +2872,24 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
     }
 
     // =====================================================
-    // --- PENALIZACIÓN: CARRY DE ADORNO V4.1 (Bajo Impacto Progresivo) ---
+    // --- PENALIZACIÃƒâ€œN: CARRY DE ADORNO V4.1 (Bajo Impacto Progresivo) ---
     // =====================================================
     if (["MIDDLE", "BOTTOM", "JUNGLE", "TOP"].includes(role) && durationMin > 20) {
         
         const dmgShare = p.challenges?.teamDamagePercentage || 0;
         
-        // 🛡️ FIX: Lista oficial de tanques que no tienen por qué hacer daño
+        // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX: Lista oficial de tanques que no tienen por quÃƒÂ© hacer daÃƒÂ±o
         const pureTanks = ["Shen", "Ornn", "Sion", "Maokai", "Malphite", "Dr. Mundo", "Cho'Gath", "Tahm Kench", "Rammus", "Zac", "Sejuani", "Nautilus", "Leona", "Braum", "Alistar", "Taric", "Rell", "Galio", "Amumu", "Nunu", "Poppy", "Skarner"];
 
-        // EXCEPCIÓN: Es un tanque de la lista, o mitigó una barbaridad (>35k), o es un rol de tanque que absorbió mucho daño.
+        // EXCEPCIÃƒâ€œN: Es un tanque de la lista, o mitigÃƒÂ³ una barbaridad (>35k), o es un rol de tanque que absorbiÃƒÂ³ mucho daÃƒÂ±o.
         const isTankyStats = isRealTank || (p.damageSelfMitigated > 35000) || pureTanks.includes(p.championName);
 
         if (!isTankyStats) { 
-            // 1. BASELINE: Siendo Carry/Bruiser, hacer menos del 17% (0.17) del daño empieza a ser deficiente.
+            // 1. BASELINE: Siendo Carry/Bruiser, hacer menos del 17% (0.17) del daÃƒÂ±o empieza a ser deficiente.
             const baseDmgShare = 0.17;
             
             if (dmgShare < baseDmgShare) {
-                // 2. FÓRMULA PROGRESIVA: Restas -0.35 pts por cada 1% que te falte
+                // 2. FÃƒâ€œRMULA PROGRESIVA: Restas -0.35 pts por cada 1% que te falte
                 let carryPenalty = -((baseDmgShare - dmgShare) * 35.0);
                 
                 // Cap de seguridad (Max -5.0 pts por no pegar nada)
@@ -2888,22 +2897,22 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
 
                 // Aplicar solo si es relevante
                 if (carryPenalty <= -0.5) {
-                    let label = "📉 Bajo Impacto";
+                    let label = "Ã°Å¸â€œâ€° Bajo Impacto";
                     if (dmgShare < 0.11) { // Menos del 11% ya es Fantasma
-                        label = "👻 Carry Fantasma";
+                        label = "Ã°Å¸â€˜Â» Carry Fantasma";
                     }
 
                     carryPenalty = parseFloat(carryPenalty.toFixed(2));
                     total = safeAdd(total, carryPenalty);
-                    notes.push(`${label} (${(dmgShare*100).toFixed(1)}% daño, ${carryPenalty} pts)`);
+                    notes.push(`${label} (${(dmgShare*100).toFixed(1)}% daÃƒÂ±o, ${carryPenalty} pts)`);
                 }
             }
         }
     }
 
     // =====================================================
-    // ⚔️ BONO DE DUELO v5.2 (EL ALGORITMO DEFINITIVO + EARLY GAME)
-    // Evaluación Integral y Asimétrica por Rol
+    // Ã¢Å¡â€Ã¯Â¸Â BONO DE DUELO v5.2 (EL ALGORITMO DEFINITIVO + EARLY GAME)
+    // EvaluaciÃƒÂ³n Integral y AsimÃƒÂ©trica por Rol
     // =====================================================
     if (opponent && durationMin >= 15) { 
         let duelScore = 0; 
@@ -2916,7 +2925,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
         const o_a = Number(opponent.assists || 0);
         const o_kda = (o_k + o_a) / Math.max(1, o_d);
         
-        // --- 1. SOLO KILLS (La humillación máxima) ---
+        // --- 1. SOLO KILLS (La humillaciÃƒÂ³n mÃƒÂ¡xima) ---
         const mySolo = p.challenges?.soloKills || 0;
         const oppSolo = opponent.challenges?.soloKills || 0;
         const soloDiff = mySolo - oppSolo;
@@ -2946,7 +2955,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
             if (!duelNotes.includes("Roam")) duelNotes.push("Roam");
         }
 
-        // --- 3. DOMINIO ECONÓMICO FINAL (Oro Total) ---
+        // --- 3. DOMINIO ECONÃƒâ€œMICO FINAL (Oro Total) ---
         const laneGoldDiff = (p.goldEarned||0) - (opponent.goldEarned||0);
         const goldThresh = isSupport ? 400 : 700; 
         
@@ -2990,10 +2999,10 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
              }
         }
 
-        // --- 5. ESPECÍFICO DE LANERS (EARLY GAME + PLACAS + CS) ---
+        // --- 5. ESPECÃƒÂFICO DE LANERS (EARLY GAME + PLACAS + CS) ---
         if (isLaner) {
             
-            // A. Ventaja Neta de Línea (Min 14)
+            // A. Ventaja Neta de LÃƒÂ­nea (Min 14)
             const earlyAdvantage = Number(p.challenges?.earlyLaningPhaseGoldExpAdvantage || 0);
             if (earlyAdvantage > 300) {
                 let pts = (earlyAdvantage / 500) * 0.8; 
@@ -3007,7 +3016,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
                 if (!duelNotes.includes("Oro Early")) duelNotes.push("Oro Early");
             }
 
-            // B. Denegación de Nivel (Min 14)
+            // B. DenegaciÃƒÂ³n de Nivel (Min 14)
             const myLvlLead = Number(p.challenges?.maxLevelLeadLaneOpponent || 0);
             const oppLvlLead = Number(opponent.challenges?.maxLevelLeadLaneOpponent || 0);
             if (myLvlLead >= 1) {
@@ -3058,7 +3067,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
             }
         }
 
-        // --- 6. ESPECÍFICO DE JUNGLA (El Rey del Bosque) ---
+        // --- 6. ESPECÃƒÂFICO DE JUNGLA (El Rey del Bosque) ---
         if (isJungle) {
             // A. Presencia en Mapa (Ganks / KP)
             const myKP = (p.challenges?.killParticipation || 0);
@@ -3074,7 +3083,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
                 if (!duelNotes.includes("Ganks")) duelNotes.push("Ganks");
             }
 
-            // B. Control de Objetivos Épicos y Robos (Smite Gap)
+            // B. Control de Objetivos Ãƒâ€°picos y Robos (Smite Gap)
             const myObjs = (p.dragonKills||0) + (p.baronKills||0) + (p.riftHeraldKills||0);
             const oppObjs = (opponent.dragonKills||0) + (opponent.baronKills||0) + (opponent.riftHeraldKills||0);
             const mySteals = p.challenges?.epicMonstersStolen || 0;
@@ -3095,7 +3104,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
                 if(!duelNotes.includes("Objs")) duelNotes.push("Objs");
             }
 
-            // Si le robaste monstruos épicos directamente
+            // Si le robaste monstruos ÃƒÂ©picos directamente
             if (mySteals > oppSteals) {
                 duelScore += 1.5 * (mySteals - oppSteals);
                 duelNotes.push("Smite Gap");
@@ -3133,32 +3142,32 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
                 if (!duelNotes.includes("Invades")) duelNotes.push("Invades");
             }
 
-            // E. Visión en Jungla
+            // E. VisiÃƒÂ³n en Jungla
             const myVis = p.visionScore || 0;
             const oppVis = opponent.visionScore || 0;
             const visDiff = myVis - oppVis;
             if (visDiff > 20) {
                 duelScore += Math.min(1.0, visDiff / 25);
-                if(!duelNotes.includes("Visión")) duelNotes.push("Visión");
+                if(!duelNotes.includes("VisiÃƒÂ³n")) duelNotes.push("VisiÃƒÂ³n");
             } else if (visDiff < -20) {
                 duelScore -= Math.min(1.0, Math.abs(visDiff / 25));
-                if (!duelNotes.includes("Visión")) duelNotes.push("Visión");
+                if (!duelNotes.includes("VisiÃƒÂ³n")) duelNotes.push("VisiÃƒÂ³n");
             }
         }
 
-        // --- 7. ESPECÍFICO DE SUPPORTS (Guerra de Visión) ---
+        // --- 7. ESPECÃƒÂFICO DE SUPPORTS (Guerra de VisiÃƒÂ³n) ---
         if (isSupport) {
             const myVis = (p.visionScore || 0) + (p.wardsKilled || 0);
             const oppVis = (opponent.visionScore || 0) + (opponent.wardsKilled || 0);
             const visDiff = myVis - oppVis;
             if (visDiff > 15) { 
                 duelScore += Math.min(2.0, visDiff / 10); 
-                duelNotes.push("Visión"); 
+                duelNotes.push("VisiÃƒÂ³n"); 
                 dominanceCount++; 
                 keyRoleDominance = true;
             } else if (visDiff < -15) { 
                 duelScore -= Math.min(2.0, Math.abs(visDiff / 10)); 
-                if (!duelNotes.includes("Visión")) duelNotes.push("Visión");
+                if (!duelNotes.includes("VisiÃƒÂ³n")) duelNotes.push("VisiÃƒÂ³n");
             }
         }
 
@@ -3172,7 +3181,7 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
             if (!duelNotes.includes("KDA")) duelNotes.push("KDA");
         }
 
-        // --- 9. EVALUACIÓN Y APLICACIÓN FINAL ---
+        // --- 9. EVALUACIÃƒâ€œN Y APLICACIÃƒâ€œN FINAL ---
         const reason = duelNotes.length > 0 ? `(${duelNotes.join(", ")})` : "";
         duelScore = Math.min(8.0, Math.max(-8.0, duelScore)); 
         
@@ -3181,30 +3190,30 @@ function computePointsDetailed(p, participants, durationMin, teamInfo, cfg, targ
 
         if (isKing) {
             let finalScore = parseFloat((duelScore + 1.0).toFixed(2));
-            applyBonus(`👑 REY DE LA LÍNEA ${reason}`, Math.min(8.0, finalScore));
+            applyBonus(`Ã°Å¸â€˜â€˜ REY DE LA LÃƒÂNEA ${reason}`, Math.min(8.0, finalScore));
         } else if (duelScore >= 1.5) {
-            applyBonus(`⚔️ Duelo Ganado ${reason}`, parseFloat(duelScore.toFixed(2)));
+            applyBonus(`Ã¢Å¡â€Ã¯Â¸Â Duelo Ganado ${reason}`, parseFloat(duelScore.toFixed(2)));
         } else if (duelScore <= -1.5) {
-            const isProtected = willReceiveJgMitigation || notes.some(n => n.includes("Mitigación") || n.includes("AFK") || n.includes("Camp"));
+            const isProtected = willReceiveJgMitigation || notes.some(n => n.includes("MitigaciÃƒÂ³n") || n.includes("AFK") || n.includes("Camp"));
             if (!isProtected) {
                  let penaltyScore = duelScore < -4.0 ? (duelScore - 1.0) : duelScore;
-                 // Mantenemos el applyBonus para que la lógica lo guarde y reste los puntos
-                 applyBonus(`🤕 Duelo Perdido ${reason}`, parseFloat(Math.max(-8.0, penaltyScore).toFixed(2)));
+                 // Mantenemos el applyBonus para que la lÃƒÂ³gica lo guarde y reste los puntos
+                 applyBonus(`Ã°Å¸Â¤â€¢ Duelo Perdido ${reason}`, parseFloat(Math.max(-8.0, penaltyScore).toFixed(2)));
             } else {
-                 notes.push(`🛡️ Duelo Protegido (Mitigación Activa)`);
+                 notes.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â Duelo Protegido (MitigaciÃƒÂ³n Activa)`);
             }
         }
     }
 
 // ==========================================================
-// 🛡️ PROTECCIONES CONTRA EQUIPO (ATLAS & ELO HELL V4.1 - ANTI TROLL)
+// Ã°Å¸â€ºÂ¡Ã¯Â¸Â PROTECCIONES CONTRA EQUIPO (ATLAS & ELO HELL V4.1 - ANTI TROLL)
 // ==========================================================
 if (!isWin && durationMin >= 15) {
 
-    // 1. PREPARACIÓN DE DATOS
+    // 1. PREPARACIÃƒâ€œN DE DATOS
     const teamMates = myTeam.filter(m => m.puuid !== p.puuid);
     const teamTotalDmg = myTeam.reduce((acc, m) => acc + (m.totalDamageDealtToChampions || 0), 0);
-    const teamTotalKills = teamInfo.totalKills || 1; // Evitar división por cero
+    const teamTotalKills = teamInfo.totalKills || 1; // Evitar divisiÃƒÂ³n por cero
 
     let heavyTeammates = 0;   // Feeders o Trolls (Carga completa = 1.0)
     let uselessTeammates = 0; // Fantasmas inofensivos (Media carga = 0.5)
@@ -3223,7 +3232,7 @@ if (!isWin && durationMin >= 15) {
         const mDmgShare = teamTotalDmg > 0 ? mDmg / teamTotalDmg : 0;
 
         // --- A. CRITERIO DE "ANCLA" (Feeder / Troll) ---
-        // 1. Feeder Rápido: Muere mucho (>0.27/min) y KDA bajo (<1.2). [Ajustado para Ryze]
+        // 1. Feeder RÃƒÂ¡pido: Muere mucho (>0.27/min) y KDA bajo (<1.2). [Ajustado para Ryze]
         const isFastFeeder = (mDPM >= 0.25 && mKDA < 1.2);
         
         // 2. Feeder Absoluto: Muere 9+ veces y KDA bajo (<1.3).
@@ -3239,11 +3248,11 @@ if (!isWin && durationMin >= 15) {
             heavyTeammates++;
         }
         
-        // --- B. CRITERIO DE "FANTASMA" (Inútil / AFK Farm) ---
-        // Baja participación (<30%) Y Bajo daño (<14%)
+        // --- B. CRITERIO DE "FANTASMA" (InÃƒÂºtil / AFK Farm) ---
+        // Baja participaciÃƒÂ³n (<30%) Y Bajo daÃƒÂ±o (<14%)
         else if (mKP < 0.30 && mDmgShare < 0.14) {
             
-            // EXCEPCIÓN: Splitpusher Real
+            // EXCEPCIÃƒâ€œN: Splitpusher Real
             if (mTurretDmg > 8000) {
                 decentTeammates++; 
             } 
@@ -3266,80 +3275,80 @@ if (!isWin && durationMin >= 15) {
     const teamLoad = heavyTeammates + (uselessTeammates * 0.5);
 
     // =========================================================
-    // 🏅 ASIGNACIÓN DE PUNTOS
+    // Ã°Å¸Ââ€¦ ASIGNACIÃƒâ€œN DE PUNTOS
     // =========================================================
 
-    // --- REQUISITO BASE: Tú no fuiste el problema ---
+    // --- REQUISITO BASE: TÃƒÂº no fuiste el problema ---
     const myDmgShare = teamTotalDmg > 0 ? (p.totalDamageDealtToChampions || 0) / teamTotalDmg : 0;
     const amINotTheProblem = (kda >= 1.5) || (myDmgShare > 0.25 && kda > 1.2);
 
     if (teamLoad >= 1.0 && amINotTheProblem) {
         
-        // TIER 3: ESPÍRITU ESPARTANO (Carga >= 3.0)
+        // TIER 3: ESPÃƒÂRITU ESPARTANO (Carga >= 3.0)
         if (teamLoad >= 3.0) {
              total = safeAdd(total, 3.5, "Spartan Spirit", notes);
-             notes.push(`🛡️ Espíritu Espartano (Team Gap Extremo: Carga ${teamLoad})`);
+             notes.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â EspÃƒÂ­ritu Espartano (Team Gap Extremo: Carga ${teamLoad})`);
         } 
         // TIER 2: ELO HELL (Carga >= 2.0)
         else if (teamLoad >= 2.0) {
              total = safeAdd(total, 2.5, "Elo Hell", notes);
-             notes.push(`🔥 Elo Hell (Team Gap Alto: Carga ${teamLoad})`);
+             notes.push(`Ã°Å¸â€Â¥ Elo Hell (Team Gap Alto: Carga ${teamLoad})`);
         }
         // TIER 1: EL ANCLA (Carga >= 1.0)
         else {
              total = safeAdd(total, 1.5, "Heavy Anchor", notes);
-             notes.push(`⚓ El Ancla (Mitigación: ${heavyTeammates} lastres detectados)`);
+             notes.push(`Ã¢Å¡â€œ El Ancla (MitigaciÃƒÂ³n: ${heavyTeammates} lastres detectados)`);
         }
     }
 
-    // --- NIVEL 2: TITÁN ATLAS (Solo Carry) ---
+    // --- NIVEL 2: TITÃƒÂN ATLAS (Solo Carry) ---
     const isWorthyCarry = (kda >= 2.5) || (myDmgShare >= 0.28 && kda >= 2.0);
 
     if (decentTeammates === 0 && isWorthyCarry) {
          total = safeAdd(total, 5.0, "Titan Atlas", notes);
-         notes.push("🌍 TITÁN ATLAS (1v9 Absoluto)");
+         notes.push("Ã°Å¸Å’Â TITÃƒÂN ATLAS (1v9 Absoluto)");
     }}
 
     
     // =====================================================
-    // 🔪 JUSTICIERO V4.0 (Cortar Rachas Progresivo)
+    // Ã°Å¸â€Âª JUSTICIERO V4.0 (Cortar Rachas Progresivo)
     // =====================================================
     // Variable: challenges.shutdownsCollected
-    // Premia cortar la diversión del rival (Bounties).
+    // Premia cortar la diversiÃƒÂ³n del rival (Bounties).
     
     const shutdowns = Number(p.challenges?.shutdownsCollected || 0);
     
     if (shutdowns >= 1) {
-        // FÓRMULA PROGRESIVA: Cada shutdown otorga +0.45 puntos constantes.
+        // FÃƒâ€œRMULA PROGRESIVA: Cada shutdown otorga +0.45 puntos constantes.
         // 1 = +0.45 pts | 2 = +0.90 pts | 3 = +1.35 pts | 5 = +2.25 pts
         let shutdownPts = shutdowns * 0.45;
         
-        let label = "🔪 Justiciero";
+        let label = "Ã°Å¸â€Âª Justiciero";
         if (shutdowns >= 3) {
-            label = "👮 POLICÍA DE LA DIVERSIÓN";
+            label = "Ã°Å¸â€˜Â® POLICÃƒÂA DE LA DIVERSIÃƒâ€œN";
         }
 
         // Redondeo limpio
         shutdownPts = parseFloat(shutdownPts.toFixed(2));
         
-        // Sumamos los puntos y añadimos la nota
+        // Sumamos los puntos y aÃƒÂ±adimos la nota
         total = safeAdd(total, shutdownPts);
         notes.push(`${label} (${shutdowns} rachas cortadas, +${shutdownPts} pts)`);
     }
 
     // =========================================================
-    // ⚔️ DUELISTA V4.0 (Solo Kills Progresivo)
+    // Ã¢Å¡â€Ã¯Â¸Â DUELISTA V4.0 (Solo Kills Progresivo)
     // =========================================================
     const soloKills = Number(p.challenges?.soloKills || 0);
 
-    // Umbral mínimo para empezar a puntuar
+    // Umbral mÃƒÂ­nimo para empezar a puntuar
     if (soloKills >= 3) {
         
-        // FÓRMULA PROGRESIVA MÁGICA: (soloKills - 2) * 0.55
+        // FÃƒâ€œRMULA PROGRESIVA MÃƒÂGICA: (soloKills - 2) * 0.55
         // Con esto logramos exactamente tus antiguos escalones pero sin saltos bruscos:
         // 3 kills -> (3 - 2) * 0.55 = +0.55 pts
         // 5 kills -> (5 - 2) * 0.55 = +1.65 pts  (Tu antiguo tier daba 1.75)
-        // 7 kills -> (7 - 2) * 0.55 = +2.75 pts  (Tu antiguo tier daba 2.75 ¡Exacto!)
+        // 7 kills -> (7 - 2) * 0.55 = +2.75 pts  (Tu antiguo tier daba 2.75 Ã‚Â¡Exacto!)
         // 10 kills -> (10 - 2) * 0.55 = +4.40 pts (Tu antiguo tier daba 4.50)
         let duelPoints = (soloKills - 2) * 0.55;
         
@@ -3347,15 +3356,15 @@ if (!isWin && durationMin >= 15) {
         duelPoints = Math.max(0, Math.min(6.0, duelPoints));
 
         // MANTENEMOS TODAS TUS ETIQUETAS ORIGINALES
-        let duelLabel = "⚔️ Duelista";
+        let duelLabel = "Ã¢Å¡â€Ã¯Â¸Â Duelista";
         if (soloKills >= 10) {
-            duelLabel = "💀 1v9 MACHINE";
+            duelLabel = "Ã°Å¸â€™â‚¬ 1v9 MACHINE";
         } 
         else if (soloKills >= 7) {
-            duelLabel = "🏟️ Rey de la Arena";
+            duelLabel = "Ã°Å¸ÂÅ¸Ã¯Â¸Â Rey de la Arena";
         } 
         else if (soloKills >= 5) {
-            duelLabel = "🤺 Maestro del 1v1";
+            duelLabel = "Ã°Å¸Â¤Âº Maestro del 1v1";
         }
 
         duelPoints = parseFloat(duelPoints.toFixed(2));
@@ -3363,37 +3372,37 @@ if (!isWin && durationMin >= 15) {
     }
 
 
-    // =====================================================
+Ã‚Â  Ã‚Â  // =====================================================
     // 2. RENDIMIENTO INDIVIDUAL (KDA Proporcional) - ANTI KDA PLAYER
     // =====================================================
     const kdaText = kda.toFixed(2);
     let kdaBonus = 0;
     let kdaLabel = "";
 
-    // Ajuste por Rol: A los Supports se les exige un poco más de KDA base
+    // Ajuste por Rol: A los Supports se les exige un poco mÃƒÂ¡s de KDA base
     const baseKDA = isSupport ? 3.0 : 2.2; 
     const lowKDA = isSupport ? 1.8 : 1.5;
 
     // A. KDA POSITIVO (Premios)
     if (kda > baseKDA) {
         
-        // 1. CÁLCULO BASE (Curva de Rendimientos Decrecientes)
-        // Usamos Math.sqrt (raíz cuadrada) para que los primeros puntos sean valiosos, 
+        // 1. CÃƒÂLCULO BASE (Curva de Rendimientos Decrecientes)
+        // Usamos Math.sqrt (raÃƒÂ­z cuadrada) para que los primeros puntos sean valiosos, 
         // pero evite que KDAs inflados (ej. 25.0) rompan el mercado.
         // Ej: KDA 6.2 (Diff 4.0) -> sqrt(4.0) = 2.0 * 1.25 = +2.50 pts
         // Ej: KDA 11.2 (Diff 9.0) -> sqrt(9.0) = 3.0 * 1.25 = +3.75 pts
         let rawBonus = Math.sqrt(kda - baseKDA) * 1.25;
 
-        // 2. 🛡️ FILTRO ANTI "KDA PLAYER" (Multiplicador de Impacto)
+        // 2. Ã°Å¸â€ºÂ¡Ã¯Â¸Â FILTRO ANTI "KDA PLAYER" (Multiplicador de Impacto)
         // Tu KDA solo es valioso si te manchaste las manos.
         let impactMult = 1.0;
-        const expectedKP = (role === "TOP") ? 0.35 : 0.45; // Al Top se le permite estar más aislado
+        const expectedKP = (role === "TOP") ? 0.35 : 0.45; // Al Top se le permite estar mÃƒÂ¡s aislado
 
         if (kp < expectedKP) {
             impactMult = Math.max(0.3, kp / expectedKP); 
         }
 
-        // 🛠️ FIX: Añadimos "!isRealTank" para no castigar a Shen, Sejuani, Zac...
+        // Ã°Å¸â€ºÂ Ã¯Â¸Â FIX: AÃƒÂ±adimos "!isRealTank" para no castigar a Shen, Sejuani, Zac...
         if (["MIDDLE", "BOTTOM", "JUNGLE"].includes(role) && dmgShare < 0.15 && !isRealTank) {
             impactMult *= 0.5; // Reducimos el premio a la mitad
         }
@@ -3401,35 +3410,35 @@ if (!isWin && durationMin >= 15) {
         // Aplicamos el filtro al bono real
         kdaBonus = rawBonus * impactMult;
 
-        // Cap máximo de seguridad absoluto
+        // Cap mÃƒÂ¡ximo de seguridad absoluto
         kdaBonus = Math.min(5.0, kdaBonus); 
 
         // 3. ETIQUETAS (LORE)
-        if (kdaBonus >= 3.5) kdaLabel = `🦄 KDA DE DIOS`;
-        else if (kdaBonus >= 2.0) kdaLabel = `💎 KDA ÉLITE`;
-        else if (kdaBonus >= 1.0) kdaLabel = `🌟 KDA Excelente`;
-        else kdaLabel = `👌 KDA Sólido`;
+        if (kdaBonus >= 3.5) kdaLabel = `Ã°Å¸Â¦â€ž KDA DE DIOS`;
+        else if (kdaBonus >= 2.0) kdaLabel = `Ã°Å¸â€™Å½ KDA Ãƒâ€°LITE`;
+        else if (kdaBonus >= 1.0) kdaLabel = `Ã°Å¸Å’Å¸ KDA Excelente`;
+        else kdaLabel = `Ã°Å¸â€˜Å’ KDA SÃƒÂ³lido`;
         
-        // 🚨 SHAME TAG: Si el filtro de cobardía actuó duramente y tenías buen KDA...
+        // Ã°Å¸Å¡Â¨ SHAME TAG: Si el filtro de cobardÃƒÂ­a actuÃƒÂ³ duramente y tenÃƒÂ­as buen KDA...
         if (impactMult <= 0.65 && kda >= 4.5) {
-             kdaLabel = `🛡️ KDA Player (Jugó a no morir)`; 
+             kdaLabel = `Ã°Å¸â€ºÂ¡Ã¯Â¸Â KDA Player (JugÃƒÂ³ a no morir)`; 
         }
     }
     
     // B. KDA NEGATIVO (Castigos)
     else if (kda < lowKDA) {
-        // Fórmula progresiva inversa: Más te alejas del mínimo, más te quita.
+        // FÃƒÂ³rmula progresiva inversa: MÃƒÂ¡s te alejas del mÃƒÂ­nimo, mÃƒÂ¡s te quita.
         // Ej: KDA 0.5 (Se espera 1.5) -> (1.5 - 0.5) * 2.5 = -2.5 pts
         kdaBonus = -((lowKDA - kda) * 2.5);
         
         // Si eres un Feeder que encima NO ayuda en nada (KP < 20%), el castigo aumenta un 25%
         if (kp < 0.20 && durationMin > 15) kdaBonus *= 1.25;
 
-        kdaBonus = Math.max(-4.0, kdaBonus); // Cap máximo de -4.0
-        kdaLabel = `📉 KDA Deficiente`;
+        kdaBonus = Math.max(-4.0, kdaBonus); // Cap mÃƒÂ¡ximo de -4.0
+        kdaLabel = `Ã°Å¸â€œâ€° KDA Deficiente`;
     }
 
-    // APLICACIÓN FINAL
+    // APLICACIÃƒâ€œN FINAL
     if (kdaBonus !== 0) {
         kdaBonus = parseFloat(kdaBonus.toFixed(2));
         total = safeAdd(total, kdaBonus, "KDA Scaling", notes);
@@ -3437,65 +3446,65 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🏛️ DEFENSA NUMANTINA (Nexo al descubierto)
+    // Ã°Å¸Ââ€ºÃ¯Â¸Â DEFENSA NUMANTINA (Nexo al descubierto)
     // =====================================================
     const openNexus = Number(p.challenges?.hadOpenNexus || 0);
     
     if (p.win && openNexus >= 1) {
         // Ganar con el nexo al descubierto es el climax de League of Legends.
-        // Multiplicamos esto si encima hiciste un daño bestial (Carry de Base)
+        // Multiplicamos esto si encima hiciste un daÃƒÂ±o bestial (Carry de Base)
         let numanciaPts = 3.5;
         
-        if (dmgShare >= 0.30) numanciaPts += 1.5; // Fuiste tú quien defendió la base
+        if (dmgShare >= 0.30) numanciaPts += 1.5; // Fuiste tÃƒÂº quien defendiÃƒÂ³ la base
         
         total = safeAdd(total, numanciaPts, "Base Defense", notes);
-        notes.push(`🏛️ DEFENSA NUMANTINA (Ganó con el Nexo a 1 HP, +${numanciaPts} pts)`);
+        notes.push(`Ã°Å¸Ââ€ºÃ¯Â¸Â DEFENSA NUMANTINA (GanÃƒÂ³ con el Nexo a 1 HP, +${numanciaPts} pts)`);
     }
 
     // =====================================================
-    // 🦏 IMPACTO DE EARLY GAME (Heraldo / Grubs Perfectos)
+    // Ã°Å¸Â¦Â IMPACTO DE EARLY GAME (Heraldo / Grubs Perfectos)
     // =====================================================
     // Torres destruidas por completo ANTES de que caigan las placas (Min 14)
     const earlyTurrets = Number(p.challenges?.kTurretsDestroyedBeforePlatesFall || 0);
 
     if (earlyTurrets > 0) {
-        // FÓRMULA PROGRESIVA: Tirar la primera torre da +1.5. Si tiran 2 antes del 14, es un stomp abusivo.
+        // FÃƒâ€œRMULA PROGRESIVA: Tirar la primera torre da +1.5. Si tiran 2 antes del 14, es un stomp abusivo.
         // 1 Torre -> +1.5 pts | 2 Torres -> +3.0 pts | 3 Torres -> +4.5 pts
         let earlyPts = earlyTurrets * 1.5;
         earlyPts = Math.min(4.5, parseFloat(earlyPts.toFixed(2)));
 
-        let label = earlyTurrets >= 2 ? "☄️ APISONADORA (Early Stomp)" : "🦏 Presión Temprana";
+        let label = earlyTurrets >= 2 ? "Ã¢Ëœâ€žÃ¯Â¸Â APISONADORA (Early Stomp)" : "Ã°Å¸Â¦Â PresiÃƒÂ³n Temprana";
         
         total = safeAdd(total, earlyPts, "Early Demolition", notes);
         notes.push(`${label} (${earlyTurrets} torres enteras pre-min 14, +${earlyPts} pts)`);
     }
 
     // =====================================================
-    // 🧲 EL SEÑUELO PERFECTO (Baiter / Camped)
+    // Ã°Å¸Â§Â² EL SEÃƒâ€˜UELO PERFECTO (Baiter / Camped)
     // =====================================================
-    // Si moriste mucho (Feeder), pero ganaste y resulta que te comiste todo el daño del mundo 
-    // sin ser un tanque (Ej: Eres un ADC o Mid Inmóvil).
+    // Si moriste mucho (Feeder), pero ganaste y resulta que te comiste todo el daÃƒÂ±o del mundo 
+    // sin ser un tanque (Ej: Eres un ADC o Mid InmÃƒÂ³vil).
     const isSquishy = ["BOTTOM", "MIDDLE"].includes(role) && !isRealTank;
     const survivedBursts = Number(p.challenges?.tookLargeDamageSurvived || 0);
     const selfMitigatedDmg = Number(p.damageSelfMitigated || 0);
 
     if (isSquishy && p.win && d >= 6 && survivedBursts >= 2) {
         
-        // FÓRMULA: Te damos puntos por cada vez que te hicieron un 'Full Focus' y tu equipo lo aprovechó.
+        // FÃƒâ€œRMULA: Te damos puntos por cada vez que te hicieron un 'Full Focus' y tu equipo lo aprovechÃƒÂ³.
         let baitPts = survivedBursts * 0.75;
         baitPts = Math.min(3.0, parseFloat(baitPts.toFixed(2)));
 
         total = safeAdd(total, baitPts, "Camped Mitigation", notes);
-        notes.push(`🧲 El Señuelo (Campeado pero aguantó ${survivedBursts} focus, +${baitPts} pts)`);
+        notes.push(`Ã°Å¸Â§Â² El SeÃƒÂ±uelo (Campeado pero aguantÃƒÂ³ ${survivedBursts} focus, +${baitPts} pts)`);
     }
 
     // =====================================================
-    // ⚔️ TENSIÓN DE LIGA (LEAGUE API) - PROGRESIVO
+    // Ã¢Å¡â€Ã¯Â¸Â TENSIÃƒâ€œN DE LIGA (LEAGUE API) - PROGRESIVO
     // =====================================================
     const leagueData = fetchLeaguePressure(p.puuid, cfg.riot_region);
     const currentLP = leagueData.lp;
 
-    // --- A. PRESIÓN DE ASCENSO (80 - 100 LP) ---
+    // --- A. PRESIÃƒâ€œN DE ASCENSO (80 - 100 LP) ---
     if (currentLP >= 80) {
         // PROGRESIVO: A los 80 LP te da +0.5 pts, a los 99 LP te da +2.4 pts
         let promoPts = (currentLP - 75) * 0.1;
@@ -3503,36 +3512,36 @@ if (!isWin && durationMin >= 15) {
 
         if (p.win) {
             total = safeAdd(total, promoPts, "High Stakes Win", notes);
-            notes.push(`📈 Partida de Ascenso Superada (${currentLP} LP, +${promoPts} pts)`);
+            notes.push(`Ã°Å¸â€œË† Partida de Ascenso Superada (${currentLP} LP, +${promoPts} pts)`);
         } else {
             // Si pierde a 99 LP, el tilt es masivo, se le consuela un poco (+1.0 fijo)
             total = safeAdd(total, 1.0, "Promo Tilt Mitigation", notes);
-            notes.push(`💔 Se ahogó en la orilla (Perdió a ${currentLP} LP)`);
+            notes.push(`Ã°Å¸â€™â€ Se ahogÃƒÂ³ en la orilla (PerdiÃƒÂ³ a ${currentLP} LP)`);
         }
     }
     
     // --- B. AL BORDE DEL ABISMO (0 LP) ---
     else if (currentLP === 0) {
         if (p.win) {
-            // Ganar a 0 LP salva tu rango, tiene muchísimo valor psicológico
+            // Ganar a 0 LP salva tu rango, tiene muchÃƒÂ­simo valor psicolÃƒÂ³gico
             total = safeAdd(total, 2.5, "Demotion Saved", notes);
-            notes.push(`🛡️ Salvada Milagrosa (Ganó a 0 LP, +2.5 pts)`);
+            notes.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â Salvada Milagrosa (GanÃƒÂ³ a 0 LP, +2.5 pts)`);
         } else {
-            // Perder a 0 LP implica descender o estar a punto. Castigo anímico.
+            // Perder a 0 LP implica descender o estar a punto. Castigo anÃƒÂ­mico.
             total = safeAdd(total, -2.0, "Demotion Loss", notes);
-            notes.push(`📉 Caída al Abismo (Perdió a 0 LP, -2.0 pts)`);
+            notes.push(`Ã°Å¸â€œâ€° CaÃƒÂ­da al Abismo (PerdiÃƒÂ³ a 0 LP, -2.0 pts)`);
         }
     }
 
     // --- C. RACHA CALIENTE (API OFICIAL) ---
-    // Riot marca "hotStreak: true" cuando ganas 3 o más seguidas.
+    // Riot marca "hotStreak: true" cuando ganas 3 o mÃƒÂ¡s seguidas.
     if (leagueData.hotStreak && p.win) {
         total = safeAdd(total, 1.5, "Official Hot Streak", notes);
-        notes.push(`🔥 Racha Oficial de Riot (HotStreak, +1.5 pts)`);
+        notes.push(`Ã°Å¸â€Â¥ Racha Oficial de Riot (HotStreak, +1.5 pts)`);
     }
 
-    // =====================================================
-    // 🌾 MÓDULO DE FARMEO (CS/MIN) V4.1 - ETIQUETAS CORREGIDAS
+Ã‚Â  Ã‚Â  // =====================================================
+    // Ã°Å¸Å’Â¾ MÃƒâ€œDULO DE FARMEO (CS/MIN) V4.1 - ETIQUETAS CORREGIDAS
     // =====================================================
     if (!isSupport) { 
         
@@ -3542,10 +3551,10 @@ if (!isWin && durationMin >= 15) {
         // 2. Calcular la diferencia exacta con la media
         const csDiff = csMin - baseCS;
         
-        // 3. Aplicar multiplicador (Progresión Continua y Buffada)
+        // 3. Aplicar multiplicador (ProgresiÃƒÂ³n Continua y Buffada)
         let csPts = csDiff * 1.80;
         
-        // 4. Limitar los puntos máximos y mínimos (Caps de Seguridad)
+        // 4. Limitar los puntos mÃƒÂ¡ximos y mÃƒÂ­nimos (Caps de Seguridad)
         csPts = Math.max(-6.0, Math.min(6.0, csPts));
         
         // Perdonar el mal farm si hubo Remake o Surrender al 15
@@ -3557,30 +3566,30 @@ if (!isWin && durationMin >= 15) {
         if (csPts !== 0) {
             let label = "Farm Rating";
             
-            // 🔥 FIX: Separamos estrictamente entre premios (positivos) y castigos (negativos)
+            // Ã°Å¸â€Â¥ FIX: Separamos estrictamente entre premios (positivos) y castigos (negativos)
             if (csPts > 0) {
                 // TIERS POSITIVOS (Solo si ganaste puntos)
                 if (isJungle) {
-                    if (csMin >= 8.5) label = "👽 TARZAN MODE (Perfect Pathing)";
-                    else if (csMin >= 8.0) label = "🚜 ASPIRADORA DE JUNGLA";
-                    else if (csMin >= 7.0) label = "🌾 Pathing Excelente";
-                    else label = "💰 Buen Farm";
+                    if (csMin >= 8.5) label = "Ã°Å¸â€˜Â½ TARZAN MODE (Perfect Pathing)";
+                    else if (csMin >= 8.0) label = "Ã°Å¸Å¡Å“ ASPIRADORA DE JUNGLA";
+                    else if (csMin >= 7.0) label = "Ã°Å¸Å’Â¾ Pathing Excelente";
+                    else label = "Ã°Å¸â€™Â° Buen Farm";
                 } else { // Laners
-                    if (csMin >= 10.0) label = "👑 DIOS DEL FARM (Chovy Mode)";
-                    else if (csMin >= 9.0) label = "🚜 ASPIRADORA HUMANA";
-                    else if (csMin >= 8.0) label = "🌾 Farm de Pro";
-                    else label = "💰 Buen Farm";
+                    if (csMin >= 10.0) label = "Ã°Å¸â€˜â€˜ DIOS DEL FARM (Chovy Mode)";
+                    else if (csMin >= 9.0) label = "Ã°Å¸Å¡Å“ ASPIRADORA HUMANA";
+                    else if (csMin >= 8.0) label = "Ã°Å¸Å’Â¾ Farm de Pro";
+                    else label = "Ã°Å¸â€™Â° Buen Farm";
                 }
             } else {
                 // TIERS NEGATIVOS (Solo si perdiste puntos)
                 if (isJungle) {
-                    if (csMin < 4.0) label = "🏕️ Perdido en el Bosque";
-                    else if (csMin < 5.0) label = "🤡 Alergia a los Campamentos";
-                    else label = "📉 Jungla Hambriento"; 
+                    if (csMin < 4.0) label = "Ã°Å¸Ââ€¢Ã¯Â¸Â Perdido en el Bosque";
+                    else if (csMin < 5.0) label = "Ã°Å¸Â¤Â¡ Alergia a los Campamentos";
+                    else label = "Ã°Å¸â€œâ€° Jungla Hambriento"; 
                 } else { // Laners
-                    if (csMin < 4.5) label = "🤡 Alergia a los Minions";
-                    else if (csMin < 5.5) label = "📉 Déficit de Farm Severo";
-                    else label = "📉 Déficit de Farm"; 
+                    if (csMin < 4.5) label = "Ã°Å¸Â¤Â¡ Alergia a los Minions";
+                    else if (csMin < 5.5) label = "Ã°Å¸â€œâ€° DÃƒÂ©ficit de Farm Severo";
+                    else label = "Ã°Å¸â€œâ€° DÃƒÂ©ficit de Farm"; 
                 }
             }
 
@@ -3590,31 +3599,31 @@ if (!isWin && durationMin >= 15) {
             // Sumar al total general
             total = safeAdd(total, finalPts);
             
-            // Construir la nota (Ej: "👑 DIOS DEL FARM (Chovy Mode) (10.8/m, +6.48 pts)")
+            // Construir la nota (Ej: "Ã°Å¸â€˜â€˜ DIOS DEL FARM (Chovy Mode) (10.8/m, +6.48 pts)")
             const sign = finalPts > 0 ? '+' : '';
             notes.push(`${label} (${csMin.toFixed(1)}/m, ${sign}${finalPts} pts)`);
         }
     }
 
   // =====================================================
-    // 🎣 EL PESCADOR V4.0 (Cazadas por Minuto Progresivo)
+    // Ã°Å¸Å½Â£ EL PESCADOR V4.0 (Cazadas por Minuto Progresivo)
     // =====================================================
     // Variable: challenges.pickKillWithAlly
-    // Mide cuántas veces cazaste a un enemigo aislado.
+    // Mide cuÃƒÂ¡ntas veces cazaste a un enemigo aislado.
     
     let pickKills = Number(p.challenges?.pickKillWithAlly || 0);
 
     // Calculamos el ritmo: Picks por minuto
     const pickPerMin = durationMin > 0 ? pickKills / durationMin : 0;
 
-    // REQUISITO MÍNIMO: 4 cazadas totales para empezar a evaluar
+    // REQUISITO MÃƒÂNIMO: 4 cazadas totales para empezar a evaluar
     if (pickKills >= 4) {
         
         // 1. BASELINE: 0.50 cazadas por minuto.
         const basePick = 0.50;
         
         if (pickPerMin > basePick) {
-            // 2. FÓRMULA PROGRESIVA: Multiplicador de 6.25
+            // 2. FÃƒâ€œRMULA PROGRESIVA: Multiplicador de 6.25
             let pickPts = (pickPerMin - basePick) * 6.25;
             
             // Cap de seguridad
@@ -3623,9 +3632,9 @@ if (!isWin && durationMin >= 15) {
             // Solo aplicamos si la cantidad es relevante (>= 0.75)
             if (pickPts >= 0.75) {
                 // 3. ETIQUETAS ORIGINALES
-                let label = "🕸️ Oportunista";
-                if (pickPerMin >= 1.10) label = "🛸 ABDUCTOR ALIENÍGENA";
-                else if (pickPerMin >= 0.82) label = "🎣 EL PESCADOR";
+                let label = "Ã°Å¸â€¢Â¸Ã¯Â¸Â Oportunista";
+                if (pickPerMin >= 1.10) label = "Ã°Å¸â€ºÂ¸ ABDUCTOR ALIENÃƒÂGENA";
+                else if (pickPerMin >= 0.82) label = "Ã°Å¸Å½Â£ EL PESCADOR";
 
                 pickPts = parseFloat(pickPts.toFixed(2));
                 total = safeAdd(total, pickPts);
@@ -3635,10 +3644,10 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🔒 EL CANDADO V4.0 (Setup de Kills Progresivo)
+    // Ã°Å¸â€â€™ EL CANDADO V4.0 (Setup de Kills Progresivo)
     // =====================================================
     // Variable: challenges.immobilizeAndKillWithAlly
-    // Tú lo agarras, tu equipo lo mata. La definición de Support/Tanque Carry.
+    // TÃƒÂº lo agarras, tu equipo lo mata. La definiciÃƒÂ³n de Support/Tanque Carry.
     const setupKills = Number(p.challenges?.immobilizeAndKillWithAlly || 0);
     
     // Calculamos Setup por Minuto (SPM)
@@ -3653,7 +3662,7 @@ if (!isWin && durationMin >= 15) {
         const baseSetup = 0.20;
         
         if (setupPerMin > baseSetup) {
-            // 2. FÓRMULA PROGRESIVA: Multiplicador de 5.0
+            // 2. FÃƒâ€œRMULA PROGRESIVA: Multiplicador de 5.0
             let setupPts = (setupPerMin - baseSetup) * 5.0;
             
             // Cap de seguridad (Max 3.5 puntos)
@@ -3664,9 +3673,9 @@ if (!isWin && durationMin >= 15) {
                 gotSetupReward = true;
                 
                 // 3. ETIQUETAS ORIGINALES
-                let label = "🍽️ En Bandeja";
-                if (setupPerMin >= 0.65) label = "⛓️ MAESTRO DE TÍTERES";
-                else if (setupPerMin >= 0.50) label = "🔒 EL CANDADO";
+                let label = "Ã°Å¸ÂÂ½Ã¯Â¸Â En Bandeja";
+                if (setupPerMin >= 0.65) label = "Ã¢â€ºâ€œÃ¯Â¸Â MAESTRO DE TÃƒÂTERES";
+                else if (setupPerMin >= 0.50) label = "Ã°Å¸â€â€™ EL CANDADO";
 
                 setupPts = parseFloat(setupPts.toFixed(2));
                 total = safeAdd(total, setupPts);
@@ -3676,36 +3685,36 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🔫 JOHN WICK V3.0 (Outplays Progresivo)
+    // Ã°Å¸â€Â« JOHN WICK V3.0 (Outplays Progresivo)
     // =====================================================
     // Variable: challenges.outnumberedKills
-    // Mide veces que matas estando en inferioridad numérica (1v2, 2v3, etc).
+    // Mide veces que matas estando en inferioridad numÃƒÂ©rica (1v2, 2v3, etc).
     
     const johnWickKills = Number(p.challenges?.outnumberedKills || 0);
     const wickPerMin = durationMin > 0 ? johnWickKills / durationMin : 0;
 
-    // REQUISITO MÍNIMO: Al menos 2 jugadas totales.
+    // REQUISITO MÃƒÂNIMO: Al menos 2 jugadas totales.
     if (johnWickKills >= 2) {
         
-        // 1. BASELINE: 0.05 outplays por minuto (algo muy básico).
+        // 1. BASELINE: 0.05 outplays por minuto (algo muy bÃƒÂ¡sico).
         const baseWick = 0.05;
 
         if (wickPerMin > baseWick) {
-            // 2. FÓRMULA PROGRESIVA: Multiplicador de 15.0
+            // 2. FÃƒâ€œRMULA PROGRESIVA: Multiplicador de 15.0
             // Ej: a 0.28 (Baba Yaga) -> (0.28 - 0.05) * 15 = 3.45 pts (Casi los 3.5 que dabas)
             // Ej: a 0.17 (Hitman) -> (0.17 - 0.05) * 15 = 1.80 pts (Casi los 1.5 que dabas)
             // Ej: a 0.10 (Outplays) -> (0.10 - 0.05) * 15 = 0.75 pts (Exacto a lo que dabas)
             let wickPts = (wickPerMin - baseWick) * 15.0;
 
-            // Cap máximo de seguridad
+            // Cap mÃƒÂ¡ximo de seguridad
             wickPts = Math.max(0, Math.min(4.0, wickPts));
 
             if (wickPts >= 0.5) {
                 // 3. ETIQUETAS ORIGINALES INTACTAS
                 let rankLabel = "";
-                if (wickPerMin >= 0.28) rankLabel = `✏️ BABA YAGA`;
-                else if (wickPerMin >= 0.17) rankLabel = `🕴️ Hitman`;
-                else rankLabel = `✌🏻 Outplays`;
+                if (wickPerMin >= 0.28) rankLabel = `Ã¢Å“ÂÃ¯Â¸Â BABA YAGA`;
+                else if (wickPerMin >= 0.17) rankLabel = `Ã°Å¸â€¢Â´Ã¯Â¸Â Hitman`;
+                else rankLabel = `Ã¢Å“Å’Ã°Å¸ÂÂ» Outplays`;
 
                 wickPts = parseFloat(wickPts.toFixed(2));
                 total = safeAdd(total, wickPts);
@@ -3715,7 +3724,7 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🥷 EL NINJA V2.0 (Emboscadas por Minuto)
+    // Ã°Å¸Â¥Â· EL NINJA V2.0 (Emboscadas por Minuto)
     // =====================================================
     // Variable: challenges.killAfterHiddenWithAlly
     // Mide eficiencia de uso de la Niebla de Guerra.
@@ -3723,36 +3732,36 @@ if (!isWin && durationMin >= 15) {
     const ambushKills = Number(p.challenges?.killAfterHiddenWithAlly || 0);
     const ambushPerMin = durationMin > 0 ? ambushKills / durationMin : 0;
 
-    // REQUISITO: Mínimo 2 para evitar sesgos en partidas muy cortas o suerte puntual
+    // REQUISITO: MÃƒÂ­nimo 2 para evitar sesgos en partidas muy cortas o suerte puntual
     if (ambushKills >= 3) {
         
         // TIER 3: SOMBRA LETAL (> 0.20/min) 
         // Ritmo absurdo. Ej: 6 emboscadas en 30 min (1 cada 5 min).
         if (ambushPerMin >= 0.25) {
             total = safeAdd(total, 3.0, "Ninja God", notes);
-            notes.push(`🥷 SOMBRA LETAL (${ambushKills} emboscadas, ${ambushPerMin.toFixed(2)}/min)`);
+            notes.push(`Ã°Å¸Â¥Â· SOMBRA LETAL (${ambushKills} emboscadas, ${ambushPerMin.toFixed(2)}/min)`);
         }
         
         // TIER 2: ASSASSIN'S CREED (> 0.12/min)
         // Ritmo alto. Ej: 4 emboscadas en 30 min (1 cada 7-8 min).
         else if (ambushPerMin >= 0.18) {
             total = safeAdd(total, 2.0, "Assassin", notes);
-            notes.push(`🗡️ Assassin's Creed (${ambushKills} emboscadas)`);
+            notes.push(`Ã°Å¸â€”Â¡Ã¯Â¸Â Assassin's Creed (${ambushKills} emboscadas)`);
         }
         
-        // TIER 1: CAMPERO TÁCTICO (> 0.06/min)
+        // TIER 1: CAMPERO TÃƒÂCTICO (> 0.06/min)
         // Ritmo constante. Ej: 2 emboscadas en 30 min.
         else if (ambushPerMin >= 0.12) {
             total = safeAdd(total, 1.0, "Camper", notes);
-            notes.push(`⛺ Campero Táctico (${ambushKills} emboscadas)`);
+            notes.push(`Ã¢â€ºÂº Campero TÃƒÂ¡ctico (${ambushKills} emboscadas)`);
         }
     }
 
     // =====================================================
-    // 🎯 EL FRANCOTIRADOR (Distancia Máxima de Kill)
+    // Ã°Å¸Å½Â¯ EL FRANCOTIRADOR (Distancia MÃƒÂ¡xima de Kill)
     // =====================================================
     // Variable: challenges.maxKillDistance
-    // Un ataque básico de Caitlyn son 650 unidades. La pantalla son ~1500-2000.
+    // Un ataque bÃƒÂ¡sico de Caitlyn son 650 unidades. La pantalla son ~1500-2000.
     const maxDist = Number(p.challenges?.maxKillDistance || 0);
 
     if (maxDist > 0) {
@@ -3760,13 +3769,13 @@ if (!isWin && durationMin >= 15) {
         // Kills desde base o medio mapa (Ezreal, Jinx, Ashe, Karthus, Gangplank)
         if (maxDist >= 10000) {
             total = safeAdd(total, 1.0, "ICBM Kill", notes);
-            notes.push(`🚀 MISIL INTERCONTINENTAL (Kill a ${(maxDist/100).toFixed(0)}m de distancia)`);
+            notes.push(`Ã°Å¸Å¡â‚¬ MISIL INTERCONTINENTAL (Kill a ${(maxDist/100).toFixed(0)}m de distancia)`);
         }
         // TIER 2: SNIPER ELITE (> 3,000 unidades)
         // Kills fuera de pantalla (Xerath, Jhin, Caitlyn R, Nidalee Q max range)
         else if (maxDist >= 3000) {
             total = safeAdd(total, 0.5, "Sniper", notes);
-            notes.push(`🔭 Sniper Elite (Kill fuera de pantalla)`);
+            notes.push(`Ã°Å¸â€Â­ Sniper Elite (Kill fuera de pantalla)`);
         }
     }
 
@@ -3777,79 +3786,79 @@ if (!isWin && durationMin >= 15) {
     if (diveKills > 0) {
         const divePts = diveKills * 0.75; // 0.75 pts por cada dive exitoso
         total = safeAdd(total, divePts, "Dive Master", notes);
-        notes.push(`🏯 Dive Master (${diveKills} kills bajo torre)`);
+        notes.push(`Ã°Å¸ÂÂ¯ Dive Master (${diveKills} kills bajo torre)`);
     }
 
-    // --- NUEVO: COORDINACIÓN PERFECTA (Flawless Ace) ---
+    // --- NUEVO: COORDINACIÃƒâ€œN PERFECTA (Flawless Ace) ---
     // Variable: challenges.flawlessAces
     const cleanAces = Number(p.challenges?.flawlessAces || 0);
 
     if (cleanAces > 0) {
         const acePts = cleanAces * 0.5; // 2 puntos por cada Exterminio limpio (es raro que pase)
         total = safeAdd(total, acePts, "Clean Ace", notes);
-        notes.push(`✨ Exterminio Perfecto (x${cleanAces})`);
+        notes.push(`Ã¢Å“Â¨ Exterminio Perfecto (x${cleanAces})`);
     }
 
 
     // =====================================================
-    // ⚔️ HITOS DE KILLS (KPM - Kills Por Minuto) - PROGRESIVO
+    // Ã¢Å¡â€Ã¯Â¸Â HITOS DE KILLS (KPM - Kills Por Minuto) - PROGRESIVO
     // =====================================================
     const kpm = durationMin > 0 ? k / durationMin : 0;
     
     // Empezamos a premiar el ritmo de asesinatos a partir de 0.40 KPM
     if (kpm >= 0.40) { 
         
-        // 1. FÓRMULA PROGRESIVA: Base en 0.28 KPM, multiplicador de 8.33
+        // 1. FÃƒâ€œRMULA PROGRESIVA: Base en 0.28 KPM, multiplicador de 8.33
         // Ej: 0.40 KPM -> (0.40 - 0.28) * 8.33 = +1.00 pts
         // Ej: 0.55 KPM -> (0.55 - 0.28) * 8.33 = +2.25 pts
         // Ej: 0.70 KPM -> (0.70 - 0.28) * 8.33 = +3.50 pts
         let kpmPts = (kpm - 0.28) * 8.33;
         
-        // Cap de seguridad máximo (+4.5 puntos, para evitar que stomps de 15 minutos rompan el sistema)
+        // Cap de seguridad mÃƒÂ¡ximo (+4.5 puntos, para evitar que stomps de 15 minutos rompan el sistema)
         kpmPts = Math.min(4.5, parseFloat(kpmPts.toFixed(2)));
 
-        // 2. ASIGNACIÓN DE ETIQUETAS (LORE)
-        let label = "🔫 Sicario";
+        // 2. ASIGNACIÃƒâ€œN DE ETIQUETAS (LORE)
+        let label = "Ã°Å¸â€Â« Sicario";
         if (kpm >= 0.70) {
-            label = "⚰️ La Parca";
+            label = "Ã¢Å¡Â°Ã¯Â¸Â La Parca";
         } else if (kpm >= 0.55) {
-            label = "💀 Terminator";
+            label = "Ã°Å¸â€™â‚¬ Terminator";
         }
 
-        // 3. APLICACIÓN
+        // 3. APLICACIÃƒâ€œN
         applyBonus(`${label} (${kpm.toFixed(2)} kills/min)`, kpmPts);
     }
 
     // =====================================================
-    // 🤝 HITOS DE ASISTENCIAS (APM) - MATRIZ INTELIGENTE V4.0
+    // Ã°Å¸Â¤Â HITOS DE ASISTENCIAS (APM) - MATRIZ INTELIGENTE V4.0
     // =====================================================
     const apm = durationMin > 0 ? a / durationMin : 0;
     
     // 1. EXPECTATIVAS POR ROL (El "Punto 0")
-    // ¿Cuántas asistencias por minuto se consideran "lo normal" para tu rol?
+    // Ã‚Â¿CuÃƒÂ¡ntas asistencias por minuto se consideran "lo normal" para tu rol?
     let baseAPM = 0.20; // Laners (Top, Mid, Bot) no asisten tanto
     if (isSupport) baseAPM = 0.30; // El Support DEBE asistir
-    else if (isJungle) baseAPM = 0.25; // El Jungla está en medio
+    else if (isJungle) baseAPM = 0.25; // El Jungla estÃƒÂ¡ en medio
 
-    // 2. CÁLCULO DE DIFERENCIA
+    // 2. CÃƒÂLCULO DE DIFERENCIA
     const apmDiff = apm - baseAPM;
     let apmPts = 0;
     let label = "";
 
     // --- A. RECOMPENSAS (Mercado Altruista) ---
     if (apmDiff > 0.10) { 
-        // FÓRMULA PROGRESIVA: +4.0 pts por cada 1.0 APM por encima de lo esperado
+        // FÃƒâ€œRMULA PROGRESIVA: +4.0 pts por cada 1.0 APM por encima de lo esperado
         // Ej Supp: 1.15 APM (base 0.65) -> +0.50 extra * 4.0 = +2.0 pts
         // Ej Top: 0.75 APM (base 0.25) -> +0.50 extra * 4.0 = +2.0 pts
         apmPts = apmDiff * 5.0;
-        apmPts = Math.min(4.5, parseFloat(apmPts.toFixed(2))); // Cap máximo de +4.5
+        apmPts = Math.min(4.5, parseFloat(apmPts.toFixed(2))); // Cap mÃƒÂ¡ximo de +4.5
 
-        // SISTEMA DE 5 TIERS (Dinámico según la diferencia)
-        if (apmDiff >= 0.65) label = "👼🏻 MESÍAS DE LA GRIETA";       // Nivel S++
-        else if (apmDiff >= 0.45) label = "👼🏻 Heroes Never die!";    // Nivel S
-        else if (apmDiff >= 0.30) label = "🚑 Hospital Ambulante";   // Nivel A
-        else if (apmDiff >= 0.15) label = "💉 Enfermero";            // Nivel B
-        else label = "🩹 Primeros Auxilios";                         // Nivel C
+        // SISTEMA DE 5 TIERS (DinÃƒÂ¡mico segÃƒÂºn la diferencia)
+        if (apmDiff >= 0.65) label = "Ã°Å¸â€˜Â¼Ã°Å¸ÂÂ» MESÃƒÂAS DE LA GRIETA";       // Nivel S++
+        else if (apmDiff >= 0.45) label = "Ã°Å¸â€˜Â¼Ã°Å¸ÂÂ» Heroes Never die!";    // Nivel S
+        else if (apmDiff >= 0.30) label = "Ã°Å¸Å¡â€˜ Hospital Ambulante";   // Nivel A
+        else if (apmDiff >= 0.15) label = "Ã°Å¸â€™â€° Enfermero";            // Nivel B
+        else label = "Ã°Å¸Â©Â¹ Primeros Auxilios";                         // Nivel C
     }
     
     // --- B. PENALIZACIONES (Solo para Supports y Junglas) ---
@@ -3859,73 +3868,73 @@ if (!isWin && durationMin >= 15) {
         apmPts = (apmDiff + 0.20) * 5.0; 
         apmPts = Math.max(-3.5, parseFloat(apmPts.toFixed(2)));
 
-        if (apm < 0.15) label = "🗿 Compañero de Cartón"; // Literalmente no ha tocado a nadie
-        else label = "🚶‍♂️ Jugador Solitario";
+        if (apm < 0.15) label = "Ã°Å¸â€”Â¿ CompaÃƒÂ±ero de CartÃƒÂ³n"; // Literalmente no ha tocado a nadie
+        else label = "Ã°Å¸Å¡Â¶Ã¢â‚¬ÂÃ¢â„¢â€šÃ¯Â¸Â Jugador Solitario";
     }
 
-    // 3. APLICACIÓN
+    // 3. APLICACIÃƒâ€œN
     if (apmPts !== 0 && label !== "") {
         total = safeAdd(total, apmPts, "APM Scaling", notes);
         notes.push(`${label} (${apm.toFixed(2)} ast/min, ${apmPts > 0 ? '+' : ''}${apmPts} pts)`);
     }
 
     // =====================================================
-    // 🛡️ PREMIO A LA SUPERVIVENCIA 2.0 (Contextual)
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â PREMIO A LA SUPERVIVENCIA 2.0 (Contextual)
     // =====================================================
     if (durationMin >= 20) {
         
-        // Calcular si el jugador participó activamente o solo se escondió
+        // Calcular si el jugador participÃƒÂ³ activamente o solo se escondiÃƒÂ³
         // Si KP es bajo (< 25%) y no eres Splitpusher, eres un "KDA Player"
         const isPassivePlayer = (kp < 0.35) && !notes.some(n => n.includes("Split"));
-        const isLongGame = durationMin >= 35; // Mantener el 0 en late game es muy difícil
+        const isLongGame = durationMin >= 35; // Mantener el 0 en late game es muy difÃƒÂ­cil
 
         if (d === 0) {
             if (isPassivePlayer) {
                 // Castigo por jugar demasiado seguro sin ayudar
-                applyBonus("🛡️ KDA Player (0 muertes, bajo impacto)", 1.0);
+                applyBonus("Ã°Å¸â€ºÂ¡Ã¯Â¸Â KDA Player (0 muertes, bajo impacto)", 1.0);
             } 
             else {
                 // PREMIO REAL: Inmortalidad con impacto
-                // Si la partida fue muy larga (>35 min), vale más (+4.0)
+                // Si la partida fue muy larga (>35 min), vale mÃƒÂ¡s (+4.0)
                 // Si el KDA ya es absurdo (>15), bajamos un poco la base para no inflar (+2.0 + bonus)
                 let basePoints = (kda > 15) ? 1.5 : 3.0;
                 
                 if (isLongGame) {
                     basePoints += 1.0; // Bonus por dificultad de tiempo
-                    applyBonus("👑 INMORTAL LEGENDARIO (>35 min sin morir)", basePoints);
+                    applyBonus("Ã°Å¸â€˜â€˜ INMORTAL LEGENDARIO (>35 min sin morir)", basePoints);
                 } else {
-                    applyBonus("👑 Inmortal", basePoints);
+                    applyBonus("Ã°Å¸â€˜â€˜ Inmortal", basePoints);
                 }
             }
         } 
         else if (d === 1) {
             // Casi perfecto: Se mantiene igual, es un buen premio
-            applyBonus("🛡️ Casi Perfecto", 2.0);
+            applyBonus("Ã°Å¸â€ºÂ¡Ã¯Â¸Â Casi Perfecto", 2.0);
         } 
         else if (d <= 3) {
-            // Si moriste poco, pero la partida fue ETERNA (>40 min), tiene mérito extra
+            // Si moriste poco, pero la partida fue ETERNA (>40 min), tiene mÃƒÂ©rito extra
             if (durationMin >= 40) {
-                 applyBonus("🧘 Superviviente de Maratón", 1.5);
+                 applyBonus("Ã°Å¸Â§Ëœ Superviviente de MaratÃƒÂ³n", 1.5);
             } else {
-                 applyBonus("🧘 Superviviente", 1.0);
+                 applyBonus("Ã°Å¸Â§Ëœ Superviviente", 1.0);
             }
         }
     }
 
-    // =====================================================
-    // 👁️ EL OJO DE SAURON 2.0: CONTROL DE VISIÓN PROGRESIVO
+Ã‚Â  Ã‚Â  // =====================================================
+    // Ã°Å¸â€˜ÂÃ¯Â¸Â EL OJO DE SAURON 2.0: CONTROL DE VISIÃƒâ€œN PROGRESIVO
     // =====================================================
     
-    // 1. Obtener la métrica exacta (Visión por Minuto)
+    // 1. Obtener la mÃƒÂ©trica exacta (VisiÃƒÂ³n por Minuto)
     const vspm = Number(p.challenges?.visionScorePerMinute || (durationMin > 0 ? vs / durationMin : 0));
 
-    // --- A. BONUS POR ROL (Escalado Matemático) ---
+    // --- A. BONUS POR ROL (Escalado MatemÃƒÂ¡tico) ---
     
-    // 1. SUPPORTS (La función principal: Exigencia Máxima)
+    // 1. SUPPORTS (La funciÃƒÂ³n principal: Exigencia MÃƒÂ¡xima)
     if (isSupport) {
-        // Fórmula Progresiva:
+        // FÃƒÂ³rmula Progresiva:
         // Baseline = 1.5 vspm (0 puntos). 
-        // Si tienes más, sumas x1.8 por cada punto. Si tienes menos, restas x2.0.
+        // Si tienes mÃƒÂ¡s, sumas x1.8 por cada punto. Si tienes menos, restas x2.0.
         let vspmPts = vspm > 1.5 ? (vspm - 1.5) * 1.8 : (vspm - 1.5) * 2.0;
         
         // Cap de seguridad: Max +4.5 pts | Min -3.0 pts
@@ -3934,13 +3943,13 @@ if (!isWin && durationMin >= 15) {
         // Perdonar partidas demasiado cortas (remakes o surrenders al 15)
         if (vspmPts < 0 && durationMin <= 15) vspmPts = 0; 
 
-        // Asignación de Etiquetas (Lore)
+        // AsignaciÃƒÂ³n de Etiquetas (Lore)
         let label = "";
-        if (vspmPts >= 3.8) label = "👁️ OJO DE SAURON";
-        else if (vspmPts >= 2.5) label = "🔦 Mapa Iluminado";
-        else if (vspmPts >= 1.5) label = "🕯️ Control de Zona";
-        else if (vspmPts >= 0.5) label = "👀 Visión Decente";
-        else if (vspmPts <= -1.0) label = "🙈 Support Ciego";
+        if (vspmPts >= 3.8) label = "Ã°Å¸â€˜ÂÃ¯Â¸Â OJO DE SAURON";
+        else if (vspmPts >= 2.5) label = "Ã°Å¸â€Â¦ Mapa Iluminado";
+        else if (vspmPts >= 1.5) label = "Ã°Å¸â€¢Â¯Ã¯Â¸Â Control de Zona";
+        else if (vspmPts >= 0.5) label = "Ã°Å¸â€˜â‚¬ VisiÃƒÂ³n Decente";
+        else if (vspmPts <= -1.0) label = "Ã°Å¸â„¢Ë† Support Ciego";
         
         if (vspmPts !== 0 && label !== "") {
             vspmPts = parseFloat(vspmPts.toFixed(2));
@@ -3950,7 +3959,7 @@ if (!isWin && durationMin >= 15) {
     } 
     
     // =====================================================
-    // 2. JUNGLAS (Exigencia media-alta: Visión y Control)
+    // 2. JUNGLAS (Exigencia media-alta: VisiÃƒÂ³n y Control)
     // =====================================================
     else if (isJungle) {
         // Baseline = 1.0 vspm (0 puntos). 
@@ -3960,17 +3969,17 @@ if (!isWin && durationMin >= 15) {
         // Cap de seguridad ampliado: Max +3.5 pts | Min -2.0 pts
         vspmPts = Math.max(-2.0, Math.min(3.5, parseFloat(vspmPts.toFixed(2))));
 
-        // Perdón en remakes o stomps rápidos
+        // PerdÃƒÂ³n en remakes o stomps rÃƒÂ¡pidos
         if (vspmPts < 0 && durationMin <= 15) vspmPts = 0;
 
         let label = "";
         // Premios
-        if (vspmPts >= 3.0) label = "👁️‍🗨️ EL OJO QUE TODO LO VE";
-        else if (vspmPts >= 2.0) label = "🌲 Radar Humano";
-        else if (vspmPts >= 1.0) label = "🔭 Vigía de Jungla";
+        if (vspmPts >= 3.0) label = "Ã°Å¸â€˜ÂÃ¯Â¸ÂÃ¢â‚¬ÂÃ°Å¸â€”Â¨Ã¯Â¸Â EL OJO QUE TODO LO VE";
+        else if (vspmPts >= 2.0) label = "Ã°Å¸Å’Â² Radar Humano";
+        else if (vspmPts >= 1.0) label = "Ã°Å¸â€Â­ VigÃƒÂ­a de Jungla";
         // Castigos
-        else if (vspmPts <= -1.5) label = "🙈 CIEGO LEGAL";
-        else if (vspmPts <= -0.8) label = "🕶️ Lee Sin Cosplay";
+        else if (vspmPts <= -1.5) label = "Ã°Å¸â„¢Ë† CIEGO LEGAL";
+        else if (vspmPts <= -0.8) label = "Ã°Å¸â€¢Â¶Ã¯Â¸Â Lee Sin Cosplay";
 
         if (vspmPts !== 0 && label !== "") {
             total = safeAdd(total, vspmPts, "Jungle VSPM", notes);
@@ -3984,15 +3993,15 @@ if (!isWin && durationMin >= 15) {
     else {
         // Empezamos a premiar notablemente a partir de 0.6 vspm
         if (vspm >= 0.60) {
-            // Fórmula: Base 0.5 vspm, multiplicador de 2.0
+            // FÃƒÂ³rmula: Base 0.5 vspm, multiplicador de 2.0
             // Ej: 1.0 vspm -> (1.0 - 0.5) * 2 = +1.0 pts
             // Ej: 1.5 vspm -> (1.5 - 0.5) * 2 = +2.0 pts
             let vspmPts = (vspm - 0.5) * 2.0;
-            vspmPts = Math.min(2.5, parseFloat(vspmPts.toFixed(2))); // Cap máximo en +2.5
+            vspmPts = Math.min(2.5, parseFloat(vspmPts.toFixed(2))); // Cap mÃƒÂ¡ximo en +2.5
 
-            let label = "🔦 Ayudante de Visión";
-            if (vspmPts >= 2.0) label = "🦅 Ojo de Halcón Supremo";
-            else if (vspmPts >= 1.2) label = "🦉 Laner Visionario";
+            let label = "Ã°Å¸â€Â¦ Ayudante de VisiÃƒÂ³n";
+            if (vspmPts >= 2.0) label = "Ã°Å¸Â¦â€¦ Ojo de HalcÃƒÂ³n Supremo";
+            else if (vspmPts >= 1.2) label = "Ã°Å¸Â¦â€° Laner Visionario";
             
             total = safeAdd(total, vspmPts, "Laner VSPM", notes);
             notes.push(`${label} (${vspm.toFixed(2)}/m, +${vspmPts} pts)`);
@@ -4000,21 +4009,21 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // --- B. DOMINANCIA DE VISIÓN (Support vs Oponente) ---
+    // --- B. DOMINANCIA DE VISIÃƒâ€œN (Support vs Oponente) ---
     // =====================================================
     if (isSupport && opponent) {
         const vsDiff = (p.visionScore || 0) - (opponent.visionScore || 0);
         
-        // Empezamos a premiar si le sacas al menos +10 de visión al rival
+        // Empezamos a premiar si le sacas al menos +10 de visiÃƒÂ³n al rival
         if (vsDiff >= 10) { 
-            // Fórmula progresiva: +0.12 pts por cada punto de visión de diferencia
+            // FÃƒÂ³rmula progresiva: +0.12 pts por cada punto de visiÃƒÂ³n de diferencia
             // +20 diff = +1.20 pts | +35 diff = +3.0 pts | +45 diff = +4.2 pts
             let gapPts = (vsDiff - 10) * 0.12;
             gapPts = Math.min(4.0, parseFloat(gapPts.toFixed(2))); // Cap ampliado a +4.0
             
-            let label = "💡 Vision Gap";
-            if (gapPts >= 3.0) label = "👁️ OMNISCIENCIA ABSOLUTA";
-            else if (gapPts >= 1.5) label = "🔦 Dominio del Mapa";
+            let label = "Ã°Å¸â€™Â¡ Vision Gap";
+            if (gapPts >= 3.0) label = "Ã°Å¸â€˜ÂÃ¯Â¸Â OMNISCIENCIA ABSOLUTA";
+            else if (gapPts >= 1.5) label = "Ã°Å¸â€Â¦ Dominio del Mapa";
 
             total = safeAdd(total, gapPts, "Vision Gap", notes);
             notes.push(`${label} (+${vsDiff} vs rival, +${gapPts} pts)`);
@@ -4022,28 +4031,28 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 📊 PARTICIPACIÓN DE KILLS (KP) - PROGRESIVO V4.0
+    // Ã°Å¸â€œÅ  PARTICIPACIÃƒâ€œN DE KILLS (KP) - PROGRESIVO V4.0
     // =====================================================
     if (durationMin > 12) { 
 
-        // 1. DEFINIR EXPECTATIVA BASE (El "Mínimo para no restar")
+        // 1. DEFINIR EXPECTATIVA BASE (El "MÃƒÂ­nimo para no restar")
         // Mid/Adc empiezan en 35%
         let baseKP = 0.40; 
 
         // AJUSTE POR ROL:
         // Top: Vive en una isla -> Se le exige menos (25%)
-        // Jgl/Supp: Roamers -> Se les exige más (40%)
+        // Jgl/Supp: Roamers -> Se les exige mÃƒÂ¡s (40%)
         if (isJungle || isSupport) {
             baseKP += 0.05;
         }
 
-        // 2. FÓRMULA MATEMÁTICA PROGRESIVA
+        // 2. FÃƒâ€œRMULA MATEMÃƒÂTICA PROGRESIVA
         // Por cada 10% (0.10) por encima de tu base, ganas +1.0 punto.
         // Ej Mid: 75% KP -> (0.75 - 0.35) * 10 = +4.0 pts
         // Ej Jgl: 50% KP -> (0.50 - 0.40) * 10 = +1.0 pts
         let kpPts = (kp - baseKP) * 10.0;
         
-        // Cap de seguridad: Máximo +4.5 pts | Mínimo -3.0 pts
+        // Cap de seguridad: MÃƒÂ¡ximo +4.5 pts | MÃƒÂ­nimo -3.0 pts
         kpPts = Math.max(-3.0, Math.min(4.5, kpPts));
 
         // 3. EXCEPCIONES PARA NO CASTIGAR (Solo si los puntos son negativos)
@@ -4056,11 +4065,11 @@ if (!isWin && durationMin >= 15) {
 
             if (isSplitpusher) {
                 kpPts = 0;
-                notes.push(`🚜 Splitpusher Solitario (Baja KP justificada)`);
+                notes.push(`Ã°Å¸Å¡Å“ Splitpusher Solitario (Baja KP justificada)`);
             } 
             else if (isFastStomp) {
                 kpPts = 0;
-                notes.push(`⚡ Stomp Rápido (Baja KP perdonada)`);
+                notes.push(`Ã¢Å¡Â¡ Stomp RÃƒÂ¡pido (Baja KP perdonada)`);
             }
             else if (isTopIsland) {
                 kpPts = 0;
@@ -4068,42 +4077,42 @@ if (!isWin && durationMin >= 15) {
             }
         }
 
-        // 4. ASIGNACIÓN DE ETIQUETAS (LORE) Y APLICACIÓN
+        // 4. ASIGNACIÃƒâ€œN DE ETIQUETAS (LORE) Y APLICACIÃƒâ€œN
         let label = "";
         
         // Etiquetas para rendimientos positivos
-        if (kpPts >= 3.5) label = "👁️ Omnipresente";        // Aprox > 75% KP
-        else if (kpPts >= 2.5) label = "⚙️ Motor del Equipo"; // Aprox > 65% KP
-        else if (kpPts >= 1.5) label = "🤝 Socio Clave";      // Aprox > 55% KP
-        else if (kpPts >= 0.5) label = "🪲 Trabajador";       // Aprox > 45% KP
+        if (kpPts >= 3.5) label = "Ã°Å¸â€˜ÂÃ¯Â¸Â Omnipresente";        // Aprox > 75% KP
+        else if (kpPts >= 2.5) label = "Ã¢Å¡â„¢Ã¯Â¸Â Motor del Equipo"; // Aprox > 65% KP
+        else if (kpPts >= 1.5) label = "Ã°Å¸Â¤Â Socio Clave";      // Aprox > 55% KP
+        else if (kpPts >= 0.5) label = "Ã°Å¸ÂªÂ² Trabajador";       // Aprox > 45% KP
         // (Entre 0.0 y 0.5 es "Decente", no ponemos nota para no spamear)
         
         // Etiqueta para castigos (Si los puntos siguen siendo negativos tras las excepciones)
         else if (kpPts <= -0.5) {
-            label = "👻 Fantasma";
+            label = "Ã°Å¸â€˜Â» Fantasma";
         }
 
-        // 5. SUMAR PUNTOS Y AÑADIR AL REGISTRO
+        // 5. SUMAR PUNTOS Y AÃƒâ€˜ADIR AL REGISTRO
         if (kpPts !== 0 && label !== "") {
             kpPts = parseFloat(kpPts.toFixed(2));
             total = safeAdd(total, kpPts);
             
-            // Genera la nota: "👁️ Omnipresente (78% KP, +4.3 pts)" o "👻 Fantasma (22% KP, -1.3 pts)"
+            // Genera la nota: "Ã°Å¸â€˜ÂÃ¯Â¸Â Omnipresente (78% KP, +4.3 pts)" o "Ã°Å¸â€˜Â» Fantasma (22% KP, -1.3 pts)"
             notes.push(`${label} (${(kp * 100).toFixed(0)}% KP, ${kpPts > 0 ? '+' : ''}${kpPts} pts)`);
         }
     }
 
 
     // =========================================================
-    // 📊 MÓDULO ROI V5.0: EL LOBO DE WALL STREET (PROGRESIVO)
+    // Ã°Å¸â€œÅ  MÃƒâ€œDULO ROI V5.0: EL LOBO DE WALL STREET (PROGRESIVO)
     // =========================================================
-    // Solo aplica a Laners y Junglas (Supports tienen su propia lógica de utilidad)
+    // Solo aplica a Laners y Junglas (Supports tienen su propia lÃƒÂ³gica de utilidad)
     if (durationMin > 15 && !isSupport) {
         
         const myGold = Math.max(1, Number(p.goldEarned || 0));
         const myDmg = Number(p.totalDamageDealtToChampions || 0);
         
-        // 1. Calcular TU eficiencia (Daño por cada 1 de Oro)
+        // 1. Calcular TU eficiencia (DaÃƒÂ±o por cada 1 de Oro)
         const myROI = myDmg / myGold;
 
         // 2. Calcular la media del equipo (Excluyendo Supports para no distorsionar)
@@ -4125,26 +4134,26 @@ if (!isWin && durationMin >= 15) {
         const goldRank = sortedGold.findIndex(x => x.puuid === p.puuid) + 1;
         const dmgRank = sortedDmg.findIndex(x => x.puuid === p.puuid) + 1;
 
-        // --- NIVEL 1: CÁLCULO DE EFICIENCIA PURA (PROGRESIVO) ---
-        // Requisito: Haber hecho daño relevante (>15% del total)
+        // --- NIVEL 1: CÃƒÂLCULO DE EFICIENCIA PURA (PROGRESIVO) ---
+        // Requisito: Haber hecho daÃƒÂ±o relevante (>15% del total)
         if (dmgShare > 0.15 && teamAvgROI > 0) {
             
-            // Calculamos cuántas veces mejor eres que la media (Ej: 1.30 = 30% mejor)
+            // Calculamos cuÃƒÂ¡ntas veces mejor eres que la media (Ej: 1.30 = 30% mejor)
             const roiRatio = myROI / teamAvgROI;
             
-            // FÓRMULA PROGRESIVA:
+            // FÃƒâ€œRMULA PROGRESIVA:
             // Empezamos a premiar si igualas a la media (1.0).
             // Por cada 10% por encima de la media, ganas +0.5 pts. (Multiplicador: 5.0)
             let roiPts = (roiRatio - 1.0) * 5.0;
             
-            // Cap de seguridad: Máximo +4.5 pts
+            // Cap de seguridad: MÃƒÂ¡ximo +4.5 pts
             roiPts = Math.max(0, Math.min(4.5, roiPts));
 
-            // Filtro para no dar premios residuales (mínimo +0.5 pts para aparecer)
+            // Filtro para no dar premios residuales (mÃƒÂ­nimo +0.5 pts para aparecer)
             if (roiPts >= 0.5) { 
-                let label = "💎 Inversión Rentable";
-                if (roiRatio >= 1.55) label = "🐺 LOBO DE WALL STREET";
-                else if (roiRatio >= 1.25) label = "📈 STONKS!";
+                let label = "Ã°Å¸â€™Å½ InversiÃƒÂ³n Rentable";
+                if (roiRatio >= 1.55) label = "Ã°Å¸ÂÂº LOBO DE WALL STREET";
+                else if (roiRatio >= 1.25) label = "Ã°Å¸â€œË† STONKS!";
                 
                 roiPts = parseFloat(roiPts.toFixed(2));
                 total = safeAdd(total, roiPts);
@@ -4157,22 +4166,22 @@ if (!isWin && durationMin >= 15) {
         if (goldRank >= 3 && dmgRank <= 2) {
             const gapBonus = (goldRank - dmgRank) * 0.5; // +0.5 por cada puesto de diferencia
             total = safeAdd(total, gapBonus);
-            notes.push(`⚖️ Economía de Guerra (Top ${dmgRank} Dmg con Top ${goldRank} Oro, +${gapBonus} pts)`);
+            notes.push(`Ã¢Å¡â€“Ã¯Â¸Â EconomÃƒÂ­a de Guerra (Top ${dmgRank} Dmg con Top ${goldRank} Oro, +${gapBonus} pts)`);
         }
 
         // --- NIVEL 3: LIDERAZGO TOTAL (El 1/1) PROGRESIVO ---
-        // Eres el nº1 en Oro y el nº1 en Daño.
+        // Eres el nÃ‚Âº1 en Oro y el nÃ‚Âº1 en DaÃƒÂ±o.
         if (goldRank === 1 && dmgRank === 1 && p.win) {
             
-            // 🔒 FILTRO: Solo aplicamos si el KDA es sólido (> 3.0)
+            // Ã°Å¸â€â€™ FILTRO: Solo aplicamos si el KDA es sÃƒÂ³lido (> 3.0)
             if (kda >= 3.0) {
-                let leaderBonus = 1.5; // Bono base por ser el líder
+                let leaderBonus = 1.5; // Bono base por ser el lÃƒÂ­der
                 const dmg2nd = sortedDmg[1]?.totalDamageDealtToChampions || 1;
                 
-                // EXTRA PROGRESIVO: Si le sacaste mucho daño al segundo de tu equipo
+                // EXTRA PROGRESIVO: Si le sacaste mucho daÃƒÂ±o al segundo de tu equipo
                 const dmgGapRatio = myDmg / dmg2nd;
                 if (dmgGapRatio > 1.1) {
-                    // Por cada 10% de daño extra sobre el segundo, te llevas +0.4 pts
+                    // Por cada 10% de daÃƒÂ±o extra sobre el segundo, te llevas +0.4 pts
                     let stompExtra = (dmgGapRatio - 1.0) * 4.0; 
                     stompExtra = Math.min(2.5, stompExtra); // Cap del extra en +2.5
                     
@@ -4182,18 +4191,18 @@ if (!isWin && durationMin >= 15) {
                 }
 
                 leaderBonus = parseFloat(leaderBonus.toFixed(2));
-                let label = leaderBonus >= 3.0 ? "👑 REY SOL" : "👑 Líder del Proyecto";
+                let label = leaderBonus >= 3.0 ? "Ã°Å¸â€˜â€˜ REY SOL" : "Ã°Å¸â€˜â€˜ LÃƒÂ­der del Proyecto";
 
                 total = safeAdd(total, leaderBonus);
-                notes.push(`${label} (1º Oro, 1º Daño, KDA ${kda.toFixed(1)}, +${leaderBonus} pts)`);
+                notes.push(`${label} (1Ã‚Âº Oro, 1Ã‚Âº DaÃƒÂ±o, KDA ${kda.toFixed(1)}, +${leaderBonus} pts)`);
             }
         }
     }
 
     // =====================================================
-    // 🏦 ROI DE UTILIDAD v3.0 (SUPER BUFFED & PROGRESIVO)
+    // Ã°Å¸ÂÂ¦ ROI DE UTILIDAD v3.0 (SUPER BUFFED & PROGRESIVO)
     // =====================================================
-    // Mide cuánta utilidad generas por cada moneda de oro que ganas.
+    // Mide cuÃƒÂ¡nta utilidad generas por cada moneda de oro que ganas.
     if (isSupport && durationMin > 15) {
         const totalHeal = Number(p.totalHealsOnTeammates || 0);
         const totalShield = Number(p.totalDamageShieldedOnTeammates || 0);
@@ -4201,25 +4210,25 @@ if (!isWin && durationMin >= 15) {
         const selfMitigated = Number(p.damageSelfMitigated || 0); 
         const gold = Math.max(1, Number(p.goldEarned || 0));
 
-        // Fórmula base de peso de utilidad
+        // FÃƒÂ³rmula base de peso de utilidad
         const utilityScore = totalHeal + totalShield + (ccSeconds * 125) + (selfMitigated * 0.40);
         const roi = utilityScore / gold;
 
-        // FÓRMULA PROGRESIVA:
+        // FÃƒâ€œRMULA PROGRESIVA:
         // Baseline = 1.2 de ROI (Menos de esto es 0 puntos).
         // Multiplicador de 1.25 pts por cada punto de ROI por encima de la base.
         // Ej: ROI 2.0 -> (2.0 - 1.2) * 1.25 = +1.0 pts
         // Ej: ROI 3.6 -> (3.6 - 1.2) * 1.25 = +3.0 pts
         let utilPts = (roi - 1.2) * 1.25;
         
-        // Cap de seguridad: Máximo +4.5 pts
+        // Cap de seguridad: MÃƒÂ¡ximo +4.5 pts
         utilPts = Math.max(0, Math.min(4.5, utilPts));
 
-        if (utilPts >= 0.5) { // Filtro mínimo para reportar
-            let label = "💼 Utilidad Rentable";
-            if (utilPts >= 3.5) label = "🏦 ORÁCULO DE WALL STREET";
-            else if (utilPts >= 2.0) label = "💸 Inversor Maestro";
-            else if (utilPts >= 1.2) label = "⚖️ Support Eficiente";
+        if (utilPts >= 0.5) { // Filtro mÃƒÂ­nimo para reportar
+            let label = "Ã°Å¸â€™Â¼ Utilidad Rentable";
+            if (utilPts >= 3.5) label = "Ã°Å¸ÂÂ¦ ORÃƒÂCULO DE WALL STREET";
+            else if (utilPts >= 2.0) label = "Ã°Å¸â€™Â¸ Inversor Maestro";
+            else if (utilPts >= 1.2) label = "Ã¢Å¡â€“Ã¯Â¸Â Support Eficiente";
 
             utilPts = parseFloat(utilPts.toFixed(2));
             total = safeAdd(total, utilPts);
@@ -4228,7 +4237,7 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🏔️ XP KINGDOM (Dominio de Nivel en Top)
+    // Ã°Å¸Ââ€Ã¯Â¸Â XP KINGDOM (Dominio de Nivel en Top)
     // =====================================================
     // Si le sacas niveles a tu rival directo, lo has dejado fuera del juego.
     
@@ -4237,32 +4246,32 @@ if (!isWin && durationMin >= 15) {
         const oppLvl = Number(opponent.champLevel || 1);
         const levelDiff = myLvl - oppLvl;
 
-        // TIER 3: ABUSO TOTAL (+3 Niveles o más)
+        // TIER 3: ABUSO TOTAL (+3 Niveles o mÃƒÂ¡s)
         // Esto es un stomp de manual. El rival no puede ni acercarse.
         if (levelDiff >= 3) {
             total = safeAdd(total, 3.0, "XP Stomp", notes);
-            notes.push(`🏔️ LA CIMA (+${levelDiff} niveles sobre su Top)`);
+            notes.push(`Ã°Å¸Ââ€Ã¯Â¸Â LA CIMA (+${levelDiff} niveles sobre su Top)`);
         }
         // TIER 2: DOMINIO (+2 Niveles)
         else if (levelDiff >= 2) {
             total = safeAdd(total, 2.0, "XP Gap", notes);
-            notes.push(`⏫ Gap de Nivel (+${levelDiff} lvls)`);
+            notes.push(`Ã¢ÂÂ« Gap de Nivel (+${levelDiff} lvls)`);
         }
         // TIER 1: VENTAJA (+1 Nivel y ganando)
         else if (levelDiff >= 1 && p.win) {
             total = safeAdd(total, 0.5, "XP Lead", notes);
-            notes.push(`📈 Ventaja de XP`);
+            notes.push(`Ã°Å¸â€œË† Ventaja de XP`);
         }
         
-        // CASTIGO: Si te sacan 2 niveles o más
+        // CASTIGO: Si te sacan 2 niveles o mÃƒÂ¡s
         else if (levelDiff <= -2) {
             total = safeAdd(total, -1.5, "XP Deficit", notes);
-            notes.push(`📉 Outleveled (${levelDiff} lvls)`);
+            notes.push(`Ã°Å¸â€œâ€° Outleveled (${levelDiff} lvls)`);
         }
     }
 
-    // --- 🛡️ PREMIO: PROTECTOR DEL SHUTDOWN (S26) ---
-    // Si tenías una racha de asesinatos alta (Bounty activo) y terminaste la partida SIN morir (o muriendo 1 vez),
+    // --- Ã°Å¸â€ºÂ¡Ã¯Â¸Â PREMIO: PROTECTOR DEL SHUTDOWN (S26) ---
+    // Si tenÃƒÂ­as una racha de asesinatos alta (Bounty activo) y terminaste la partida SIN morir (o muriendo 1 vez),
     // negaste mucho oro al enemigo. Eso vale puntos.
     
     const largestSpree = Number(p.largestKillingSpree || 0);
@@ -4271,30 +4280,30 @@ if (!isWin && durationMin >= 15) {
         // Si ganaste y protegiste tu bounty
         if (p.win) {
             total = safeAdd(total, 2.0, "Bounty Keeper", notes);
-            notes.push(`💰 Bounty Keeper (Racha de ${largestSpree} protegida)`);
+            notes.push(`Ã°Å¸â€™Â° Bounty Keeper (Racha de ${largestSpree} protegida)`);
         }
     }
 
     // =====================================================
-    // 🔥 IMPARABLE (Racha de Asesinatos - Progresivo)
+    // Ã°Å¸â€Â¥ IMPARABLE (Racha de Asesinatos - Progresivo)
     // =====================================================
     const spree = Number(p.largestKillingSpree || 0);
 
     // Empezamos a premiar desde la racha de 8 (como antes)
     if (spree >= 8) {
-        // FÓRMULA PROGRESIVA: Por cada kill por encima de 5, ganas +0.25 pts.
-        // Ej: Racha 8 -> (8 - 5) * 0.25 = +0.75 pts (¡Coincide exacto con tu versión anterior!)
+        // FÃƒâ€œRMULA PROGRESIVA: Por cada kill por encima de 5, ganas +0.25 pts.
+        // Ej: Racha 8 -> (8 - 5) * 0.25 = +0.75 pts (Ã‚Â¡Coincide exacto con tu versiÃƒÂ³n anterior!)
         // Ej: Racha 13 -> (13 - 5) * 0.25 = +2.00 pts (Un poco mejor que tu 1.5 anterior)
         // Ej: Racha 18 -> (18 - 5) * 0.25 = +3.25 pts
         let spreePts = (spree - 5) * 0.25;
         
-        // Cap de seguridad: Nadie puede sacar más de 4.5 puntos por racha
+        // Cap de seguridad: Nadie puede sacar mÃƒÂ¡s de 4.5 puntos por racha
         spreePts = Math.min(4.5, spreePts);
 
-        let label = "🔥 Imparable";
-        if (spree >= 23) label = "👽 ¡ALIEN!";
-        else if (spree >= 18) label = "⚡ DIVINO";
-        else if (spree >= 13) label = "👹 LEGENDARIO";
+        let label = "Ã°Å¸â€Â¥ Imparable";
+        if (spree >= 23) label = "Ã°Å¸â€˜Â½ Ã‚Â¡ALIEN!";
+        else if (spree >= 18) label = "Ã¢Å¡Â¡ DIVINO";
+        else if (spree >= 13) label = "Ã°Å¸â€˜Â¹ LEGENDARIO";
 
         spreePts = parseFloat(spreePts.toFixed(2));
         total = safeAdd(total, spreePts, "Killing Spree", notes);
@@ -4302,29 +4311,29 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 💀 ESPIRAL DE MUERTE (Death Streak Math - Progresivo)
+    // Ã°Å¸â€™â‚¬ ESPIRAL DE MUERTE (Death Streak Math - Progresivo)
     // =====================================================
     // Detecta si mueres sin llevarte a nadie por delante.
     const redemptionScore = k + (a / 3); 
     const deathGap = d - redemptionScore;
 
-    // CONDICIÓN: Solo activo si la partida dura > 15 min y el Gap es alto
+    // CONDICIÃƒâ€œN: Solo activo si la partida dura > 15 min y el Gap es alto
     if (durationMin > 15 && deathGap >= 3.5) {
         
         const isAlreadyPunished = notes.some(n => n.includes("Feeder") || n.includes("INTING") || n.includes("Pantalla Gris"));
         
-        // FÓRMULA PROGRESIVA: Por cada punto de Gap extra, el castigo aumenta -0.40 pts.
-        // Gap 3.5 -> (3.5 - 1.0) * -0.40 = -1.0 pts (Coincide exacto con tu versión)
+        // FÃƒâ€œRMULA PROGRESIVA: Por cada punto de Gap extra, el castigo aumenta -0.40 pts.
+        // Gap 3.5 -> (3.5 - 1.0) * -0.40 = -1.0 pts (Coincide exacto con tu versiÃƒÂ³n)
         // Gap 6.0 -> (6.0 - 1.0) * -0.40 = -2.0 pts (Coincide exacto)
         // Gap 10.0 -> (10.0 - 1.0) * -0.40 = -3.6 pts
         let spiralPenalty = (deathGap - 1.0) * -0.40;
         
-        // Cap de seguridad máximo
+        // Cap de seguridad mÃƒÂ¡ximo
         spiralPenalty = Math.max(-4.0, spiralPenalty);
 
-        let spiralLabel = "🥴 Tilteado";
-        if (spiralPenalty <= -3.0) spiralLabel = "⚫ Agujero Negro";
-        else if (spiralPenalty <= -2.0) spiralLabel = "📉 Caída Libre";
+        let spiralLabel = "Ã°Å¸Â¥Â´ Tilteado";
+        if (spiralPenalty <= -3.0) spiralLabel = "Ã¢Å¡Â« Agujero Negro";
+        else if (spiralPenalty <= -2.0) spiralLabel = "Ã°Å¸â€œâ€° CaÃƒÂ­da Libre";
 
         // FACTOR DE PIEDAD: Si ya fue castigado por Feeder, reducimos el impacto a la mitad
         if (isAlreadyPunished) {
@@ -4343,33 +4352,33 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🐉 EL SEÑOR DE LAS BESTIAS (Solo Objectives - Multiplicativo)
+    // Ã°Å¸Ââ€° EL SEÃƒâ€˜OR DE LAS BESTIAS (Solo Objectives - Multiplicativo)
     // =====================================================
     const soloBaron = Number(p.challenges?.soloBaronKills || 0);
 
     if (soloBaron > 0) {
-        // Al ser un evento casi imposible, si alguien se hace 2 Nashors solo en una partida épica,
+        // Al ser un evento casi imposible, si alguien se hace 2 Nashors solo en una partida ÃƒÂ©pica,
         // le multiplicamos el premio (x4.5 puntos cada uno)
         let baronPts = soloBaron * 4.5;
         total = safeAdd(total, baronPts, "Solo Nashor", notes);
-        notes.push(`🐉 Señor de las Bestias (Se hizo el Nashor SOLO x${soloBaron}, +${baronPts} pts)`);
+        notes.push(`Ã°Å¸Ââ€° SeÃƒÂ±or de las Bestias (Se hizo el Nashor SOLO x${soloBaron}, +${baronPts} pts)`);
     }
 
     // =========================================================
-    // 🌳 EL RECAUDADOR (Gestión de Recursos de Jungla - Progresivo)
+    // Ã°Å¸Å’Â³ EL RECAUDADOR (GestiÃƒÂ³n de Recursos de Jungla - Progresivo)
     // =========================================================
     if (isLaner && durationMin > 15) {
         const alliedJungle = Number(p.challenges?.alliedJungleMonsterKills || 0);
         const alliedJungleMPM = alliedJungle / durationMin; // Monstruos robados por minuto
 
-        // Umbral de activación: 0.6 MPM
+        // Umbral de activaciÃƒÂ³n: 0.6 MPM
         if (alliedJungleMPM >= 0.6) {
             
             const dmgShareForTax = p.challenges?.teamDamagePercentage || 0;
             const isHardCarry = (dmgShareForTax >= 0.28 || kda >= 4.0);
             const isValidAdcFarming = (role === 'BOTTOM' && dmgShareForTax > 0.20);
 
-            // CASO 1: EL "FUNNELING" (Inversión con Retorno)
+            // CASO 1: EL "FUNNELING" (InversiÃƒÂ³n con Retorno)
             if (isHardCarry) {
                 // PROGRESIVO: Ganas +3.0 pts por cada MPM por encima de 0.4.
                 // 0.6 MPM -> +0.6 pts | 1.0 MPM -> +1.8 pts
@@ -4377,18 +4386,18 @@ if (!isWin && durationMin >= 15) {
                 taxReward = parseFloat(Math.min(2.5, taxReward).toFixed(2)); // Cap en +2.5 pts
                 
                 total = safeAdd(total, taxReward, "Hyper-Carry Intake", notes); 
-                notes.push(`🦁 Rey de la Selva (${alliedJungleMPM.toFixed(1)} MPM extraídos, +${taxReward} pts)`);
+                notes.push(`Ã°Å¸Â¦Â Rey de la Selva (${alliedJungleMPM.toFixed(1)} MPM extraÃƒÂ­dos, +${taxReward} pts)`);
             } 
             
-            // CASO 2: EL "PARÁSITO" (Robo SIN Impacto)
-            // Empieza a castigar suavemente a partir de 0.7 MPM si el daño es bajísimo (<15%)
+            // CASO 2: EL "PARÃƒÂSITO" (Robo SIN Impacto)
+            // Empieza a castigar suavemente a partir de 0.7 MPM si el daÃƒÂ±o es bajÃƒÂ­simo (<15%)
             else if (alliedJungleMPM >= 0.7 && dmgShareForTax < 0.15) {
                 // PROGRESIVO: 0.8 MPM -> -1.5 pts | 1.1 MPM -> -3.0 pts
                 let taxPenalty = (alliedJungleMPM - 0.5) * -5.0;
                 taxPenalty = parseFloat(Math.max(-4.0, taxPenalty).toFixed(2));
 
                 total = safeAdd(total, taxPenalty, "Parasite", notes);
-                notes.push(`🦠 Parásito de Recursos (Farm sin Daño, ${taxPenalty} pts)`);
+                notes.push(`Ã°Å¸Â¦Â  ParÃƒÂ¡sito de Recursos (Farm sin DaÃƒÂ±o, ${taxPenalty} pts)`);
             }
             
             // CASO 3: TAXING MOLESTO (Solo para No-Carries)
@@ -4399,34 +4408,34 @@ if (!isWin && durationMin >= 15) {
                     taxPenalty = parseFloat(Math.max(-2.5, taxPenalty).toFixed(2));
 
                     total = safeAdd(total, taxPenalty, "Bad Taxing", notes);
-                    notes.push(`🚜 Granjero Egoísta (Le quitó jungla al JG y perdió, ${taxPenalty} pts)`);
+                    notes.push(`Ã°Å¸Å¡Å“ Granjero EgoÃƒÂ­sta (Le quitÃƒÂ³ jungla al JG y perdiÃƒÂ³, ${taxPenalty} pts)`);
                 }
             }
         }
     }
 
 
-    // --- NUEVO: INVADE MORTAL (Acción Nivel 1 - CON FIX ANTI-BUG) ---
+    // --- NUEVO: INVADE MORTAL (AcciÃƒÂ³n Nivel 1 - CON FIX ANTI-BUG) ---
     // Variable: challenges.takedownsBeforeJungleMinionSpawn
     let lvl1Action = Number(p.challenges?.takedownsBeforeJungleMinionSpawn || 0);
 
-    // 🛡️ SANITY CHECK: Es imposible matar a más de 5 personas antes de los minions.
-    // Si la API devuelve más de 5, seguramente está dando "puntos de desafío" y no "cantidad".
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â SANITY CHECK: Es imposible matar a mÃƒÂ¡s de 5 personas antes de los minions.
+    // Si la API devuelve mÃƒÂ¡s de 5, seguramente estÃƒÂ¡ dando "puntos de desafÃƒÂ­o" y no "cantidad".
     // Lo corregimos asumiendo que si es > 5, probablemente fue 1 o 2 kills reales, 
-    // pero para no inflar, lo limitamos a máximo 2 si detectamos el bug.
+    // pero para no inflar, lo limitamos a mÃƒÂ¡ximo 2 si detectamos el bug.
     if (lvl1Action > 5) {
-        lvl1Action = 1; // Asumimos 1 acción real si el dato viene corrupto (ej: 18)
+        lvl1Action = 1; // Asumimos 1 acciÃƒÂ³n real si el dato viene corrupto (ej: 18)
     }
 
     if (lvl1Action > 0) {
-        const invadePts = lvl1Action * 0.3; // Subimos un poco el valor (0.5 por acción real)
+        const invadePts = lvl1Action * 0.3; // Subimos un poco el valor (0.5 por acciÃƒÂ³n real)
         total = safeAdd(total, invadePts, "Invade God", notes);
-        notes.push(`⚔️ Invade Mortal (x${lvl1Action} acción pre-minions)`);
+        notes.push(`Ã¢Å¡â€Ã¯Â¸Â Invade Mortal (x${lvl1Action} acciÃƒÂ³n pre-minions)`);
     }
 
 
-    // =========================================================
-    // 🌲 4. JUNGLE KINGDOM (v3.0 - PROGRESSIVE ANALYTICS)
+Ã‚Â  Ã‚Â  // =========================================================
+    // Ã°Å¸Å’Â² 4. JUNGLE KINGDOM (v3.0 - PROGRESSIVE ANALYTICS)
     // =========================================================
     if (isJungle) {
         
@@ -4435,7 +4444,7 @@ if (!isWin && durationMin >= 15) {
         if (jgStolen > 0) {
              const stealPts = (cfg.role_jng_steal_points || 1.5) * jgStolen; // Buffado base a 1.5
              total = safeAdd(total, stealPts, "Jg Steal", notes);
-             notes.push(`⚡ Smite God (Robaste ${jgStolen} objetivos, +${stealPts} pts)`);
+             notes.push(`Ã¢Å¡Â¡ Smite God (Robaste ${jgStolen} objetivos, +${stealPts} pts)`);
         }
 
         // --- B. BONUS: EL INVASOR (Counter Jungle Progresivo) ---
@@ -4448,18 +4457,18 @@ if (!isWin && durationMin >= 15) {
             invadePts = Math.min(3.5, invadePts); // Cap de seguridad
             
             if (invadePts >= 0.5) {
-                let label = enemyCamps >= 24 ? "🥷 TERROR DEL BOSQUE" : "🥷 El Invasor";
+                let label = enemyCamps >= 24 ? "Ã°Å¸Â¥Â· TERROR DEL BOSQUE" : "Ã°Å¸Â¥Â· El Invasor";
                 invadePts = parseFloat(invadePts.toFixed(2));
                 total = safeAdd(total, invadePts, "Invader", notes);
-                notes.push(`${label} (Robó ~${Math.floor(enemyCamps / 4)} camps, +${invadePts} pts)`);
+                notes.push(`${label} (RobÃƒÂ³ ~${Math.floor(enemyCamps / 4)} camps, +${invadePts} pts)`);
             }
         }
 
-        // --- C. BONUS: REY DEL RÍO (Scuttles Progresivo) ---
+        // --- C. BONUS: REY DEL RÃƒÂO (Scuttles Progresivo) ---
         const scuttles = Number(p.challenges?.scuttleCrabKills || 0);
         const scuttlesPerMin = durationMin > 0 ? scuttles / durationMin : 0;
 
-        // Baseline: 0.10 scuttles por minuto (Mínimo exigible)
+        // Baseline: 0.10 scuttles por minuto (MÃƒÂ­nimo exigible)
         if (scuttlesPerMin > 0.10) {
             // Multiplicador de 12.5 para igualar tus antiguos tiers
             // Ej: 0.22/min -> (0.22 - 0.10) * 12.5 = 1.5 pts
@@ -4467,7 +4476,7 @@ if (!isWin && durationMin >= 15) {
             riverPts = Math.min(2.5, riverPts); // Cap
 
             if (riverPts >= 0.5) {
-                let label = scuttlesPerMin >= 0.22 ? "🦀 Rey del Río" : "🌊 Control de Río";
+                let label = scuttlesPerMin >= 0.22 ? "Ã°Å¸Â¦â‚¬ Rey del RÃƒÂ­o" : "Ã°Å¸Å’Å  Control de RÃƒÂ­o";
                 riverPts = parseFloat(riverPts.toFixed(2));
                 total = safeAdd(total, riverPts, "River King", notes);
                 notes.push(`${label} (${scuttles} scuttles, +${riverPts} pts)`);
@@ -4493,7 +4502,7 @@ if (!isWin && durationMin >= 15) {
                 let csGapPts = (jgDiff - 20) * 0.05;
                 csGapPts = Math.min(3.5, parseFloat(csGapPts.toFixed(2)));
                 
-                let label = jgDiff >= 100 ? "🌋 JUNGLE CANYON" : "🌳 Control de Jungla";
+                let label = jgDiff >= 100 ? "Ã°Å¸Å’â€¹ JUNGLE CANYON" : "Ã°Å¸Å’Â³ Control de Jungla";
                 total = safeAdd(total, csGapPts, "Jg CS Gap", notes);
                 notes.push(`${label} (+${jgDiff} CS, +${csGapPts} pts)`);
             } 
@@ -4503,7 +4512,7 @@ if (!isWin && durationMin >= 15) {
                 let csGapPen = (jgDiff + 20) * 0.06; 
                 csGapPen = Math.max(-4.0, parseFloat(csGapPen.toFixed(2)));
                 
-                let label = jgDiff <= -60 ? "🚫 Sin Jungla" : "📉 Outjungled";
+                let label = jgDiff <= -60 ? "Ã°Å¸Å¡Â« Sin Jungla" : "Ã°Å¸â€œâ€° Outjungled";
                 total = safeAdd(total, csGapPen, "Jg Diff", notes);
                 notes.push(`${label} (${jgDiff} CS, ${csGapPen} pts)`);
             }
@@ -4518,20 +4527,20 @@ if (!isWin && durationMin >= 15) {
                 let gankPts = (kpDiff - 0.10) * 6.66; // 30% diff -> +1.3 pts
                 gankPts = Math.min(2.5, parseFloat(gankPts.toFixed(2)));
                 total = safeAdd(total, gankPts, "Gank Gap", notes);
-                notes.push(`🏃 Gank Gap (+${(kpDiff*100).toFixed(0)}% KP, +${gankPts} pts)`);
+                notes.push(`Ã°Å¸ÂÆ’ Gank Gap (+${(kpDiff*100).toFixed(0)}% KP, +${gankPts} pts)`);
             } 
             else if (kpDiff <= -0.15 && durationMin >= 15) {
                 let gankPen = (kpDiff + 0.10) * 6.66;
                 gankPen = Math.max(-2.5, parseFloat(gankPen.toFixed(2)));
-                // Evitar doble castigo brutal si ya sacó "Fantasma"
+                // Evitar doble castigo brutal si ya sacÃƒÂ³ "Fantasma"
                 if (!notes.some(n => n.includes("Fantasma"))) {
                     total = safeAdd(total, gankPen, "Gank Gap Deficit", notes);
-                    notes.push(`🚶‍♂️ Ausente del Mapa (${(kpDiff*100).toFixed(0)}% KP vs rival, ${gankPen} pts)`);
+                    notes.push(`Ã°Å¸Å¡Â¶Ã¢â‚¬ÂÃ¢â„¢â€šÃ¯Â¸Â Ausente del Mapa (${(kpDiff*100).toFixed(0)}% KP vs rival, ${gankPen} pts)`);
                 }
             }
         }
 
-        // --- E. PENALIZACIÓN: SMITE GAP (Te robaron) ---
+        // --- E. PENALIZACIÃƒâ€œN: SMITE GAP (Te robaron) ---
         let enemyStoleSomething = 0;
         participants.forEach(enemy => {
             if (enemy.teamId !== p.teamId) {
@@ -4545,11 +4554,11 @@ if (!isWin && durationMin >= 15) {
              smitePenalty = Math.max(-6.0, smitePenalty); 
              
              total = safeAdd(total, smitePenalty, "Smite Fail", notes);
-             notes.push(`🤡 Smite Gap (Te robaron ${enemyStoleSomething} obj épico/s, ${smitePenalty} pts)`);
+             notes.push(`Ã°Å¸Â¤Â¡ Smite Gap (Te robaron ${enemyStoleSomething} obj ÃƒÂ©pico/s, ${smitePenalty} pts)`);
         }
 
         // --- F. GAP DE OBJETIVOS (Macro Game Directo y Severo) ---
-        // Ahora usamos la diferencia neta, no dividida por minuto. Un dragón vale oro siempre.
+        // Ahora usamos la diferencia neta, no dividida por minuto. Un dragÃƒÂ³n vale oro siempre.
         const myGrubs = (teamInfo.hordeCount || 0);
         const enGrubs = (teamInfo.enemyHorde || 0);
         
@@ -4558,34 +4567,34 @@ if (!isWin && durationMin >= 15) {
         
         const objDiff = myObjScore - enObjScore;
 
-        // A. PREMIO: Tu equipo dominó los objetivos (Dif >= +1.5)
+        // A. PREMIO: Tu equipo dominÃƒÂ³ los objetivos (Dif >= +1.5)
         if (objDiff >= 1.5) {
             // Multiplicador: +0.8 pts por cada objetivo de ventaja
             let objPts = (objDiff - 0.5) * 0.8;
             objPts = Math.min(4.5, parseFloat(objPts.toFixed(2))); // Cap subido a +4.5
 
-            let label = "📈 Ventaja Macro";
-            if (objDiff >= 4.0) label = "👑 Rey del Mapa";
-            else if (objDiff >= 2.5) label = "🏰 Control Sólido";
+            let label = "Ã°Å¸â€œË† Ventaja Macro";
+            if (objDiff >= 4.0) label = "Ã°Å¸â€˜â€˜ Rey del Mapa";
+            else if (objDiff >= 2.5) label = "Ã°Å¸ÂÂ° Control SÃƒÂ³lido";
 
             total = safeAdd(total, objPts, "Map Stomp", notes);
             notes.push(`${label} (+${objDiff.toFixed(1)} Obj, +${objPts} pts)`);
         } 
-        // B. CASTIGO: El enemigo te barrió del mapa (Dif <= -1.5)
+        // B. CASTIGO: El enemigo te barriÃƒÂ³ del mapa (Dif <= -1.5)
         else if (objDiff <= -1.5 && durationMin > 15) {
-            // El castigo es más agresivo que el premio (x1.2 pts por cada objetivo por debajo)
+            // El castigo es mÃƒÂ¡s agresivo que el premio (x1.2 pts por cada objetivo por debajo)
             let objPen = (objDiff + 0.5) * 1.2;
             objPen = Math.max(-6.0, parseFloat(objPen.toFixed(2))); // Cap hundido hasta -6.0
 
-            let label = "📉 Déficit de Objetivos";
-            if (objDiff <= -4.0) label = "🚫 JUNGLE DIFF ABSOLUTO";
-            else if (objDiff <= -2.5) label = "🐗 Out-Macroed";
+            let label = "Ã°Å¸â€œâ€° DÃƒÂ©ficit de Objetivos";
+            if (objDiff <= -4.0) label = "Ã°Å¸Å¡Â« JUNGLE DIFF ABSOLUTO";
+            else if (objDiff <= -2.5) label = "Ã°Å¸Ââ€” Out-Macroed";
 
             total = safeAdd(total, objPen, "Map Gap", notes);
             notes.push(`${label} (${objDiff.toFixed(1)} Obj, ${objPen} pts)`);
         }
 
-        // --- G. PENALIZACIÓN: JUNGLA HERBÍVORO (AFK Farming UNIFICADO) ---
+        // --- G. PENALIZACIÃƒâ€œN: JUNGLA HERBÃƒÂVORO (AFK Farming UNIFICADO) ---
         if (durationMin >= 20) {
             const objectivesTaken = (p.dragonKills || 0) + (p.baronKills || 0) + (p.riftHeraldKills || 0) + (p.hordeKills || 0);
             const myKP = (p.challenges?.killParticipation || 0);
@@ -4595,7 +4604,7 @@ if (!isWin && durationMin >= 15) {
                 // Castigo base por 0 objetivos
                 let herbivorePen = -1.5;
                 
-                // Si además no gankeó (KP bajo), el castigo escala hasta -3.5
+                // Si ademÃƒÂ¡s no gankeÃƒÂ³ (KP bajo), el castigo escala hasta -3.5
                 if (myKP < 0.50) {
                     herbivorePen -= ((0.50 - myKP) * 4.0);
                 }
@@ -4604,25 +4613,25 @@ if (!isWin && durationMin >= 15) {
                 total = safeAdd(total, herbivorePen, "Jungla Pasivo", notes);
                 
                 const extraTxt = myKP < 0.40 ? " y Ausente" : "";
-                notes.push(`🦌 Jungla Herbívoro (0 Objetivos${extraTxt}, ${herbivorePen} pts)`);
+                notes.push(`Ã°Å¸Â¦Å’ Jungla HerbÃƒÂ­voro (0 Objetivos${extraTxt}, ${herbivorePen} pts)`);
             }
         }
     }
 
     // =====================================================
-    // 🐉 IMPACTO EN MONSTRUOS (V15.0 - NEUTRALES PROGRESIVOS)
+    // Ã°Å¸Ââ€° IMPACTO EN MONSTRUOS (V15.0 - NEUTRALES PROGRESIVOS)
     // =====================================================
     // OBJETIVO: Medir control de Dragones/Baron/Heraldo.
-    // EXCLUIMOS: Las Torres (ya tienen su propia sección de puntos).
+    // EXCLUIMOS: Las Torres (ya tienen su propia secciÃƒÂ³n de puntos).
     
     // 1. LIMPIEZA DE DATOS (Restar Torres)
     const rawObjDmg = Number(p.damageDealtToObjectives || 0);
     const turretDmg = Number(p.damageDealtToTurrets || 0);
     const monsterDpm = durationMin > 0 ? Math.max(0, rawObjDmg - turretDmg) / durationMin : 0;
 
-    // 2. CONFIGURACIÓN DINÁMICA POR ROL
+    // 2. CONFIGURACIÃƒâ€œN DINÃƒÂMICA POR ROL
     let baseDpm = 0; // El punto donde empiezas a ganar puntos
-    let mult = 0;    // Cuánto vale cada punto de DPM
+    let mult = 0;    // CuÃƒÂ¡nto vale cada punto de DPM
     let tGod = 0, tLeg = 0, tEpic = 0, minReq = 0;
 
     if (isJungle) {
@@ -4639,55 +4648,55 @@ if (!isWin && durationMin >= 15) {
     }
 
     // 3. APLICAR RECOMPENSAS PROGRESIVAS
-    // Solo empezamos a premiar si supera el umbral "Épico" de su rol
+    // Solo empezamos a premiar si supera el umbral "Ãƒâ€°pico" de su rol
     if (monsterDpm >= tEpic) {
         
-        // FÓRMULA: Lo que supere la base * multiplicador del rol
+        // FÃƒâ€œRMULA: Lo que supere la base * multiplicador del rol
         // Ej JGL: 1500 DPM -> (1500 - 500) * 0.00135 = +1.35 pts
         // Ej LANER: 1200 DPM -> (1200 - 150) * 0.0019 = +2.00 pts
         let monsterPts = (monsterDpm - baseDpm) * mult;
-        monsterPts = Math.min(3.5, parseFloat(monsterPts.toFixed(2))); // Cap máximo de seguridad
+        monsterPts = Math.min(3.5, parseFloat(monsterPts.toFixed(2))); // Cap mÃƒÂ¡ximo de seguridad
 
-        let label = "🗡️ Apoyo en Objetivos";
-        if (monsterDpm >= tGod) label = "🐉 CAZADOR APEX";
-        else if (monsterDpm >= tLeg) label = "🦕 Domador de Bestias";
+        let label = "Ã°Å¸â€”Â¡Ã¯Â¸Â Apoyo en Objetivos";
+        if (monsterDpm >= tGod) label = "Ã°Å¸Ââ€° CAZADOR APEX";
+        else if (monsterDpm >= tLeg) label = "Ã°Å¸Â¦â€¢ Domador de Bestias";
 
         if (monsterPts >= 0.5) {
             total = safeAdd(total, monsterPts, "Monster Impact", notes);
             // Evitamos spamear a los laners con la nota menor, solo mostramos las grandes
-            if (label !== "🗡️ Apoyo en Objetivos" || !isJungle) {
+            if (label !== "Ã°Å¸â€”Â¡Ã¯Â¸Â Apoyo en Objetivos" || !isJungle) {
                 notes.push(`${label} (${(monsterDpm).toFixed(0)} dpm a monstruos, +${monsterPts} pts)`);
             }
         }
     }
 
-    // 4. PENALIZACIÓN PROGRESIVA: JUNGLA ALÉRGICO AL DRAGÓN
+    // 4. PENALIZACIÃƒâ€œN PROGRESIVA: JUNGLA ALÃƒâ€°RGICO AL DRAGÃƒâ€œN
     else if (isJungle && monsterDpm < minReq && durationMin >= 20) {
         const objectivesStolen = Number(p.challenges?.epicMonstersStolen || 0);
         
         if (objectivesStolen === 0 && !willReceiveJgMitigation) {
-            // FÓRMULA DE CASTIGO: Cuanto más cerca del 0, peor.
+            // FÃƒâ€œRMULA DE CASTIGO: Cuanto mÃƒÂ¡s cerca del 0, peor.
             // 250 DPM -> (250 - 500) * 0.005 = -1.25 pts
             // 0 DPM -> (0 - 500) * 0.005 = -2.50 pts
             let afkPen = (monsterDpm - minReq) * 0.005;
             afkPen = Math.max(-3.5, parseFloat(afkPen.toFixed(2)));
 
             total = safeAdd(total, afkPen, "Jungle AFK Obj", notes); 
-            notes.push(`🦋 Jungla Alérgico (0 Control y <${minReq} dpm, ${afkPen} pts)`);
+            notes.push(`Ã°Å¸Â¦â€¹ Jungla AlÃƒÂ©rgico (0 Control y <${minReq} dpm, ${afkPen} pts)`);
         }
     }
 
     // =================================================================
-    // 🥊 TRADING EFFICIENCY (Eficiencia de Intercambios - Progresivo)
+    // Ã°Å¸Â¥Å  TRADING EFFICIENCY (Eficiencia de Intercambios - Progresivo)
     // =================================================================
     const totalDmgDealt = Number(p.totalDamageDealtToChampions || 0);
     const totalDmgTaken = Number(p.totalDamageTaken || 1);
     const tradeEff = totalDmgDealt / Math.max(1, totalDmgTaken);
 
-    // 🛡️ FIX: Lista oficial de tanques que no tienen por qué hacer daño
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX: Lista oficial de tanques que no tienen por quÃƒÂ© hacer daÃƒÂ±o
     const pureTanks = ["Shen", "Ornn", "Sion", "Maokai", "Malphite", "Dr. Mundo", "Cho'Gath", "Tahm Kench", "Rammus", "Zac", "Sejuani", "Nautilus", "Leona", "Braum", "Alistar", "Taric", "Rell", "Galio", "Amumu", "Nunu", "Poppy", "Skarner"];
 
-    // 1. Filtro de evaluación
+    // 1. Filtro de evaluaciÃƒÂ³n
     const isDamageSupport = isSupport && (p.challenges?.teamDamagePercentage > 0.15);
     const shouldEvaluate = !pureTanks.includes(p.championName) && (!isSupport || isDamageSupport);
 
@@ -4696,23 +4705,23 @@ if (!isWin && durationMin >= 15) {
         // --- A. PREMIOS (Mercado Alcista de Trades) ---
         // Empieza a premiar a partir de 1.1x de eficiencia
         if (tradeEff >= 1.3) {
-            // FÓRMULA PROGRESIVA: Por cada 0.1 de ratio extra, ganas +0.15 pts
+            // FÃƒâ€œRMULA PROGRESIVA: Por cada 0.1 de ratio extra, ganas +0.15 pts
             // 1.80 ratio -> (1.8 - 1.1) * 1.5 = +1.05 pts
             // 2.70 ratio -> (2.7 - 1.1) * 1.5 = +2.40 pts (Casi clavado a tu +2.5 antiguo)
             let tradePts = (tradeEff - 1.1) * 1.5; 
             tradePts = Math.min(3.5, parseFloat(tradePts.toFixed(2))); // Cap
 
-            let label = "📈 Intercambio Rentable";
-            if (tradeEff >= (cfg.trade_eff_excellent || 2.7)) label = "🥊 Trade GOD";
-            else if (tradeEff >= 1.8) label = "✨ Dominio de Trades";
+            let label = "Ã°Å¸â€œË† Intercambio Rentable";
+            if (tradeEff >= (cfg.trade_eff_excellent || 2.7)) label = "Ã°Å¸Â¥Å  Trade GOD";
+            else if (tradeEff >= 1.8) label = "Ã¢Å“Â¨ Dominio de Trades";
 
             total = safeAdd(total, tradePts, "Trade God", notes);
             notes.push(`${label} (x${tradeEff.toFixed(2)} eficiencia, +${tradePts} pts)`);
         }
 
-        // --- B. CASTIGOS GENERALES (Solo Laners y Junglas de Daño) ---
+        // --- B. CASTIGOS GENERALES (Solo Laners y Junglas de DaÃƒÂ±o) ---
         else if (!isSupport && tradeEff <= 0.85) { 
-            // FÓRMULA PROGRESIVA INVERSA
+            // FÃƒâ€œRMULA PROGRESIVA INVERSA
             // 0.75 ratio -> (0.75 - 0.85) * 6.0 = -0.60 pts
             // 0.50 ratio -> (0.50 - 0.85) * 6.0 = -2.10 pts
             // 0.35 ratio -> (0.35 - 0.85) * 6.0 = -3.00 pts
@@ -4721,117 +4730,117 @@ if (!isWin && durationMin >= 15) {
 
             // Aplicamos si el castigo es relevante
             if (tradePen <= -0.75) {
-                let label = "⚠️ Trade Ineficiente";
-                if (tradeEff <= 0.35) label = "🤕 Saco de Boxeo";
-                else if (tradeEff <= 0.50) label = "📉 Malos Trades";
+                let label = "Ã¢Å¡Â Ã¯Â¸Â Trade Ineficiente";
+                if (tradeEff <= 0.35) label = "Ã°Å¸Â¤â€¢ Saco de Boxeo";
+                else if (tradeEff <= 0.50) label = "Ã°Å¸â€œâ€° Malos Trades";
 
                 total = safeAdd(total, tradePen, "Trade Fail", notes);
                 notes.push(`${label} (x${tradeEff.toFixed(2)} eficiencia, ${tradePen} pts)`);
             }
         }
         
-        // --- C. CASTIGOS EXCLUSIVOS (Supports de Daño que Fedean) ---
+        // --- C. CASTIGOS EXCLUSIVOS (Supports de DaÃƒÂ±o que Fedean) ---
         else if (isDamageSupport && tradeEff < 0.65) {
-            // Un support de daño que recibe el doble de daño del que hace es un estorbo
+            // Un support de daÃƒÂ±o que recibe el doble de daÃƒÂ±o del que hace es un estorbo
             let glassPen = (tradeEff - 0.65) * 4.0;
             glassPen = Math.max(-2.5, parseFloat(glassPen.toFixed(2)));
 
             if (glassPen <= -0.5) {
                 total = safeAdd(total, glassPen, "Glass Cannon Fail", notes);
-                notes.push(`📉 Cañón de Cristal Roto (x${tradeEff.toFixed(2)}, ${glassPen} pts)`);
+                notes.push(`Ã°Å¸â€œâ€° CaÃƒÂ±ÃƒÂ³n de Cristal Roto (x${tradeEff.toFixed(2)}, ${glassPen} pts)`);
             }
         }
     }
 
     // =====================================================
-    // POSICIONAMIENTO PERFECTO (MID/ADC + SUPPORTS) 🎯
+    // POSICIONAMIENTO PERFECTO (MID/ADC + SUPPORTS) Ã°Å¸Å½Â¯
     // =====================================================
     // Recompensa por sobrevivir (morir menos que la media) Y tener alto impacto.
     
     // 1. Requisito de Supervivencia: Morir al menos 1 vez menos que el promedio del equipo.
     if (d <= (teamAvgDeaths - 2)) {
         
-        // A. Para Carries (Top/Mid/Bot): Se exige DAÑO (>28%)
+        // A. Para Carries (Top/Mid/Bot): Se exige DAÃƒâ€˜O (>28%)
         if (["TOP", "MIDDLE", "BOTTOM", "JUNGLE"].includes(role) && dmgShare >= 0.28) {
-             applyBonus("💯 Posicionamiento Perfecto", 3.0); 
+             applyBonus("Ã°Å¸â€™Â¯ Posicionamiento Perfecto", 3.0); 
         }
         
-        // B. Para Supports: Se exige KP ALTO (>60%) o DAÑO DE MAGO (>25%)
-        // (Adaptamos la exigencia porque un support de utilidad impacta con asistencias, no con daño)
+        // B. Para Supports: Se exige KP ALTO (>60%) o DAÃƒâ€˜O DE MAGO (>25%)
+        // (Adaptamos la exigencia porque un support de utilidad impacta con asistencias, no con daÃƒÂ±o)
         else if (["SUPPORT", "UTILITY"].includes(role)) {
              if (kp >= 0.65 || dmgShare >= 0.25) {
-                 applyBonus("💯 Posicionamiento Perfecto", 3.0); 
+                 applyBonus("Ã°Å¸â€™Â¯ Posicionamiento Perfecto", 3.0); 
              }
         }
     }
 
     // =====================================================
-    // 🔥 EL SOPORTE CARRY (Daño y Kills) - PROGRESIVO
+    // Ã°Å¸â€Â¥ EL SOPORTE CARRY (DaÃƒÂ±o y Kills) - PROGRESIVO
     // =====================================================
     if (isSupport) {
         const dmgShare = p.challenges?.teamDamagePercentage || 0;
         
-        // --- A. DAÑO MASIVO (Escalado progresivo desde el 15%) ---
+        // --- A. DAÃƒâ€˜O MASIVO (Escalado progresivo desde el 15%) ---
         if (dmgShare >= 0.15) {
-            // Fórmula: (Tu % Daño - 15%) * 25
+            // FÃƒÂ³rmula: (Tu % DaÃƒÂ±o - 15%) * 25
             // Ej 20%: (0.20 - 0.15) * 25 = +1.25 pts
             // Ej 28%: (0.28 - 0.15) * 25 = +3.25 pts
             let dmgPts = (dmgShare - 0.15) * 25.0;
             dmgPts = Math.min(4.5, parseFloat(dmgPts.toFixed(2))); // Cap en +4.5
 
-            let label = "⚡ Soporte Agresivo";
+            let label = "Ã¢Å¡Â¡ Soporte Agresivo";
             if (dmgShare >= 0.25) {
-                label = "🔥 CARRY OCULTO";
+                label = "Ã°Å¸â€Â¥ CARRY OCULTO";
             }
 
             total = safeAdd(total, dmgPts, "Mage Support", notes);
-            notes.push(`${label} (${(dmgShare * 100).toFixed(1)}% del daño total, +${dmgPts} pts)`);
+            notes.push(`${label} (${(dmgShare * 100).toFixed(1)}% del daÃƒÂ±o total, +${dmgPts} pts)`);
         }
 
         // --- B. ASESINO / SUPPORT SLAYER (Escalado progresivo desde 4 kills) ---
         // Requiere no ser un suicida (KDA >= 2.0)
         if (k >= 4 && kda >= 2.0) {
-            // Fórmula: +0.4 pts por cada kill a partir de la 4ª (La 4ª te da +0.4)
+            // FÃƒÂ³rmula: +0.4 pts por cada kill a partir de la 4Ã‚Âª (La 4Ã‚Âª te da +0.4)
             // Ej 6 kills: (6 - 3) * 0.4 = +1.20 pts
             // Ej 10 kills: (10 - 3) * 0.4 = +2.80 pts
             let killerPts = (k - 3) * 0.4;
             killerPts = Math.min(3.0, parseFloat(killerPts.toFixed(2))); // Cap en +3.5
 
             total = safeAdd(total, killerPts, "Killer Supp", notes);
-            notes.push(`🗡️ Support Slayer (${k} Kills, +${killerPts} pts)`);
+            notes.push(`Ã°Å¸â€”Â¡Ã¯Â¸Â Support Slayer (${k} Kills, +${killerPts} pts)`);
         }
     }
 
     // ------------------------------------------------------------
     // D. EL "SUPP KILLER" (Castigo Progresivo por KS sin impacto)
     // ------------------------------------------------------------
-    // Evalúa si te llevas kills (K >= 4) pero tu daño es pobre (< 15%).
+    // EvalÃƒÂºa si te llevas kills (K >= 4) pero tu daÃƒÂ±o es pobre (< 15%).
     if (isSupport && k >= 4) {
         const dmgPercentage = p.challenges?.teamDamagePercentage || 0;
 
         if (dmgPercentage < 0.15) {
-            // Calculamos el déficit de daño (Lo que te falta para llegar al 15% mínimo digno)
+            // Calculamos el dÃƒÂ©ficit de daÃƒÂ±o (Lo que te falta para llegar al 15% mÃƒÂ­nimo digno)
             const dmgDeficit = 0.15 - dmgPercentage; // Ej: 0.15 - 0.08 = 0.07 deficit
             
-            // Fórmula: (Tus Kills extra) * (Tu déficit de daño * 20)
-            // Si robas 6 kills y haces solo 8% de daño: (6 - 3) * (0.07 * 20) = 3 * 1.4 = -4.2 pts teóricos
+            // FÃƒÂ³rmula: (Tus Kills extra) * (Tu dÃƒÂ©ficit de daÃƒÂ±o * 20)
+            // Si robas 6 kills y haces solo 8% de daÃƒÂ±o: (6 - 3) * (0.07 * 20) = 3 * 1.4 = -4.2 pts teÃƒÂ³ricos
             let ksPenalty = (k - 3) * (dmgDeficit * 20);
 
-            // Agravante: Si encima mueres mucho (D >= 8), la penalización duele un 50% más
+            // Agravante: Si encima mueres mucho (D >= 8), la penalizaciÃƒÂ³n duele un 50% mÃƒÂ¡s
             if (d >= 8) ksPenalty *= 1.5;
 
-            // Atenuante: Si el equipo GANÓ a pesar de los KS, reducimos la multa a la mitad
+            // Atenuante: Si el equipo GANÃƒâ€œ a pesar de los KS, reducimos la multa a la mitad
             if (p.win) ksPenalty *= 0.5;
 
-            // Aplicamos un límite para que no rompa la escala matemática (Mínimo -0.5, Máximo -4.0)
+            // Aplicamos un lÃƒÂ­mite para que no rompa la escala matemÃƒÂ¡tica (MÃƒÂ­nimo -0.5, MÃƒÂ¡ximo -4.0)
             ksPenalty = Math.max(0.5, Math.min(3.0, parseFloat(ksPenalty.toFixed(2)))); 
 
             punishmentPoints -= ksPenalty;
-            punishmentNotes.push(`📉 KDA Inútil (Robaste ${k} kills pero hiciste solo ${(dmgPercentage * 100).toFixed(0)}% daño, -${ksPenalty} pts)`);
+            punishmentNotes.push(`Ã°Å¸â€œâ€° KDA InÃƒÂºtil (Robaste ${k} kills pero hiciste solo ${(dmgPercentage * 100).toFixed(0)}% daÃƒÂ±o, -${ksPenalty} pts)`);
         }
     }
 
-    // --- 3. OBJETIVOS (Lógica de Roles: El Smite con Propósito) ---
+Ã‚Â  Ã‚Â  // --- 3. OBJETIVOS (LÃƒÂ³gica de Roles: El Smite con PropÃƒÂ³sito) ---
     if (isJungle) {
         const dragons = teamInfo?.dragonsCount || 0;
         const barons = teamInfo?.baronCount || 0;
@@ -4841,18 +4850,18 @@ if (!isWin && durationMin >= 15) {
         let objPotentialPoints = 0;
         let objNotes = [];
 
-        // A. Cálculo de Puntos Brutos (MEJORADO CON ALMA)
+        // A. CÃƒÂ¡lculo de Puntos Brutos (MEJORADO CON ALMA)
         if (dragons >= 4) { 
             // ALMA OBTENIDA
             // Base: 2.0 puntos por el Alma
             let soulPoints = 2.0;
-            let soulLabel = "Alma de Dragón";
+            let soulLabel = "Alma de DragÃƒÂ³n";
 
             // BONUS: ALMA PERFECTA (4-0)
             // Si el enemigo tiene 0 dragones, es un STOMP de objetivos
             if (teamInfo.enemyDragons === 0) {
                 soulPoints += 1.0; // Total 3.0
-                soulLabel = "🔥 ALMA PERFECTA (4-0)";
+                soulLabel = "Ã°Å¸â€Â¥ ALMA PERFECTA (4-0)";
             }
 
             objPotentialPoints += soulPoints;
@@ -4866,7 +4875,7 @@ if (!isWin && durationMin >= 15) {
         if (barons > 0) { 
             const baronScore = 1.5 + ((barons - 1) * 0.5);
             objPotentialPoints += baronScore;
-            objNotes.push(`${barons} Barón(es)`);
+            objNotes.push(`${barons} BarÃƒÂ³n(es)`);
         }
 
         if (heralds > 0) { objPotentialPoints += 0.75; objNotes.push("Heraldo"); }
@@ -4874,42 +4883,42 @@ if (!isWin && durationMin >= 15) {
         if (grubs >= 3) { objPotentialPoints += 0.5; objNotes.push("Kevins"); }
         else if (grubs >= 2) { objPotentialPoints += 0.3; }
 
-        // B. 🛡️ FILTRO DE ACTIVIDAD (Justo para Tanques y Utilidad)
+        // B. Ã°Å¸â€ºÂ¡Ã¯Â¸Â FILTRO DE ACTIVIDAD (Justo para Tanques y Utilidad)
         // Definimos si el Jungla ha participado realmente en la partida:
-        const hasGoodDamage = dpm >= 500;                 // ¿Ha pegado?
-        const hasGoodCC = totalCCPerMin >= 2.0;          // ¿Ha stuneado? (Sejuani/Malphite)
-        const hasGoodUtility = utilityPerMin >= 400;     // ¿Ha puesto escudos/curas? (Ivern)
+        const hasGoodDamage = dpm >= 500;                 // Ã‚Â¿Ha pegado?
+        const hasGoodCC = totalCCPerMin >= 2.0;          // Ã‚Â¿Ha stuneado? (Sejuani/Malphite)
+        const hasGoodUtility = utilityPerMin >= 400;     // Ã‚Â¿Ha puesto escudos/curas? (Ivern)
 
         // Si NO cumple ninguna de las 3, es un "Jungla Pasivo"
         let finalObjPoints = objPotentialPoints;
         
         if (durationMin > 18 && !hasGoodDamage && !hasGoodCC && !hasGoodUtility) {
             finalObjPoints = objPotentialPoints * 0.4;
-            notes.push(`🚜 Jungla Pasivo (Bono objetivos reducido 60% por falta de presencia)`);
+            notes.push(`Ã°Å¸Å¡Å“ Jungla Pasivo (Bono objetivos reducido 60% por falta de presencia)`);
         }
 
-        // C. CAP DE SEGURIDAD Y APLICACIÓN
+        // C. CAP DE SEGURIDAD Y APLICACIÃƒâ€œN
         finalObjPoints = Math.min(finalObjPoints, 5.0);
 
         if (finalObjPoints > 0) {
             total = safeAdd(total, finalObjPoints, "Jg Objectives", notes);
-            notes.push(`🐉 Impacto Macro (+${finalObjPoints.toFixed(1)} pts)`);
+            notes.push(`Ã°Å¸Ââ€° Impacto Macro (+${finalObjPoints.toFixed(1)} pts)`);
             if (objNotes.length > 0) notes.push(`[${objNotes.join(", ")}]`);
         }
     }
 
     // --- BONUS DE EQUIPO: ALMA ---
     if (teamInfo.dragonsCount >= 4) {
-        // Un pequeño extra para todos por conseguir la condición de victoria
+        // Un pequeÃƒÂ±o extra para todos por conseguir la condiciÃƒÂ³n de victoria
         total = safeAdd(total, 1.0, "Soul Team", notes);
-        notes.push("🐉 Bonus Alma");
+        notes.push("Ã°Å¸Ââ€° Bonus Alma");
     }
 
     // --- ESTRUCTURAS DE EQUIPO (Torres e Inhibidores) ---
     const towers = teamInfo?.towerCount || 0;
     const inhibs = teamInfo?.inhibitorCount || 0;
     
-    // Cálculo: 0.1 por Torre / 0.25 por Inhibidor
+    // CÃƒÂ¡lculo: 0.1 por Torre / 0.25 por Inhibidor
     let structurePoints = (towers * 0.1) + (inhibs * 0.25);
 
     if (structurePoints > 0) {
@@ -4919,21 +4928,21 @@ if (!isWin && durationMin >= 15) {
         // 2. ETIQUETA SOLO EN STOMP:
         // Solo imprimimos si tirasteis 9+ Torres (casi todas) O 2+ Inhibidores
         if (towers >= 9 || inhibs >= 2) {
-            notes.push(`🏗️ Demolición Total (${towers}T / ${inhibs}I)`);
+            notes.push(`Ã°Å¸Ââ€”Ã¯Â¸Â DemoliciÃƒÂ³n Total (${towers}T / ${inhibs}I)`);
         }
     }
 
-    // --- 4. BIG PLAYS & MOMENTOS ÉPICOS ---
+    // --- 4. BIG PLAYS & MOMENTOS Ãƒâ€°PICOS ---
     const multi = p.largestMultiKill || 0;
-    if (multi >= 5) { total = safeAdd(total, cfg.penta_points || 10, "Penta", notes); notes.push("¡PENTAKILL!"); }
+    if (multi >= 5) { total = safeAdd(total, cfg.penta_points || 10, "Penta", notes); notes.push("Ã‚Â¡PENTAKILL!"); }
     else if (multi === 4) { total = safeAdd(total, 3.0, "Quadra", notes); notes.push("Quadrakill"); }
 
-    if (p.firstBloodKill) { total = safeAdd(total, 0.5, "First Blood", notes); notes.push("🩸 Primera Sangre"); }
+    if (p.firstBloodKill) { total = safeAdd(total, 0.5, "First Blood", notes); notes.push("Ã°Å¸Â©Â¸ Primera Sangre"); }
 
-    // --- PENALIZACIÓN: PRIMERA VÍCTIMA ---
+    // --- PENALIZACIÃƒâ€œN: PRIMERA VÃƒÂCTIMA ---
     if (p.firstBloodVictim) {
         total = safeAdd(total, -1.0, "FB Victim", notes);
-        notes.push(`🩸 Primera Víctima (Regaló la FB)`);
+        notes.push(`Ã°Å¸Â©Â¸ Primera VÃƒÂ­ctima (RegalÃƒÂ³ la FB)`);
     }
 
     // --- NUEVO: CAZARRECOMPENSAS (Shutdowns) ---
@@ -4943,43 +4952,43 @@ if (!isWin && durationMin >= 15) {
     if (bountiesCollected >= 1) {
         // 1 punto por cada shutdown, son muy valiosos
         total = safeAdd(total, bountiesCollected * 1.0, "Bounty Hunter", notes);
-        notes.push(`💰 Cazarrecompensas (Cobró ${bountiesCollected} shutdowns)`);
+        notes.push(`Ã°Å¸â€™Â° Cazarrecompensas (CobrÃƒÂ³ ${bountiesCollected} shutdowns)`);
     }
 
     const clutchKills = p.challenges?.killsOnPlayersWithinKills || 0;
     if (clutchKills > 0) {
         const clutchPts = clutchKills * cfg.clutch_play_points;
-        applyBonus(`🦾 El Clutch (x${clutchKills})`, clutchPts);
+        applyBonus(`Ã°Å¸Â¦Â¾ El Clutch (x${clutchKills})`, clutchPts);
     }
 
     // =====================================================
-    // 🥋 EL SECUESTRADOR V3.0 (Insec Plays Progresivo)
+    // Ã°Å¸Â¥â€¹ EL SECUESTRADOR V3.0 (Insec Plays Progresivo)
     // =====================================================
     // Variable: knockEnemyIntoTeamAndKill
-    // Mide cuántas veces desplazaste a un enemigo hacia tu equipo y murió.
+    // Mide cuÃƒÂ¡ntas veces desplazaste a un enemigo hacia tu equipo y muriÃƒÂ³.
     
     const insecPlays = Number(p.challenges?.knockEnemyIntoTeamAndKill || 0);
     const insecPerMin = durationMin > 0 ? insecPlays / durationMin : 0;
 
-    // REQUISITO MÍNIMO: 4 jugadas totales para considerar que fue intencional y no suerte.
+    // REQUISITO MÃƒÂNIMO: 4 jugadas totales para considerar que fue intencional y no suerte.
     if (insecPlays >= 4) {
         
-        // 1. BASELINE: 0.10 jugadas por minuto como el "mínimo para empezar a puntuar".
+        // 1. BASELINE: 0.10 jugadas por minuto como el "mÃƒÂ­nimo para empezar a puntuar".
         const baseInsec = 0.10;
         
         if (insecPerMin > baseInsec) {
-            // 2. FÓRMULA PROGRESIVA: Por cada 0.1 jugadas/min extra, damos +0.5 pts.
+            // 2. FÃƒâ€œRMULA PROGRESIVA: Por cada 0.1 jugadas/min extra, damos +0.5 pts.
             let insecPts = (insecPerMin - baseInsec) * 5.0;
             
-            // Cap máximo de seguridad
+            // Cap mÃƒÂ¡ximo de seguridad
             insecPts = Math.max(0, Math.min(3.5, insecPts));
 
             if (insecPts >= 0.5) {
                 // 3. ETIQUETAS ORIGINALES INTACTAS (Basadas en tus umbrales)
                 let rankLabel = "";
-                if (insecPerMin >= 0.50) rankLabel = `🌪️ Sensei Coral`;
-                else if (insecPerMin >= 0.38) rankLabel = `🥋 Cinturón Negro`;
-                else rankLabel = `🤼 Judoka`;
+                if (insecPerMin >= 0.50) rankLabel = `Ã°Å¸Å’ÂªÃ¯Â¸Â Sensei Coral`;
+                else if (insecPerMin >= 0.38) rankLabel = `Ã°Å¸Â¥â€¹ CinturÃƒÂ³n Negro`;
+                else rankLabel = `Ã°Å¸Â¤Â¼ Judoka`;
 
                 insecPts = parseFloat(insecPts.toFixed(2));
                 total = safeAdd(total, insecPts);
@@ -4988,18 +4997,18 @@ if (!isWin && durationMin >= 15) {
         }
     }
 
-    // --- NUEVO: WOMBO COMBO (Multikill Instantánea) ---
+    // --- NUEVO: WOMBO COMBO (Multikill InstantÃƒÂ¡nea) ---
     // Variable: challenges.multiKillOneSpell
     // Detecta ultimates devastadoras (MF, Fiddle, Kennen, GP...)
     const womboCount = Number(p.challenges?.multiKillOneSpell || 0);
 
     if (womboCount > 0) {
         total = safeAdd(total, 1.5, "Wombo Combo", notes);
-        notes.push(`💥 Colateral`);
+        notes.push(`Ã°Å¸â€™Â¥ Colateral`);
     }
    
     // =================================================================
-    // 🏗️ DEMOLICIÓN Y ESTRUCTURAS (Ajustado por Rol v3.1)
+    // Ã°Å¸Ââ€”Ã¯Â¸Â DEMOLICIÃƒâ€œN Y ESTRUCTURAS (Ajustado por Rol v3.1)
     // =================================================================
     
     // --- 1. PLACAS (Early Game) ---
@@ -5010,50 +5019,50 @@ if (!isWin && durationMin >= 15) {
         const platePoints = plates * 0.05;
         total = safeAdd(total, platePoints);
 
-        // Etiqueta: Solo para Laners (evita que un Jungla que pasa por ahí se la lleve)
+        // Etiqueta: Solo para Laners (evita que un Jungla que pasa por ahÃƒÂ­ se la lleve)
         if (plates >= 6 && isLaner) {
-            notes.push(`🏗️ El Destructor (${plates} placas)`);
+            notes.push(`Ã°Å¸Ââ€”Ã¯Â¸Â El Destructor (${plates} placas)`);
         }
     }
 
     // --- 2. PRIMER LADRILLO ---
     const gotFirstBrick = p.firstTowerKill || p.firstTowerAssist || (p.challenges?.firstTurretKilled);
     if (gotFirstBrick) {
-         applyBonus("🧱 Primer Ladrillo", 1.25);
+         applyBonus("Ã°Å¸Â§Â± Primer Ladrillo", 1.25);
     }
 
    // =================================================================
-    // 🚜 DAÑO A ESTRUCTURAS V4.0 (Progresivo Escalado por Rol)
+    // Ã°Å¸Å¡Å“ DAÃƒâ€˜O A ESTRUCTURAS V4.0 (Progresivo Escalado por Rol)
     // =================================================================
     const towerDmg = Number(p.damageDealtToTurrets || 0);
     const towerDpm = durationMin > 0 ? towerDmg / durationMin : 0;
     
     // --- FACTOR DE EXIGENCIA POR ROL ---
-    // Cuanto más alto es el factor, más DPM a torres necesitas para empezar a ganar puntos.
+    // Cuanto mÃƒÂ¡s alto es el factor, mÃƒÂ¡s DPM a torres necesitas para empezar a ganar puntos.
     let roleFactor = 1.0;
     if (role === 'TOP') roleFactor = 1.0;
     else if (role === 'MIDDLE' || role === 'JUNGLE') roleFactor = 1.25;
     else if (role === 'BOTTOM') roleFactor = 1.35; 
-    else roleFactor = 3.0; // Los supports lo tienen muy difícil
+    else roleFactor = 3.0; // Los supports lo tienen muy difÃƒÂ­cil
 
-    // 1. BASELINE: Lo mínimo para que se considere un "Buen Asedio"
+    // 1. BASELINE: Lo mÃƒÂ­nimo para que se considere un "Buen Asedio"
     // Para un Toplaner son 200 DPM a torres. Para un Supp son 600 DPM.
     const baseTowerDpm = 200 * roleFactor;
 
-    // Solo calculamos si superas la exigencia mínima de tu rol
+    // Solo calculamos si superas la exigencia mÃƒÂ­nima de tu rol
     if (towerDpm > baseTowerDpm) {
         
-        // 2. FÓRMULA PROGRESIVA: Por cada 100 de DPM extra sobre la base, damos +0.5 pts. (Multiplicador: 0.005)
+        // 2. FÃƒâ€œRMULA PROGRESIVA: Por cada 100 de DPM extra sobre la base, damos +0.5 pts. (Multiplicador: 0.005)
         let structPts = (towerDpm - baseTowerDpm) * 0.004;
         
-        // Cap máximo de seguridad (Nadie puede ganar más de 3.0 pts solo por pegar a torres)
+        // Cap mÃƒÂ¡ximo de seguridad (Nadie puede ganar mÃƒÂ¡s de 3.0 pts solo por pegar a torres)
         structPts = Math.max(0, Math.min(3.0, structPts)); 
 
         // Solo aplicamos si la cantidad es relevante (>= 0.5) para no ensuciar el log con "+0.1 pts"
         if (structPts >= 0.5) {
-            let label = "🪝 Buen asedio";
-            if (structPts >= 3.0) label = "💣 ¡Demoledor Pro!";
-            else if (structPts >= 2.0) label = "🚧 Asedio Pesado";
+            let label = "Ã°Å¸ÂªÂ Buen asedio";
+            if (structPts >= 3.0) label = "Ã°Å¸â€™Â£ Ã‚Â¡Demoledor Pro!";
+            else if (structPts >= 2.0) label = "Ã°Å¸Å¡Â§ Asedio Pesado";
 
             structPts = parseFloat(structPts.toFixed(2));
             total = safeAdd(total, structPts);
@@ -5062,7 +5071,7 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =================================================================
-    // 🧱 EL ASEDIO V4.0 (% Daño del Equipo - Progresivo)
+    // Ã°Å¸Â§Â± EL ASEDIO V4.0 (% DaÃƒÂ±o del Equipo - Progresivo)
     // =================================================================
     const teamTowerDmgStruct = participants
         .filter(pt => pt.teamId === p.teamId)
@@ -5075,52 +5084,52 @@ if (!isWin && durationMin >= 15) {
         const structuresLocal = Number(p.turretKills || 0) + Number(p.inhibitorKills || 0);
         const isValidSiege = (role === 'TOP') || (structuresLocal >= 2);
 
-        // Además, exigimos un daño bruto mínimo de 5000 para que nadie gane puntos
-        // teniendo el 100% de share en un equipo que solo hizo 100 de daño a una torre.
+        // AdemÃƒÂ¡s, exigimos un daÃƒÂ±o bruto mÃƒÂ­nimo de 5000 para que nadie gane puntos
+        // teniendo el 100% de share en un equipo que solo hizo 100 de daÃƒÂ±o a una torre.
         if (isValidSiege && towerDmg > 5000) {
             
-            // 1. BASELINE: Asumimos que hacer el 25% (0.25) del daño ya es tu responsabilidad base.
+            // 1. BASELINE: Asumimos que hacer el 25% (0.25) del daÃƒÂ±o ya es tu responsabilidad base.
             const baseShare = 0.25;
             
             if (towerShare > baseShare) {
-                // 2. FÓRMULA PROGRESIVA: Por cada 10% (0.10) extra sobre el 25%, damos +1.0 pt. (Multiplicador: 10)
+                // 2. FÃƒâ€œRMULA PROGRESIVA: Por cada 10% (0.10) extra sobre el 25%, damos +1.0 pt. (Multiplicador: 10)
                 let siegePts = (towerShare - baseShare) * 10.0;
                 
-                // Cap máximo de seguridad (3.5 pts si haces el 70% del daño o más)
+                // Cap mÃƒÂ¡ximo de seguridad (3.5 pts si haces el 70% del daÃƒÂ±o o mÃƒÂ¡s)
                 siegePts = Math.max(0, Math.min(3.5, siegePts));
                 
                 // Solo registramos si es un puntaje destacable
                 if (siegePts >= 0.8) {
-                    let label = "🔨 Albañil";
-                    if (siegePts >= 3.0) label = "🏗️ EL ASEDIO";
-                    else if (siegePts >= 2.0) label = "🪵 Ariete";
+                    let label = "Ã°Å¸â€Â¨ AlbaÃƒÂ±il";
+                    if (siegePts >= 3.0) label = "Ã°Å¸Ââ€”Ã¯Â¸Â EL ASEDIO";
+                    else if (siegePts >= 2.0) label = "Ã°Å¸ÂªÂµ Ariete";
 
                     siegePts = parseFloat(siegePts.toFixed(2));
                     total = safeAdd(total, siegePts);
-                    notes.push(`${label} (${(towerShare*100).toFixed(0)}% del daño, +${siegePts} pts)`);
+                    notes.push(`${label} (${(towerShare*100).toFixed(0)}% del daÃƒÂ±o, +${siegePts} pts)`);
                 }
             }
         }
     }
 
     // =====================================================
-    // 🐺 EL LOBO ESTEPARIO (Torres en Solitario Late Game)
+    // Ã°Å¸ÂÂº EL LOBO ESTEPARIO (Torres en Solitario Late Game)
     // =====================================================
     // Variable: challenges.soloTurretsLategame
-    // Destruir torres completamente solo después del early game.
+    // Destruir torres completamente solo despuÃƒÂ©s del early game.
     const soloTurrets = Number(p.challenges?.soloTurretsLategame || 0);
 
     if (soloTurrets > 1) {
         // TIER 2: REY DEL BACKDOOR (2+ Torres Solitarias)
-        // Abrir la base tú solo mientras tu equipo distrae.
+        // Abrir la base tÃƒÂº solo mientras tu equipo distrae.
         if (soloTurrets >= 3) {
             total = safeAdd(total, 2.5, "Split God", notes);
-            notes.push(`🐺 LOBO ESTEPARIO (Tiró ${soloTurrets} torres completamente solo)`);
+            notes.push(`Ã°Å¸ÂÂº LOBO ESTEPARIO (TirÃƒÂ³ ${soloTurrets} torres completamente solo)`);
         }
-        // TIER 1: PRESIÓN DIVIDIDA (1 Torre Solitaria)
+        // TIER 1: PRESIÃƒâ€œN DIVIDIDA (1 Torre Solitaria)
         else {
             total = safeAdd(total, 1.0, "Solo Split", notes);
-            notes.push(`🏚️ Presión Dividida (1 torre solo)`);
+            notes.push(`Ã°Å¸ÂÅ¡Ã¯Â¸Â PresiÃƒÂ³n Dividida (1 torre solo)`);
         }
     }
 
@@ -5132,13 +5141,13 @@ if (!isWin && durationMin >= 15) {
       const tankEfficiency = dmgTaken / deathsForTank;
       if (["TOP", "JUNGLE", "SUPPORT"].includes(role) && tankEfficiency >= (cfg.tank_efficiency_threshold || 40000)) {
           total = safeAdd(total, cfg.tank_efficiency_points || 1.5, "Saco Boxeo", notes);
-          notes.push(`🥊 Saco de Boxeo (${(tankEfficiency/1000).toFixed(0)}k dmg/muerte)`);
+          notes.push(`Ã°Å¸Â¥Å  Saco de Boxeo (${(tankEfficiency/1000).toFixed(0)}k dmg/muerte)`);
       }
 
     
 
       // --- Lobo Solitario (Splitpush) ---
-      // Usamos 'hullbreaker' (daño a torres sin aliados cerca) si está disponible, o una aproximación
+      // Usamos 'hullbreaker' (daÃƒÂ±o a torres sin aliados cerca) si estÃƒÂ¡ disponible, o una aproximaciÃƒÂ³n
       const splitDmg = p.challenges?.hullbreakerDamage || 0;
       if (role === "TOP" && splitDmg >= (cfg.hullbreaker_threshold || 4000)) {
           total = safeAdd(total, cfg.hullbreaker_points || 1.0, "Lobo Solitario", notes);
@@ -5148,115 +5157,115 @@ if (!isWin && durationMin >= 15) {
       // --- Moneda al Aire (Real Gamble 50/50) ---
       // Si tienes Kills >= 10 Y Muertes >= 10, eres inestable. El sistema decide tu suerte.
       if (k >= 11 && d >= 11) {
-          // Math.random() genera un número entre 0.0 y 1.0
+          // Math.random() genera un nÃƒÂºmero entre 0.0 y 1.0
           const isHeads = Math.random() >= 0.5; // 50% Probabilidad
 
           if (isHeads) {
               total = safeAdd(total, 1.0, "Coinflip Win", notes);
-              notes.push(`🪙 Coinflip: CARA (+1.0)`);
+              notes.push(`Ã°Å¸Âªâ„¢ Coinflip: CARA (+1.0)`);
           } else {
               total = safeAdd(total, -1.0, "Coinflip Loss", notes);
-              notes.push(`🪙 Coinflip: CRUZ (-1.0)`);
+              notes.push(`Ã°Å¸Âªâ„¢ Coinflip: CRUZ (-1.0)`);
           }
       }
 
       // --- Maratoniano ---
       if (p.win && durationMin >= (cfg.marathon_min || 47)) {
           total = safeAdd(total, cfg.marathon_points || -3.5, "Maratoniano", notes);
-          notes.push(`🪠 Desatascador (+${durationMin} min)`);
+          notes.push(`Ã°Å¸ÂªÂ  Desatascador (+${durationMin} min)`);
       }
 
       // --- La Mochila (Carried) ---
       if (p.win && !isSupport && kda < 1.6 && dmgShare < 0.14) {
           // Restamos puntos para equilibrar los puntos de victoria base
           total = safeAdd(total, -2.0, "Carried", notes); 
-          notes.push(`🛒 GET CARRIED (Ganaste pero... KDA ${kda.toFixed(1)})`);
+          notes.push(`Ã°Å¸â€ºâ€™ GET CARRIED (Ganaste pero... KDA ${kda.toFixed(1)})`);
       }
 
     // =========================================================
-    // 📺 MÓDULO: EL CRONÓMETRO DE LA PARCA V4.0 (Progresivo + Etiquetas Clásicas)
+    // Ã°Å¸â€œÂº MÃƒâ€œDULO: EL CRONÃƒâ€œMETRO DE LA PARCA V4.0 (Progresivo + Etiquetas ClÃƒÂ¡sicas)
     // =========================================================
     const timeDeadSeconds = Number(p.totalTimeSpentDead || 0);
     const gameDurationSeconds = durationMin * 60;
     
-    // Solo analizamos partidas de >15 min para evitar sesgos en stomps rápidos
+    // Solo analizamos partidas de >15 min para evitar sesgos en stomps rÃƒÂ¡pidos
     if (gameDurationSeconds > 0 && durationMin > 15) {
         
         const deadRatio = timeDeadSeconds / gameDurationSeconds;
         const deadPercent = (deadRatio * 100).toFixed(1);
         
-        // --- 1. DETECCIÓN DE CONTEXTO ---
+        // --- 1. DETECCIÃƒâ€œN DE CONTEXTO ---
         const teamTowerDmgTotal = participants.filter(pt => pt.teamId === p.teamId).reduce((ac, c) => ac + (c.damageDealtToTurrets||0), 0);
         const isSplitStrategy = (myTowerDmg > 7500) || 
                                 (teamTowerDmgTotal > 0 && (myTowerDmg/teamTowerDmgTotal) > 0.65 && myTowerDmg > 3500);
 
         const isMartyr = kp >= 0.65;
 
-        // --- 2. ASIGNACIÓN DE ETIQUETA (LORE) ---
+        // --- 2. ASIGNACIÃƒâ€œN DE ETIQUETA (LORE) ---
         let baseNote = "";
         
         if (deadRatio >= 0.30) {
-            baseNote = `🎬 Netflix & Chill`;
+            baseNote = `Ã°Å¸Å½Â¬ Netflix & Chill`;
         } else if (deadRatio >= 0.25) {
-            baseNote = `👻 Espectador VIP`;
+            baseNote = `Ã°Å¸â€˜Â» Espectador VIP`;
         } else if (deadRatio >= 0.20) {
-            baseNote = `📺 Simulador de Pantalla Gris`;
+            baseNote = `Ã°Å¸â€œÂº Simulador de Pantalla Gris`;
         } else if (deadRatio >= 0.15 && kp < 0.40) {
-            // A los descuidados solo se les castiga si además ayudan poco
-            baseNote = `⚠️ Descuidado`;
+            // A los descuidados solo se les castiga si ademÃƒÂ¡s ayudan poco
+            baseNote = `Ã¢Å¡Â Ã¯Â¸Â Descuidado`;
         }
 
-        // --- 3. CÁLCULO PROGRESIVO DE PUNTOS ---
+        // --- 3. CÃƒÂLCULO PROGRESIVO DE PUNTOS ---
         if (baseNote !== "") {
             // Empezamos a restar desde el 12% (0.12) de tiempo muerto base aceptable.
-            // Fórmula: -(Exceso * 35). Da un escalado muy parecido a tus puntos originales, pero con decimales.
+            // FÃƒÂ³rmula: -(Exceso * 35). Da un escalado muy parecido a tus puntos originales, pero con decimales.
             let rawPenalty = -((deadRatio - 0.12) * 35); 
 
             let modifier = 1.0;
             let suffix = "";
 
-            // --- 4. APLICACIÓN DE MODIFICADORES (Intactos) ---
+            // --- 4. APLICACIÃƒâ€œN DE MODIFICADORES (Intactos) ---
             if (isSplitStrategy) {
                 modifier = 0.85; 
                 suffix = " (Mitigado: Splitpush)";
             } else if (isMartyr) {
                 modifier = 0.70; 
-                suffix = " (Mitigado: Sacrificio Útil)";
+                suffix = " (Mitigado: Sacrificio ÃƒÅ¡til)";
             } else if (kp < 0.30) {
                 modifier = 1.50; 
-                suffix = " + 💀 Cero Impacto";
+                suffix = " + Ã°Å¸â€™â‚¬ Cero Impacto";
             }
 
             let finalTimerPenalty = rawPenalty * modifier;
 
-            // Cap máximo de seguridad (Para que nadie pierda más de 12 puntos por esto)
+            // Cap mÃƒÂ¡ximo de seguridad (Para que nadie pierda mÃƒÂ¡s de 12 puntos por esto)
             finalTimerPenalty = Math.max(-12.0, finalTimerPenalty);
 
             // Redondeamos para el historial
             finalTimerPenalty = parseFloat(finalTimerPenalty.toFixed(2));
             
             total = safeAdd(total, finalTimerPenalty);
-            // El mensaje quedará igual que antes, pero con el valor progresivo:
-            // Ej: "📺 Simulador de Pantalla Gris (22.4% muerto, -3.64 pts)"
+            // El mensaje quedarÃƒÂ¡ igual que antes, pero con el valor progresivo:
+            // Ej: "Ã°Å¸â€œÂº Simulador de Pantalla Gris (22.4% muerto, -3.64 pts)"
             notes.push(`${baseNote} (${deadPercent}% muerto${suffix}, ${finalTimerPenalty} pts)`);
         }
     }
 
     // --- NUEVO: EL SHOTCALLER (Liderazgo) ---
-    // Sumamos pings útiles (Peligro, SS, Atrás)
+    // Sumamos pings ÃƒÂºtiles (Peligro, SS, AtrÃƒÂ¡s)
     const comms = (p.enemyMissingPings || 0) + (p.dangerPings || 0) + (p.getBackPings || 0);
     
-    // Filtro Anti-Spam: Si haces más de 80 pings de estos, probablemente estás tilteado spameando
+    // Filtro Anti-Spam: Si haces mÃƒÂ¡s de 80 pings de estos, probablemente estÃƒÂ¡s tilteado spameando
     if (comms >= 30 && comms <= 80) {
-        total = safeAdd(total, 1.0, "Líder", notes);
-        notes.push(`🗣️ Shotcaller (${comms} pings tácticos)`);
+        total = safeAdd(total, 1.0, "LÃƒÂ­der", notes);
+        notes.push(`Ã°Å¸â€”Â£Ã¯Â¸Â Shotcaller (${comms} pings tÃƒÂ¡cticos)`);
     } else if (comms > 80) {
-        // Opcional: Penalización por spammer tóxico
+        // Opcional: PenalizaciÃƒÂ³n por spammer tÃƒÂ³xico
         total = safeAdd(total, -0.5, "Toxic", notes);
-         notes.push(`🔇 Spammer (${comms} pings)`);
+         notes.push(`Ã°Å¸â€â€¡ Spammer (${comms} pings)`);
     }
 
-    // --- NUEVO: CONTROL DE MAPA (Visión Ofensiva - NERF S26) ---
+    // --- NUEVO: CONTROL DE MAPA (VisiÃƒÂ³n Ofensiva - NERF S26) ---
     const aggressiveVision = Number(p.challenges?.controlWardTimeCoverageInRiverOrEnemyHalf || 0);
     
     // Subimos la exigencia: 
@@ -5264,10 +5273,10 @@ if (!isWin && durationMin >= 15) {
     // Tier 2: De 0.85 -> 0.88 (88%)
     if (aggressiveVision >= 0.85) {
         total = safeAdd(total, 1.5, "Gran Hermano", notes);
-        notes.push(`👁️ Gran Hermano (${(aggressiveVision*100).toFixed(0)}% mapa controlado)`);
+        notes.push(`Ã°Å¸â€˜ÂÃ¯Â¸Â Gran Hermano (${(aggressiveVision*100).toFixed(0)}% mapa controlado)`);
     } else if (aggressiveVision >= 0.72) {
-        total = safeAdd(total, 0.5, "Vigía", notes);
-        notes.push(`🔦 Vigía de Río (${(aggressiveVision*100).toFixed(0)}% mapa controlado)`);
+        total = safeAdd(total, 0.5, "VigÃƒÂ­a", notes);
+        notes.push(`Ã°Å¸â€Â¦ VigÃƒÂ­a de RÃƒÂ­o (${(aggressiveVision*100).toFixed(0)}% mapa controlado)`);
     }
 
 
@@ -5278,12 +5287,12 @@ if (!isWin && durationMin >= 15) {
     const raidBossMoments = Number(p.challenges?.survivedThreeImmobilizesInFight || 0);
     const bossPerMin = durationMin > 0 ? raidBossMoments / durationMin : 0;
 
-    // Mínimo 2 momentos para puntuar
+    // MÃƒÂ­nimo 2 momentos para puntuar
     if (raidBossMoments >= 2) {
         let bossPts = 0;
         let label = "";
         
-        // Distinguir nombre según el rol (Sabor)
+        // Distinguir nombre segÃƒÂºn el rol (Sabor)
         const isTanky = ["TOP", "JUNGLE", "SUPPORT"].includes(role);
 
         // TIER 2: INDESTRUCTIBLE (> 0.25/min)
@@ -5291,14 +5300,14 @@ if (!isWin && durationMin >= 15) {
         // Ej: 5 veces en 20 min || 8 veces en 30 min.
         if (bossPerMin >= 0.31) {
             bossPts = 2.0;
-            label = isTanky ? `🦖 RAID BOSS` : `💨 INATRAPABLE`;
+            label = isTanky ? `Ã°Å¸Â¦â€“ RAID BOSS` : `Ã°Å¸â€™Â¨ INATRAPABLE`;
             notes.push(`${label} (Focus resistido ${raidBossMoments} veces)`);
         } 
         // TIER 1: DURO DE MATAR (> 0.12/min)
         // Ej: 3 veces en 20 min || 4 veces en 30 min.
         else if (bossPerMin >= 0.20) {
             bossPts = 1.0;
-            label = isTanky ? `🛡️ Coloso` : `🧘 Mente Fría`;
+            label = isTanky ? `Ã°Å¸â€ºÂ¡Ã¯Â¸Â Coloso` : `Ã°Å¸Â§Ëœ Mente FrÃƒÂ­a`;
             notes.push(`${label} (Focus resistido ${raidBossMoments} veces)`);
         }
 
@@ -5308,29 +5317,29 @@ if (!isWin && durationMin >= 15) {
     }
 
       // =====================================================
-    // 🪄 EL ESCAPISTA V3 (Sobrevivir a <10% HP) - PROGRESIVO
+    // Ã°Å¸Âªâ€ž EL ESCAPISTA V3 (Sobrevivir a <10% HP) - PROGRESIVO
     // =====================================================
     const escapes = Number(p.challenges?.survivedSingleDigitHpCount || 0);
     
     if (escapes >= 1) {
-        // Fórmula progresiva: +0.8 pts por cada escape al límite
+        // FÃƒÂ³rmula progresiva: +0.8 pts por cada escape al lÃƒÂ­mite
         // 1 escape = +0.80 | 2 escapes = +1.60 | 3 escapes = +2.40 | 4 = +3.20
         let escapePts = escapes * 0.8;
-        escapePts = Math.min(4.0, parseFloat(escapePts.toFixed(2))); // Cap máximo de +4.0
+        escapePts = Math.min(4.0, parseFloat(escapePts.toFixed(2))); // Cap mÃƒÂ¡ximo de +4.0
 
-        let label = "🍀 Supervivencia Extrema";
+        let label = "Ã°Å¸Ââ‚¬ Supervivencia Extrema";
         if (escapes >= 4) {
-            label = "🪄 GRAN ESCAPISTA";
+            label = "Ã°Å¸Âªâ€ž GRAN ESCAPISTA";
         } else if (escapes >= 2) {
-            label = "🎩 HOUDINI";
+            label = "Ã°Å¸Å½Â© HOUDINI";
         }
 
         total = safeAdd(total, escapePts, "Escapista", notes);
-        notes.push(`${label} (x${escapes} al límite, +${escapePts} pts)`);
+        notes.push(`${label} (x${escapes} al lÃƒÂ­mite, +${escapePts} pts)`);
     }
 
     // =====================================================
-    // 🛡️ LA MURALLA (Daño Mitigado) - PROGRESIVO
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â LA MURALLA (DaÃƒÂ±o Mitigado) - PROGRESIVO
     // =====================================================
     const selfMitigated = Number(p.damageSelfMitigated || 0);
     const mitigatedPerMin = durationMin > 0 ? selfMitigated / durationMin : 0;
@@ -5341,20 +5350,20 @@ if (!isWin && durationMin >= 15) {
         // Empezamos a premiar de forma notable a partir de los 1200/min
         if (mitigatedPerMin >= 1200) {
             
-            // Fórmula: Base 1000. Ganas +1.0 pts por cada 500 de daño mitigado extra.
+            // FÃƒÂ³rmula: Base 1000. Ganas +1.0 pts por cada 500 de daÃƒÂ±o mitigado extra.
             // Ej 1500/min: (1500 - 1000) * 0.002 = +1.00 pts (Exacto a tu Tier 1 antiguo)
             // Ej 2500/min: (2500 - 1000) * 0.002 = +3.00 pts (Buffado respecto a tu Tier 2)
             // Ej 3500/min: (3500 - 1000) * 0.002 = +5.00 pts
             let tankPts = (mitigatedPerMin - 1000) * 0.002;
-            tankPts = Math.min(5.0, parseFloat(tankPts.toFixed(2))); // Cap máximo
+            tankPts = Math.min(5.0, parseFloat(tankPts.toFixed(2))); // Cap mÃƒÂ¡ximo
 
-            let label = "🛡️ Escudo Humano";
+            let label = "Ã°Å¸â€ºÂ¡Ã¯Â¸Â Escudo Humano";
             if (mitigatedPerMin >= 3000) {
-                label = "🏔️ COLOSO INAMOVIBLE";
+                label = "Ã°Å¸Ââ€Ã¯Â¸Â COLOSO INAMOVIBLE";
             } else if (mitigatedPerMin >= 2200) {
-                label = "🛡️ Muralla de Titanio";
+                label = "Ã°Å¸â€ºÂ¡Ã¯Â¸Â Muralla de Titanio";
             } else if (mitigatedPerMin >= 1500) {
-                label = "🛡️ Duro de Pelar";
+                label = "Ã°Å¸â€ºÂ¡Ã¯Â¸Â Duro de Pelar";
             }
 
             total = safeAdd(total, tankPts, "Tank Mitigado", notes);
@@ -5362,7 +5371,7 @@ if (!isWin && durationMin >= 15) {
         }
     }
 
-    // --- NUEVO: SPAWN CAMPER (Humillación) ---
+    // --- NUEVO: SPAWN CAMPER (HumillaciÃƒÂ³n) ---
     // Variable: challenges.takedownsInEnemyFountain
     // Mide si mataste a alguien buceando en SU fuente.
     const fountainKills = Number(p.challenges?.takedownsInEnemyFountain || 0);
@@ -5370,7 +5379,7 @@ if (!isWin && durationMin >= 15) {
     if (fountainKills > 0) {
         // Es una jugada de riesgo y bm (bad manners), pero indica stomp.
         total = safeAdd(total, 1.0 * fountainKills, "Spawn Camper", notes);
-        notes.push(`💀 Spawn Camper (Mató a ${fountainKills} en la fuente)`);
+        notes.push(`Ã°Å¸â€™â‚¬ Spawn Camper (MatÃƒÂ³ a ${fountainKills} en la fuente)`);
     }
 
     // =========================================================
@@ -5394,46 +5403,46 @@ if (!isWin && durationMin >= 15) {
         // TIER 3: NEO (> 5.2/min) - Subido de 5.0
         if (dodgedPerMin >= 5.2 && dodged > 180) {
             total = safeAdd(total, 2.5, "Neo Mode", notes);
-            notes.push(`🕶️ NEO: El Elegido (${dodged} esquives, ${dodgedPerMin.toFixed(1)}/min)`);
+            notes.push(`Ã°Å¸â€¢Â¶Ã¯Â¸Â NEO: El Elegido (${dodged} esquives, ${dodgedPerMin.toFixed(1)}/min)`);
         } 
         // TIER 2: MATRIX MODE (> 4.0/min) - Subido de 3.8
         else if (dodgedPerMin >= 4.0 && dodged > 120) {
             total = safeAdd(total, 1.25, "Matrix Mode", notes);
-            notes.push(`💊 Matrix Mode (${dodgedPerMin.toFixed(1)} esquives/min)`);
+            notes.push(`Ã°Å¸â€™Å  Matrix Mode (${dodgedPerMin.toFixed(1)} esquives/min)`);
         } 
         // TIER 1: PIES LIGEROS (> 3.0/min) - Subido de 2.7
         else if (dodgedPerMin >= 3.0 && dodged > 60) {
             total = safeAdd(total, 0.75, "Pies Ligeros", notes);
-            notes.push(`👟 Pies Ligeros (${dodgedPerMin.toFixed(1)} esquives/min)`);
+            notes.push(`Ã°Å¸â€˜Å¸ Pies Ligeros (${dodgedPerMin.toFixed(1)} esquives/min)`);
         }
     }
 
-    // --- B. REFLEJOS DE DIOS (Esquives Críticos) ---
+    // --- B. REFLEJOS DE DIOS (Esquives CrÃƒÂ­ticos) ---
     const clutchDodges = Number(p.challenges?.dodgeSkillShotsSmallWindow || 0);
     const clutchPerMin = durationMin > 0 ? clutchDodges / durationMin : 0;
 
-    if (clutchDodges >= 3 && !isInting) { // Añadido !isInting
-        // TIER 3: ¿SCRIPTER?
+    if (clutchDodges >= 3 && !isInting) { // AÃƒÂ±adido !isInting
+        // TIER 3: Ã‚Â¿SCRIPTER?
         if (clutchPerMin >= 1.5) {
             total = safeAdd(total, 2.5, "Human Script", notes);
-            notes.push(`🤖 ¿SCRIPTER? (${clutchDodges} dodges, ${clutchPerMin.toFixed(2)}/min)`);
+            notes.push(`Ã°Å¸Â¤â€“ Ã‚Â¿SCRIPTER? (${clutchDodges} dodges, ${clutchPerMin.toFixed(2)}/min)`);
         } 
         // TIER 2: ULTRA INSTINTO
         else if (clutchPerMin >= 0.9) {
             total = safeAdd(total, 1.5, "Ultra Instinto", notes);
-            notes.push(`⚡ Ultra Instinto (${clutchPerMin.toFixed(2)}/min)`);
+            notes.push(`Ã¢Å¡Â¡ Ultra Instinto (${clutchPerMin.toFixed(2)}/min)`);
         } 
         // TIER 1: BUENOS REFLEJOS
         else if (clutchPerMin >= 0.6) {
             total = safeAdd(total, 0.75, "Reflejos", notes);
-            notes.push(`💨 Buenos Reflejos (${clutchPerMin.toFixed(2)}/min)`);
+            notes.push(`Ã°Å¸â€™Â¨ Buenos Reflejos (${clutchPerMin.toFixed(2)}/min)`);
         }
     }
 
     // =====================================================
-    // 🎹 EL PIANISTA (Casteos por Minuto - CPM)
+    // Ã°Å¸Å½Â¹ EL PIANISTA (Casteos por Minuto - CPM)
     // =====================================================
-    // Suma cuántas veces pulsó Q, W, E, R
+    // Suma cuÃƒÂ¡ntas veces pulsÃƒÂ³ Q, W, E, R
     const casts = (p.spell1Casts || 0) + (p.spell2Casts || 0) + (p.spell3Casts || 0) + (p.spell4Casts || 0);
     const cpm = durationMin > 0 ? casts / durationMin : 0;
 
@@ -5445,23 +5454,23 @@ if (!isWin && durationMin >= 15) {
     // (Unas 1350 habilidades en 30 min)
     if (cpm >= 35) {
         total = safeAdd(total, 2.5, "Pianista God", notes);
-        notes.push(`🎹 DEDOS DE FUEGO (${cpm.toFixed(0)} casts/min)`);
+        notes.push(`Ã°Å¸Å½Â¹ DEDOS DE FUEGO (${cpm.toFixed(0)} casts/min)`);
     }
-    // TIER 2: MECÁNICO (> 30 casts/min)
+    // TIER 2: MECÃƒÂNICO (> 30 casts/min)
     else if (cpm >= 20) {
         total = safeAdd(total, 1.5, "Mechanics", notes);
-        notes.push(`⚙️ Mecánico (${cpm.toFixed(0)} casts/min)`);
+        notes.push(`Ã¢Å¡â„¢Ã¯Â¸Â MecÃƒÂ¡nico (${cpm.toFixed(0)} casts/min)`);
     }
     
-    // PENALIZACIÓN: EL DORMILÓN (Solo para Spammers)
+    // PENALIZACIÃƒâ€œN: EL DORMILÃƒâ€œN (Solo para Spammers)
     // Si usas a Zeri o Ryze y tiras menos de 15 habilidades por minuto, algo va mal.
     else if (isMasher && cpm < 10 && durationMin > 15) {
         total = safeAdd(total, -1.0, "Low APM", notes);
-        notes.push(`💤 Dormilón con ${p.championName} (${cpm.toFixed(0)} casts/min)`);
+        notes.push(`Ã°Å¸â€™Â¤ DormilÃƒÂ³n con ${p.championName} (${cpm.toFixed(0)} casts/min)`);
     }
 
     // =====================================================
-    // 👹 EL CLEPTÓMANO (Robo de Red/Blue)
+    // Ã°Å¸â€˜Â¹ EL CLEPTÃƒâ€œMANO (Robo de Red/Blue)
     // =====================================================
     // Variable: challenges.buffsStolen
     const stolenBuffs = Number(p.challenges?.buffsStolen || 0);
@@ -5470,19 +5479,19 @@ if (!isWin && durationMin >= 15) {
         // TIER 2: PESADILLA DEL JUNGLA (3+ Buffs robados)
         if (stolenBuffs >= 4) {
             total = safeAdd(total, 1.0, "Buff Thief God", notes);
-            notes.push(`👹 CLEPTÓMANO (Robó ${stolenBuffs} Buffs Rojos/Azules)`);
+            notes.push(`Ã°Å¸â€˜Â¹ CLEPTÃƒâ€œMANO (RobÃƒÂ³ ${stolenBuffs} Buffs Rojos/Azules)`);
         }
         // TIER 1: LADRONZUELO (1-2 Buffs)
         else {
             total = safeAdd(total, 0.2, "Buff Thief", notes);
-            notes.push(`👺 Ladrón de Buffs (x${stolenBuffs})`);
+            notes.push(`Ã°Å¸â€˜Âº LadrÃƒÂ³n de Buffs (x${stolenBuffs})`);
         }
     }    
 
     // =========================================================
-    // 4. EL LADRÓN (Counter Jungle) - CORREGIDO
+    // 4. EL LADRÃƒâ€œN (Counter Jungle) - CORREGIDO
     // =========================================================
-    // FIX: La variable está dentro de 'challenges', no en la raíz.
+    // FIX: La variable estÃƒÂ¡ dentro de 'challenges', no en la raÃƒÂ­z.
     const enemyJungleCS = Number(p.challenges?.enemyJungleMonsterKills || 0);
     
     // Calculamos ritmo (CS robado por minuto)
@@ -5491,21 +5500,21 @@ if (!isWin && durationMin >= 15) {
     // Solo aplica si NO eres Support y has robado algo significativo (>15 CS)
     if (role !== "SUPPORT" && enemyJungleCS >= 15) {
         
-        // TIER 2: TU JUNGLA ES MÍA (> 1.2 CS robados/min)
+        // TIER 2: TU JUNGLA ES MÃƒÂA (> 1.2 CS robados/min)
         // Ej: Robar ~36 CS en 30 min (Aprox 6-7 campamentos enteros)
         if (invadesPerMin >= 1.0) {
             total = safeAdd(total, 1.5, "Jungle Gap", notes);
-            notes.push(`🏕️ Tu Jungla es Mía (${enemyJungleCS} CS robados)`);
+            notes.push(`Ã°Å¸Ââ€¢Ã¯Â¸Â Tu Jungla es MÃƒÂ­a (${enemyJungleCS} CS robados)`);
         } 
         // TIER 1: INVASOR (> 0.6 CS robados/min)
         // Ej: Robar ~18 CS en 30 min (Aprox 3-4 campamentos)
         else if (invadesPerMin >= 0.5) {
             total = safeAdd(total, 0.5, "Invasor", notes);
-            notes.push(`🥷 Invasor (${enemyJungleCS} CS robados)`);
+            notes.push(`Ã°Å¸Â¥Â· Invasor (${enemyJungleCS} CS robados)`);
         }
     }
 
-    // --- 🎯 FRANCOTIRADOR (Reajustado para Spammers) ---
+    // --- Ã°Å¸Å½Â¯ FRANCOTIRADOR (Reajustado para Spammers) ---
     const skillshotsLanded = Number(p.challenges?.skillshotsHit || 0);
     const shotsPerMin = durationMin > 0 ? skillshotsLanded / durationMin : 0;
     
@@ -5515,25 +5524,25 @@ if (!isWin && durationMin >= 15) {
 
     if (shotsPerMin >= (8 * spammerFactor) && skillshotsLanded > (200 * spammerFactor)) { 
         total = safeAdd(total, 2.0, "Scripting", notes);
-        notes.push(`🤖 Aimbot.exe (${skillshotsLanded} hits)`);
+        notes.push(`Ã°Å¸Â¤â€“ Aimbot.exe (${skillshotsLanded} hits)`);
 
     } else if (shotsPerMin >= (5.0 * spammerFactor)) {
         total = safeAdd(total, 1.0, "Sniper", notes);
-        notes.push(`🎯 Francotirador`);
+        notes.push(`Ã°Å¸Å½Â¯ Francotirador`);
     }
-    // TIER 1: OJO DE HALCÓN (Decente)
+    // TIER 1: OJO DE HALCÃƒâ€œN (Decente)
     // Subido a 3.0/min
     else if (shotsPerMin >= (3.0 * spammerFactor)) {
         total = safeAdd(total, 0.5, "Hawkeye", notes);
-        notes.push(`🏹 Ojo de Halcón)`);
+        notes.push(`Ã°Å¸ÂÂ¹ Ojo de HalcÃƒÂ³n)`);
     }
 
     // =========================================================
-    // 2. PESADILLA EN LA JUNGLA (Presión Profunda) - RECALIBRADO
+    // 2. PESADILLA EN LA JUNGLA (PresiÃƒÂ³n Profunda) - RECALIBRADO
     // =========================================================
     // Variable: challenges.takedownsInEnemyJungle
     // Mide Kills + Asistencias ocurridos DENTRO de los cuadrantes de jungla rival.
-    // NOTA: Es muy estricto con la posición. El Río NO cuenta.
+    // NOTA: Es muy estricto con la posiciÃƒÂ³n. El RÃƒÂ­o NO cuenta.
 
     const deepKills = Number(p.challenges?.takedownsInEnemyJungle || 0);
     
@@ -5541,185 +5550,185 @@ if (!isWin && durationMin >= 15) {
     // Invadir y matar 4 veces en su propia casa es un Stomp.
     if (deepKills >= 4) {
          total = safeAdd(total, 2.0, "Deep Terror", notes);
-         notes.push(`🏕️ TERROR EN LA JUNGLA (x${deepKills} cazadas internas)`);
+         notes.push(`Ã°Å¸Ââ€¢Ã¯Â¸Â TERROR EN LA JUNGLA (x${deepKills} cazadas internas)`);
     }
     // TIER 1: CAZADOR FURTIVO (2+ cazadas)
     // Matar al jungla rival en su Red y luego volver a matarlo en Lobos.
     else if (deepKills >= 2) {
          total = safeAdd(total, 0.75, "Invade Kills", notes);
-         notes.push(`🥷 Cazador Furtivo (x${deepKills} cazadas internas)`);
+         notes.push(`Ã°Å¸Â¥Â· Cazador Furtivo (x${deepKills} cazadas internas)`);
     }
 
     // =========================================================
-    // 🧠 CONTROL DE MASAS (CC) - SISTEMA DUAL
+    // Ã°Å¸Â§Â  CONTROL DE MASAS (CC) - SISTEMA DUAL
     // =========================================================
-    // --- FUNCIÓN A: HARD CC (El Carcelero) ---
+    // --- FUNCIÃƒâ€œN A: HARD CC (El Carcelero) ---
     
     // Premia a Leona, Nautilus, Morgana, Amumu.
     if (hardCCPerMin >= 4.6 && hardCCCount > 70) {
         total = safeAdd(total, 3.0, "Hard CC God", notes);
-        notes.push(`🐙 KRAKEN (${hardCCCount} stuns, ${hardCCPerMin.toFixed(1)}/min)`);
+        notes.push(`Ã°Å¸Ââ„¢ KRAKEN (${hardCCCount} stuns, ${hardCCPerMin.toFixed(1)}/min)`);
     } 
     else if (hardCCPerMin >= 3.0 && hardCCCount > 55) {
         total = safeAdd(total, 1.5, "Hard CC", notes);
-        notes.push(`⛓️ Cadena Perpetua (${hardCCCount} inmovilizaciones)`);
+        notes.push(`Ã¢â€ºâ€œÃ¯Â¸Â Cadena Perpetua (${hardCCCount} inmovilizaciones)`);
     }
     // PARALIZADOR (Hard CC)
     else if (hardCCPerMin >= 1.5 && hardCCCount > 35) {
-        total = safeAdd(total, 0.75, "⚡El Paralizador", notes);
-        notes.push(`⚡ El Paralizador (${hardCCCount} stuns)`);
+        total = safeAdd(total, 0.75, "Ã¢Å¡Â¡El Paralizador", notes);
+        notes.push(`Ã¢Å¡Â¡ El Paralizador (${hardCCCount} stuns)`);
     } 
 
-    // --- FUNCIÓN B: TOTAL CC (La Reina del Hielo) ---
+    // --- FUNCIÃƒâ€œN B: TOTAL CC (La Reina del Hielo) ---
     // Premia a Ashe, Singed, Trundle, Nasus (y suma extra a los de Hard CC).
     
     // TIER 1: GOD (2.5s/min + 65s total) -> +1.7 pts
     if (totalCCPerMin >= 3.0 && totalCCScore > 85) {
-        // Si ya cobró por Kraken, damos un poco menos aquí para no inflar demasiado
+        // Si ya cobrÃƒÂ³ por Kraken, damos un poco menos aquÃƒÂ­ para no inflar demasiado
         // Pero si es Ashe (que no tiene Hard CC), esto es su premio gordo.
         total = safeAdd(total, 2.5, "Total CC God", notes);
-        notes.push(`❄️ REINA DEL HIELO (${totalCCScore}s de control)`);
+        notes.push(`Ã¢Ââ€žÃ¯Â¸Â REINA DEL HIELO (${totalCCScore}s de control)`);
     } 
     // TIER 2: HIGH (1.6s/min + 40s total) -> +0.85 pts
     else if (totalCCPerMin >= 2.4 && totalCCScore > 50) {
         total = safeAdd(total, 1.75, "Total CC", notes);
-        notes.push(`🐌 Pegamento (${totalCCScore}s de control)`);
+        notes.push(`Ã°Å¸ÂÅ’ Pegamento (${totalCCScore}s de control)`);
     }
     // TIER 3: MID (1.0s/min + 25s total) -> +0.5 pts [NUEVO]
     else if (totalCCPerMin >= 1.9 && totalCCScore > 25) {
         total = safeAdd(total, 1.0, "Soft CC", notes);
-        notes.push(`🧊 Ralentizador (${totalCCScore}s de control)`);
+        notes.push(`Ã°Å¸Â§Å  Ralentizador (${totalCCScore}s de control)`);
     }
 
     else {
-        // --- PROTECCIÓN ANTI-MUEBLE V2 (ASSASSIN FRIENDLY) ---
+        // --- PROTECCIÃƒâ€œN ANTI-MUEBLE V2 (ASSASSIN FRIENDLY) ---
         
         // 1. EXCEPCIONES DE ROL
         // Los ADCs no suelen tener CC.
         const isAdc = (role === "BOTTOM");
         
         // 2. EXCEPCIONES DE RENDIMIENTO (Si vas fed, no eres un mueble)
-        // El Kha'Zix del ejemplo tenía KDA 8.0 -> Se salva automáticamente aquí.
+        // El Kha'Zix del ejemplo tenÃƒÂ­a KDA 8.0 -> Se salva automÃƒÂ¡ticamente aquÃƒÂ­.
         const isPerforming = (kda >= 5.0) || (kp >= 0.5) ;
 
-        // 3. EXCEPCIONES DE DAÑO/UTILIDAD
+        // 3. EXCEPCIONES DE DAÃƒâ€˜O/UTILIDAD
         // Bajamos la exigencia de DPM para Junglas/Assassins (que burstean, no dps-ean constante)
-        // Antes pedías 650 a todos. Ahora al Jungla le pedimos 450.
+        // Antes pedÃƒÂ­as 650 a todos. Ahora al Jungla le pedimos 450.
         const dpmThreshold = (role === "JUNGLE") ? 450 : 650; 
         const hasNumbers = (dpm > dpmThreshold) || (utilityScore > 12000);
 
-        // COMBINACIÓN: Si cumples CUALQUIERA de estas condiciones, te libras.
+        // COMBINACIÃƒâ€œN: Si cumples CUALQUIERA de estas condiciones, te libras.
         const isSafe = isAdc || isPerforming || hasNumbers;
 
         if (!isSafe) {
-            // Solo entramos aquí si:
+            // Solo entramos aquÃƒÂ­ si:
             // 1. No eres ADC.
             // 2. Jugaste MAL (KDA bajo, KP bajo, Perdiste).
-            // 3. No hiciste Daño ni curaste.
+            // 3. No hiciste DaÃƒÂ±o ni curaste.
             // 4. Y ENCIMA no metiste CC.
-            // ENTONCES SÍ ERES UN MUEBLE.
+            // ENTONCES SÃƒÂ ERES UN MUEBLE.
 
             if (totalCCPerMin < 0.20) {
                 total = safeAdd(total, -1.5, "Sin Utilidad", notes);
-                notes.push(`🗿 Mueble (0 Impacto: Sin CC, Daño ni KDA)`);
+                notes.push(`Ã°Å¸â€”Â¿ Mueble (0 Impacto: Sin CC, DaÃƒÂ±o ni KDA)`);
             } 
             else if (totalCCPerMin < 0.6) {
-                // Penalización leve
+                // PenalizaciÃƒÂ³n leve
                 total = safeAdd(total, -1.0, "Poca Utilidad", notes);
             }
         }
     }
 
     // =====================================================
-    // 🔨 ARTILLERÍA PESADA (Daño Alto, Kills Bajas)
+    // Ã°Å¸â€Â¨ ARTILLERÃƒÂA PESADA (DaÃƒÂ±o Alto, Kills Bajas)
     // =====================================================
     // Detecta al que baja las vidas para que el ADC remate (Brand, Karthus, Ziggs, Zyra).
     
     const dmgShareClean = p.challenges?.teamDamagePercentage || 0;
     
-    // Condición: Hacer más del 25% del daño del equipo
+    // CondiciÃƒÂ³n: Hacer mÃƒÂ¡s del 25% del daÃƒÂ±o del equipo
     if (dmgShareClean >= 0.25) {
         
         // Ratio: Debes tener al menos 3 Asistencias por cada Kill para demostrar que "cedes" las muertes.
         // Ejemplo: 4/5/15 (15 >= 12) -> CUMPLE. 
         // Ejemplo: 2/2/10 (10 >= 6) -> CUMPLE.
-        // También exigimos un mínimo de 8 asistencias totales.
+        // TambiÃƒÂ©n exigimos un mÃƒÂ­nimo de 8 asistencias totales.
         if (a >= (k * 3) && a >= 8) {
             
-            // TIER 2: EL ARQUITECTO DEL CAOS (> 30% Daño)
+            // TIER 2: EL ARQUITECTO DEL CAOS (> 30% DaÃƒÂ±o)
             if (dmgShareClean >= 0.30) {
                 total = safeAdd(total, 2.0, "Chaos Architect", notes);
-                notes.push(`🧨 Arquitecto del Caos (${(dmgShareClean*100).toFixed(0)}% dmg, Ratio K/A Altruista)`);
+                notes.push(`Ã°Å¸Â§Â¨ Arquitecto del Caos (${(dmgShareClean*100).toFixed(0)}% dmg, Ratio K/A Altruista)`);
             }
-            // TIER 1: ABLANDADOR (> 25% Daño)
+            // TIER 1: ABLANDADOR (> 25% DaÃƒÂ±o)
             else {
                 total = safeAdd(total, 1.0, "Softener", notes);
-                notes.push(`🍽️ La Mesa Puesta (${(dmgShareClean*100).toFixed(0)}% dmg, trabajo sucio)`);
+                notes.push(`Ã°Å¸ÂÂ½Ã¯Â¸Â La Mesa Puesta (${(dmgShareClean*100).toFixed(0)}% dmg, trabajo sucio)`);
             }
         }
     }
 
       // =====================================================
-    // 🔥 PROTOCOLO 1v9 (Daño Masivo Absoluto)
+    // Ã°Å¸â€Â¥ PROTOCOLO 1v9 (DaÃƒÂ±o Masivo Absoluto)
     // =====================================================
     
     // Requisito Base: Tener un DPM decente (>650) para evitar bonos en partidas muy malas
     // Y no haber muerto excesivamente (Max 9 muertes), salvo que sea una partida muy larga.
     if (dmgShare >= 0.33 && dpm > 850 && (d < 9 || durationMin > 40)) {
 
-        // TIER 3: EXODIA (> 50% Daño)
-        // Literalmente has hecho más daño que tus 4 compañeros juntos.
+        // TIER 3: EXODIA (> 50% DaÃƒÂ±o)
+        // Literalmente has hecho mÃƒÂ¡s daÃƒÂ±o que tus 4 compaÃƒÂ±eros juntos.
         if (dmgShare >= 0.50) {
-            total = safeAdd(total, 4.0, "EXODIA", notes); // +4 Puntos, es histórico
-            notes.push(`👑 EXODIA: EL PROHIBIDO (${(dmgShare*100).toFixed(0)}% del daño total)`);
+            total = safeAdd(total, 4.0, "EXODIA", notes); // +4 Puntos, es histÃƒÂ³rico
+            notes.push(`Ã°Å¸â€˜â€˜ EXODIA: EL PROHIBIDO (${(dmgShare*100).toFixed(0)}% del daÃƒÂ±o total)`);
         }
         
-        // TIER 2: THANOS (> 40% Daño)
-        // "Lo haré yo mismo".
+        // TIER 2: THANOS (> 40% DaÃƒÂ±o)
+        // "Lo harÃƒÂ© yo mismo".
         else if (dmgShare >= 0.40) {
             total = safeAdd(total, 3.0, "Thanos Mode", notes);
-            notes.push(`🟣 THANOS: 1v9 (${(dmgShare*100).toFixed(0)}% del daño)`);
+            notes.push(`Ã°Å¸Å¸Â£ THANOS: 1v9 (${(dmgShare*100).toFixed(0)}% del daÃƒÂ±o)`);
         }
         
-        // TIER 1: HARD CARRY (> 30% Daño)
-        // Carrileada estándar sólida.
+        // TIER 1: HARD CARRY (> 30% DaÃƒÂ±o)
+        // Carrileada estÃƒÂ¡ndar sÃƒÂ³lida.
         else {
             total = safeAdd(total, 2.0, "Hard Carry", notes);
-            notes.push(`🔥 Hard Carry (${(dmgShare*100).toFixed(0)}% del daño)`);
+            notes.push(`Ã°Å¸â€Â¥ Hard Carry (${(dmgShare*100).toFixed(0)}% del daÃƒÂ±o)`);
         }
     }
 
     // =========================================================
-    // 🚜 THE BAUSFFS SPECIAL V3.0 (Progresivo y Preciso)
+    // Ã°Å¸Å¡Å“ THE BAUSFFS SPECIAL V3.0 (Progresivo y Preciso)
     // =========================================================
-    // Requisito: Ganar, Morir mucho (8+), ser el que más tira, KDA pobre y buen farm.
+    // Requisito: Ganar, Morir mucho (8+), ser el que mÃƒÂ¡s tira, KDA pobre y buen farm.
     if (p.win && d >= 8 && myTowerDmg === mostTowerDmg && myTowerDmg > 0 && kda < 2.2) {
 
         // Validamos que no sea un "Int" sin sentido: Debe tener buen farm
         if (csMin >= 6.0) {
             
-            // 1. FÓRMULA TDPM (Daño a torres por minuto)
+            // 1. FÃƒâ€œRMULA TDPM (DaÃƒÂ±o a torres por minuto)
             // Base en 100. Ej: 300 -> 1.5 pts | 500 -> 3.0 pts
             let ptsFromTdpm = (tdpm - 100) * 0.0075;
             
-            // 2. FÓRMULA DPD (Daño a torres por muerte)
+            // 2. FÃƒâ€œRMULA DPD (DaÃƒÂ±o a torres por muerte)
             // Base en 500. Ej: 1000 -> 1.5 pts | 1500 -> 3.0 pts
             let ptsFromDpd = (dmgPerDeath - 500) * 0.003;
 
-            // Tomamos la métrica donde el jugador haya sido más bestia
+            // Tomamos la mÃƒÂ©trica donde el jugador haya sido mÃƒÂ¡s bestia
             let bausBonus = Math.max(ptsFromTdpm, ptsFromDpd);
 
             // Filtro de entrada (Solo premiamos si supera el equivalente al antiguo Tier 1)
             if (bausBonus >= 1.5) {
                 
-                // Cap máximo de seguridad para que no rompa la escala (+4.5 pts)
+                // Cap mÃƒÂ¡ximo de seguridad para que no rompa la escala (+4.5 pts)
                 bausBonus = Math.min(4.5, parseFloat(bausBonus.toFixed(2)));
                 
-                let bausLabel = "🚧 Good Death (Presión constante a pesar de morir)";
+                let bausLabel = "Ã°Å¸Å¡Â§ Good Death (PresiÃƒÂ³n constante a pesar de morir)";
                 
-                // Si llega al equivalente del antiguo Tier 2, le damos el título de Dios
+                // Si llega al equivalente del antiguo Tier 2, le damos el tÃƒÂ­tulo de Dios
                 if (bausBonus >= 3.0) {
-                    bausLabel = `🚜 THE BAUS SPECIAL (Mueres ${d} veces pero abres la base)`;
+                    bausLabel = `Ã°Å¸Å¡Å“ THE BAUS SPECIAL (Mueres ${d} veces pero abres la base)`;
                 }
 
                 total = safeAdd(total, bausBonus, "Baus Logic", notes);
@@ -5731,15 +5740,15 @@ if (!isWin && durationMin >= 15) {
         }
     }
 
-    // 6. Bono "Limpieza Rápida" (No requiere Win)
-    const quickCleanses = p.challenges?.quickCleanse || 0;
-    if (quickCleanses > 0) {
-        total = safeAdd(total, cfg.quick_cleanse_bonus * quickCleanses, "Limpieza Rápida", notes);
-        notes.push(`🧣 Limpieza Rápida (x${quickCleanses}, +${cfg.quick_cleanse_bonus * quickCleanses})`);
-    }
+Ã‚Â  Ã‚Â  // 6. Bono "Limpieza RÃƒÂ¡pida" (No requiere Win)
+Ã‚Â  Ã‚Â  const quickCleanses = p.challenges?.quickCleanse || 0;
+Ã‚Â  Ã‚Â  if (quickCleanses > 0) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  total = safeAdd(total, cfg.quick_cleanse_bonus * quickCleanses, "Limpieza RÃƒÂ¡pida", notes);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  notes.push(`Ã°Å¸Â§Â£ Limpieza RÃƒÂ¡pida (x${quickCleanses}, +${cfg.quick_cleanse_bonus * quickCleanses})`);
+Ã‚Â  Ã‚Â  }
 
-    // 7. Bono "Maestro del Dive" (No requiere Win)
-    //const survivedLargeDamage = p.challenges?.tookLargeDamageSurvived || 0;
+Ã‚Â  Ã‚Â  // 7. Bono "Maestro del Dive" (No requiere Win)
+Ã‚Â  Ã‚Â  //const survivedLargeDamage = p.challenges?.tookLargeDamageSurvived || 0;
     const diveBonus = cfg.dive_master_points || 1.0; // Usa una nueva variable o 1.0 por defecto
     if (diveKills > 0) {
         total = safeAdd(total, diveBonus, "Maestro del Dive", notes);
@@ -5747,11 +5756,11 @@ if (!isWin && durationMin >= 15) {
     }
     
 
-    // =====================================================
+Ã‚Â  Ã‚Â  // =====================================================
     // REMONTADA / THROW (SISTEMA DE 2 NIVELES)
     // =====================================================
     
-    // --- CONFIGURACIÓN INTERNA (O puedes añadirlas a la hoja CONFIG) ---
+    // --- CONFIGURACIÃƒâ€œN INTERNA (O puedes aÃƒÂ±adirlas a la hoja CONFIG) ---
     const comeback_little_gold = Number(cfg.comeback_gold_threshold || 4500); // Umbral normal
     const comeback_std_gold = Number(cfg.comeback_gold_threshold || 7500); // Umbral normal
     const comeback_ext_gold = Number(cfg.comeback_extreme_threshold || 11500); // Umbral MILAGRO
@@ -5767,19 +5776,19 @@ if (!isWin && durationMin >= 15) {
              // NIVEL 2: EL MILAGRO (Ej: +5 puntos)
              const miraclePts = Number(cfg.comeback_extreme_points || 5.0);
              total = safeAdd(total, miraclePts, "Milagro", notes);
-             notes.push(`⛪ MILAGRO (${(maxDeficit/1000).toFixed(1)}k remontados)`); 
+             notes.push(`Ã¢â€ºÂª MILAGRO (${(maxDeficit/1000).toFixed(1)}k remontados)`); 
         } 
         else if (maxDeficit >= comeback_std_gold) { 
              // NIVEL 1: REMONTADA (Ej: +3 puntos)
              const comebackPts = Number(cfg.comeback_points || 3.0);
              total = safeAdd(total, comebackPts, "Remontada", notes); 
-             notes.push(`🔥 Remontada (${(maxDeficit/1000).toFixed(1)}k de desventaja)`); 
+             notes.push(`Ã°Å¸â€Â¥ Remontada (${(maxDeficit/1000).toFixed(1)}k de desventaja)`); 
         }
         else if (maxDeficit >= comeback_little_gold) { 
              // NIVEL 1: REMONTADA (Ej: +3 puntos)
              const comebackPts = Number(cfg.comeback_points || 1.5);
              total = safeAdd(total, comebackPts, "Remontada", notes); 
-             notes.push(`🔥 Remontada (${(maxDeficit/1000).toFixed(1)}k de desventaja)`); 
+             notes.push(`Ã°Å¸â€Â¥ Remontada (${(maxDeficit/1000).toFixed(1)}k de desventaja)`); 
         }
 
     } else {
@@ -5787,26 +5796,26 @@ if (!isWin && durationMin >= 15) {
         const maxAdv = Math.abs(Number(p.challenges?.maxGoldAdvantage || 0));
 
         if (maxAdv >= throw_ext_gold) { 
-             // NIVEL 2: CÁRCEL (Ej: -5 puntos)
+             // NIVEL 2: CÃƒÂRCEL (Ej: -5 puntos)
              const disasterPts = Number(cfg.throw_extreme_penalty || -5.0);
              total = safeAdd(total, disasterPts, "Disaster", notes); 
-             notes.push(`🚔 CRIMINAL (${(maxAdv/1000).toFixed(1)}k tirados a la basura)`); 
+             notes.push(`Ã°Å¸Å¡â€ CRIMINAL (${(maxAdv/1000).toFixed(1)}k tirados a la basura)`); 
         }
         else if (maxAdv >= throw_std_gold) { 
              // NIVEL 1: THROW (Ej: -3 puntos)
              const throwPts = Number(cfg.throw_penalty || -3.0);
              total = safeAdd(total, throwPts, "Throw", notes); 
-             notes.push(`🤡 THROW (${(maxAdv/1000).toFixed(1)}k de ventaja perdida)`); 
+             notes.push(`Ã°Å¸Â¤Â¡ THROW (${(maxAdv/1000).toFixed(1)}k de ventaja perdida)`); 
         }
         else if (maxAdv >= throw_little_gold) { 
              // NIVEL 1: THROW (Ej: -3 puntos)
              const throwPts = Number(cfg.throw_penalty || 1.5);
              total = safeAdd(total, throwPts, "Throw", notes); 
-             notes.push(`🥲 Mini THROW (${(maxAdv/1000).toFixed(1)}k de ventaja perdida)`); 
+             notes.push(`Ã°Å¸Â¥Â² Mini THROW (${(maxAdv/1000).toFixed(1)}k de ventaja perdida)`); 
         }
     }
 
-    // --- 5. BONOS ESPECÍFICOS DE ROL (v12.0) ---
+Ã‚Â  Ã‚Â  // --- 5. BONOS ESPECÃƒÂFICOS DE ROL (v12.0) ---
     if (p.win) {
         // A. TANQUES (Top/Jng/Supp que han tanqueado de verdad)
         if (["TOP", "JUNGLE", "SUPPORT"].includes(role)) {
@@ -5817,61 +5826,61 @@ if (!isWin && durationMin >= 15) {
         }
 
         // =====================================================
-        // 🚶🏻‍♂️ TROTAMUNDOS V2 (Roaming Escalable)
+        // Ã°Å¸Å¡Â¶Ã°Å¸ÂÂ»Ã¢â‚¬ÂÃ¢â„¢â€šÃ¯Â¸Â TROTAMUNDOS V2 (Roaming Escalable)
         // =====================================================
-        // Cuenta kills obtenidas fuera de tu línea en el juego temprano.
+        // Cuenta kills obtenidas fuera de tu lÃƒÂ­nea en el juego temprano.
         const roamKills = Number(p.challenges?.killsOnOtherLanesEarlyJungleAsLaner || 0);
 
         // Solo aplicamos a TOP, MID y SUPP (Excluimos ADC para evitar ruido)
         if (["MIDDLE", "SUPPORT", "TOP"].includes(role) && roamKills > 0) {
 
-            // TIER 3: OMNIPRESENTE (4+ Kills fuera de línea)
+            // TIER 3: OMNIPRESENTE (4+ Kills fuera de lÃƒÂ­nea)
             if (roamKills >= 4) {
                 total = safeAdd(total, 3.0, "Map God", notes);
-                notes.push(`🗺️ INTERAIL (x${roamKills} kills en otras líneas)`);
+                notes.push(`Ã°Å¸â€”ÂºÃ¯Â¸Â INTERAIL (x${roamKills} kills en otras lÃƒÂ­neas)`);
             }
             
-            // TIER 2: TROTAMUNDOS (2-3 Kills fuera de línea)
+            // TIER 2: TROTAMUNDOS (2-3 Kills fuera de lÃƒÂ­nea)
             else if (roamKills >= 2) {
                 const bonus = cfg.roaming_bonus_points || 2.0;
                 total = safeAdd(total, bonus, "Trotamundos", notes);
-                notes.push(`🚶🏻‍♂️ Trotamundos (x${roamKills} kills)`);
+                notes.push(`Ã°Å¸Å¡Â¶Ã°Å¸ÂÂ»Ã¢â‚¬ÂÃ¢â„¢â€šÃ¯Â¸Â Trotamundos (x${roamKills} kills)`);
             }
             
-            // TIER 1: VISITA DE CORTESÍA (1 Kill)
-            // Solo para TOP y MID. Al Support se le exige más.
+            // TIER 1: VISITA DE CORTESÃƒÂA (1 Kill)
+            // Solo para TOP y MID. Al Support se le exige mÃƒÂ¡s.
             else if (role !== 'SUPPORT' && role !== 'UTILITY') {
-                total = safeAdd(total, 1.0, "Roam Básico", notes);
-                notes.push(`👋 Visita de Cortesía`);
+                total = safeAdd(total, 1.0, "Roam BÃƒÂ¡sico", notes);
+                notes.push(`Ã°Å¸â€˜â€¹ Visita de CortesÃƒÂ­a`);
             }
         }
 
-        // --- BONUS: LANE KINGDOM (Dominio de Línea) ---
+        // --- BONUS: LANE KINGDOM (Dominio de LÃƒÂ­nea) ---
         // Solo para Laners (Top, Mid, Bot). Mide ventaja de Oro+XP al min 14.
         if (isLaner) {
             const laneDiff = Number(p.challenges?.earlyLaningPhaseGoldExpAdvantage || 0);
             
             if (laneDiff > 2000) {
-                total = safeAdd(total, 2.0, "Stomp de Línea", notes);
-                notes.push(`👑 REY DE LÍNEA (+${laneDiff.toFixed(0)} ventaja)`);
+                total = safeAdd(total, 2.0, "Stomp de LÃƒÂ­nea", notes);
+                notes.push(`Ã°Å¸â€˜â€˜ REY DE LÃƒÂNEA (+${laneDiff.toFixed(0)} ventaja)`);
             } else if (laneDiff > 1000) {
-                total = safeAdd(total, 1.0, "Ventaja Sólida", notes);
-                notes.push(`🏰 Ventaja de Línea (+${laneDiff.toFixed(0)})`);
+                total = safeAdd(total, 1.0, "Ventaja SÃƒÂ³lida", notes);
+                notes.push(`Ã°Å¸ÂÂ° Ventaja de LÃƒÂ­nea (+${laneDiff.toFixed(0)})`);
             }
         }
     }
 
     // =====================================================
-    // 🛡️ SUPERVIVENCIA REAL (Longest Time Living) - PROGRESIVO
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â SUPERVIVENCIA REAL (Longest Time Living) - PROGRESIVO
     // =====================================================
     if (longestLife >= 1200) { // Empezamos a premiar a partir de 20 minutos vivo
-        // Fórmula: +1.0 pts cada 5 minutos (300s) extra a partir de los 15 min (900s)
+        // FÃƒÂ³rmula: +1.0 pts cada 5 minutos (300s) extra a partir de los 15 min (900s)
         let survPts = (longestLife - 900) / 300;
-        survPts = Math.min(3.5, parseFloat(survPts.toFixed(2))); // Cap máximo de seguridad
+        survPts = Math.min(3.5, parseFloat(survPts.toFixed(2))); // Cap mÃƒÂ¡ximo de seguridad
 
-        let label = "⛷️ vando a la muerte";
+        let label = "Ã¢â€ºÂ·Ã¯Â¸Â vando a la muerte";
         if (longestLife >= 1800) {
-            label = "👻 El Intocable";
+            label = "Ã°Å¸â€˜Â» El Intocable";
         }
 
         // Convertimos segundos a minutos para que quede espectacular en la nota
@@ -5883,23 +5892,23 @@ if (!isWin && durationMin >= 15) {
 
 
     // =====================================================
-    // 💖 FILTRO DE ROL: UTILIDAD PURA (Enchanters) - PROGRESIVO
+    // Ã°Å¸â€™â€“ FILTRO DE ROL: UTILIDAD PURA (Enchanters) - PROGRESIVO
     // =====================================================
     if (isSupport && utilityPerMin > 400) { 
         
-        // Fórmula: Base 400, +0.5 pts por cada 100 de utilidad extra
+        // FÃƒÂ³rmula: Base 400, +0.5 pts por cada 100 de utilidad extra
         let utilPts = (utilityPerMin - 400) * 0.005;
-        utilPts = Math.min(5.0, parseFloat(utilPts.toFixed(2))); // Cap máximo en +5.0
+        utilPts = Math.min(5.0, parseFloat(utilPts.toFixed(2))); // Cap mÃƒÂ¡ximo en +5.0
 
         let label = "";
         if (utilityPerMin >= 1300) {
-            label = "💖 Cirujano Jefe";
+            label = "Ã°Å¸â€™â€“ Cirujano Jefe";
         } else if (utilityPerMin >= 850) {
-            label = "🚑 Médico de Campo";
+            label = "Ã°Å¸Å¡â€˜ MÃƒÂ©dico de Campo";
         } else if (utilityPerMin >= 600) {
-            label = "💊 Enfermero";
+            label = "Ã°Å¸â€™Å  Enfermero";
         } else {
-            label = "🩹 Botiquín"; // Para los que superan 400 pero no llegan al Tier 1
+            label = "Ã°Å¸Â©Â¹ BotiquÃƒÂ­n"; // Para los que superan 400 pero no llegan al Tier 1
         }
 
         total = safeAdd(total, utilPts, "Utility", notes);
@@ -5907,77 +5916,77 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 💥 BURST IMPACT (Críticos) - PROGRESIVO
+    // Ã°Å¸â€™Â¥ BURST IMPACT (CrÃƒÂ­ticos) - PROGRESIVO
     // =====================================================
     if (maxCrit >= 1300) {
         
-        // Fórmula: Base 1000, +0.5 pts por cada 100 de daño crítico extra
+        // FÃƒÂ³rmula: Base 1000, +0.5 pts por cada 100 de daÃƒÂ±o crÃƒÂ­tico extra
         let critPts = (maxCrit - 1000) * 0.005;
         critPts = Math.min(4.5, parseFloat(critPts.toFixed(2))); // Cap de seguridad
 
-        let label = "🔨 Golpe Devastador";
+        let label = "Ã°Å¸â€Â¨ Golpe Devastador";
         if (maxCrit >= 1600) {
-            label = "💥 ¡One Shot!";
+            label = "Ã°Å¸â€™Â¥ Ã‚Â¡One Shot!";
         }
 
         total = safeAdd(total, critPts, "Max Crit", notes);
-        notes.push(`${label} (Crítico de ${maxCrit}, +${critPts} pts)`);
+        notes.push(`${label} (CrÃƒÂ­tico de ${maxCrit}, +${critPts} pts)`);
     }
 
     // =================================================================
-    // 🚜 REY DEL SPLIT & ASEDIO (Estructuras v5.0 - AJUSTE S26)
+    // Ã°Å¸Å¡Å“ REY DEL SPLIT & ASEDIO (Estructuras v5.0 - AJUSTE S26)
     // =================================================================
     const structuresDestroyed = (p.turretKills || 0) + (p.inhibitorKills || 0);
     const inhibsDestroyed = Number(p.inhibitorKills || 0);
     
-    // Daño total del equipo a torres
+    // DaÃƒÂ±o total del equipo a torres
     const teamTotalTowerDmg = participants
         .filter(pt => pt.teamId === p.teamId)
         .reduce((acc, pt) => acc + (pt.damageDealtToTurrets || 0), 0);
     
-    // Porcentaje de contribución personal
+    // Porcentaje de contribuciÃƒÂ³n personal
     const myTowerShare = teamTotalTowerDmg > 0 ? (myTowerDmg / teamTotalTowerDmg) : 0;
 
     // --- TIER 3: EL FIN DE LOS MUNDOS (God Tier) ---
     // Requisitos S26: 
     // 1. Estructuras: 7+ (antes 8, ajustado por realismo) O 3+ Inhibidores.
-    // 2. Share: > 60% del daño del equipo (eres la única amenaza real).
-    // 3. Daño: > 20k (Inflación S26).
+    // 2. Share: > 60% del daÃƒÂ±o del equipo (eres la ÃƒÂºnica amenaza real).
+    // 3. DaÃƒÂ±o: > 20k (InflaciÃƒÂ³n S26).
     if ((structuresDestroyed >= 7 || inhibsDestroyed >= 3) && myTowerShare >= 0.60 && myTowerDmg > 20000) {
         total = safeAdd(total, 3.5, "World Ender", notes);
-        notes.push(`🌋 EL FIN DE LOS MUNDOS (${structuresDestroyed} estructuras, ${(myTowerShare*100).toFixed(0)}% del daño)`);
+        notes.push(`Ã°Å¸Å’â€¹ EL FIN DE LOS MUNDOS (${structuresDestroyed} estructuras, ${(myTowerShare*100).toFixed(0)}% del daÃƒÂ±o)`);
     }
 
     // --- TIER 2: TRIBUTO A XPEKE (Backdoor/Hard Split) ---
     // Requisitos S26: 
-    // 1. Estructuras: 5+ (Abrir una línea entera + Nexo).
+    // 1. Estructuras: 5+ (Abrir una lÃƒÂ­nea entera + Nexo).
     // 2. Share: > 40%.
-    // 3. Daño: > 14k.
+    // 3. DaÃƒÂ±o: > 14k.
     else if (structuresDestroyed >= 5 && myTowerShare >= 0.40 && myTowerDmg > 14000) {
         total = safeAdd(total, 2.0, "xPeke Tribute", notes);
-        notes.push(`🚜 Rey del Split (${structuresDestroyed} estructuras, ${(myTowerShare*100).toFixed(0)}% del daño)`);
+        notes.push(`Ã°Å¸Å¡Å“ Rey del Split (${structuresDestroyed} estructuras, ${(myTowerShare*100).toFixed(0)}% del daÃƒÂ±o)`);
     } 
     
-    // --- TIER 1: MAESTRO DEL SPLIT (Presión lateral estándar) ---
+    // --- TIER 1: MAESTRO DEL SPLIT (PresiÃƒÂ³n lateral estÃƒÂ¡ndar) ---
     // Requisitos S26: 
-    // 1. Estructuras: 3+ (Tirar tu línea completa).
-    // 2. Share: > 25% (Hiciste más que tu parte justa de 20%).
-    // 3. Daño: > 8k.
+    // 1. Estructuras: 3+ (Tirar tu lÃƒÂ­nea completa).
+    // 2. Share: > 25% (Hiciste mÃƒÂ¡s que tu parte justa de 20%).
+    // 3. DaÃƒÂ±o: > 8k.
     else if (structuresDestroyed >= 3 && myTowerShare >= 0.25 && myTowerDmg > 8000) {
         total = safeAdd(total, 1.0, "Splitpusher", notes); 
-        notes.push(`🏗️ Demoledor de Torres (${structuresDestroyed} estructuras)`);
+        notes.push(`Ã°Å¸Ââ€”Ã¯Â¸Â Demoledor de Torres (${structuresDestroyed} estructuras)`);
     }
 
     // --- TIER ESPECIAL: ASEDIO INVISIBLE (Trabajo Sucio / Ziggs Mode) ---
-    // Has hecho mucho daño a torres pero no te has llevado los last hits (<3 estructuras).
-    // Progresivo: De 8k a 15k de daño.
+    // Has hecho mucho daÃƒÂ±o a torres pero no te has llevado los last hits (<3 estructuras).
+    // Progresivo: De 8k a 15k de daÃƒÂ±o.
     if (myTowerDmg >= 8000 && structuresDestroyed < 4) {
-        // Base de 0.5 pts, escalando hasta +2.5 pts máximo a los 15k de daño
+        // Base de 0.5 pts, escalando hasta +2.5 pts mÃƒÂ¡ximo a los 15k de daÃƒÂ±o
         let siegePts = 0.5 + ((myTowerDmg - 8000) / 7000) * 2.0;
-        siegePts = Math.min(2.5, parseFloat(siegePts.toFixed(2))); // Cap máximo
+        siegePts = Math.min(2.5, parseFloat(siegePts.toFixed(2))); // Cap mÃƒÂ¡ximo
 
         total = safeAdd(total, siegePts, "Siege Master", notes);
-        notes.push(`💣 Demolición Táctica (${(myTowerDmg/1000).toFixed(1)}k daño a torres sin last hit)`);
+        notes.push(`Ã°Å¸â€™Â£ DemoliciÃƒÂ³n TÃƒÂ¡ctica (${(myTowerDmg/1000).toFixed(1)}k daÃƒÂ±o a torres sin last hit)`);
     }
 
 
@@ -5996,19 +6005,19 @@ if (!isWin && durationMin >= 15) {
     if (levelAdvantage >= levelThreshold) {
         // Base de 1.5 pts + 1.0 pts extra por cada nivel completo por encima del umbral.
         let levelPts = 1.0 + ((levelAdvantage - levelThreshold) * 1.0);
-        levelPts = Math.min(4.0, parseFloat(levelPts.toFixed(2))); // Cap máximo de +4.0
+        levelPts = Math.min(4.0, parseFloat(levelPts.toFixed(2))); // Cap mÃƒÂ¡ximo de +4.0
 
-        let label = "👹 Jefe Final";
-        if (levelPts >= 3.0) label = "👑 EL TITÁN"; // Nueva etiqueta para stomps absurdos
+        let label = "Ã°Å¸â€˜Â¹ Jefe Final";
+        if (levelPts >= 3.0) label = "Ã°Å¸â€˜â€˜ EL TITÃƒÂN"; // Nueva etiqueta para stomps absurdos
 
         total = safeAdd(total, levelPts, "Boss Level", notes);
         notes.push(`${label} (+${levelAdvantage.toFixed(1)} lvls vs media)`);
     }
 
 
-    // --- v13.6: DPM DINÁMICO (Inteligente con Detección de Etiquetas) ---
+    // --- v13.6: DPM DINÃƒÂMICO (Inteligente con DetecciÃƒÂ³n de Etiquetas) ---
     if (durationMin >= 25) { 
-        // He añadido un par de palabras clave extra por si acaso para asegurar que ningún tanque sea penalizado
+        // He aÃƒÂ±adido un par de palabras clave extra por si acaso para asegurar que ningÃƒÂºn tanque sea penalizado
         const isCertifiedTank = notes.some(n => 
             n.includes("El Muro") || 
             n.includes("Duro de Pelar") || 
@@ -6035,23 +6044,23 @@ if (!isWin && durationMin >= 15) {
         if (checkDPM) {
             let dpmPts = 0;
 
-            // --- CASO 1: TIENES BUEN DAÑO (Bonificación Progresiva) ---
+            // --- CASO 1: TIENES BUEN DAÃƒâ€˜O (BonificaciÃƒÂ³n Progresiva) ---
             if (dpm >= d_min) {
                  const progress = (dpm - d_min) / (d_max - d_min);
                  // Reducimos los puntos: Base 0.5 + escalado hasta 2.0 (Tope bajado a +2.5 pts)
                  dpmPts = 0.5 + (progress * 2.0); 
                  dpmPts = Math.min(2.5, parseFloat(dpmPts.toFixed(2))); 
                  
-                 let label = "⚔️ Buen Daño";
-                 if (dpmPts >= 2.2) label = "☢️ Asedio Nuclear"; 
-                 else if (dpmPts >= 1.6) label = "🌋 Máquina de Daño";
-                 else if (dpmPts >= 1.0) label = "🔥 DPM Carry";
+                 let label = "Ã¢Å¡â€Ã¯Â¸Â Buen DaÃƒÂ±o";
+                 if (dpmPts >= 2.2) label = "Ã¢ËœÂ¢Ã¯Â¸Â Asedio Nuclear"; 
+                 else if (dpmPts >= 1.6) label = "Ã°Å¸Å’â€¹ MÃƒÂ¡quina de DaÃƒÂ±o";
+                 else if (dpmPts >= 1.0) label = "Ã°Å¸â€Â¥ DPM Carry";
 
                  notes.push(`${label} (${dpm.toFixed(0)}, +${dpmPts})`);
                  total = safeAdd(total, dpmPts, "DPM Dynamic", notes);
             } 
             
-            // --- CASO 2: TIENES MAL DAÑO (Penalización Progresiva) ---
+            // --- CASO 2: TIENES MAL DAÃƒâ€˜O (PenalizaciÃƒÂ³n Progresiva) ---
             else if (dpm < d_penalty) {
                  if (!isCertifiedTank) {
                      // Castigo progresivo suavizado: bajamos el multiplicador a 0.008
@@ -6059,10 +6068,10 @@ if (!isWin && durationMin >= 15) {
                      dpmPts = -(diffUnderPenalty * 0.008); 
                      dpmPts = Math.max(-3.0, parseFloat(dpmPts.toFixed(2))); // Suelo bajado a -3.0
 
-                     let label = "📉 DPM Bajo";
-                     if (dpmPts <= -2.5) label = "🩹 Curando al Enemigo"; 
-                     else if (dpmPts <= -1.8) label = "🦋 DPS de Mariposa";
-                     else if (dpmPts <= -1.0) label = "💤 Daño Inexistente";
+                     let label = "Ã°Å¸â€œâ€° DPM Bajo";
+                     if (dpmPts <= -2.5) label = "Ã°Å¸Â©Â¹ Curando al Enemigo"; 
+                     else if (dpmPts <= -1.8) label = "Ã°Å¸Â¦â€¹ DPS de Mariposa";
+                     else if (dpmPts <= -1.0) label = "Ã°Å¸â€™Â¤ DaÃƒÂ±o Inexistente";
                      
                      notes.push(`${label} (${dpm.toFixed(0)} < ${d_penalty}, ${dpmPts})`);
                      total = safeAdd(total, dpmPts, "DPM Dynamic", notes);
@@ -6072,7 +6081,7 @@ if (!isWin && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🌈 TEORÍA DEL CAOS (Daño Híbrido / Mixto) - PROGRESIVO
+    // Ã°Å¸Å’Ë† TEORÃƒÂA DEL CAOS (DaÃƒÂ±o HÃƒÂ­brido / Mixto) - PROGRESIVO
     // =====================================================
     const physDmg = Number(p.physicalDamageDealtToChampions || 0);
     const magicDmg = Number(p.magicDamageDealtToChampions || 0);
@@ -6086,32 +6095,32 @@ if (!isWin && durationMin >= 15) {
         const magicShare = magicDmg / totalDmgCalculted;
         const trueShare = trueDmg / totalDmgCalculted;
 
-        // CASO A: EL HÍBRIDO PERFECTO
+        // CASO A: EL HÃƒÂBRIDO PERFECTO
         // Requiere > 30% en ambos. Escala hasta +2.5 pts si llegas a un perfecto 50/50.
         if (physShare >= 0.30 && magicShare >= 0.30) {
             // El componente menor marca el equilibrio. Ej: 60/40 -> el 40% es el menor.
             const lowestShare = Math.min(physShare, magicShare);
-            // Progresión: De 30% (base 1.0) hasta 50% (base 2.5)
+            // ProgresiÃƒÂ³n: De 30% (base 1.0) hasta 50% (base 2.5)
             let hybridPts = 0.5 + ((lowestShare - 0.30) / 0.20) * 1.5;
             hybridPts = parseFloat(hybridPts.toFixed(2));
 
             total = safeAdd(total, hybridPts, "Hybrid Damage", notes); 
-            notes.push(`🌈 Teoria del Caos (${(physShare*100).toFixed(0)}% AD / ${(magicShare*100).toFixed(0)}% AP)`);
+            notes.push(`Ã°Å¸Å’Ë† Teoria del Caos (${(physShare*100).toFixed(0)}% AD / ${(magicShare*100).toFixed(0)}% AP)`);
         }
         
-        // CASO B: EL EJECUTOR (Daño Verdadero)
+        // CASO B: EL EJECUTOR (DaÃƒÂ±o Verdadero)
         // Requiere > 25% True Dmg. Escala hasta +2.5 pts si superas el 40% True Dmg.
         else if (trueShare >= 0.25 && k >= 5) {
             let truePts = 1.0 + ((trueShare - 0.25) / 0.15) * 1.5;
-            truePts = Math.min(2.5, parseFloat(truePts.toFixed(2))); // Cap máximo
+            truePts = Math.min(2.5, parseFloat(truePts.toFixed(2))); // Cap mÃƒÂ¡ximo
 
             total = safeAdd(total, truePts, "True Damage", notes);
-            notes.push(`⚪ Ejecutor Puro (${(trueShare*100).toFixed(0)}% Daño Verdadero)`);
+            notes.push(`Ã¢Å¡Âª Ejecutor Puro (${(trueShare*100).toFixed(0)}% DaÃƒÂ±o Verdadero)`);
         }
     }
 
     // =====================================================
-    // 💰 MÓDULO FINANCIERO: RITMO DE ORO (GPM) - V6.0 (High Stakes)
+    // Ã°Å¸â€™Â° MÃƒâ€œDULO FINANCIERO: RITMO DE ORO (GPM) - V6.0 (High Stakes)
     // =====================================================
     if (durationMin >= 15) {
         
@@ -6133,10 +6142,10 @@ if (!isWin && durationMin >= 15) {
         const isMoneySupport = myRole === 'UTILITY' && moneySupports.includes(p.championName);
 
         if (isMoneySupport) {
-            baseGPM += 50; // Les exigimos más GPM porque su kit genera oro
+            baseGPM += 50; // Les exigimos mÃƒÂ¡s GPM porque su kit genera oro
         }
 
-        // 3. CÁLCULO DE DIFERENCIA
+        // 3. CÃƒÂLCULO DE DIFERENCIA
         const gpmDiff = gpm - baseGPM;
         let gpmPts = 0;
         let label = "";
@@ -6148,43 +6157,43 @@ if (!isWin && durationMin >= 15) {
             let multiplier = (myRole === 'BOTTOM' && p.win) ? 0.030 : 0.035;
             
             gpmPts = gpmDiff * multiplier;
-            // Aumentamos el Cap: ¡Ahora puedes ganar hasta +8.0 puntos si destrozas la economía!
+            // Aumentamos el Cap: Ã‚Â¡Ahora puedes ganar hasta +8.0 puntos si destrozas la economÃƒÂ­a!
             gpmPts = Math.min(5.0, parseFloat(gpmPts.toFixed(2))); 
 
-            if (gpmPts >= 6.0) label = "🚀 ELON MUSK (Monopolio Absoluto)";
-            else if (gpmPts >= 4.0) label = "🤑 Magnate";
-            else if (gpmPts >= 2.0) label = "💎 Manos de Diamante";
-            else label = "📈 Economista";
+            if (gpmPts >= 6.0) label = "Ã°Å¸Å¡â‚¬ ELON MUSK (Monopolio Absoluto)";
+            else if (gpmPts >= 4.0) label = "Ã°Å¸Â¤â€˜ Magnate";
+            else if (gpmPts >= 2.0) label = "Ã°Å¸â€™Å½ Manos de Diamante";
+            else label = "Ã°Å¸â€œË† Economista";
         }
         
         // --- B. MERCADO BAJISTA (Castigos Severos) ---
-        // Reducimos el margen de gracia de 25 a 15. Si tienes mal farmeo, se nota rápido.
+        // Reducimos el margen de gracia de 25 a 15. Si tienes mal farmeo, se nota rÃƒÂ¡pido.
         else if (gpmDiff < -15) { 
             const isPardonedTank = isRealTank && d >= 6; 
             const isPureSupport = myRole === 'UTILITY' && !isMoneySupport; 
             
             if (isPardonedTank) {
-                notes.push(`🛡️ Economía de Guerra (Tanque Pobre perdonado)`);
+                notes.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â EconomÃƒÂ­a de Guerra (Tanque Pobre perdonado)`);
             } 
             else if (isPureSupport) {
-                // Castigo para supports puros (más suave)
+                // Castigo para supports puros (mÃƒÂ¡s suave)
                 gpmPts = (gpmDiff + 15) * 0.015; 
                 gpmPts = Math.max(-2.5, parseFloat(gpmPts.toFixed(2))); 
                 
-                if (gpmPts <= -1.5) label = "🏚️ Presupuesto Recortado";
+                if (gpmPts <= -1.5) label = "Ã°Å¸ÂÅ¡Ã¯Â¸Â Presupuesto Recortado";
             } 
             else {
                 // Castigo BRUTAL para carries que no generan oro (x0.04)
                 gpmPts = (gpmDiff + 15) * 0.040; 
                 gpmPts = Math.max(-5.0, parseFloat(gpmPts.toFixed(2))); 
                 
-                if (gpmPts <= -4.0) label = "💸 BANCARROTA TOTAL";
-                else if (gpmPts <= -2.0) label = "📉 Déficit Crítico";
-                else label = "🏚️ Víctima de la Inflación";
+                if (gpmPts <= -4.0) label = "Ã°Å¸â€™Â¸ BANCARROTA TOTAL";
+                else if (gpmPts <= -2.0) label = "Ã°Å¸â€œâ€° DÃƒÂ©ficit CrÃƒÂ­tico";
+                else label = "Ã°Å¸ÂÅ¡Ã¯Â¸Â VÃƒÂ­ctima de la InflaciÃƒÂ³n";
             }
         }
 
-        // 4. APLICACIÓN
+        // 4. APLICACIÃƒâ€œN
         if (gpmPts !== 0 && label !== "") {
             total = safeAdd(total, gpmPts, "GPM Progress", notes);
             notes.push(`${label} (${gpm.toFixed(0)} GPM vs ${baseGPM} esperado, ${gpmPts > 0 ? '+' : ''}${gpmPts} pts)`);
@@ -6193,14 +6202,14 @@ if (!isWin && durationMin >= 15) {
 
 
     // =====================================================
-    // 🧹 EL BARRENDERO 2.0: CONTROL DE VISIÓN PROGRESIVO
+    // Ã°Å¸Â§Â¹ EL BARRENDERO 2.0: CONTROL DE VISIÃƒâ€œN PROGRESIVO
     // =====================================================
     const wardsPerMin = durationMin > 0 ? wardsDestroyed / durationMin : 0;
 
-    // Definimos el mínimo esperado según el rol
+    // Definimos el mÃƒÂ­nimo esperado segÃƒÂºn el rol
     const minWardsJglSupp = 0.15; // 1 ward roto cada ~6-7 mins
     
-    // --- A. RECOMPENSAS (Escalado Matemático) ---
+    // --- A. RECOMPENSAS (Escalado MatemÃƒÂ¡tico) ---
     // Empezamos a premiar a partir de 0.25/min (Supports/Jgl) o 0.10/min (Laners)
     const baseWardsToReward = (isSupport || isJungle) ? 0.25 : 0.10;
 
@@ -6209,16 +6218,16 @@ if (!isWin && durationMin >= 15) {
         // Ej Supp: 0.55/min -> (0.55 - 0.25) * 6.0 = +1.8 pts
         let sweepPts = (wardsPerMin - baseWardsToReward) * 6.0;
         
-        // Los Laners tienen un multiplicador un poco mayor porque les cuesta más romper (no compran Lente pronto)
+        // Los Laners tienen un multiplicador un poco mayor porque les cuesta mÃƒÂ¡s romper (no compran Lente pronto)
         if (!isSupport && !isJungle) sweepPts *= 1.5; 
         
         sweepPts = Math.min(4.0, sweepPts); // Cap
 
         if (sweepPts >= 0.4) { // Filtro visual para no spamear "+0.1"
-            let label = "🔦 Buen Despeje";
-            if (sweepPts >= 2.8) label = "🌑 APAGÓN TOTAL";
-            else if (sweepPts >= 1.8) label = "👁️‍🗨️ Oráculo Supremo";
-            else if (sweepPts >= 1.0) label = "🧹 Limpieza Profunda";
+            let label = "Ã°Å¸â€Â¦ Buen Despeje";
+            if (sweepPts >= 2.8) label = "Ã°Å¸Å’â€˜ APAGÃƒâ€œN TOTAL";
+            else if (sweepPts >= 1.8) label = "Ã°Å¸â€˜ÂÃ¯Â¸ÂÃ¢â‚¬ÂÃ°Å¸â€”Â¨Ã¯Â¸Â OrÃƒÂ¡culo Supremo";
+            else if (sweepPts >= 1.0) label = "Ã°Å¸Â§Â¹ Limpieza Profunda";
 
             sweepPts = parseFloat(sweepPts.toFixed(2));
             total = safeAdd(total, sweepPts, "Vision Clear", notes);
@@ -6233,7 +6242,7 @@ if (!isWin && durationMin >= 15) {
         let blindPen = (wardsPerMin - minWardsJglSupp) * 20.0;
         blindPen = Math.max(-3.0, blindPen); // Tope de castigo
 
-        let label = blindPen <= -2.0 ? "🙈 CIEGO LEGAL" : "👓 Miope (Poco despeje)";
+        let label = blindPen <= -2.0 ? "Ã°Å¸â„¢Ë† CIEGO LEGAL" : "Ã°Å¸â€˜â€œ Miope (Poco despeje)";
         
         blindPen = parseFloat(blindPen.toFixed(2));
         total = safeAdd(total, blindPen, "Blind Penalty", notes);
@@ -6241,31 +6250,31 @@ if (!isWin && durationMin >= 15) {
     }
 
 
-    // =====================================================
-    // 🛡️ EL PROTECTOR: SALVADAS DE MUERTE PROGRESIVO
+Ã‚Â  Ã‚Â  // =====================================================
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â EL PROTECTOR: SALVADAS DE MUERTE PROGRESIVO
     // =====================================================
     const saves = Number(p.challenges?.saveAllyFromDeath || 0);
     const savesPerMin = durationMin > 0 ? saves / durationMin : 0;
 
-    // REQUISITO MÍNIMO: Al menos 3 salvadas totales para evitar ruido
+    // REQUISITO MÃƒÂNIMO: Al menos 3 salvadas totales para evitar ruido
     if (isSupport && saves >= 3) {
         
-        // BASELINE: 0.10 salvadas por minuto (Empiezas a puntuar a partir de aquí)
+        // BASELINE: 0.10 salvadas por minuto (Empiezas a puntuar a partir de aquÃƒÂ­)
         const baseSaves = 0.10;
         
         if (savesPerMin > baseSaves) {
-            // FÓRMULA PROGRESIVA: Multiplicador de +4.5 pts por cada 1.0 SPM extra
+            // FÃƒâ€œRMULA PROGRESIVA: Multiplicador de +4.5 pts por cada 1.0 SPM extra
             // Ej: 0.50/min -> (0.50 - 0.10) * 4.5 = +1.8 pts
             // Ej: 1.00/min -> (1.00 - 0.10) * 4.5 = +4.05 pts
             let savePts = (savesPerMin - baseSaves) * 4.5;
             savePts = Math.min(4.5, savePts); // Cap de seguridad
             
             if (savePts >= 0.5) { // Filtro anti-spam visual
-                let label = "🛟 Salvavidas";
-                if (savePts >= 3.5) label = "🙌 EL MESÍAS";
-                else if (savePts >= 2.5) label = "✨ Milagro Viviente";
-                else if (savePts >= 1.5) label = "🛐 Intervención Divina";
-                else if (savePts >= 0.8) label = "🕊️ Ángel Guardián";
+                let label = "Ã°Å¸â€ºÅ¸ Salvavidas";
+                if (savePts >= 3.5) label = "Ã°Å¸â„¢Å’ EL MESÃƒÂAS";
+                else if (savePts >= 2.5) label = "Ã¢Å“Â¨ Milagro Viviente";
+                else if (savePts >= 1.5) label = "Ã°Å¸â€ºÂ IntervenciÃƒÂ³n Divina";
+                else if (savePts >= 0.8) label = "Ã°Å¸â€¢Å Ã¯Â¸Â ÃƒÂngel GuardiÃƒÂ¡n";
 
                 savePts = parseFloat(savePts.toFixed(2));
                 total = safeAdd(total, savePts, "Saves", notes);
@@ -6274,18 +6283,18 @@ if (!isWin && durationMin >= 15) {
         }
     }
 
-    // --- 5.5. MITIGACIÓN POR AFK (Protección contra 4v5) ---
+    // --- 5.5. MITIGACIÃƒâ€œN POR AFK (ProtecciÃƒÂ³n contra 4v5) ---
 if (!p.win && durationMin >= 15) { 
     let teammateAFK = false;
     
     // --- NUEVO: Calcular Nivel Medio del Equipo ---
     let teamLevels = [];
     participants.forEach(part => {
-        if (part.teamId === p.teamId && part.puuid !== p.puuid) { // Compañeros
-            teamLevels.push(part.champLevel || p.champLevel); // Añadir su nivel
+        if (part.teamId === p.teamId && part.puuid !== p.puuid) { // CompaÃƒÂ±eros
+            teamLevels.push(part.champLevel || p.champLevel); // AÃƒÂ±adir su nivel
         }
     });
-    // Si no hay compañeros (error raro), usar tu nivel
+    // Si no hay compaÃƒÂ±eros (error raro), usar tu nivel
     const avgTeamLevel = teamLevels.length > 0 ? (teamLevels.reduce((a, b) => a + b, 0) / teamLevels.length) : p.champLevel;
 
 
@@ -6296,7 +6305,7 @@ if (!p.win && durationMin >= 15) {
             const noDamage = (part.totalDamageDealtToChampions || 0) < 3500;
             
             // --- MODIFICADO: Usar Nivel Medio ---
-            // Si el jugador está 3+ niveles por debajo del PROMEDIO del equipo
+            // Si el jugador estÃƒÂ¡ 3+ niveles por debajo del PROMEDIO del equipo
             const levelsBehindAvg = (avgTeamLevel - (part.champLevel || 0));
 
             if ((levelsBehindAvg >= 4) || (noDamage && durationMin >= 25) || part.wasAfk || part.leaver) {
@@ -6307,32 +6316,32 @@ if (!p.win && durationMin >= 15) {
 
     if (teammateAFK) {
         const mitigationBonus = cfg.afk_mitigation_bonus || 3.0; 
-        total = safeAdd(total, mitigationBonus, "Mitigación AFK", notes);
-        notes.push(`🛡️ Mitigación por AFK`);
+        total = safeAdd(total, mitigationBonus, "MitigaciÃƒÂ³n AFK", notes);
+        notes.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â MitigaciÃƒÂ³n por AFK`);
     }
 }
 
     // =========================================================
-    // 🏕️ MITIGACIÓN "JG DIFF" (OBJETIVOS) - REWORK V3 (Anti-Auto-Buff)
+    // Ã°Å¸Ââ€¢Ã¯Â¸Â MITIGACIÃƒâ€œN "JG DIFF" (OBJETIVOS) - REWORK V3 (Anti-Auto-Buff)
     // =========================================================
     // Requisitos:
     // 1. NO ser Jungla (No puedes recibir consuelo por tu propia culpa).
     // 2. Perder la partida.
-    // 3. Tu KDA debe ser > 1.5 (Demostrar que tú no fedeaste).
+    // 3. Tu KDA debe ser > 1.5 (Demostrar que tÃƒÂº no fedeaste).
     
     // Calculamos tu KDA actual
     const myKDA = (k + a) / Math.max(1, d);
 
-    // CAMBIO IMPORTANTE: Añadido "&& role !== 'JUNGLE'"
+    // CAMBIO IMPORTANTE: AÃƒÂ±adido "&& role !== 'JUNGLE'"
     if (!isWin && role !== 'JUNGLE' && myKDA > 1.5) {
 
-        // Buscamos a TU jungla en la lista de participantes (asumiendo que 'myTeam' está definido)
+        // Buscamos a TU jungla en la lista de participantes (asumiendo que 'myTeam' estÃƒÂ¡ definido)
         // Si no tienes 'myTeam' definido arriba, usa: participants.find(p => p.teamPosition === 'JUNGLE' && p.teamId === p.teamId);
         const myJungle = myTeam.find(m => m.teamPosition === "JUNGLE");
         
         if (myJungle) {
             // Contamos solo OBJETIVOS DE VERDAD (Ignoramos Larvas/HordeKills)
-            // Nota: dragonKills es un stat individual. Si el midlaner hizo el dragón, aquí saldrá 0 para el jungla.
+            // Nota: dragonKills es un stat individual. Si el midlaner hizo el dragÃƒÂ³n, aquÃƒÂ­ saldrÃƒÂ¡ 0 para el jungla.
             const dragons = Number(myJungle.dragonKills || 0);
             const heralds = Number(myJungle.riftHeraldKills || 0);
             const barons  = Number(myJungle.baronKills || 0);
@@ -6343,15 +6352,15 @@ if (!p.win && durationMin >= 15) {
             let jgDiffBonus = 0;
             let jgDiffNote = "";
 
-            // CASO A: NULIDAD ABSOLUTA (0 Objetivos) -> +3.0 Pts (Subido según tu snippet)
+            // CASO A: NULIDAD ABSOLUTA (0 Objetivos) -> +3.0 Pts (Subido segÃƒÂºn tu snippet)
             if (majorObjectives === 0) {
                 jgDiffBonus = 3.0;
-                jgDiffNote = `🏕️ Mitigación (Jgl: 0 Objetivos)`;
+                jgDiffNote = `Ã°Å¸Ââ€¢Ã¯Â¸Â MitigaciÃƒÂ³n (Jgl: 0 Objetivos)`;
             }
             // CASO B: INSUFICIENTE (Solo 1 Objetivo) -> +2.0 Pts
             else if (majorObjectives === 1) {
                 jgDiffBonus = 2.0;
-                jgDiffNote = `⛺ Mitigación Leve (Jgl: Solo 1 Objetivo)`;
+                jgDiffNote = `Ã¢â€ºÂº MitigaciÃƒÂ³n Leve (Jgl: Solo 1 Objetivo)`;
             }
 
             // Aplicar puntos si corresponde
@@ -6363,9 +6372,9 @@ if (!p.win && durationMin >= 15) {
     }
     
     // =========================================================
-    // 🍼 MITIGACIÓN: "NIÑERA FRUSTRADA V3" (Support vs ADC Gap)
+    // Ã°Å¸ÂÂ¼ MITIGACIÃƒâ€œN: "NIÃƒâ€˜ERA FRUSTRADA V3" (Support vs ADC Gap)
     // =========================================================
-    // Detecta si tu ADC fedeó o fue inútil, mientras tú jugaste decente.
+    // Detecta si tu ADC fedeÃƒÂ³ o fue inÃƒÂºtil, mientras tÃƒÂº jugaste decente.
     
     if (isSupport && !isWin && durationMin >= 15) {
 
@@ -6383,17 +6392,17 @@ if (!p.win && durationMin >= 15) {
             // --- RITMOS DE MUERTE ---
             const adcDPM = adcDeaths / durationMin;
             const myDPM = myDeaths / durationMin;
-            const dpmGap = adcDPM - myDPM; // Cuánto más muere él que tú
+            const dpmGap = adcDPM - myDPM; // CuÃƒÂ¡nto mÃƒÂ¡s muere ÃƒÂ©l que tÃƒÂº
 
             // --- CONDICIONES DEL ADC ---
             // 1. Feeder: Muere mucho (>0.27/min) y KDA bajo.
             const isAdcFeeder = (adcDPM >= 0.27 && adcKDA < 1.3);
-            // 2. Fantasma: No muere tanto, pero no pega NADA (<12% daño team).
+            // 2. Fantasma: No muere tanto, pero no pega NADA (<12% daÃƒÂ±o team).
             const isAdcUseless = (adcDmgShare < 0.13 && durationMin > 20);
 
             // --- CONDICIONES TUYAS (Check de Dignidad) ---
-            // Tú jugaste safe (<0.18 muertes/min) Y tuviste presencia (KP > 30% o Visión > 1.5/min)
-            // Esto evita que un Supp AFK reclame puntos solo porque su ADC murió.
+            // TÃƒÂº jugaste safe (<0.18 muertes/min) Y tuviste presencia (KP > 30% o VisiÃƒÂ³n > 1.5/min)
+            // Esto evita que un Supp AFK reclame puntos solo porque su ADC muriÃƒÂ³.
             const myKP = (p.challenges?.killParticipation || 0);
             const myVision = (p.visionScore || 0) / durationMin;
             const amISolid = (myDPM <= 0.18) && (myKP > 0.30 || myVision > 1.5);
@@ -6401,29 +6410,29 @@ if (!p.win && durationMin >= 15) {
             if ((isAdcFeeder || isAdcUseless) && amISolid) {
                 
                 let mitPoints = 1.0;
-                let mitLabel = "🍼 Niñera Frustrada";
+                let mitLabel = "Ã°Å¸ÂÂ¼ NiÃƒÂ±era Frustrada";
 
-                // NIVEL 2: PESADILLA (ADC Feeder extremo o daño nulo absoluto)
+                // NIVEL 2: PESADILLA (ADC Feeder extremo o daÃƒÂ±o nulo absoluto)
                 if (adcDPM >= 0.30 || (isAdcUseless && adcKDA < 1.1)) {
                     mitPoints = 2.5;
-                    mitLabel = "💀 ADC Pesadilla (Lastre absoluto)";
+                    mitLabel = "Ã°Å¸â€™â‚¬ ADC Pesadilla (Lastre absoluto)";
                 }
                 // NIVEL 1: ADC GAP (Gap claro de muertes > 0.15/min)
                 else if (dpmGap >= 0.15) {
                     mitPoints = 1.5;
-                    mitLabel = "🍼 Niñera Frustrada (ADC Gap)";
+                    mitLabel = "Ã°Å¸ÂÂ¼ NiÃƒÂ±era Frustrada (ADC Gap)";
                 }
 
                 total = safeAdd(total, mitPoints, "ADC Gap Mitigation", notes);
-                notes.push(`${mitLabel} (ADC: ${adcDeaths} muertes, ${(adcDmgShare*100).toFixed(0)}% daño)`);
+                notes.push(`${mitLabel} (ADC: ${adcDeaths} muertes, ${(adcDmgShare*100).toFixed(0)}% daÃƒÂ±o)`);
             }
         }
     }
 
     // =========================================================
-    // 🏹 MITIGACIÓN: "HUÉRFANO DE LÍNEA" (ADC vs Supp Gap)
+    // Ã°Å¸ÂÂ¹ MITIGACIÃƒâ€œN: "HUÃƒâ€°RFANO DE LÃƒÂNEA" (ADC vs Supp Gap)
     // =========================================================
-    // Protege al ADC cuando el Support es un lastre (Feeder o Inútil).
+    // Protege al ADC cuando el Support es un lastre (Feeder o InÃƒÂºtil).
     
     if (role === 'BOTTOM' && !isWin && durationMin >= 15) {
 
@@ -6437,7 +6446,7 @@ if (!p.win && durationMin >= 15) {
             const suppKDA = (suppKills + suppAssists) / Math.max(1, suppDeaths);
 
             // --- TU RENDIMIENTO (Requisito para reclamar) ---
-            // Debes haber intentado ganar: Farm decente (>6.0) O Daño decente (>20%)
+            // Debes haber intentado ganar: Farm decente (>6.0) O DaÃƒÂ±o decente (>20%)
             const myCSMin = ((p.totalMinionsKilled||0) + (p.neutralMinionsKilled||0)) / durationMin;
             const myDmgShare = p.challenges?.teamDamagePercentage || 0;
             const iTriedMyBest = (myCSMin >= 6.0 || myDmgShare >= 0.20);
@@ -6452,24 +6461,24 @@ if (!p.win && durationMin >= 15) {
                 
                 if (suppDPM >= 0.30 && suppKDA < 1.0) {
                     orphanPoints = 2.0;
-                    orphanNote = `🤕 Huérfano (Support Feeder: ${suppDeaths} muertes)`;
+                    orphanNote = `Ã°Å¸Â¤â€¢ HuÃƒÂ©rfano (Support Feeder: ${suppDeaths} muertes)`;
                 }
                 
-                // CASO B: SUPPORT AUTOLLENADO / INÚTIL
-                // Visión ridícula (<1.0/min) Y baja participación (<25% KP)
-                // OJO: Si es Yuumi la visión puede ser baja, pero debería tener KP alto.
+                // CASO B: SUPPORT AUTOLLENADO / INÃƒÅ¡TIL
+                // VisiÃƒÂ³n ridÃƒÂ­cula (<1.0/min) Y baja participaciÃƒÂ³n (<25% KP)
+                // OJO: Si es Yuumi la visiÃƒÂ³n puede ser baja, pero deberÃƒÂ­a tener KP alto.
                 const suppKP = (suppKills + suppAssists) / Math.max(1, teamInfo.totalKills || 1); // Asumiendo teamInfo disponible
                 
                 if (orphanPoints === 0 && suppVis < 1.0 && suppKP < 0.25) {
                     orphanPoints = 1.5;
-                    orphanNote = `🕯️ A Ciegas (Support sin visión ni presencia)`;
+                    orphanNote = `Ã°Å¸â€¢Â¯Ã¯Â¸Â A Ciegas (Support sin visiÃƒÂ³n ni presencia)`;
                 }
 
-                // CASO C: ATRAPADO 1v2 (El support te abandonó o murió el doble que tú)
-                // Si el supp murió el DOBLE que tú y tú moriste poco (<4).
+                // CASO C: ATRAPADO 1v2 (El support te abandonÃƒÂ³ o muriÃƒÂ³ el doble que tÃƒÂº)
+                // Si el supp muriÃƒÂ³ el DOBLE que tÃƒÂº y tÃƒÂº moriste poco (<4).
                 if (orphanPoints === 0 && suppDeaths >= (d * 2) && d <= 4) {
                     orphanPoints = 1.0;
-                    orphanNote = `🛡️ 1v2 Lane (Sobreviviste al Supp)`;
+                    orphanNote = `Ã°Å¸â€ºÂ¡Ã¯Â¸Â 1v2 Lane (Sobreviviste al Supp)`;
                 }
 
                 // Aplicar
@@ -6482,44 +6491,44 @@ if (!p.win && durationMin >= 15) {
     }
     
 
-    // =========================================================
-    // 🛡️ LÓGICA DE TANQUES Y CC (REWORK V2.0 - TANQUE DE PAPEL INTELIGENTE)
+Ã‚Â  Ã‚Â  // =========================================================
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â LÃƒâ€œGICA DE TANQUES Y CC (REWORK V2.0 - TANQUE DE PAPEL INTELIGENTE)
     // =========================================================
 
-    // Solo analizamos si el sistema detectó que está jugando rol de Tanque
+    // Solo analizamos si el sistema detectÃƒÂ³ que estÃƒÂ¡ jugando rol de Tanque
     if (isRealTank && d >= 6) {
 
-        // 1. CÁLCULO DE DUREZA
+        // 1. CÃƒÂLCULO DE DUREZA
         const mitigated = Number(p.damageSelfMitigated || 0);
         const taken = Number(p.totalDamageTaken || 0);
-        // Cuánto daño "comió" en total (lo que le entró + lo que paró la armadura/escudos)
+        // CuÃƒÂ¡nto daÃƒÂ±o "comiÃƒÂ³" en total (lo que le entrÃƒÂ³ + lo que parÃƒÂ³ la armadura/escudos)
         const totalSoaked = mitigated + taken; 
         
-        // Ratio: Cuánto daño aguanta de media antes de irse a base (morir)
+        // Ratio: CuÃƒÂ¡nto daÃƒÂ±o aguanta de media antes de irse a base (morir)
         const soakPerDeath = totalSoaked / Math.max(1, d);
 
-        // 2. UMBRALES DE DIGNIDAD (Ajustados por economía)
-        // Un Toplaner/Jungla tiene más oro/items que un Support, debe aguantar más.
+        // 2. UMBRALES DE DIGNIDAD (Ajustados por economÃƒÂ­a)
+        // Un Toplaner/Jungla tiene mÃƒÂ¡s oro/items que un Support, debe aguantar mÃƒÂ¡s.
         let paperThreshold = 5000; // Top/Jungle debe aguantar 5k por vida
         if (isSupport) paperThreshold = 3000; // Support con 3k es aceptable
 
         // --- CASO A: EL FLAN (Tanque de Papel Real) ---
-        // Mueres mucho, tienes mal KDA y encima aguantas poco daño por vida.
+        // Mueres mucho, tienes mal KDA y encima aguantas poco daÃƒÂ±o por vida.
         if (soakPerDeath < paperThreshold && kda < 1.5) {
-             // Castigo escalable: Si aguantas poquísimo, duele más
+             // Castigo escalable: Si aguantas poquÃƒÂ­simo, duele mÃƒÂ¡s
              let severity = -2.0;
              if (soakPerDeath < (paperThreshold * 0.6)) severity = -3.0; // Muy blando
 
              total = safeAdd(total, severity, "Paper Tank", notes);
-             notes.push(`🧻 Tanque de Papel (Solo ${(soakPerDeath/1000).toFixed(1)}k dmg aguantado/muerte)`);
+             notes.push(`Ã°Å¸Â§Â» Tanque de Papel (Solo ${(soakPerDeath/1000).toFixed(1)}k dmg aguantado/muerte)`);
         }
 
-        // --- CASO B: EL SACO DE BOXEO INÚTIL (Aguanta pero no hace nada) ---
-        // Si aguantas daño pero no metes CC y mueres mucho, eres una piñata de oro para el rival.
-        // Requisito: Mueres 8+, Aguantes bien, pero tu CC es ridículo (< 0.5s/min).
+        // --- CASO B: EL SACO DE BOXEO INÃƒÅ¡TIL (Aguanta pero no hace nada) ---
+        // Si aguantas daÃƒÂ±o pero no metes CC y mueres mucho, eres una piÃƒÂ±ata de oro para el rival.
+        // Requisito: Mueres 8+, Aguantes bien, pero tu CC es ridÃƒÂ­culo (< 0.5s/min).
         else if (d >= 8 && totalCCPerMin < 0.5 && kda < 1.5) {
              total = safeAdd(total, -1.5, "Useless Sponge", notes);
-             notes.push(`🧱 Ladrillo Inmóvil (Mueres mucho y 0 utilidad/CC)`);
+             notes.push(`Ã°Å¸Â§Â± Ladrillo InmÃƒÂ³vil (Mueres mucho y 0 utilidad/CC)`);
         }
     }
 
@@ -6531,9 +6540,9 @@ if (!p.win && durationMin >= 15) {
     const deathsPerMin = durationMin > 0 ? d / durationMin : 0;
     
     // --- Definiciones Previas ---
-    // Recalculamos si es splitpusher aquí para evitar errores de referencia
+    // Recalculamos si es splitpusher aquÃƒÂ­ para evitar errores de referencia
     const towerDmgLocal = Number(p.damageDealtToTurrets || 0);
-    // Es splitpusher si hizo > 4000 daño a torres (aprox 1.5 torres)
+    // Es splitpusher si hizo > 4000 daÃƒÂ±o a torres (aprox 1.5 torres)
     const isSplitpusherLocal = (role === "TOP" || role === "MIDDLE") && towerDmgLocal > 5500;
 
     // --- A. FACTOR DE PIEDAD (Con Filtro Anti-Fake) ---
@@ -6542,28 +6551,28 @@ if (!p.win && durationMin >= 15) {
     // 1. Definimos si el KP es alto
     const hasHighKP = kp >= 0.75;
     
-    // 2. Definimos si el jugador fue realmente útil (Validación)
+    // 2. Definimos si el jugador fue realmente ÃƒÂºtil (ValidaciÃƒÂ³n)
     // Para mitigar las muertes, no basta con tocar a la gente (asistencias basura).
-    // Tienes que haber tanqueado, curado, metido CC o hecho daño de verdad.
+    // Tienes que haber tanqueado, curado, metido CC o hecho daÃƒÂ±o de verdad.
         
-    // Criterios de "Sacrificio Válido":
-    // A. Eres Tanque (Has mitigado daño)
+    // Criterios de "Sacrificio VÃƒÂ¡lido":
+    // A. Eres Tanque (Has mitigado daÃƒÂ±o)
     // B. Eres Healer/CC (Utility alta)
-    // C. Eres Carry (Has hecho al menos el 15% del daño del equipo)
+    // C. Eres Carry (Has hecho al menos el 15% del daÃƒÂ±o del equipo)
     const isValidSacrifice = isRealTank || 
                              (utilityPerMin > 500) || 
                              (totalCCPerMin > 1.5) || 
                              (dmgShare > 0.15);
 
-    // 3. Aplicamos la mitigación SOLO si el sacrificio fue válido
+    // 3. Aplicamos la mitigaciÃƒÂ³n SOLO si el sacrificio fue vÃƒÂ¡lido
     if (hasHighKP && isValidSacrifice) {
         deathMitigation = 0.75; // Reduce la multa un 25%
     } 
 
     // ------------------------------------------------------------
-    // B. CLASIFICACIÓN DEL FEDEO (Umbrales Más Estrictos)
+    // B. CLASIFICACIÃƒâ€œN DEL FEDEO (Umbrales MÃƒÂ¡s Estrictos)
     // ------------------------------------------------------------
-    // Mínimo 5 muertes para empezar a evaluar (antes era mucho ruido en partidas cortas)
+    // MÃƒÂ­nimo 5 muertes para empezar a evaluar (antes era mucho ruido en partidas cortas)
     if (d >= 5) {
         let basePenalty = 0;
         let label = "";
@@ -6571,21 +6580,21 @@ if (!p.win && durationMin >= 15) {
         // TIER 3: INTING (> 0.48/min) -> Ej: 10 muertes en 20 min
         if (deathsPerMin >= 0.48) { 
             basePenalty = -6.0;
-            label = `🤬 INTING`;
+            label = `Ã°Å¸Â¤Â¬ INTING`;
         } 
         // TIER 2: FEEDER (> 0.36/min) -> Ej: 11 muertes en 30 min
         else if (deathsPerMin >= 0.36) {
             basePenalty = -4.0;
-            label = `🤡 Feeder`;
+            label = `Ã°Å¸Â¤Â¡ Feeder`;
         } 
         // TIER 1: PANTALLA GRIS (> 0.26/min) -> Ej: 8 muertes en 30 min
         else if (deathsPerMin >= 0.25) {
             basePenalty = -3.0; 
-            label = `📺 Pantalla Gris`;
+            label = `Ã°Å¸â€œÂº Pantalla Gris`;
         }
 
-        // --- C. AGRAVANTE: EL "WARD MÓVIL" ---
-        // Si mueres ritmo Feeder/Inting Y ADEMÁS eres inútil (KP < 25% y no eres splitpusher)
+        // --- C. AGRAVANTE: EL "WARD MÃƒâ€œVIL" ---
+        // Si mueres ritmo Feeder/Inting Y ADEMÃƒÂS eres inÃƒÂºtil (KP < 25% y no eres splitpusher)
         const isUseless = kp < 0.27 && !isSplitpusherLocal;
         
         if (basePenalty <= -4.0 && isUseless) { // Solo aplicamos agravante si ya es Feeder o Inting
@@ -6593,7 +6602,7 @@ if (!p.win && durationMin >= 15) {
             label += " (Agravado: 0 Impacto)";
         }
 
-        // Aplicamos la mitigación o el castigo final
+        // Aplicamos la mitigaciÃƒÂ³n o el castigo final
         if (basePenalty < 0) {
             const finalPenalty = basePenalty * deathMitigation;
             punishmentPoints += finalPenalty;
@@ -6608,50 +6617,50 @@ if (!p.win && durationMin >= 15) {
     }
 
     // =========================================================
-    // 🚑 CONTROL DE CALIDAD DE SUPPORTS (SOPORTE NOCIVO) - V3.2
+    // Ã°Å¸Å¡â€˜ CONTROL DE CALIDAD DE SUPPORTS (SOPORTE NOCIVO) - V3.2
     // =========================================================
     
     // 1. Calculamos Ritmos
     const deathsPerMinSupport = durationMin > 0 ? d / durationMin : 0;
     const killsPerMinSupport = durationMin > 0 ? k / durationMin : 0;
     
-    // 2. DETECCIÓN DE "PICK DE DAÑO FALLIDO"
+    // 2. DETECCIÃƒâ€œN DE "PICK DE DAÃƒâ€˜O FALLIDO"
     // - Es Support.
-    // - NO es un Tanque Real (no ha mitigado daño significativo).
-    // - Su Daño es BAJO (< 15% del equipo).
-    // - EXTRA: Su CC es BAJO (< 1s/min). Si tuviera mucho CC, sería un support de utilidad útil.
+    // - NO es un Tanque Real (no ha mitigado daÃƒÂ±o significativo).
+    // - Su DaÃƒÂ±o es BAJO (< 15% del equipo).
+    // - EXTRA: Su CC es BAJO (< 1s/min). Si tuviera mucho CC, serÃƒÂ­a un support de utilidad ÃƒÂºtil.
     // Si cumples todo esto: Eres un Brand/Lux/Senna que no ha hecho nada.
     const isFailedDamagePick = isSupport && !isRealTank && dmgShare < 0.15 && totalCCPerMin < 1.0;
 
     if (isFailedDamagePick) {
         
-        // --- CASO A: EL "ATENTADO" (Prioridad 1: Feeder Inútil) ---
-        // Pick de daño que muere muchísimo (>0.30/min) y no aporta daño.
+        // --- CASO A: EL "ATENTADO" (Prioridad 1: Feeder InÃƒÂºtil) ---
+        // Pick de daÃƒÂ±o que muere muchÃƒÂ­simo (>0.30/min) y no aporta daÃƒÂ±o.
         // Ej: Brand 0/10/2 en 30 min.
         if (deathsPerMinSupport >= 0.30) {
             
             deathMitigation = 1.0;   // ANULA cualquier piedad de muerte por sacrificio
             punishmentPoints -= 2.5; // Castigo severo
             
-            punishmentNotes.push(`🗑️ Pick Inútil (Mago/Carry fallido: ${d} muertes y sin daño)`);
+            punishmentNotes.push(`Ã°Å¸â€”â€˜Ã¯Â¸Â Pick InÃƒÂºtil (Mago/Carry fallido: ${d} muertes y sin daÃƒÂ±o)`);
         }
         
-        // --- CASO B: EL "SUPP KILLER" (Prioridad 2: KS sin Daño) ---
-        // Solo entramos aquí si NO se cumplió el caso A (Castigo único).
-        // Se lleva las kills (>0.2/min) pero su daño es irrelevante (<15%).
+        // --- CASO B: EL "SUPP KILLER" (Prioridad 2: KS sin DaÃƒÂ±o) ---
+        // Solo entramos aquÃƒÂ­ si NO se cumpliÃƒÂ³ el caso A (Castigo ÃƒÂºnico).
+        // Se lleva las kills (>0.2/min) pero su daÃƒÂ±o es irrelevante (<15%).
         else if (killsPerMinSupport >= 0.20) {
             
             punishmentPoints -= 2.0; // Castigo directo
             
             // Etiqueta informativa
-            let ksLabel = (k > a) ? "KS Descarado" : "KDA Vacío";
+            let ksLabel = (k > a) ? "KS Descarado" : "KDA VacÃƒÂ­o";
             
-            punishmentNotes.push(`📉 ${ksLabel} (Robaste ${k} kills sin aportar daño)`);
+            punishmentNotes.push(`Ã°Å¸â€œâ€° ${ksLabel} (Robaste ${k} kills sin aportar daÃƒÂ±o)`);
         }
     }
 
     // ------------------------------------------------------------
-    // E. APLICACIÓN FINAL
+    // E. APLICACIÃƒâ€œN FINAL
     // ------------------------------------------------------------
     if (punishmentPoints < 0) {
         // Redondeo limpio
@@ -6664,13 +6673,13 @@ if (!p.win && durationMin >= 15) {
     }
 
     // =====================================================
-    // 💎 EL INVERSOR 4.2: PINKS (Economía Inteligente por Rol)
+    // Ã°Å¸â€™Å½ EL INVERSOR 4.2: PINKS (EconomÃƒÂ­a Inteligente por Rol)
     // =====================================================
     const pinksBought = Number(p.visionWardsBoughtInGame || 0);
     const pinksPlaced = Number(p.challenges?.controlWardsPlaced || 0);
     const pinks = Math.max(pinksBought, pinksPlaced);
 
-    // 1. CÁLCULO DE ORO INTELIGENTE
+    // 1. CÃƒÂLCULO DE ORO INTELIGENTE
     let goldSpentOnVision = 0;
     
     if (isSupport) {
@@ -6681,7 +6690,7 @@ if (!p.win && durationMin >= 15) {
         goldSpentOnVision = pinksBought * 75;
     }
 
-    // 2. DEFINIR EXPECTATIVAS (Cuántos pinks deberías comprar según el minuto)
+    // 2. DEFINIR EXPECTATIVAS (CuÃƒÂ¡ntos pinks deberÃƒÂ­as comprar segÃƒÂºn el minuto)
     let pinkRate = 15; // Laners (1 cada 15 min)
     if (isSupport) pinkRate = 8; // Supports (1 cada 8 min)
     else if (isJungle) pinkRate = 12; // Junglas (1 cada 12 min)
@@ -6691,44 +6700,44 @@ if (!p.win && durationMin >= 15) {
 
     if (durationMin > 20) {
 
-        // --- 🏹 REGLA ABSOLUTA PARA EL ADC (BOTTOM) ---
-        // El ADC NO recibe premios ni castigos por Pinks. Debe guardar su oro para daño.
+        // --- Ã°Å¸ÂÂ¹ REGLA ABSOLUTA PARA EL ADC (BOTTOM) ---
+        // El ADC NO recibe premios ni castigos por Pinks. Debe guardar su oro para daÃƒÂ±o.
         if (role === 'BOTTOM') {
             if (pinksBought >= 4) {
-                // Aviso visual si gasta 300+ de oro en visión, pero SIN tocar los puntos
-                notes.push(`💸 Aviso: Compraste ${pinksBought} Pinks. Deja la visión al Support.`);
+                // Aviso visual si gasta 300+ de oro en visiÃƒÂ³n, pero SIN tocar los puntos
+                notes.push(`Ã°Å¸â€™Â¸ Aviso: Compraste ${pinksBought} Pinks. Deja la visiÃƒÂ³n al Support.`);
             }
         } 
         
-        // --- ⚔️ LÓGICA PARA EL RESTO DE ROLES (SUPP, JGL, MID, TOP) ---
+        // --- Ã¢Å¡â€Ã¯Â¸Â LÃƒâ€œGICA PARA EL RESTO DE ROLES (SUPP, JGL, MID, TOP) ---
         else {
             const isSoloLaner = (role === 'MIDDLE' || role === 'TOP');
 
-            // A. PENALIZACIÓN POR DERROCHE (Solo para Mid y Top)
-            // Si un Midlaner compra 4 pinks, está gastando 300 de oro (una kill entera).
+            // A. PENALIZACIÃƒâ€œN POR DERROCHE (Solo para Mid y Top)
+            // Si un Midlaner compra 4 pinks, estÃƒÂ¡ gastando 300 de oro (una kill entera).
             if (isSoloLaner && pinksBought >= 4) {
                 let wastePenalty = -(pinksBought - 4) * 0.25; 
                 wastePenalty = Math.max(-2.5, parseFloat(wastePenalty.toFixed(2))); // Cap de -2.5
                 
                 total = safeAdd(total, wastePenalty, "Vision Waste", notes);
-                notes.push(`💸 Derroche de Oro (Compró ${pinksBought} pinks siendo Laner, ${wastePenalty} pts)`);
+                notes.push(`Ã°Å¸â€™Â¸ Derroche de Oro (ComprÃƒÂ³ ${pinksBought} pinks siendo Laner, ${wastePenalty} pts)`);
             }
             
-            // B. BONUS PROGRESIVO: EL MAGNATE DE LA VISIÓN
+            // B. BONUS PROGRESIVO: EL MAGNATE DE LA VISIÃƒâ€œN
             // Solo premiamos a los Solo Laners si no han llegado al umbral de derroche
             else if (excessPinks > 0) {
                 let pinkPts = excessPinks * 0.25;
                 pinkPts = Math.min(2.0, parseFloat(pinkPts.toFixed(2))); 
 
-                let label = "📌 Usando los Pinks";
-                if (excessPinks >= 7) label = "👁️‍🗨️ ILLUMINATI";
-                else if (excessPinks >= 4) label = "🔮 Vidente";
+                let label = "Ã°Å¸â€œÅ’ Usando los Pinks";
+                if (excessPinks >= 7) label = "Ã°Å¸â€˜ÂÃ¯Â¸ÂÃ¢â‚¬ÂÃ°Å¸â€”Â¨Ã¯Â¸Â ILLUMINATI";
+                else if (excessPinks >= 4) label = "Ã°Å¸â€Â® Vidente";
 
                 total = safeAdd(total, pinkPts, "Vision Excess", notes);
                 notes.push(`${label} (+${pinks} Pinks, +${pinkPts} pts)`);
             } 
 
-            // C. BONUS EXTRA: SACRIFICIO ECONÓMICO (Solo JGL y SUPP)
+            // C. BONUS EXTRA: SACRIFICIO ECONÃƒâ€œMICO (Solo JGL y SUPP)
             const spenderThreshold = isSupport ? 310 : 525;
             if ((isSupport || isJungle) && goldSpentOnVision > spenderThreshold) { 
                 let invPts = ((goldSpentOnVision - spenderThreshold) / 100) * 0.15;
@@ -6736,10 +6745,10 @@ if (!p.win && durationMin >= 15) {
                 invPts = Math.max(0.25, invPts); 
 
                 total = safeAdd(total, invPts, "Big Spender", notes);
-                notes.push(`💸 Inversor de Visión (-${goldSpentOnVision}g en visión, +${invPts} pts)`);
+                notes.push(`Ã°Å¸â€™Â¸ Inversor de VisiÃƒÂ³n (-${goldSpentOnVision}g en visiÃƒÂ³n, +${invPts} pts)`);
             }
 
-            // D. PENALIZACIONES: LISTA DE MOROSOS (No compran lo mínimo)
+            // D. PENALIZACIONES: LISTA DE MOROSOS (No compran lo mÃƒÂ­nimo)
             if (excessPinks < 0) {
                 if (pinks === 0) {
                     // El castigo base es peor para Supp/Jgl (-4) que para Laners (-2)
@@ -6747,7 +6756,7 @@ if (!p.win && durationMin >= 15) {
                     if (durationMin > 35) penaltyBase -= 1.0; 
 
                     total = safeAdd(total, penaltyBase, "No Vision", notes);
-                    notes.push(`🙈 Tacaño Supremo (0 Pinks en ${durationMin} min)`);
+                    notes.push(`Ã°Å¸â„¢Ë† TacaÃƒÂ±o Supremo (0 Pinks en ${durationMin} min)`);
                 }
                 else {
                     const deficit = Math.abs(excessPinks);
@@ -6756,7 +6765,7 @@ if (!p.win && durationMin >= 15) {
                     penalty = Math.max(-3.5, parseFloat(penalty.toFixed(2))); 
                     
                     total = safeAdd(total, penalty, "Low Pinks", notes);
-                    notes.push(`👛 Ahorrador (Faltaron ${deficit} pinks)`);
+                    notes.push(`Ã°Å¸â€˜â€º Ahorrador (Faltaron ${deficit} pinks)`);
                 }
             }
         }
@@ -6765,16 +6774,16 @@ if (!p.win && durationMin >= 15) {
 
     
 
-    // ==============================================================================
-    // 💸 SISTEMA DE BOUNTY THROW V3.0 (JUSTICIA DIVINA)
+Ã‚Â  Ã‚Â  // ==============================================================================
+    // Ã°Å¸â€™Â¸ SISTEMA DE BOUNTY THROW V3.0 (JUSTICIA DIVINA)
     // ==============================================================================
     if (d > 0) { // Solo si has muerto alguna vez
         const spree = Number(p.largestKillingSpree || 0);
         
-        // UMBRAL: Solo analizamos si perdiste una racha de 3 o más
+        // UMBRAL: Solo analizamos si perdiste una racha de 3 o mÃƒÂ¡s
         if (spree >= 3) {
             
-            // 1. CÁLCULO BASE (Severidad del Throw)
+            // 1. CÃƒÂLCULO BASE (Severidad del Throw)
             let penalty = 0;
             let label = "";
 
@@ -6792,16 +6801,16 @@ if (!p.win && durationMin >= 15) {
                 label = "Racha Cortada"; 
             }
 
-            // 2. 🛡️ FACTORES DE MITIGACIÓN (AQUÍ ESTÁ EL FIX) 🛡️
+            // 2. Ã°Å¸â€ºÂ¡Ã¯Â¸Â FACTORES DE MITIGACIÃƒâ€œN (AQUÃƒÂ ESTÃƒÂ EL FIX) Ã°Å¸â€ºÂ¡Ã¯Â¸Â
 
-            // A. AMNISTÍA TOTAL ("WORTH IT")
-            // Si ganaste la partida Y tu KDA es sólido (> 3.5), tu muerte valió la pena.
+            // A. AMNISTÃƒÂA TOTAL ("WORTH IT")
+            // Si ganaste la partida Y tu KDA es sÃƒÂ³lido (> 3.5), tu muerte valiÃƒÂ³ la pena.
             // Ejemplo TuMorenito17: 17/7/8 (KDA 3.57) + Win = 0 Castigo.
             if (p.win && kda >= 3.5) {
                 penalty = 0; 
             }
             
-            // B. VICTORIA TÁCTICA
+            // B. VICTORIA TÃƒÂCTICA
             // Si ganaste pero tu KDA no es estelar, reducimos el castigo un 60% (antes 30%).
             // Morir para tirar nexo duele menos.
             else if (p.win) {
@@ -6814,14 +6823,14 @@ if (!p.win && durationMin >= 15) {
                 penalty = penalty * 0.5;
             }
 
-            // D. INOCENCIA MATEMÁTICA (Fix Chromosome Z)
+            // D. INOCENCIA MATEMÃƒÂTICA (Fix Chromosome Z)
             // Si tienes racha alta pero solo moriste 1 vez en toda la partida, se perdona.
             if (d === 1 && spree >= 5) {
                 penalty = 0;
             }
 
-            // 3. APLICACIÓN FINAL
-            // Si el castigo quedó en algo ridículo (menos de -0.2), lo quitamos para no ensuciar.
+            // 3. APLICACIÃƒâ€œN FINAL
+            // Si el castigo quedÃƒÂ³ en algo ridÃƒÂ­culo (menos de -0.2), lo quitamos para no ensuciar.
             if (Math.abs(penalty) < 0.2) penalty = 0;
 
             if (penalty < 0) {
@@ -6832,20 +6841,20 @@ if (!p.win && durationMin >= 15) {
                 
                 // Solo mostramos la nota si el castigo es relevante (> 0.5)
                 if (penalty <= -0.5) {
-                    notes.push(`💸 ${label} (Racha de ${spree} entregada, ${penalty} pts)`);
+                    notes.push(`Ã°Å¸â€™Â¸ ${label} (Racha de ${spree} entregada, ${penalty} pts)`);
                 }
             }
         }
     }
 
     // =====================================================
-    // 🏪 TIENDA E INVENTARIO: APLICAR OBJETOS (UNIFICADO V3)
+    // Ã°Å¸ÂÂª TIENDA E INVENTARIO: APLICAR OBJETOS (UNIFICADO V3)
     // =====================================================
     
     if (invSheet && targetName) { // Usamos targetName (que es summonerName)
        const invData = invSheet.getDataRange().getValues();
        
-       // 1. RECOPILAR: Buscar qué objetos TIENE el jugador disponibles
+       // 1. RECOPILAR: Buscar quÃƒÂ© objetos TIENE el jugador disponibles
        let availableItems = {}; 
        
        for (let i = 1; i < invData.length; i++) {
@@ -6864,15 +6873,15 @@ if (!p.win && durationMin >= 15) {
        let itemToConsumeRow = -1; 
        let itemNewStatus = 'USED'; 
 
-       // --- 🌟 A. OBJETOS DE LA FORJA DE ORNN ---
+       // --- Ã°Å¸Å’Å¸ A. OBJETOS DE LA FORJA DE ORNN ---
        if (availableItems['ORNN_ANVIL']) {
            total += 8;
-           notes.push("🔨 Bendición de Ornn (+8 Pts)");
+           notes.push("Ã°Å¸â€Â¨ BendiciÃƒÂ³n de Ornn (+8 Pts)");
            itemToConsumeRow = availableItems['ORNN_ANVIL'].row;
        }
        else if (availableItems['ELIXIR_SORCERY']) {
            total += 15;
-           notes.push("🧪 Elixir de Brujería (+15 Pts & +200G)");
+           notes.push("Ã°Å¸Â§Âª Elixir de BrujerÃƒÂ­a (+15 Pts & +200G)");
            itemToConsumeRow = availableItems['ELIXIR_SORCERY'].row;
            
            // Ingresar Oro directamente
@@ -6890,23 +6899,23 @@ if (!p.win && durationMin >= 15) {
        }
        else if (availableItems['INFINITY_PRIME'] && isWin && total > 0) {
            total = total * 2.0;
-           notes.push("⚔️ Filo Infinito (Puntos x2.0)");
+           notes.push("Ã¢Å¡â€Ã¯Â¸Â Filo Infinito (Puntos x2.0)");
            itemToConsumeRow = availableItems['INFINITY_PRIME'].row;
        }
        else if (availableItems['GAUNTLET_GOD'] && isWin && total > 0) {
            total = total * 3.5;
-           notes.push("🥊 Guantelete Divino (Puntos x3.5)");
+           notes.push("Ã°Å¸Â¥Å  Guantelete Divino (Puntos x3.5)");
            itemToConsumeRow = availableItems['GAUNTLET_GOD'].row;
        }
-       // 🛡️ Objetos Defensivos (Zhonya tiene prioridad sobre el Ángel normal)
+       // Ã°Å¸â€ºÂ¡Ã¯Â¸Â Objetos Defensivos (Zhonya tiene prioridad sobre el ÃƒÂngel normal)
        else if (availableItems['ZHONYA_HOURGLASS'] && total < 0 && !isWin) {
            total = 0; 
-           notes.push("⏳ Estasis Temporal (Pérdida evitada)");
+           notes.push("Ã¢ÂÂ³ Estasis Temporal (PÃƒÂ©rdida evitada)");
            itemToConsumeRow = availableItems['ZHONYA_HOURGLASS'].row;
        }
        else if (availableItems['ANGEL_GUARD'] && total < 0 && !isWin) {
            total = 0; 
-           notes.push("👼🏻 Ángel de la Guarda");
+           notes.push("Ã°Å¸â€˜Â¼Ã°Å¸ÂÂ» ÃƒÂngel de la Guarda");
            itemToConsumeRow = availableItems['ANGEL_GUARD'].row;
        }
        else if (availableItems['FATE_SIPHON']) {
@@ -6914,15 +6923,15 @@ if (!p.win && durationMin >= 15) {
           const pointsToTransfer = 4 + Math.max(0, Math.floor(currentMatchPoints * 0.10));
           
           // 2. Obtenemos el ranking actual completo
-          const ranking = getFullLeaderboard(); // Esta función debe devolver la lista de nombres ordenada
+          const ranking = getFullLeaderboard(); // Esta funciÃƒÂ³n debe devolver la lista de nombres ordenada
           const myIndex = ranking.findIndex(p => p.name === summonerName);
 
           // 3. Identificamos los dos grupos
-          const playersAbove = ranking.slice(0, myIndex); // Todos los que están por encima
-          const playersBelow = ranking.slice(myIndex + 1); // Todos los que están por debajo
+          const playersAbove = ranking.slice(0, myIndex); // Todos los que estÃƒÂ¡n por encima
+          const playersBelow = ranking.slice(myIndex + 1); // Todos los que estÃƒÂ¡n por debajo
 
           if (playersAbove.length > 0 && playersBelow.length > 0) {
-              // 4. Selección aleatoria mediante el "Dado de Zaun"
+              // 4. SelecciÃƒÂ³n aleatoria mediante el "Dado de Zaun"
               const victim = playersAbove[Math.floor(Math.random() * playersAbove.length)].name;
               const beneficiary = playersBelow[Math.floor(Math.random() * playersBelow.length)].name;
 
@@ -6930,16 +6939,16 @@ if (!p.win && durationMin >= 15) {
               applyScorePenalty(victim, -pointsToTransfer);
               applyScoreBonus(beneficiary, pointsToTransfer);
 
-              notes.push(`⚖️ Sifón: Robados ${pointsToTransfer} pts a ${victim} y entregados a ${beneficiary}`);
+              notes.push(`Ã¢Å¡â€“Ã¯Â¸Â SifÃƒÂ³n: Robados ${pointsToTransfer} pts a ${victim} y entregados a ${beneficiary}`);
               
               // Consumimos el objeto
               consumeItem(summonerName, 'FATE_SIPHON');
           } else {
-              notes.push("⚖️ El Sifón falló: Necesitas tener gente por encima y por debajo de ti.");
+              notes.push("Ã¢Å¡â€“Ã¯Â¸Â El SifÃƒÂ³n fallÃƒÂ³: Necesitas tener gente por encima y por debajo de ti.");
           }
         }
        
-       // --- 🎟️ B. APUESTAS Y EVENTOS CLÁSICOS ---
+       // --- Ã°Å¸Å½Å¸Ã¯Â¸Â B. APUESTAS Y EVENTOS CLÃƒÂSICOS ---
        
 
        // 2. Apuesta Primera Sangre
@@ -6947,10 +6956,10 @@ if (!p.win && durationMin >= 15) {
            const rowInfo = availableItems['BET_FIRST_BLOOD'];
            if (p.firstBloodKill) {
                total = safeAdd(total, 3.0, "FB Bet Win", notes);
-               notes.push("🩸 Apuesta Sangre GANADA (+3)");
+               notes.push("Ã°Å¸Â©Â¸ Apuesta Sangre GANADA (+3)");
            } else {
                total = safeAdd(total, -1.0, "FB Bet Loss", notes);
-               notes.push("🩸 Apuesta Sangre PERDIDA (-1)");
+               notes.push("Ã°Å¸Â©Â¸ Apuesta Sangre PERDIDA (-1)");
            }
            itemToConsumeRow = rowInfo.row;
        }
@@ -6964,31 +6973,31 @@ if (!p.win && durationMin >= 15) {
                if (currentStatus === 'ACTIVE') {
                    itemToConsumeRow = rowInfo.row;
                    itemNewStatus = 'PROGRESS_1'; 
-                   notes.push("🔥 Pacto Racha: 1/2 Victorias. ¡Falta una!");
+                   notes.push("Ã°Å¸â€Â¥ Pacto Racha: 1/2 Victorias. Ã‚Â¡Falta una!");
                } 
                else if (currentStatus === 'PROGRESS_1') {
                    total = safeAdd(total, 6.0, "Streak Pact Completed", notes);
-                   notes.push("🔥🔥 Pacto Racha COMPLETADO (+6)");
+                   notes.push("Ã°Å¸â€Â¥Ã°Å¸â€Â¥ Pacto Racha COMPLETADO (+6)");
                    itemToConsumeRow = rowInfo.row;
                    itemNewStatus = 'USED'; 
                }
            } else {
                total = safeAdd(total, -3.0, "Streak Pact Failed", notes);
-               notes.push("🥀 Pacto Racha FALLIDO (-3)");
+               notes.push("Ã°Å¸Â¥â‚¬ Pacto Racha FALLIDO (-3)");
                itemToConsumeRow = rowInfo.row;
                itemNewStatus = 'USED'; 
            }
        }
 
-       // --- 🧪 C. CONSUMIBLES BÁSICOS ---
+       // --- Ã°Å¸Â§Âª C. CONSUMIBLES BÃƒÂSICOS ---
        else if (availableItems['POTION_ELO'] && isWin && total > 0) {
            total = total * 1.25;
-           notes.push("🧪 Poción de Elo");
+           notes.push("Ã°Å¸Â§Âª PociÃƒÂ³n de Elo");
            itemToConsumeRow = availableItems['POTION_ELO'].row;
        }
        else if (availableItems['SOBORNO']) {
            total = total + 2;
-           notes.push("💰 Soborno");
+           notes.push("Ã°Å¸â€™Â° Soborno");
            itemToConsumeRow = availableItems['SOBORNO'].row;
        }
 
@@ -6999,13 +7008,13 @@ if (!p.win && durationMin >= 15) {
     }
 
     // =====================================================
-    // 🚀 BONUS: STOMP (LÓGICA EXCLUSIVA - OPCIÓN B)
+    // Ã°Å¸Å¡â‚¬ BONUS: STOMP (LÃƒâ€œGICA EXCLUSIVA - OPCIÃƒâ€œN B)
     // "O multiplicas o sumas, no las dos"
     // =====================================================
     
     if (p.win && durationMin <= 21) {
         
-        // 1. ¿Mereces la PROYECCIÓN? (Alto Rendimiento)
+        // 1. Ã‚Â¿Mereces la PROYECCIÃƒâ€œN? (Alto Rendimiento)
         // Requisito: KDA >= 4.0 y KP >= 45% (Bajado un poco para ser justo)
         if (kda >= 4.0 && kp >= 0.50) {
             
@@ -7016,20 +7025,20 @@ if (!p.win && durationMin >= 15) {
             total += projectionBonus;
             
             // Corregimos la sintaxis de las comillas invertidas ` `
-            notes.push(`📈 Proyección de Stomp (+${projectionBonus.toFixed(2)} pts por acabar rápido)`);
+            notes.push(`Ã°Å¸â€œË† ProyecciÃƒÂ³n de Stomp (+${projectionBonus.toFixed(2)} pts por acabar rÃƒÂ¡pido)`);
         } 
         
-        // 2. Si NO proyectas (ej: ganaste porque se fueron AFK o te carrilearon), bono fijo pequeño
+        // 2. Si NO proyectas (ej: ganaste porque se fueron AFK o te carrilearon), bono fijo pequeÃƒÂ±o
         else {
             total = safeAdd(total, 1.5, "FF Bonus", notes);
-            notes.push(`🏳️ Terror Psicológico (Stomp <21min)`);
+            notes.push(`Ã°Å¸ÂÂ³Ã¯Â¸Â Terror PsicolÃƒÂ³gico (Stomp <21min)`);
         }
     }
 
 
 
     // =====================================================
-    // 📊 DATA COLLECTOR (Extracción de stats para gráficos e Inspector)
+    // Ã°Å¸â€œÅ  DATA COLLECTOR (ExtracciÃƒÂ³n de stats para grÃƒÂ¡ficos e Inspector)
     // =====================================================
     const csDiffTarget = opponent ? ((p.totalMinionsKilled || 0) + (p.neutralMinionsKilled || 0)) - ((opponent.totalMinionsKilled || 0) + (opponent.neutralMinionsKilled || 0)) : 0;
     const goldDiffTarget = opponent ? (p.goldEarned || 0) - (opponent.goldEarned || 0) : 0;
@@ -7038,7 +7047,7 @@ if (!p.win && durationMin >= 15) {
 
     const cachedMatch = GLOBAL_MATCH_CACHE[matchId] || {};
     
-    // 🟢 EXTRAEMOS EL CS AL MINUTO 15 DESDE LA CACHÉ
+    // Ã°Å¸Å¸Â¢ EXTRAEMOS EL CS AL MINUTO 15 DESDE LA CACHÃƒâ€°
     const partId = p.participantId;
     const myCs15 = cachedMatch.customCsAt15 ? (cachedMatch.customCsAt15[partId] || 0) : 0;
 
@@ -7057,20 +7066,20 @@ if (!p.win && durationMin >= 15) {
         csDiff: Number(csDiffTarget.toFixed(0)),
         visionDiff: Number(visionDiffTarget.toFixed(0)),
 
-        // 🚀 3. EARLY GAME PURO (Pre-Minuto 14)
+        // Ã°Å¸Å¡â‚¬ 3. EARLY GAME PURO (Pre-Minuto 14)
         earlyGoldXp: Number(p.challenges?.earlyLaningPhaseGoldExpAdvantage || 0), 
         maxCsLead: Number(p.challenges?.maxCsAdvantageOnLaneOpponent || 0),       
         maxLvlLead: Number(p.challenges?.maxLevelLeadLaneOpponent || 0),          
         
-        plates: Number(p.challenges?.turretPlatesTaken || p.turretPlatesTaken || 0), // 🟢 PLACAS AÑADIDAS
-        cs15: myCs15, // 🟢 CS AL MINUTO 15 AÑADIDO
+        plates: Number(p.challenges?.turretPlatesTaken || p.turretPlatesTaken || 0), // Ã°Å¸Å¸Â¢ PLACAS AÃƒâ€˜ADIDAS
+        cs15: myCs15, // Ã°Å¸Å¸Â¢ CS AL MINUTO 15 AÃƒâ€˜ADIDO
         
         earlyRoams: Number(p.challenges?.killsOnOtherLanesEarlyJungleAsLaner || 0),
 
         items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6],
         spells: [p.summoner1Id, p.summoner2Id],
 
-        // 🐉 4. OBJETIVOS
+        // Ã°Å¸Ââ€° 4. OBJETIVOS
         dmgObj: p.damageDealtToObjectives || 0,
         dmgTurrets: p.damageDealtToTurrets || 0,
         dragons: p.challenges?.dragonTakedowns || p.dragonKills || 0,
@@ -7095,13 +7104,13 @@ if (!p.win && durationMin >= 15) {
         winStats: cachedMatch.customWinStats || null,
         losStats: cachedMatch.customLosStats || null,
         goldTimeline: cachedMatch.customGoldTimeline || null,
-        eventsList: cachedMatch.customEventsList || null // 🟢 ¡ESTA LÍNEA FALTABA!
+        eventsList: cachedMatch.customEventsList || null // Ã°Å¸Å¸Â¢ Ã‚Â¡ESTA LÃƒÂNEA FALTABA!
     };
 
     return { total, notes, statsPayload };
     
   } catch (e) {
-    return { total: 0, notes: ["Error cálculo: " + e.message], statsPayload: {} };
+    return { total: 0, notes: ["Error cÃƒÂ¡lculo: " + e.message], statsPayload: {} };
   }
 }
 
@@ -7109,7 +7118,7 @@ if (!p.win && durationMin >= 15) {
 // computePointsDetailed
  
 /* =========================================================================
-   🏆 SISTEMA DE RANKING Y SALÓN DE LA FAMA V6.0 (Dashboard Profesional)
+   Ã°Å¸Ââ€  SISTEMA DE RANKING Y SALÃƒâ€œN DE LA FAMA V6.0 (Dashboard Profesional)
    ========================================================================= */
 function updateScores() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -7118,18 +7127,18 @@ function updateScores() {
   const playersSheet = ss.getSheetByName("PLAYERS");
 
   if (!rankingSheet || !matchesSheet || !playersSheet) {
-    console.log("Error: Falta alguna pestaña clave.");
+    console.log("Error: Falta alguna pestaÃƒÂ±a clave.");
     return;
   }
 
-  // 1. Limpiar la hoja por completo para que el script construya el diseño
+  // 1. Limpiar la hoja por completo para que el script construya el diseÃƒÂ±o
   rankingSheet.clear();
 
   // 2. Jugadores activos
   const playersData = playersSheet.getDataRange().getValues();
   const activePlayers = new Set();
   for (let i = 1; i < playersData.length; i++) {
-    if (String(playersData[i][4]).toLowerCase() === 'sí') {
+    if (String(playersData[i][4]).toLowerCase() === 'sÃƒÂ­') {
       activePlayers.add(String(playersData[i][0]).toLowerCase().trim());
     }
   }
@@ -7145,12 +7154,12 @@ function updateScores() {
   const idxKills = headers.findIndex(h => h === "k" || h === "kills");
   const idxDeaths = headers.findIndex(h => h === "d" || h === "deaths");
   const idxAssists = headers.findIndex(h => h === "a" || h === "assists");
-  const idxDamage = headers.findIndex(h => h === "damage" || h.includes("daño"));
-  const idxChamp = headers.findIndex(h => h === "champion" || h.includes("campeón") || h === "champ");
+  const idxDamage = headers.findIndex(h => h === "damage" || h.includes("daÃƒÂ±o"));
+  const idxChamp = headers.findIndex(h => h === "champion" || h.includes("campeÃƒÂ³n") || h === "champ");
 
   if (idxPlayer === -1 || idxPoints === -1) return;
 
-  // 4. Variables para las nuevas métricas
+  // 4. Variables para las nuevas mÃƒÂ©tricas
   const stats = {};
   const allMatchesList = []; // Para el Top 3 partidas
   let totalSeasonMatches = matchesData.length - 1;
@@ -7158,11 +7167,11 @@ function updateScores() {
   activePlayers.forEach(p => {
     stats[p] = { 
       name: "", points: 0, wins: 0, games: 0, kills: 0, deaths: 0, assists: 0, damage: 0,
-      matchHistory: [] // Para calcular las rachas cronológicas
+      matchHistory: [] // Para calcular las rachas cronolÃƒÂ³gicas
     };
   });
 
-  // Procesar partidas (Asumimos que de la fila 1 hacia abajo es orden cronológico)
+  // Procesar partidas (Asumimos que de la fila 1 hacia abajo es orden cronolÃƒÂ³gico)
   for (let i = 1; i < matchesData.length; i++) {
     const row = matchesData[i];
     const rawName = String(row[idxPlayer]).trim();
@@ -7184,10 +7193,10 @@ function updateScores() {
         }
       }
       
-      // Añadir al historial del jugador (para rachas)
+      // AÃƒÂ±adir al historial del jugador (para rachas)
       stats[pName].matchHistory.push(isWin);
 
-      // Añadir a la lista global de partidas (para el Top 3)
+      // AÃƒÂ±adir a la lista global de partidas (para el Top 3)
       const champ = idxChamp !== -1 ? String(row[idxChamp]) : "Unknown";
       allMatchesList.push({ name: rawName, points: pts, champ: champ });
 
@@ -7224,7 +7233,7 @@ function updateScores() {
   allMatchesList.sort((a, b) => b.points - a.points);
 
   // =========================================================================
-  // 🎨 CONSTRUCCIÓN VISUAL DEL DASHBOARD (EL "GLOW UP")
+  // Ã°Å¸Å½Â¨ CONSTRUCCIÃƒâ€œN VISUAL DEL DASHBOARD (EL "GLOW UP")
   // =========================================================================
   
   // Configurar anchos de columna para que quede bonito
@@ -7232,7 +7241,7 @@ function updateScores() {
   rankingSheet.setColumnWidth(2, 100); // Puntos
   rankingSheet.setColumnWidth(3, 160); // Tier
   rankingSheet.setColumnWidth(4, 50);  // Espacio
-  rankingSheet.setColumnWidth(5, 230); // Estadística
+  rankingSheet.setColumnWidth(5, 230); // EstadÃƒÂ­stica
   rankingSheet.setColumnWidth(6, 100); // Valor
   rankingSheet.setColumnWidth(7, 160); // Jugador
 
@@ -7248,15 +7257,15 @@ function updateScores() {
 
   const leaderboardData = [];
   playersList.forEach((p, index) => {
-    let tier = "Bronce 🥉";
-    if (index === 0) tier = "Challenger 👑";
-    else if (index <= 2) tier = "Grandmaster 💎";
-    else if (index <= 5) tier = "Master 🔮";
-    else if (p.points >= 150) tier = "Diamante 💠";
-    else if (p.points >= 80) tier = "Esmeralda ❇️";
-    else if (p.points >= 40) tier = "Platino 🛡️";
-    else if (p.points >= 10) tier = "Oro 🥇";
-    else if (p.points >= 0) tier = "Plata 🥈";
+    let tier = "Bronce Ã°Å¸Â¥â€°";
+    if (index === 0) tier = "Challenger Ã°Å¸â€˜â€˜";
+    else if (index <= 2) tier = "Grandmaster Ã°Å¸â€™Å½";
+    else if (index <= 5) tier = "Master Ã°Å¸â€Â®";
+    else if (p.points >= 150) tier = "Diamante Ã°Å¸â€™Â ";
+    else if (p.points >= 80) tier = "Esmeralda Ã¢Ââ€¡Ã¯Â¸Â";
+    else if (p.points >= 40) tier = "Platino Ã°Å¸â€ºÂ¡Ã¯Â¸Â";
+    else if (p.points >= 10) tier = "Oro Ã°Å¸Â¥â€¡";
+    else if (p.points >= 0) tier = "Plata Ã°Å¸Â¥Ë†";
 
     leaderboardData.push([p.name, p.points.toFixed(2), tier]);
   });
@@ -7272,7 +7281,7 @@ function updateScores() {
     if (leaderboardData.length >= 2) rankingSheet.getRange(3, 1, 2, 3).setBackground("#f8f9fa"); // Top 2 y 3
   }
 
-  // --- BLOQUE DERECHO: SALÓN DE LA FAMA ---
+  // --- BLOQUE DERECHO: SALÃƒâ€œN DE LA FAMA ---
   let topKills = { name: "-", val: 0 };
   let topDeaths = { name: "-", val: 0 };
   let topDamage = { name: "-", val: 0 };
@@ -7290,7 +7299,7 @@ function updateScores() {
     }
   });
 
-  // Función de ayuda para crear cabeceras de sección
+  // FunciÃƒÂ³n de ayuda para crear cabeceras de secciÃƒÂ³n
   const createSectionHeader = (row, text) => {
     const range = rankingSheet.getRange(row, 5, 1, 3);
     range.merge().setValue(text)
@@ -7298,30 +7307,30 @@ function updateScores() {
       .setHorizontalAlignment("center").setBorder(true, true, true, true, false, false, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
   };
 
-  // SECCIÓN 1: Superlativos Clásicos
+  // SECCIÃƒâ€œN 1: Superlativos ClÃƒÂ¡sicos
   let startRow = 1;
-  createSectionHeader(startRow, "🏆 SALÓN DE LA FAMA (Histórico)");
+  createSectionHeader(startRow, "Ã°Å¸Ââ€  SALÃƒâ€œN DE LA FAMA (HistÃƒÂ³rico)");
   
   const superData = [
-    ["⚔️ Asesino Implacable (Kills)", topKills.val, topKills.name],
-    ["💀 El Comedor de Suelo (Muertes)", topDeaths.val, topDeaths.name],
-    ["💥 Máquina de Asedio (Daño)", (topDamage.val / 1000).toFixed(1) + "k", topDamage.name],
-    ["🛡️ KDA Perfecto (Media)", topKDA.val.toFixed(2), topKDA.name],
-    ["🎮 Tryhard Sin Vida (Partidas)", topGames.val, topGames.name]
+    ["Ã¢Å¡â€Ã¯Â¸Â Asesino Implacable (Kills)", topKills.val, topKills.name],
+    ["Ã°Å¸â€™â‚¬ El Comedor de Suelo (Muertes)", topDeaths.val, topDeaths.name],
+    ["Ã°Å¸â€™Â¥ MÃƒÂ¡quina de Asedio (DaÃƒÂ±o)", (topDamage.val / 1000).toFixed(1) + "k", topDamage.name],
+    ["Ã°Å¸â€ºÂ¡Ã¯Â¸Â KDA Perfecto (Media)", topKDA.val.toFixed(2), topKDA.name],
+    ["Ã°Å¸Å½Â® Tryhard Sin Vida (Partidas)", topGames.val, topGames.name]
   ];
   
   let range = rankingSheet.getRange(startRow + 1, 5, superData.length, 3);
   range.setValues(superData).setHorizontalAlignment("center").setBorder(true, true, true, true, false, true, "silver", SpreadsheetApp.BorderStyle.SOLID);
-  rankingSheet.getRange(startRow + 1, 5, superData.length, 1).setHorizontalAlignment("left"); // Alineamos los nombres de métricas a la izquierda
+  rankingSheet.getRange(startRow + 1, 5, superData.length, 1).setHorizontalAlignment("left"); // Alineamos los nombres de mÃƒÂ©tricas a la izquierda
 
-  // SECCIÓN 2: Rachas y Temporada
+  // SECCIÃƒâ€œN 2: Rachas y Temporada
   startRow = startRow + superData.length + 2;
-  createSectionHeader(startRow, "🔥 RACHAS Y RÉCORDS GLOBALES");
+  createSectionHeader(startRow, "Ã°Å¸â€Â¥ RACHAS Y RÃƒâ€°CORDS GLOBALES");
 
   const recordsData = [
-    ["🔥 Mayor Racha de Victorias", longestWinStreak.val + " Victorias", longestWinStreak.name],
-    ["🌧️ Peor Racha de Derrotas", longestLossStreak.val + " Derrotas", longestLossStreak.name],
-    ["🌍 Partidas Totales Season 2", totalSeasonMatches + " Jugadas", "Todo el Servidor"]
+    ["Ã°Å¸â€Â¥ Mayor Racha de Victorias", longestWinStreak.val + " Victorias", longestWinStreak.name],
+    ["Ã°Å¸Å’Â§Ã¯Â¸Â Peor Racha de Derrotas", longestLossStreak.val + " Derrotas", longestLossStreak.name],
+    ["Ã°Å¸Å’Â Partidas Totales Season 2", totalSeasonMatches + " Jugadas", "Todo el Servidor"]
   ];
 
   range = rankingSheet.getRange(startRow + 1, 5, recordsData.length, 3);
@@ -7331,18 +7340,18 @@ function updateScores() {
   rankingSheet.getRange(startRow + 1, 6).setFontColor("#28a745").setFontWeight("bold");
   rankingSheet.getRange(startRow + 2, 6).setFontColor("#dc3545").setFontWeight("bold");
 
-  // SECCIÓN 3: Top Mejores Partidas Individuales
+  // SECCIÃƒâ€œN 3: Top Mejores Partidas Individuales
   startRow = startRow + recordsData.length + 2;
-  createSectionHeader(startRow, "⭐ TOP 3: CARRILES HISTÓRICOS");
+  createSectionHeader(startRow, "Ã¢Â­Â TOP 3: CARRILES HISTÃƒâ€œRICOS");
   
   // Cabecera secundaria del top 3
-  rankingSheet.getRange(startRow + 1, 5, 1, 3).setValues([["Jugador (Campeón)", "Puntos de Liga", "Posición"]])
+  rankingSheet.getRange(startRow + 1, 5, 1, 3).setValues([["Jugador (CampeÃƒÂ³n)", "Puntos de Liga", "PosiciÃƒÂ³n"]])
     .setBackground("#f1f3f4").setFontWeight("bold").setHorizontalAlignment("center");
 
   const topMatchesData = [];
   for (let i = 0; i < Math.min(3, allMatchesList.length); i++) {
     const m = allMatchesList[i];
-    const medal = i === 0 ? "🥇 1º" : i === 1 ? "🥈 2º" : "🥉 3º";
+    const medal = i === 0 ? "Ã°Å¸Â¥â€¡ 1Ã‚Âº" : i === 1 ? "Ã°Å¸Â¥Ë† 2Ã‚Âº" : "Ã°Å¸Â¥â€° 3Ã‚Âº";
     topMatchesData.push([`${m.name} (${m.champ})`, `+${m.points.toFixed(2)} pts`, medal]);
   }
 
@@ -7358,26 +7367,26 @@ function updateScores() {
 }
 
 function applyScoreColors() {
-  const ss = SpreadsheetApp.getActive();
-  const scores = ss.getSheetByName('SCORES');
-  if (!scores) return;
-  const rows = scores.getDataRange().getValues();
-  if (rows.length <= 1) return;
-  for (let i=1;i<rows.length;i++){
-    const tier = rows[i][2];
-    const color = tierColor(tier);
-    scores.getRange(i+1,1,1,4).setBackground(color);
-  }
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const scores = ss.getSheetByName('SCORES');
+Ã‚Â  if (!scores) return;
+Ã‚Â  const rows = scores.getDataRange().getValues();
+Ã‚Â  if (rows.length <= 1) return;
+Ã‚Â  for (let i=1;i<rows.length;i++){
+Ã‚Â  Ã‚Â  const tier = rows[i][2];
+Ã‚Â  Ã‚Â  const color = tierColor(tier);
+Ã‚Â  Ã‚Â  scores.getRange(i+1,1,1,4).setBackground(color);
+Ã‚Â  }
 }
 
 /* ==========================================================
-   🏆 ACTUALIZAR RANKING (VERSIÓN S2 - CON FILTRO DE SEASON)
+   Ã°Å¸Ââ€  ACTUALIZAR RANKING (VERSIÃƒâ€œN S2 - CON FILTRO DE SEASON)
    ========================================================== */
 function updateRanking() {
   const ss = SpreadsheetApp.getActive();
   
   // 1. Definimos las hojas con nombres CLAROS
-  // CORRECCIÓN: Usar el nombre 'matchesSheet' aquí
+  // CORRECCIÃƒâ€œN: Usar el nombre 'matchesSheet' aquÃƒÂ­
   const matchesSheet = ss.getSheetByName('MATCHES'); 
   const rankingSheet = ss.getSheetByName('RANKING');
   const configSheet = ss.getSheetByName('CONFIG');
@@ -7397,7 +7406,7 @@ function updateRanking() {
   }
 
   // 3. LEER DATOS
-  // AHORA SÍ USAMOS LA VARIABLE CORRECTA 'matchesSheet'
+  // AHORA SÃƒÂ USAMOS LA VARIABLE CORRECTA 'matchesSheet'
   const mData = matchesSheet.getDataRange().getValues(); 
   const seasonColIdx = mData[0].length - 1; 
 
@@ -7410,7 +7419,7 @@ function updateRanking() {
     const row = mData[i];
     const pName = row[2]; 
     const result = row[5]; 
-    const points = Number(row[12]); // Asegúrate que Puntos es Columna 12 (M)
+    const points = Number(row[12]); // AsegÃƒÂºrate que Puntos es Columna 12 (M)
     const matchSeason = String(row[seasonColIdx]); 
 
     // FILTRO
@@ -7444,7 +7453,7 @@ function updateRanking() {
   Object.keys(playerPoints).forEach(player => {
       let pts = playerPoints[player];
       let tier = 'IRON'; 
-      // (Tu lógica de tiers aquí, simplificada para el ejemplo)
+      // (Tu lÃƒÂ³gica de tiers aquÃƒÂ­, simplificada para el ejemplo)
       if (typeof tierForPoints === 'function') tier = tierForPoints(pts);
       else if (pts > 100) tier = 'GOLD'; // Fallback
       
@@ -7456,7 +7465,7 @@ function updateRanking() {
   // 6. ESCRIBIR
   rankingSheet.clear();
   rankingSheet.getRange('A1:C1').setValues([['Summoner', 'Points', 'Tier']]).setFontWeight('bold');
-  rankingSheet.getRange('F1:H1').setValues([['Estadísticas (' + currentSeason + ')', 'Valor', 'Jugador']]).setFontWeight('bold');
+  rankingSheet.getRange('F1:H1').setValues([['EstadÃƒÂ­sticas (' + currentSeason + ')', 'Valor', 'Jugador']]).setFontWeight('bold');
   
   if (rankArray.length > 0) {
     rankingSheet.getRange(2, 1, rankArray.length, 3).setValues(rankArray);
@@ -7475,96 +7484,96 @@ function updateRanking() {
 
 /* ----------------- DASHBOARD & CHARTS ----------------- */
 function createDashboard() {
-  const ss = SpreadsheetApp.getActive();
-  const dash = ss.getSheetByName('DASHBOARD');
-  const ranking = ss.getSheetByName('RANKING');
-  const matches = ss.getSheetByName('MATCHES');
-  const scores = ss.getSheetByName('SCORES');
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const dash = ss.getSheetByName('DASHBOARD');
+Ã‚Â  const ranking = ss.getSheetByName('RANKING');
+Ã‚Â  const matches = ss.getSheetByName('MATCHES');
+Ã‚Â  const scores = ss.getSheetByName('SCORES');
 
-  if (!dash || !ranking || !matches || !scores) { 
-    SpreadsheetApp.getUi().alert('Crea las hojas requeridas o ejecuta SetupInicial()'); 
-    return; 
-  }
+Ã‚Â  if (!dash || !ranking || !matches || !scores) {Ã‚Â 
+Ã‚Â  Ã‚Â  SpreadsheetApp.getUi().alert('Crea las hojas requeridas o ejecuta SetupInicial()');Ã‚Â 
+Ã‚Â  Ã‚Â  return;Ã‚Â 
+Ã‚Â  }
 
-  dash.clear();
-  dash.setColumnWidths(1,6,180);
-  dash.appendRow(['SoloQ Dashboard']);
-  dash.appendRow(['Top 5 — Ranking']);
+Ã‚Â  dash.clear();
+Ã‚Â  dash.setColumnWidths(1,6,180);
+Ã‚Â  dash.appendRow(['SoloQ Dashboard']);
+Ã‚Â  dash.appendRow(['Top 5 Ã¢â‚¬â€ Ranking']);
 
-  const rLastRow = Math.max(2, ranking.getLastRow());
-  const rdata = ranking.getRange(1, 1, rLastRow, 3).getValues(); 
-  
-  const topData = rdata.slice(1, 6); 
-  const topMapped = topData.map(row => [row[0], row[1], row[2]]); 
-  
-  if (topMapped.length > 0) {
-    dash.getRange(3,1,1,3).setValues([['Summoner','Points','Tier']]);
-    dash.getRange(4,1,topMapped.length,3).setValues(topMapped);
-  }
+Ã‚Â  const rLastRow = Math.max(2, ranking.getLastRow());
+Ã‚Â  const rdata = ranking.getRange(1, 1, rLastRow, 3).getValues();Ã‚Â 
+Ã‚Â Ã‚Â 
+Ã‚Â  const topData = rdata.slice(1, 6);Ã‚Â 
+Ã‚Â  const topMapped = topData.map(row => [row[0], row[1], row[2]]);Ã‚Â 
+Ã‚Â Ã‚Â 
+Ã‚Â  if (topMapped.length > 0) {
+Ã‚Â  Ã‚Â  dash.getRange(3,1,1,3).setValues([['Summoner','Points','Tier']]);
+Ã‚Â  Ã‚Â  dash.getRange(4,1,topMapped.length,3).setValues(topMapped);
+Ã‚Â  }
 
-  dash.appendRow(['']);
-  dash.appendRow(['Últimas partidas (global):']);
-  
-  const mdataAll = matches.getDataRange().getValues();
-  if (mdataAll.length > 1) {
-    const mdata = mdataAll.slice(1).reverse().slice(0,10);
-    if (mdata.length>0) {
-      dash.getRange(dash.getLastRow() + 1, 1, 1, 6).setValues([['Date','Player','MatchID','Champion','Points','Notes']]);
-      const rows = mdata.map(r => [r[1], r[2], r[0], r[3], r[12], r[13]]);
-      dash.getRange(dash.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
-    }
-  }
+Ã‚Â  dash.appendRow(['']);
+Ã‚Â  dash.appendRow(['ÃƒÅ¡ltimas partidas (global):']);
+Ã‚Â Ã‚Â 
+Ã‚Â  const mdataAll = matches.getDataRange().getValues();
+Ã‚Â  if (mdataAll.length > 1) {
+Ã‚Â  Ã‚Â  const mdata = mdataAll.slice(1).reverse().slice(0,10);
+Ã‚Â  Ã‚Â  if (mdata.length>0) {
+Ã‚Â  Ã‚Â  Ã‚Â  dash.getRange(dash.getLastRow() + 1, 1, 1, 6).setValues([['Date','Player','MatchID','Champion','Points','Notes']]);
+Ã‚Â  Ã‚Â  Ã‚Â  const rows = mdata.map(r => [r[1], r[2], r[0], r[3], r[12], r[13]]);
+Ã‚Â  Ã‚Â  Ã‚Â  dash.getRange(dash.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
+Ã‚Â  Ã‚Â  }
+Ã‚Â  }
 
-  // Leaderboard chart
-  const charts = dash.getCharts();
-  charts.forEach(c => dash.removeChart(c));
-  const sLastRow = Math.max(2, scores.getLastRow());
-  const sr = scores.getRange(1,1, sLastRow, 2); // summoner, points
-  try {
-    const chart = dash.newChart().asColumnChart().addRange(sr).setPosition(2,8,0,0).setOption('title','Leaderboard - Total Points').setOption('legend',{position:'none'}).build();
-    dash.insertChart(chart);
-  } catch(e){ /* ignore chart errors */ }
+Ã‚Â  // Leaderboard chart
+Ã‚Â  const charts = dash.getCharts();
+Ã‚Â  charts.forEach(c => dash.removeChart(c));
+Ã‚Â  const sLastRow = Math.max(2, scores.getLastRow());
+Ã‚Â  const sr = scores.getRange(1,1, sLastRow, 2); // summoner, points
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const chart = dash.newChart().asColumnChart().addRange(sr).setPosition(2,8,0,0).setOption('title','Leaderboard - Total Points').setOption('legend',{position:'none'}).build();
+Ã‚Â  Ã‚Â  dash.insertChart(chart);
+Ã‚Â  } catch(e){ /* ignore chart errors */ }
 
-  SpreadsheetApp.getUi().alert('Dashboard creado. Revisa DASHBOARD.');
+Ã‚Â  SpreadsheetApp.getUi().alert('Dashboard creado. Revisa DASHBOARD.');
 }
 
 /* ----------------- FORMATTING / MENU / TRIGGERS ----------------- */
 function formatSheets() {
-  const ss = SpreadsheetApp.getActive();
-  
-  const sheetsToFormat = [
-    { name: 'PLAYERS', range: 'A1:F1', widths: [{col: 1, count: 6, width: 140}] },
-    { name: 'MATCHES', range: 'A1:N1', widths: [{col: 1, count: 14, width: 110}] },
-    { name: 'SCORES', range: 'A1:D1', widths: [{col: 1, count: 4, width: 160}] },
-    { name: 'RANKING', range: 'A1:H1', widths: [{col: 1, count: 3, width: 160}, {col: 6, count: 3, width: 160}] },
-    { name: 'CONFIG', range: 'A1:C1', widths: [{col: 1, count: 3, width: 220}] },
-    { name: 'WEEKLY', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
-    { name: 'MONTHLY', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
-    { name: 'MANUAL_POINTS', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
-    { name: 'CHAMPION_DATA', range: 'A1:C1', widths: [{col: 1, count: 3, width: 150}] },
-    { name: 'KNOWN_CHAMPS', range: 'A1:C1', widths: [{col: 1, count: 3, width: 200}] },
-    { name: 'LOGS', range: 'A1:B1', widths: [{col: 1, count: 2, width: 200}] }
-  ];
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â Ã‚Â 
+Ã‚Â  const sheetsToFormat = [
+Ã‚Â  Ã‚Â  { name: 'PLAYERS', range: 'A1:F1', widths: [{col: 1, count: 6, width: 140}] },
+Ã‚Â  Ã‚Â  { name: 'MATCHES', range: 'A1:N1', widths: [{col: 1, count: 14, width: 110}] },
+Ã‚Â  Ã‚Â  { name: 'SCORES', range: 'A1:D1', widths: [{col: 1, count: 4, width: 160}] },
+Ã‚Â  Ã‚Â  { name: 'RANKING', range: 'A1:H1', widths: [{col: 1, count: 3, width: 160}, {col: 6, count: 3, width: 160}] },
+Ã‚Â  Ã‚Â  { name: 'CONFIG', range: 'A1:C1', widths: [{col: 1, count: 3, width: 220}] },
+Ã‚Â  Ã‚Â  { name: 'WEEKLY', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
+Ã‚Â  Ã‚Â  { name: 'MONTHLY', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
+Ã‚Â  Ã‚Â  { name: 'MANUAL_POINTS', range: 'A1:D1', widths: [{col: 1, count: 4, width: 150}] },
+Ã‚Â  Ã‚Â  { name: 'CHAMPION_DATA', range: 'A1:C1', widths: [{col: 1, count: 3, width: 150}] },
+Ã‚Â  Ã‚Â  { name: 'KNOWN_CHAMPS', range: 'A1:C1', widths: [{col: 1, count: 3, width: 200}] },
+Ã‚Â  Ã‚Â  { name: 'LOGS', range: 'A1:B1', widths: [{col: 1, count: 2, width: 200}] }
+Ã‚Â  ];
 
-  sheetsToFormat.forEach(s => {
-    const sheet = ss.getSheetByName(s.name);
-    if (sheet) {
-      sheet.setFrozenRows(1);
-      if (s.range) {
-        sheet.getRange(s.range).setFontWeight('bold');
-      }
-      s.widths.forEach(w => {
-        sheet.setColumnWidths(w.col, w.count, w.width);
-      });
-    }
-  });
+Ã‚Â  sheetsToFormat.forEach(s => {
+Ã‚Â  Ã‚Â  const sheet = ss.getSheetByName(s.name);
+Ã‚Â  Ã‚Â  if (sheet) {
+Ã‚Â  Ã‚Â  Ã‚Â  sheet.setFrozenRows(1);
+Ã‚Â  Ã‚Â  Ã‚Â  if (s.range) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  sheet.getRange(s.range).setFontWeight('bold');
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  Ã‚Â  s.widths.forEach(w => {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  sheet.setColumnWidths(w.col, w.count, w.width);
+Ã‚Â  Ã‚Â  Ã‚Â  });
+Ã‚Â  Ã‚Â  }
+Ã‚Â  });
 }
 
 function createHourlyTrigger() {
-  deleteTriggers(); // Borra todos los triggers para evitar duplicados
-  ScriptApp.newTrigger('syncMatches').timeBased().everyHours(1).create();
-  logToSheet('Trigger horario (syncMatches) creado (cada 1 hora).');
-  SpreadsheetApp.getUi().alert('Trigger de syncMatches (1h) creado.');
+Ã‚Â  deleteTriggers(); // Borra todos los triggers para evitar duplicados
+Ã‚Â  ScriptApp.newTrigger('syncMatches').timeBased().everyHours(1).create();
+Ã‚Â  logToSheet('Trigger horario (syncMatches) creado (cada 1 hora).');
+Ã‚Â  SpreadsheetApp.getUi().alert('Trigger de syncMatches (1h) creado.');
 }
 
 function createHalfHourTrigger() {
@@ -7577,11 +7586,11 @@ function createHalfHourTrigger() {
       .everyMinutes(30)
       .create();
       
-  logToSheet('Trigger de sincronización actualizado (cada 30 min).');
+  logToSheet('Trigger de sincronizaciÃƒÂ³n actualizado (cada 30 min).');
   
-  // 3. Mostrar alerta de éxito (Protegido con try-catch por seguridad)
+  // 3. Mostrar alerta de ÃƒÂ©xito (Protegido con try-catch por seguridad)
   try {
-    SpreadsheetApp.getUi().alert('✅ Sistema actualizado: Las partidas se buscarán cada 30 minutos.');
+    SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Sistema actualizado: Las partidas se buscarÃƒÂ¡n cada 30 minutos.');
   } catch(e) {
     console.log("Trigger creado, pero no se pudo mostrar la alerta visual.");
   }
@@ -7597,11 +7606,11 @@ function createQuarterHourTrigger() {
       .everyMinutes(15)
       .create();
       
-  logToSheet('Trigger de sincronización actualizado (cada 15 min).');
+  logToSheet('Trigger de sincronizaciÃƒÂ³n actualizado (cada 15 min).');
   
-  // 3. Mostrar alerta de éxito (Protegido con try-catch por seguridad)
+  // 3. Mostrar alerta de ÃƒÂ©xito (Protegido con try-catch por seguridad)
   try {
-    SpreadsheetApp.getUi().alert('✅ Sistema actualizado: Las partidas se buscarán cada 30 minutos.');
+    SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Sistema actualizado: Las partidas se buscarÃƒÂ¡n cada 30 minutos.');
   } catch(e) {
     console.log("Trigger creado, pero no se pudo mostrar la alerta visual.");
   }
@@ -7617,11 +7626,11 @@ function createQuarterHourTriggerALL() {
       .everyMinutes(15)
       .create();
       
-  logToSheet('Trigger de sincronización actualizado (cada 15 min).');
+  logToSheet('Trigger de sincronizaciÃƒÂ³n actualizado (cada 15 min).');
   
-  // 3. Mostrar alerta de éxito (Protegido con try-catch por seguridad)
+  // 3. Mostrar alerta de ÃƒÂ©xito (Protegido con try-catch por seguridad)
   try {
-    SpreadsheetApp.getUi().alert('✅ Sistema actualizado: Las partidas se buscarán cada 30 minutos.');
+    SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Sistema actualizado: Las partidas se buscarÃƒÂ¡n cada 30 minutos.');
   } catch(e) {
     console.log("Trigger creado, pero no se pudo mostrar la alerta visual.");
   }
@@ -7634,49 +7643,49 @@ function deleteTriggers() {
 }
 
 function applyTiltPenalties() {
-  const ss = SpreadsheetApp.getActive();
-  const cfg = readConfigMap(); 
-  const threshold = cfg.tilt_loss_threshold; 
-  const penalty = cfg.tilt_penalty; 
-  const matches = ss.getSheetByName('MATCHES');
-  if (!matches) { SpreadsheetApp.getUi().alert('MATCHES no existe'); return; }
-  const data = matches.getDataRange().getValues();
-  const byPlayer = {};
-  for (let i=1;i<data.length;i++){
-    const r = data[i];
-    const summ = r[2];
-    const res = r[5];
-    if (!byPlayer[summ]) byPlayer[summ] = [];
-    byPlayer[summ].push({index:i+1, result:res});
-  }
-  for (let p in byPlayer) {
-    const arr = byPlayer[p];
-    let losses = 0;
-    for (let j=arr.length-1; j>=0; j--) {
-      if (arr[j].result === 'Loss') {
-        losses++;
-      } else {
-        break; 
-      }
-    }
-    
-    if (losses >= threshold) {
-      const lastLossRowIndex = arr[arr.length-1].index;
-      const notesCell = matches.getRange(lastLossRowIndex, 14); // Col N (Notas)
-      const currentNotes = notesCell.getValue();
-      
-      if (!currentNotes.includes('Tilt penalty')) {
-        // v10.0: Añadir a MANUAL_POINTS en lugar de MATCHES
-        const manualSheet = ss.getSheetByName('MANUAL_POINTS');
-        manualSheet.appendRow([new Date(), p, penalty, `Tilt penalty for ${losses} losses`]);
-        
-        notesCell.setValue(currentNotes + '; Tilt penalty applied');
-        logToSheet(`Penalización por Tilt aplicada a ${p} por ${losses} derrotas.`);
-      }
-    }
-  }
-  updateScores(); 
-  SpreadsheetApp.getUi().alert('Penalizaciones aplicadas (si las hubo).');
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const cfg = readConfigMap();Ã‚Â 
+Ã‚Â  const threshold = cfg.tilt_loss_threshold;Ã‚Â 
+Ã‚Â  const penalty = cfg.tilt_penalty;Ã‚Â 
+Ã‚Â  const matches = ss.getSheetByName('MATCHES');
+Ã‚Â  if (!matches) { SpreadsheetApp.getUi().alert('MATCHES no existe'); return; }
+Ã‚Â  const data = matches.getDataRange().getValues();
+Ã‚Â  const byPlayer = {};
+Ã‚Â  for (let i=1;i<data.length;i++){
+Ã‚Â  Ã‚Â  const r = data[i];
+Ã‚Â  Ã‚Â  const summ = r[2];
+Ã‚Â  Ã‚Â  const res = r[5];
+Ã‚Â  Ã‚Â  if (!byPlayer[summ]) byPlayer[summ] = [];
+Ã‚Â  Ã‚Â  byPlayer[summ].push({index:i+1, result:res});
+Ã‚Â  }
+Ã‚Â  for (let p in byPlayer) {
+Ã‚Â  Ã‚Â  const arr = byPlayer[p];
+Ã‚Â  Ã‚Â  let losses = 0;
+Ã‚Â  Ã‚Â  for (let j=arr.length-1; j>=0; j--) {
+Ã‚Â  Ã‚Â  Ã‚Â  if (arr[j].result === 'Loss') {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  losses++;
+Ã‚Â  Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  break;Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  if (losses >= threshold) {
+Ã‚Â  Ã‚Â  Ã‚Â  const lastLossRowIndex = arr[arr.length-1].index;
+Ã‚Â  Ã‚Â  Ã‚Â  const notesCell = matches.getRange(lastLossRowIndex, 14); // Col N (Notas)
+Ã‚Â  Ã‚Â  Ã‚Â  const currentNotes = notesCell.getValue();
+Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  if (!currentNotes.includes('Tilt penalty')) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  // v10.0: AÃƒÂ±adir a MANUAL_POINTS en lugar de MATCHES
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const manualSheet = ss.getSheetByName('MANUAL_POINTS');
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  manualSheet.appendRow([new Date(), p, penalty, `Tilt penalty for ${losses} losses`]);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  notesCell.setValue(currentNotes + '; Tilt penalty applied');
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`PenalizaciÃƒÂ³n por Tilt aplicada a ${p} por ${losses} derrotas.`);
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  }
+Ã‚Â  updateScores();Ã‚Â 
+Ã‚Â  SpreadsheetApp.getUi().alert('Penalizaciones aplicadas (si las hubo).');
 }
 
 
@@ -7684,90 +7693,90 @@ function applyTiltPenalties() {
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   
-  // 1. CREAR EL MENÚ PRINCIPAL
+  // 1. CREAR EL MENÃƒÅ¡ PRINCIPAL
   const menuPrincipal = ui.createMenu('SoloQ Challenge');
 
-  // 2. SUBMENÚ HERRAMIENTAS (Web Apps)
-  const toolsMenu = ui.createMenu('📊 Dashboards y Gráficos');
+  // 2. SUBMENÃƒÅ¡ HERRAMIENTAS (Web Apps)
+  const toolsMenu = ui.createMenu('Ã°Å¸â€œÅ  Dashboards y GrÃƒÂ¡ficos');
   
-  // -- Lo básico --
-  toolsMenu.addItem('🏠 Dashboard Global', 'showGlobalDashboard'); 
-  toolsMenu.addItem('🛋️ Salón de la fama', 'showDashboardV12'); 
-  toolsMenu.addItem('🏆 Ranking Épico', 'showEpicRanking');
+  // -- Lo bÃƒÂ¡sico --
+  toolsMenu.addItem('Ã°Å¸ÂÂ  Dashboard Global', 'showGlobalDashboard'); 
+  toolsMenu.addItem('Ã°Å¸â€ºâ€¹Ã¯Â¸Â SalÃƒÂ³n de la fama', 'showDashboardV12'); 
+  toolsMenu.addItem('Ã°Å¸Ââ€  Ranking Ãƒâ€°pico', 'showEpicRanking');
 
   toolsMenu.addSeparator();
 
-  // -- Analíticas Específicas --
-  toolsMenu.addItem('🌍 Centro de Analíticas', 'showAnalyticsDashboard');
-  toolsMenu.addItem('📜 Historial Completo', 'showGlobalHistory'); 
-  toolsMenu.addItem('🎨 Menú Gráfico', 'showGraphicsMenu'); 
+  // -- AnalÃƒÂ­ticas EspecÃƒÂ­ficas --
+  toolsMenu.addItem('Ã°Å¸Å’Â Centro de AnalÃƒÂ­ticas', 'showAnalyticsDashboard');
+  toolsMenu.addItem('Ã°Å¸â€œÅ“ Historial Completo', 'showGlobalHistory'); 
+  toolsMenu.addItem('Ã°Å¸Å½Â¨ MenÃƒÂº GrÃƒÂ¡fico', 'showGraphicsMenu'); 
   
   toolsMenu.addSeparator();
   
-  // -- Gráficos Específicos --
-  toolsMenu.addItem('💞 Analizador de Sinergias (Dúos)', 'showSynergyDashboard');
-  toolsMenu.addItem('🧠 Psicología & Tilt (Cronotipos)', 'showBehaviorDashboard');
+  // -- GrÃƒÂ¡ficos EspecÃƒÂ­ficos --
+  toolsMenu.addItem('Ã°Å¸â€™Å¾ Analizador de Sinergias (DÃƒÂºos)', 'showSynergyDashboard');
+  toolsMenu.addItem('Ã°Å¸Â§Â  PsicologÃƒÂ­a & Tilt (Cronotipos)', 'showBehaviorDashboard');
   toolsMenu.addSeparator();
   
-  // -- Herramientas de Análisis --
-  toolsMenu.addItem('🔎 Inspector de Partidas (Clásico)', 'showMatchInspector');
+  // -- Herramientas de AnÃƒÂ¡lisis --
+  toolsMenu.addItem('Ã°Å¸â€Å½ Inspector de Partidas (ClÃƒÂ¡sico)', 'showMatchInspector');
 
-  // 3. SUBMENÚ ADMIN (Mantenimiento Técnico)
-  const adminMenu = ui.createMenu('⚙️ Admin y Datos');
-  adminMenu.addItem('🔄 Actualizar Todo (Sync)', 'syncMatches');
-  adminMenu.addItem('🛠️ Setup Inicial / Update', 'SetupInicial');
+  // 3. SUBMENÃƒÅ¡ ADMIN (Mantenimiento TÃƒÂ©cnico)
+  const adminMenu = ui.createMenu('Ã¢Å¡â„¢Ã¯Â¸Â Admin y Datos');
+  adminMenu.addItem('Ã°Å¸â€â€ž Actualizar Todo (Sync)', 'syncMatches');
+  adminMenu.addItem('Ã°Å¸â€ºÂ Ã¯Â¸Â Setup Inicial / Update', 'SetupInicial');
   adminMenu.addSeparator();
-  adminMenu.addItem('💰 Sincronizar Jugadores Bolsa', 'refreshMarketPlayers');
-  adminMenu.addItem('👾 Configurar Vida Boss', 'adminSetBossLife');
-  adminMenu.addItem('💼 Añadir Inversor (Broker)', 'addPureInvestor');
+  adminMenu.addItem('Ã°Å¸â€™Â° Sincronizar Jugadores Bolsa', 'refreshMarketPlayers');
+  adminMenu.addItem('Ã°Å¸â€˜Â¾ Configurar Vida Boss', 'adminSetBossLife');
+  adminMenu.addItem('Ã°Å¸â€™Â¼ AÃƒÂ±adir Inversor (Broker)', 'addPureInvestor');
   adminMenu.addSeparator();
 
-  // 4. SUBMENÚ EVENTOS (¡AQUÍ ESTÁ LO NUEVO!)
-  const eventosMenu = ui.createMenu('⚡ GESTIÓN DE EVENTOS');
+  // 4. SUBMENÃƒÅ¡ EVENTOS (Ã‚Â¡AQUÃƒÂ ESTÃƒÂ LO NUEVO!)
+  const eventosMenu = ui.createMenu('Ã¢Å¡Â¡ GESTIÃƒâ€œN DE EVENTOS');
   
   // -- TORNEO 5vs5 (NUEVO) --
-  eventosMenu.addItem('🟢 INICIAR Torneo (Draft)', 'startTeamBattleEvent');
-  eventosMenu.addItem('🔒 BLOQUEAR Roles (Guerra)', 'lockTeamBattlePhase');
-  eventosMenu.addItem('🏆 RESOLVER Ronda (Domingo)', 'resolveTeamBattleRound');
-  eventosMenu.addItem('🔴 APAGAR Torneo', 'stopTeamBattleEvent');
+  eventosMenu.addItem('Ã°Å¸Å¸Â¢ INICIAR Torneo (Draft)', 'startTeamBattleEvent');
+  eventosMenu.addItem('Ã°Å¸â€â€™ BLOQUEAR Roles (Guerra)', 'lockTeamBattlePhase');
+  eventosMenu.addItem('Ã°Å¸Ââ€  RESOLVER Ronda (Domingo)', 'resolveTeamBattleRound');
+  eventosMenu.addItem('Ã°Å¸â€Â´ APAGAR Torneo', 'stopTeamBattleEvent');
   eventosMenu.addSeparator();
 
   // -- RIVALES --
-  eventosMenu.addItem('⚔️ Generar Rivales (Lunes)', 'generarRivales');
-  eventosMenu.addItem('🏆 Resolver Rivales (Domingo)', 'resolverRivales');
+  eventosMenu.addItem('Ã¢Å¡â€Ã¯Â¸Â Generar Rivales (Lunes)', 'generarRivales');
+  eventosMenu.addItem('Ã°Å¸Ââ€  Resolver Rivales (Domingo)', 'resolverRivales');
   eventosMenu.addSeparator();
 
   // -- FACCIONES --
-  eventosMenu.addItem('⚔️ INICIAR Guerra Facciones', 'startFactionWar');
-  eventosMenu.addItem('🗳️ Abrir Urna de Votación', 'abrirUrnaVotacion'); 
-  eventosMenu.addItem('🏁 FINALIZAR Guerra Facciones', 'endFactionWar');
+  eventosMenu.addItem('Ã¢Å¡â€Ã¯Â¸Â INICIAR Guerra Facciones', 'startFactionWar');
+  eventosMenu.addItem('Ã°Å¸â€”Â³Ã¯Â¸Â Abrir Urna de VotaciÃƒÂ³n', 'abrirUrnaVotacion'); 
+  eventosMenu.addItem('Ã°Å¸ÂÂ FINALIZAR Guerra Facciones', 'endFactionWar');
   eventosMenu.addSeparator();
 
   // -- PATATA CALIENTE --
-  eventosMenu.addItem('💣 Lanzar Patata Caliente', 'startHotPotato');
-  eventosMenu.addItem('🧯 DETENER Patata Caliente', 'stopHotPotato');
+  eventosMenu.addItem('Ã°Å¸â€™Â£ Lanzar Patata Caliente', 'startHotPotato');
+  eventosMenu.addItem('Ã°Å¸Â§Â¯ DETENER Patata Caliente', 'stopHotPotato');
   eventosMenu.addSeparator();
 
   // -- LA PURGA --
-  eventosMenu.addItem('🟢 ACTIVAR La Purga', 'startPurgeEvent');
-  eventosMenu.addItem('🔴 DETENER La Purga', 'stopPurgeEvent');
-  eventosMenu.addItem('⚡ Forzar Purga de Hoy (Test)', 'runThePurge');
+  eventosMenu.addItem('Ã°Å¸Å¸Â¢ ACTIVAR La Purga', 'startPurgeEvent');
+  eventosMenu.addItem('Ã°Å¸â€Â´ DETENER La Purga', 'stopPurgeEvent');
+  eventosMenu.addItem('Ã¢Å¡Â¡ Forzar Purga de Hoy (Test)', 'runThePurge');
   eventosMenu.addSeparator();
   
   // -- LA HORDA --
-  eventosMenu.addItem('🟢 INICIAR Horda del Vacío', 'startVoidHorde');
-  eventosMenu.addItem('🔴 FINALIZAR Horda (Check)', 'endVoidHorde');
+  eventosMenu.addItem('Ã°Å¸Å¸Â¢ INICIAR Horda del VacÃƒÂ­o', 'startVoidHorde');
+  eventosMenu.addItem('Ã°Å¸â€Â´ FINALIZAR Horda (Check)', 'endVoidHorde');
   eventosMenu.addSeparator();
 
-  // -- RAID BOSS (DRAGÓN) --
-  eventosMenu.addItem('🐲 Configurar Vida Boss', 'configureBossCustom'); 
-  eventosMenu.addItem('💀 Eliminar/Quitar Boss', 'removeBoss');         
+  // -- RAID BOSS (DRAGÃƒâ€œN) --
+  eventosMenu.addItem('Ã°Å¸ÂÂ² Configurar Vida Boss', 'configureBossCustom'); 
+  eventosMenu.addItem('Ã°Å¸â€™â‚¬ Eliminar/Quitar Boss', 'removeBoss');         
   eventosMenu.addSeparator();
   
   // -- MERCADO --
-  eventosMenu.addItem('🌍 Evento Aleatorio (Banca Rota)', 'triggerEventoMercado');
+  eventosMenu.addItem('Ã°Å¸Å’Â Evento Aleatorio (Banca Rota)', 'triggerEventoMercado');
 
-  // 5. CONSTRUIR EL MENÚ
+  // 5. CONSTRUIR EL MENÃƒÅ¡
   menuPrincipal.addSubMenu(toolsMenu);
   menuPrincipal.addSubMenu(eventosMenu);
   menuPrincipal.addSubMenu(adminMenu);
@@ -7777,11 +7786,11 @@ function onOpen() {
 
 /* ----------------- Utilities ----------------- */
 function getWeekNumber(d) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-  return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+Ã‚Â  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+Ã‚Â  const dayNum = date.getUTCDay() || 7;
+Ã‚Â  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+Ã‚Â  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+Ã‚Â  return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
 }
 
 
@@ -7798,7 +7807,7 @@ function createMaintenanceTriggers() {
   ScriptApp.newTrigger('generateWeeklyReport')
     .timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(2).create();
 
-  // 2. Reporte Mensual (Día 1 del mes)
+  // 2. Reporte Mensual (DÃƒÂ­a 1 del mes)
   ScriptApp.newTrigger('generateMonthlyReport')
     .timeBased().onMonthDay(1).atHour(3).create();
 
@@ -7810,241 +7819,241 @@ function createMaintenanceTriggers() {
   ScriptApp.newTrigger('checkBossWeeklyReset')
     .timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(23).create();
 
-  // 🚨 5. RESET DE JUGADORES (LUNES 00:00 AM) - ¡ESTO FALTABA!
+  // Ã°Å¸Å¡Â¨ 5. RESET DE JUGADORES (LUNES 00:00 AM) - Ã‚Â¡ESTO FALTABA!
   ScriptApp.newTrigger('weeklyResetPlayers')
     .timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(0).create();
 
   logToSheet('Todos los triggers de mantenimiento (incluido Reset Semanal) creados.');
-  SpreadsheetApp.getUi().alert('✅ Triggers Configurados. El Reset Semanal ocurrirá los lunes a las 00:00.');
+  SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Triggers Configurados. El Reset Semanal ocurrirÃƒÂ¡ los lunes a las 00:00.');
 }
 
 
 function generateWeeklyReport() {
-  try {
-    const ss = SpreadsheetApp.getActive();
-    const matchesSheet = ss.getSheetByName("MATCHES");
-    const weeklySheet = ss.getSheetByName("WEEKLY");
-    
-    const matchesData = matchesSheet.getDataRange().getValues();
-    
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
-    const playerPoints = {};
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const matchesSheet = ss.getSheetByName("MATCHES");
+Ã‚Â  Ã‚Â  const weeklySheet = ss.getSheetByName("WEEKLY");
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const matchesData = matchesSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const now = new Date();
+Ã‚Â  Ã‚Â  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const playerPoints = {};
 
-    for (let i = 1; i < matchesData.length; i++) {
-      const matchDate = new Date(matchesData[i][1]);
-      
-      if (matchDate >= oneWeekAgo) {
-        const summ = matchesData[i][2];
-        const pts = Number(matchesData[i][12] || 0);
+Ã‚Â  Ã‚Â  for (let i = 1; i < matchesData.length; i++) {
+Ã‚Â  Ã‚Â  Ã‚Â  const matchDate = new Date(matchesData[i][1]);
+Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  if (matchDate >= oneWeekAgo) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const summ = matchesData[i][2];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const pts = Number(matchesData[i][12] || 0);
 
-        if (summ === 'PENALTY' || !isFinite(pts) || Math.abs(pts) > 10000) continue;
-        
-        if (!playerPoints[summ]) playerPoints[summ] = 0;
-        playerPoints[summ] += pts;
-      }
-    }
-    
-    // v10.0: Incluir puntos manuales en el reporte semanal
-    const manualSheet = ss.getSheetByName("MANUAL_POINTS");
-    const pdata = manualSheet.getDataRange().getValues();
-    for (let i=1; i<pdata.length; i++){
-      const date = new Date(pdata[i][0]);
-      if (date >= oneWeekAgo) {
-        const summ = pdata[i][1];
-        const pts = Number(pdata[i][2] || 0);
-        if (summ && isFinite(pts)) {
-          if (!playerPoints[summ]) playerPoints[summ] = 0;
-          playerPoints[summ] += pts;
-        }
-      }
-    }
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (summ === 'PENALTY' || !isFinite(pts) || Math.abs(pts) > 10000) continue;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (!playerPoints[summ]) playerPoints[summ] = 0;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  playerPoints[summ] += pts;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  // v10.0: Incluir puntos manuales en el reporte semanal
+Ã‚Â  Ã‚Â  const manualSheet = ss.getSheetByName("MANUAL_POINTS");
+Ã‚Â  Ã‚Â  const pdata = manualSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â  for (let i=1; i<pdata.length; i++){
+Ã‚Â  Ã‚Â  Ã‚Â  const date = new Date(pdata[i][0]);
+Ã‚Â  Ã‚Â  Ã‚Â  if (date >= oneWeekAgo) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const summ = pdata[i][1];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const pts = Number(pdata[i][2] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (summ && isFinite(pts)) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (!playerPoints[summ]) playerPoints[summ] = 0;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  playerPoints[summ] += pts;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
 
-    
-    let bestPlayer = 'N/A';
-    let maxPoints = -Infinity;
-    
-    for (const player in playerPoints) {
-      if (playerPoints[player] > maxPoints) {
-        maxPoints = playerPoints[player];
-        bestPlayer = player;
-      }
-    }
-    
-    if (bestPlayer !== 'N/A') {
-      const weekLabel = `${now.getFullYear()}-W${getWeekNumber(now)}`;
-      weeklySheet.appendRow([now, `Jugador de la Semana (${weekLabel})`, bestPlayer, maxPoints.toFixed(2)]);
-      logToSheet(`Reporte Semanal: ${bestPlayer} ganó ${maxPoints} puntos.`);
-    } else {
-      logToSheet('Reporte Semanal: No se encontraron partidas esta semana.');
-    }
-  } catch (e) {
-    logToSheet('Error en generateWeeklyReport: ' + e.message);
-  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  let bestPlayer = 'N/A';
+Ã‚Â  Ã‚Â  let maxPoints = -Infinity;
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  for (const player in playerPoints) {
+Ã‚Â  Ã‚Â  Ã‚Â  if (playerPoints[player] > maxPoints) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  maxPoints = playerPoints[player];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  bestPlayer = player;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  if (bestPlayer !== 'N/A') {
+Ã‚Â  Ã‚Â  Ã‚Â  const weekLabel = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+Ã‚Â  Ã‚Â  Ã‚Â  weeklySheet.appendRow([now, `Jugador de la Semana (${weekLabel})`, bestPlayer, maxPoints.toFixed(2)]);
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Reporte Semanal: ${bestPlayer} ganÃƒÂ³ ${maxPoints} puntos.`);
+Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet('Reporte Semanal: No se encontraron partidas esta semana.');
+Ã‚Â  Ã‚Â  }
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet('Error en generateWeeklyReport: ' + e.message);
+Ã‚Â  }
 }
 
 function generateMonthlyReport() {
-    try {
-    const ss = SpreadsheetApp.getActive();
-    const matchesSheet = ss.getSheetByName("MATCHES");
-    const monthlySheet = ss.getSheetByName("MONTHLY");
-    
-    const matchesData = matchesSheet.getDataRange().getValues();
-    
-    const now = new Date();
-    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-    
-    const playerPoints = {};
+Ã‚Â  Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const matchesSheet = ss.getSheetByName("MATCHES");
+Ã‚Â  Ã‚Â  const monthlySheet = ss.getSheetByName("MONTHLY");
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const matchesData = matchesSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const now = new Date();
+Ã‚Â  Ã‚Â  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const playerPoints = {};
 
-    for (let i = 1; i < matchesData.length; i++) {
-      const matchDate = new Date(matchesData[i][1]);
-      
-      if (matchDate >= oneMonthAgo) {
-        const summ = matchesData[i][2];
-        const pts = Number(matchesData[i][12] || 0);
+Ã‚Â  Ã‚Â  for (let i = 1; i < matchesData.length; i++) {
+Ã‚Â  Ã‚Â  Ã‚Â  const matchDate = new Date(matchesData[i][1]);
+Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  if (matchDate >= oneMonthAgo) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const summ = matchesData[i][2];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const pts = Number(matchesData[i][12] || 0);
 
-        if (summ === 'PENALTY' || !isFinite(pts) || Math.abs(pts) > 10000) continue;
-        
-        if (!playerPoints[summ]) playerPoints[summ] = 0;
-        playerPoints[summ] += pts;
-      }
-    }
-    
-    // v10.0: Incluir puntos manuales en el reporte mensual
-    const manualSheet = ss.getSheetByName("MANUAL_POINTS");
-    const pdata = manualSheet.getDataRange().getValues();
-    for (let i=1; i<pdata.length; i++){
-      const date = new Date(pdata[i][0]);
-      if (date >= oneMonthAgo) {
-        const summ = pdata[i][1];
-        const pts = Number(pdata[i][2] || 0);
-        if (summ && isFinite(pts)) {
-          if (!playerPoints[summ]) playerPoints[summ] = 0;
-          playerPoints[summ] += pts;
-        }
-      }
-    }
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (summ === 'PENALTY' || !isFinite(pts) || Math.abs(pts) > 10000) continue;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (!playerPoints[summ]) playerPoints[summ] = 0;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  playerPoints[summ] += pts;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  // v10.0: Incluir puntos manuales en el reporte mensual
+Ã‚Â  Ã‚Â  const manualSheet = ss.getSheetByName("MANUAL_POINTS");
+Ã‚Â  Ã‚Â  const pdata = manualSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â  for (let i=1; i<pdata.length; i++){
+Ã‚Â  Ã‚Â  Ã‚Â  const date = new Date(pdata[i][0]);
+Ã‚Â  Ã‚Â  Ã‚Â  if (date >= oneMonthAgo) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const summ = pdata[i][1];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const pts = Number(pdata[i][2] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (summ && isFinite(pts)) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (!playerPoints[summ]) playerPoints[summ] = 0;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  playerPoints[summ] += pts;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
 
-    let bestPlayer = 'N/A';
-    let maxPoints = -Infinity;
-    
-    for (const player in playerPoints) {
-      if (playerPoints[player] > maxPoints) {
-        maxPoints = playerPoints[player];
-        bestPlayer = player;
-      }
-    }
-    
-    if (bestPlayer !== 'N/A') {
-      const monthLabel = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-      monthlySheet.appendRow([now, `Jugador del Mes (${monthLabel})`, bestPlayer, maxPoints.toFixed(2)]);
-      logToSheet(`Reporte Mensual: ${bestPlayer} ganó ${maxPoints} puntos.`);
-    } else {
-      logToSheet('Reporte Mensual: No se encontraron partidas este mes.');
-    }
-  } catch (e) {
-    logToSheet('Error en generateMonthlyReport: ' + e.message);
-  }
+Ã‚Â  Ã‚Â  let bestPlayer = 'N/A';
+Ã‚Â  Ã‚Â  let maxPoints = -Infinity;
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  for (const player in playerPoints) {
+Ã‚Â  Ã‚Â  Ã‚Â  if (playerPoints[player] > maxPoints) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  maxPoints = playerPoints[player];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  bestPlayer = player;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  if (bestPlayer !== 'N/A') {
+Ã‚Â  Ã‚Â  Ã‚Â  const monthLabel = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+Ã‚Â  Ã‚Â  Ã‚Â  monthlySheet.appendRow([now, `Jugador del Mes (${monthLabel})`, bestPlayer, maxPoints.toFixed(2)]);
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet(`Reporte Mensual: ${bestPlayer} ganÃƒÂ³ ${maxPoints} puntos.`);
+Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  logToSheet('Reporte Mensual: No se encontraron partidas este mes.');
+Ã‚Â  Ã‚Â  }
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet('Error en generateMonthlyReport: ' + e.message);
+Ã‚Â  }
 }
 
 function cleanupOldLogs() {
-  try {
-    const ss = SpreadsheetApp.getActive();
-    const logSheet = ss.getSheetByName("LOGS");
-    const data = logSheet.getDataRange().getValues();
-    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    
-    for (let i = data.length - 1; i >= 1; i--) {
-      const timestamp = new Date(data[i][0]);
-      if (timestamp < twoWeeksAgo) {
-        logSheet.deleteRow(i + 1);
-      }
-    }
-    logToSheet('Limpieza de logs antiguos completada.');
-  } catch (e) {
-    logToSheet('Error en cleanupOldLogs: ' + e.message);
-  }
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const logSheet = ss.getSheetByName("LOGS");
+Ã‚Â  Ã‚Â  const data = logSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  for (let i = data.length - 1; i >= 1; i--) {
+Ã‚Â  Ã‚Â  Ã‚Â  const timestamp = new Date(data[i][0]);
+Ã‚Â  Ã‚Â  Ã‚Â  if (timestamp < twoWeeksAgo) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  logSheet.deleteRow(i + 1);
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  logToSheet('Limpieza de logs antiguos completada.');
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  logToSheet('Error en cleanupOldLogs: ' + e.message);
+Ã‚Â  }
 }
 
 /* ----------------- MULTI-PLAYER ANALYTICS V2 ----------------- */
 
-// Obtiene datos resumidos para comparar múltiples jugadores rápidamente
+// Obtiene datos resumidos para comparar mÃƒÂºltiples jugadores rÃƒÂ¡pidamente
 function getComparisonData(playerNames) {
-  const ss = SpreadsheetApp.getActive();
-  const matchesData = ss.getSheetByName("MATCHES").getDataRange().getValues();
-  const scoresData = ss.getSheetByName("SCORES").getDataRange().getValues();
+Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  const matchesData = ss.getSheetByName("MATCHES").getDataRange().getValues();
+Ã‚Â  const scoresData = ss.getSheetByName("SCORES").getDataRange().getValues();
 
-  // 1. Mapa rápido de Tiers actuales
-  const playerTiers = {};
-  for (let i = 1; i < scoresData.length; i++) {
-    playerTiers[scoresData[i][0]] = { points: scoresData[i][1], tier: scoresData[i][2] };
-  }
+Ã‚Â  // 1. Mapa rÃƒÂ¡pido de Tiers actuales
+Ã‚Â  const playerTiers = {};
+Ã‚Â  for (let i = 1; i < scoresData.length; i++) {
+Ã‚Â  Ã‚Â  playerTiers[scoresData[i][0]] = { points: scoresData[i][1], tier: scoresData[i][2] };
+Ã‚Â  }
 
-  const comparison = {};
+Ã‚Â  const comparison = {};
 
-  // Inicializar objetos para cada jugador solicitado
-  playerNames.forEach(name => {
-    comparison[name] = {
-      name: name,
-      currentPoints: playerTiers[name]?.points || 0,
-      tier: playerTiers[name]?.tier || "N/A",
-      wins: 0, losses: 0,
-      kills: 0, deaths: 0, assists: 0,
-      totalCs: 0, totalVision: 0, totalDurationMinutes: 0,
-      pointsHistory: [] // {x: date, y: cumulativePoints}
-    };
-  });
+Ã‚Â  // Inicializar objetos para cada jugador solicitado
+Ã‚Â  playerNames.forEach(name => {
+Ã‚Â  Ã‚Â  comparison[name] = {
+Ã‚Â  Ã‚Â  Ã‚Â  name: name,
+Ã‚Â  Ã‚Â  Ã‚Â  currentPoints: playerTiers[name]?.points || 0,
+Ã‚Â  Ã‚Â  Ã‚Â  tier: playerTiers[name]?.tier || "N/A",
+Ã‚Â  Ã‚Â  Ã‚Â  wins: 0, losses: 0,
+Ã‚Â  Ã‚Â  Ã‚Â  kills: 0, deaths: 0, assists: 0,
+Ã‚Â  Ã‚Â  Ã‚Â  totalCs: 0, totalVision: 0, totalDurationMinutes: 0,
+Ã‚Â  Ã‚Â  Ã‚Â  pointsHistory: [] // {x: date, y: cumulativePoints}
+Ã‚Â  Ã‚Â  };
+Ã‚Â  });
 
-  // 2. Procesar TODAS las partidas una sola vez
-  // Ordenamos por fecha antigua -> nueva para el historial de puntos
-  const sortedMatches = matchesData.slice(1).sort((a, b) => new Date(a[1]) - new Date(b[1]));
+Ã‚Â  // 2. Procesar TODAS las partidas una sola vez
+Ã‚Â  // Ordenamos por fecha antigua -> nueva para el historial de puntos
+Ã‚Â  const sortedMatches = matchesData.slice(1).sort((a, b) => new Date(a[1]) - new Date(b[1]));
 
-  const runningPoints = {}; // Puntos acumulados temporales
-  playerNames.forEach(n => runningPoints[n] = 0);
+Ã‚Â  const runningPoints = {}; // Puntos acumulados temporales
+Ã‚Â  playerNames.forEach(n => runningPoints[n] = 0);
 
-  sortedMatches.forEach(row => {
-    const summ = row[2];
-    if (comparison[summ]) { // Si es uno de los jugadores a comparar
-      const stats = comparison[summ];
-      const result = row[5];
-      const dur = Number(row[11] || 0);
-      const pts = Number(row[12] || 0);
+Ã‚Â  sortedMatches.forEach(row => {
+Ã‚Â  Ã‚Â  const summ = row[2];
+Ã‚Â  Ã‚Â  if (comparison[summ]) { // Si es uno de los jugadores a comparar
+Ã‚Â  Ã‚Â  Ã‚Â  const stats = comparison[summ];
+Ã‚Â  Ã‚Â  Ã‚Â  const result = row[5];
+Ã‚Â  Ã‚Â  Ã‚Â  const dur = Number(row[11] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  const pts = Number(row[12] || 0);
 
-      // Acumuladores básicos
-      if (result === 'Win') stats.wins++; else stats.losses++;
-      stats.kills += Number(row[6] || 0);
-      stats.deaths += Number(row[7] || 0);
-      stats.assists += Number(row[8] || 0);
-      // Estimación de CS y Vision si no los guardamos explícitamente en MATCHES,
-      // Si quieres precisión 100% en radar, deberíamos guardar CS y Visión en MATCHES en el futuro.
-      // Por ahora usaremos KDA y Winrate que sí tenemos seguro.
+Ã‚Â  Ã‚Â  Ã‚Â  // Acumuladores bÃƒÂ¡sicos
+Ã‚Â  Ã‚Â  Ã‚Â  if (result === 'Win') stats.wins++; else stats.losses++;
+Ã‚Â  Ã‚Â  Ã‚Â  stats.kills += Number(row[6] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  stats.deaths += Number(row[7] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  stats.assists += Number(row[8] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  // EstimaciÃƒÂ³n de CS y Vision si no los guardamos explÃƒÂ­citamente en MATCHES,
+Ã‚Â  Ã‚Â  Ã‚Â  // Si quieres precisiÃƒÂ³n 100% en radar, deberÃƒÂ­amos guardar CS y VisiÃƒÂ³n en MATCHES en el futuro.
+Ã‚Â  Ã‚Â  Ã‚Â  // Por ahora usaremos KDA y Winrate que sÃƒÂ­ tenemos seguro.
 
-      // Historial de puntos
-      runningPoints[summ] += pts;
-      stats.pointsHistory.push({
-        x: new Date(row[1]).toISOString(),
-        y: Number(runningPoints[summ].toFixed(2))
-      });
-    }
-  });
+Ã‚Â  Ã‚Â  Ã‚Â  // Historial de puntos
+Ã‚Â  Ã‚Â  Ã‚Â  runningPoints[summ] += pts;
+Ã‚Â  Ã‚Â  Ã‚Â  stats.pointsHistory.push({
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  x: new Date(row[1]).toISOString(),
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  y: Number(runningPoints[summ].toFixed(2))
+Ã‚Â  Ã‚Â  Ã‚Â  });
+Ã‚Â  Ã‚Â  }
+Ã‚Â  });
 
-  // 3. Calcular medias finales
-  Object.values(comparison).forEach(stats => {
-    const games = stats.wins + stats.losses;
-    stats.gamesPlayed = games;
-    stats.winRate = games > 0 ? ((stats.wins / games) * 100).toFixed(1) : 0;
-    stats.kdaRatio = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths).toFixed(2) : (stats.kills + stats.assists);
-    stats.avgPoints = games > 0 ? (stats.currentPoints / games).toFixed(2) : 0; // Aproximado
-  });
+Ã‚Â  // 3. Calcular medias finales
+Ã‚Â  Object.values(comparison).forEach(stats => {
+Ã‚Â  Ã‚Â  const games = stats.wins + stats.losses;
+Ã‚Â  Ã‚Â  stats.gamesPlayed = games;
+Ã‚Â  Ã‚Â  stats.winRate = games > 0 ? ((stats.wins / games) * 100).toFixed(1) : 0;
+Ã‚Â  Ã‚Â  stats.kdaRatio = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths).toFixed(2) : (stats.kills + stats.assists);
+Ã‚Â  Ã‚Â  stats.avgPoints = games > 0 ? (stats.currentPoints / games).toFixed(2) : 0; // Aproximado
+Ã‚Â  });
 
-  return comparison;
+Ã‚Â  return comparison;
 }
 
 
 
 /* =========================================
-   INSPECTOR DE PARTIDAS (AUDITORÍA)
+   INSPECTOR DE PARTIDAS (AUDITORÃƒÂA)
    ========================================= */
 
 function showMatchInspector() {
@@ -8052,23 +8061,23 @@ function showMatchInspector() {
       .evaluate()
       .setWidth(1000)
       .setHeight(800)
-      .setTitle('🔎 Inspector de Partidas');
+      .setTitle('Ã°Å¸â€Å½ Inspector de Partidas');
   SpreadsheetApp.getUi().showModalDialog(html, 'Inspector de Partidas');
 }
 
-/* --- BUSCAR LISTA DE JUGADORES (Corrección de error de rango vacío) --- */
+/* --- BUSCAR LISTA DE JUGADORES (CorrecciÃƒÂ³n de error de rango vacÃƒÂ­o) --- */
 function getInspectorPlayerList() {
   const ss = SpreadsheetApp.getActive();
   const playersSheet = ss.getSheetByName("PLAYERS");
   if (!playersSheet) return ["Error: Hoja PLAYERS no existe"];
   
   const lastRow = playersSheet.getLastRow();
-  if (lastRow < 2) return []; // Si no hay datos, devolver array vacío
+  if (lastRow < 2) return []; // Si no hay datos, devolver array vacÃƒÂ­o
 
   // Leer columna A (Nombres)
   const rawList = playersSheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
   
-  // Filtrar vacíos y eliminar duplicados
+  // Filtrar vacÃƒÂ­os y eliminar duplicados
   const cleanList = [...new Set(rawList.filter(name => name && name !== ""))].sort();
   
   return cleanList;
@@ -8083,10 +8092,10 @@ function getInspectorHistory(summonerName) {
   const data = matchesSheet.getDataRange().getValues();
   const history = [];
 
-  // Recorrer de abajo a arriba (más reciente primero)
+  // Recorrer de abajo a arriba (mÃƒÂ¡s reciente primero)
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
-    // Columna C (índice 2) es Summoner
+    // Columna C (ÃƒÂ­ndice 2) es Summoner
     if (row[2] === summonerName) {
       
       const notesString = String(row[13] || ''); // Columna N (Notas)
@@ -8099,19 +8108,19 @@ function getInspectorHistory(summonerName) {
           let val = 0;
           let desc = cleanNote;
 
-          // 1. Buscar número explícito con signo (ej: +2.43, -0.5)
-          // Regex busca: signo opcional, número, decimal opcional, al final o antes de cierre de paréntesis
+          // 1. Buscar nÃƒÂºmero explÃƒÂ­cito con signo (ej: +2.43, -0.5)
+          // Regex busca: signo opcional, nÃƒÂºmero, decimal opcional, al final o antes de cierre de parÃƒÂ©ntesis
           const matchVal = cleanNote.match(/([+\-]\d+(\.\d+)?)/);
           
           if (matchVal) {
              val = parseFloat(matchVal[0]);
-             // Limpiamos la descripción quitando el número y paréntesis vacíos
+             // Limpiamos la descripciÃƒÂ³n quitando el nÃƒÂºmero y parÃƒÂ©ntesis vacÃƒÂ­os
              desc = cleanNote.replace(matchVal[0], '').replace('pts', '').replace('()', '').replace('  ', ' ').trim();
-             // Quitar paréntesis finales si quedaron colgados ej: "DPM Carry ("
+             // Quitar parÃƒÂ©ntesis finales si quedaron colgados ej: "DPM Carry ("
              if (desc.endsWith('(')) desc = desc.slice(0, -1).trim();
              if (desc.endsWith(',')) desc = desc.slice(0, -1).trim();
           } 
-          // 2. Si no hay número, asignar valor por defecto según palabras clave (Fallback)
+          // 2. Si no hay nÃƒÂºmero, asignar valor por defecto segÃƒÂºn palabras clave (Fallback)
           else {
              if (cleanNote.includes("KDA Alto") || cleanNote.includes("Victoria")) val = 3.0;
              else if (cleanNote.includes("KDA Bueno")) val = 1.5;
@@ -8131,7 +8140,7 @@ function getInspectorHistory(summonerName) {
         duration: Math.round(Number(row[11] || 0)),
         kda: `${row[6]}/${row[7]}/${row[8]}`,
         points: Number(row[12]).toFixed(2),
-        // Columnas O, P, Q (Farm, Visión, Oro) - Asegúrate que existen en tu Excel
+        // Columnas O, P, Q (Farm, VisiÃƒÂ³n, Oro) - AsegÃƒÂºrate que existen en tu Excel
         cs: row[14] || '-',
         vision: row[15] || '-',
         gold: row[16] || '-',
@@ -8145,7 +8154,7 @@ function getInspectorHistory(summonerName) {
 
 /**
  * Convierte el string de notas (ej: "Victoria:15;KDA:5.5") en un array de objetos.
- * Esta es la función que te faltaba.
+ * Esta es la funciÃƒÂ³n que te faltaba.
  */
 function processNotesForBreakdown(notesString) {
   if (!notesString) return [];
@@ -8153,7 +8162,7 @@ function processNotesForBreakdown(notesString) {
   return notesString.split(';').map(note => {
     const parts = note.trim().split(':');
     
-    // Aseguramos que haya descripción y valor
+    // Aseguramos que haya descripciÃƒÂ³n y valor
     if (parts.length === 2) {
       let desc = parts[0].trim();
       let val = parseFloat(parts[1].trim());
@@ -8162,7 +8171,7 @@ function processNotesForBreakdown(notesString) {
       if (!isNaN(val)) {
         val = parseFloat(val.toFixed(2));
       } else {
-        // Fallback si el valor no es un número (ej: solo texto)
+        // Fallback si el valor no es un nÃƒÂºmero (ej: solo texto)
         val = 0; 
       }
       
@@ -8171,7 +8180,7 @@ function processNotesForBreakdown(notesString) {
         val: val
       };
     }
-    return null; // Ignorar formatos no válidos
+    return null; // Ignorar formatos no vÃƒÂ¡lidos
   }).filter(n => n !== null);
 }
 
@@ -8181,30 +8190,30 @@ function processNotesForBreakdown(notesString) {
 function doGet(e) {
   const params = e.parameter;
   
-  // Si llega ?player=NombreJugador, servir vista pública
+  // Si llega ?player=NombreJugador, servir vista pÃƒÂºblica
   if (params && params.player) {
     const playerName = decodeURIComponent(params.player);
     const template = HtmlService.createTemplateFromFile('PlayerProfile');
     template.playerName = playerName;
     return template.evaluate()
-      .setTitle('Perfil · ' + playerName + ' · Wargods Premier')
+      .setTitle('Perfil Ã‚Â· ' + playerName + ' Ã‚Â· Wargods Premier')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   
-  // Si llega ?team=NombreEquipo, servir vista pública de equipo
+  // Si llega ?team=NombreEquipo, servir vista pÃƒÂºblica de equipo
   if (params && params.team) {
     const teamName = decodeURIComponent(params.team);
     const template = HtmlService.createTemplateFromFile('TeamProfile');
     template.teamName = teamName;
     return template.evaluate()
-      .setTitle(teamName + ' · Wargods Premier')
+      .setTitle(teamName + ' Ã‚Â· Wargods Premier')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   
-  // Sin parámetros: tu app normal (LeagueMenu.html)
+  // Sin parÃƒÂ¡metros: tu app normal (LeagueMenu.html)
   return HtmlService.createTemplateFromFile('LeagueMenu')
-      .evaluate() // ESTA ES LA PALABRA MÁGICA
+      .evaluate() // ESTA ES LA PALABRA MÃƒÂGICA
       .setTitle('Wargods Premier')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -8212,13 +8221,13 @@ function doGet(e) {
 /*
 function doGet(e) {
 
-  // --- VERIFICACIÓN DE RIOT GAMES ---
+  // --- VERIFICACIÃƒâ€œN DE RIOT GAMES ---
   if (e.queryString && e.queryString.indexOf('riot.txt') !== -1) {
     return ContentService.createTextOutput("15623f0e-d2a6-4925-b2bb-6a55c3b35aaa");
   }
   // ----------------------------------
   
-  // 1. Capturar parámetros de la URL
+  // 1. Capturar parÃƒÂ¡metros de la URL
   var route = e.parameter.p || 'home';
   var season = e.parameter.season || 'CURRENT'; // <--- NUEVO: Captura la season (S1, ALL, CURRENT)
 
@@ -8258,8 +8267,8 @@ function doGet(e) {
   // 2. Crear la plantilla
   var template = HtmlService.createTemplateFromFile(templateName);
 
-  // 3. PASAR DATOS A LA PLANTILLA (¡IMPORTANTE!)
-  // Esto permite que el HTML sepa en qué página y season está
+  // 3. PASAR DATOS A LA PLANTILLA (Ã‚Â¡IMPORTANTE!)
+  // Esto permite que el HTML sepa en quÃƒÂ© pÃƒÂ¡gina y season estÃƒÂ¡
   template.page = route;
   template.seasonFilter = season; 
 
@@ -8274,25 +8283,25 @@ function getScriptUrl() {
   return ScriptApp.getService().getUrl();
 }
 
-/* --- FUNCIONES QUE LA WEB LLAMARÁ (DATA) --- */
+/* --- FUNCIONES QUE LA WEB LLAMARÃƒÂ (DATA) --- */
 
 // A. Datos del Ranking para la Web
 function getRankingDataForWeb(seasonFilter) { 
   return getEpicRankingData(seasonFilter);    
 }
 
-// B. Datos del Historial (Últimas 50 partidas)
+// B. Datos del Historial (ÃƒÅ¡ltimas 50 partidas)
 function getHistoryDataForWeb() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('MATCHES');
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
   
-  // Cogemos las últimas 50 para que cargue rápido
+  // Cogemos las ÃƒÂºltimas 50 para que cargue rÃƒÂ¡pido
   const startRow = Math.max(2, lastRow - 50);
   const data = sheet.getRange(startRow, 1, lastRow - startRow + 1, 14).getValues();
   
-  // Invertimos (más nuevas arriba) y formateamos
+  // Invertimos (mÃƒÂ¡s nuevas arriba) y formateamos
   return data.reverse().map(r => ({
     date: r[1], 
     player: r[2], 
@@ -8305,14 +8314,14 @@ function getHistoryDataForWeb() {
 }
 
 // ==========================================
-// 📊 C. DATOS PARA GRÁFICOS (CON FILTRO DE SEASON)
+// Ã°Å¸â€œÅ  C. DATOS PARA GRÃƒÂFICOS (CON FILTRO DE SEASON)
 // ==========================================
 function getStatsDataForWeb(seasonFilter) {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('MATCHES');
   const configSheet = ss.getSheetByName('CONFIG');
   
-  // 1. Configuración de Filtros
+  // 1. ConfiguraciÃƒÂ³n de Filtros
   // Si no llega filtro, asumimos CURRENT (Actual)
   let target = seasonFilter || 'CURRENT'; 
   let currentSeason = 'S1';
@@ -8325,7 +8334,7 @@ function getStatsDataForWeb(seasonFilter) {
   const data = matchesSheet.getDataRange().getValues();
   if (data.length <= 1) return null; // No hay datos
 
-  // Asumimos que la columna Season es la ÚLTIMA (Ajustar si no lo es)
+  // Asumimos que la columna Season es la ÃƒÅ¡LTIMA (Ajustar si no lo es)
   const seasonColIdx = data[0].length - 1; 
   
   let filteredRows = [];
@@ -8336,25 +8345,25 @@ function getStatsDataForWeb(seasonFilter) {
       const rowSeason = row[seasonColIdx]; // Leemos la season de la fila
 
       if (target === 'ALL') {
-          // Si es "Histórico Global", entran TODAS las partidas
+          // Si es "HistÃƒÂ³rico Global", entran TODAS las partidas
           filteredRows.push(row);
       } 
       else if (target === 'CURRENT') {
-          // Si es "Actual", solo las que coincidan con la configuración (ej: S2)
+          // Si es "Actual", solo las que coincidan con la configuraciÃƒÂ³n (ej: S2)
           if (rowSeason === currentSeason) filteredRows.push(row);
       } 
       else {
-          // Si es específica (ej: "S1"), solo esas
+          // Si es especÃƒÂ­fica (ej: "S1"), solo esas
           if (rowSeason === target) filteredRows.push(row);
       }
   }
 
-  // 4. Calcular Estadísticas sobre los datos filtrados
+  // 4. Calcular EstadÃƒÂ­sticas sobre los datos filtrados
   return calculateStatsFromRows(filteredRows);
 }
 
-// --- FUNCIÓN AUXILIAR DE CÁLCULO ---
-// Esta función toma una lista de partidas y saca los números para las gráficas
+// --- FUNCIÃƒâ€œN AUXILIAR DE CÃƒÂLCULO ---
+// Esta funciÃƒÂ³n toma una lista de partidas y saca los nÃƒÂºmeros para las grÃƒÂ¡ficas
 function calculateStatsFromRows(rows) {
     let stats = {
         totalGames: 0,
@@ -8372,21 +8381,21 @@ function calculateStatsFromRows(rows) {
     rows.forEach(row => {
         stats.totalGames++;
         
-        // Índices basados en tu estructura típica:
-        // Ajusta estos números si tus columnas son diferentes
+        // ÃƒÂndices basados en tu estructura tÃƒÂ­pica:
+        // Ajusta estos nÃƒÂºmeros si tus columnas son diferentes
         // [0]ID, [1]Date, [2]Player, [3]Champ, [4]Role, [5]Result, [6]KDA... [11]Duration
         
         const role = String(row[4]).toUpperCase(); // Columna E (Rol)
         const result = row[5]; // Columna F (Win/Loss)
-        // Nota: En SoloQ individual no suele haber "Blue/Red side" guardado explícitamente 
-        // a menos que lo tengas. Aquí contaremos Victorias/Derrotas globales.
+        // Nota: En SoloQ individual no suele haber "Blue/Red side" guardado explÃƒÂ­citamente 
+        // a menos que lo tengas. AquÃƒÂ­ contaremos Victorias/Derrotas globales.
         if (result === 'Win') stats.blueWins++; // Usamos blueWins como contador de Victorias totales
         else stats.redWins++; // Usamos redWins como contador de Derrotas totales
 
         // Sumar Roles
         if (stats.roles[role] !== undefined) stats.roles[role]++;
         
-        // Duración (Columna L / índice 11 aprox)
+        // DuraciÃƒÂ³n (Columna L / ÃƒÂ­ndice 11 aprox)
         if (row[11]) totalDuration += Number(row[11]);
     });
 
@@ -8404,7 +8413,7 @@ function outputJSON(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// --- FUNCIONES DE DATOS PARA LA WEB (Añádelas si no las tienes) ---
+// --- FUNCIONES DE DATOS PARA LA WEB (AÃƒÂ±ÃƒÂ¡delas si no las tienes) ---
 function getMatchesForWeb() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('MATCHES');
@@ -8426,10 +8435,10 @@ function getGlobalStatsForWeb() {
 }
 
 function showDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile('dashboard')
-      .setWidth(1200)
-      .setHeight(800);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard Historial de Partidas');
+Ã‚Â  const html = HtmlService.createHtmlOutputFromFile('dashboard')
+Ã‚Â  Ã‚Â  Ã‚Â  .setWidth(1200)
+Ã‚Â  Ã‚Â  Ã‚Â  .setHeight(800);
+Ã‚Â  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard Historial de Partidas');
 }
 
 function showDashboardPro() {
@@ -8439,7 +8448,7 @@ function showDashboardPro() {
     .setWidth(1400)
     .setHeight(850);
   
-  SpreadsheetApp.getUi().showModalDialog(html, '📈 Dashboard Profesional');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Ã°Å¸â€œË† Dashboard Profesional');
 }
 
 function showInspectorNuevo() {
@@ -8449,7 +8458,7 @@ function showInspectorNuevo() {
     .setWidth(1300)
     .setHeight(820);
 
-  SpreadsheetApp.getUi().showModalDialog(html, '🕵️ Inspector de Partidas');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Ã°Å¸â€¢ÂµÃ¯Â¸Â Inspector de Partidas');
 }
 
 function showRadarStats() {
@@ -8459,7 +8468,7 @@ function showRadarStats() {
     .setWidth(1100)
     .setHeight(800);
 
-  SpreadsheetApp.getUi().showModalDialog(html, '🧭 Radar de Jugador');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Ã°Å¸Â§Â­ Radar de Jugador');
 }
 
 function showSynergyGraph() {
@@ -8469,7 +8478,7 @@ function showSynergyGraph() {
     .setWidth(1400)
     .setHeight(900);
 
-  SpreadsheetApp.getUi().showModalDialog(html, '🧬 Grafo de Sinergias 2.0');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Ã°Å¸Â§Â¬ Grafo de Sinergias 2.0');
 }
 
 function showHeatmapHoras() {
@@ -8479,14 +8488,14 @@ function showHeatmapHoras() {
     .setWidth(1300)
     .setHeight(900);
 
-  SpreadsheetApp.getUi().showModalDialog(html, '📅 Heatmap Horario');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Ã°Å¸â€œâ€¦ Heatmap Horario');
 }
 
 
 function getPlayerList() {
   try {
     const ss = SpreadsheetApp.getActive();
-    // Cambiamos a la hoja PLAYERS para asegurar que salgan todos (incluso los que no han puntuado aún)
+    // Cambiamos a la hoja PLAYERS para asegurar que salgan todos (incluso los que no han puntuado aÃƒÂºn)
     const sheet = ss.getSheetByName("PLAYERS"); 
     if (!sheet) return ['Error: Hoja PLAYERS no encontrada'];
     
@@ -8497,12 +8506,12 @@ function getPlayerList() {
     const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
     
     // 1. Aplanamos el array (de [[Nombre], [Nombre]] a [Nombre, Nombre])
-    // 2. Filtramos vacíos
-    // 3. Ordenamos alfabéticamente (.sort())
+    // 2. Filtramos vacÃƒÂ­os
+    // 3. Ordenamos alfabÃƒÂ©ticamente (.sort())
     const players = data
       .flat()
       .filter(name => name && name !== "")
-      .sort((a, b) => a.localeCompare(b)); // Orden alfabético A-Z seguro
+      .sort((a, b) => a.localeCompare(b)); // Orden alfabÃƒÂ©tico A-Z seguro
 
     return players;
   } catch (e) {
@@ -8511,114 +8520,114 @@ function getPlayerList() {
 }
 
 function getPlayerData(summonerName) {
-  try {
-    const ss = SpreadsheetApp.getActive();
-    const scoresSheet = ss.getSheetByName("SCORES");
-    const matchesSheet = ss.getSheetByName("MATCHES");
+Ã‚Â  try {
+Ã‚Â  Ã‚Â  const ss = SpreadsheetApp.getActive();
+Ã‚Â  Ã‚Â  const scoresSheet = ss.getSheetByName("SCORES");
+Ã‚Â  Ã‚Â  const matchesSheet = ss.getSheetByName("MATCHES");
 
-    // 1. Obtener Resumen (Summary)
-    let summary = { 
-      name: summonerName, 
-      points: 0, 
-      tier: 'N/A',
-      totalWins: 0,
-      totalLosses: 0,
-      uniqueChamps: 0
-    };
-    const scoresData = scoresSheet.getDataRange().getValues();
-    for (let i = 1; i < scoresData.length; i++) {
-      if (scoresData[i][0] === summonerName) {
-        summary.points = scoresData[i][1];
-        summary.tier = scoresData[i][2];
-        break;
-      }
-    }
+Ã‚Â  Ã‚Â  // 1. Obtener Resumen (Summary)
+Ã‚Â  Ã‚Â  let summary = {Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  name: summonerName,Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  points: 0,Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  tier: 'N/A',
+Ã‚Â  Ã‚Â  Ã‚Â  totalWins: 0,
+Ã‚Â  Ã‚Â  Ã‚Â  totalLosses: 0,
+Ã‚Â  Ã‚Â  Ã‚Â  uniqueChamps: 0
+Ã‚Â  Ã‚Â  };
+Ã‚Â  Ã‚Â  const scoresData = scoresSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â  for (let i = 1; i < scoresData.length; i++) {
+Ã‚Â  Ã‚Â  Ã‚Â  if (scoresData[i][0] === summonerName) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  summary.points = scoresData[i][1];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  summary.tier = scoresData[i][2];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  break;
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
 
-    // 2. Obtener Partidas y Estadísticas
-    let playerMatches = [];
-    const champMap = new Map();
-    const champSet = new Set();
-    
-    const matchesData = matchesSheet.getDataRange().getValues();
-    
-    for (let i = matchesData.length - 1; i >= 1; i--) { // De más nueva a más vieja
-      if (matchesData[i][2] === summonerName) {
-        const champ = matchesData[i][3];
-        const result = matchesData[i][5];
+Ã‚Â  Ã‚Â  // 2. Obtener Partidas y EstadÃƒÂ­sticas
+Ã‚Â  Ã‚Â  let playerMatches = [];
+Ã‚Â  Ã‚Â  const champMap = new Map();
+Ã‚Â  Ã‚Â  const champSet = new Set();
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  const matchesData = matchesSheet.getDataRange().getValues();
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  for (let i = matchesData.length - 1; i >= 1; i--) { // De mÃƒÂ¡s nueva a mÃƒÂ¡s vieja
+Ã‚Â  Ã‚Â  Ã‚Â  if (matchesData[i][2] === summonerName) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const champ = matchesData[i][3];
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const result = matchesData[i][5];
 
-        // 2a. Llenar historial de partidas
-        playerMatches.push({
-          date: new Date(matchesData[i][1]).toLocaleString('es-ES'),
-          champion: champ,
-          result: result,
-          kda: `${matchesData[i][6]}/${matchesData[i][7]}/${matchesData[i][8]}`,
-          points: matchesData[i][12],
-          notes: matchesData[i][13] // ¡NUEVO!
-        });
-        
-        // 2b. Calcular stats de campeones (se hace en el mismo bucle)
-        if (!champMap.has(champ)) {
-          champMap.set(champ, { played: 0, wins: 0, losses: 0, kills: 0, deaths: 0, assists: 0 });
-        }
-        champSet.add(champ); // Para el recuento único
-        
-        const stats = champMap.get(champ);
-        stats.played++;
-        if (result === 'Win') {
-          stats.wins++;
-          summary.totalWins++;
-        } else {
-          stats.losses++;
-          summary.totalLosses++;
-        }
-        stats.kills += Number(matchesData[i][6] || 0);
-        stats.deaths += Number(matchesData[i][7] || 0);
-        stats.assists += Number(matchesData[i][8] || 0);
-      }
-    }
-    
-    summary.uniqueChamps = champSet.size;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  // 2a. Llenar historial de partidas
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  playerMatches.push({
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  date: new Date(matchesData[i][1]).toLocaleString('es-ES'),
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  champion: champ,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  result: result,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  kda: `${matchesData[i][6]}/${matchesData[i][7]}/${matchesData[i][8]}`,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  points: matchesData[i][12],
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  notes: matchesData[i][13] // Ã‚Â¡NUEVO!
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  });
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  // 2b. Calcular stats de campeones (se hace en el mismo bucle)
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (!champMap.has(champ)) {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  champMap.set(champ, { played: 0, wins: 0, losses: 0, kills: 0, deaths: 0, assists: 0 });
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  champSet.add(champ); // Para el recuento ÃƒÂºnico
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  const stats = champMap.get(champ);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.played++;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  if (result === 'Win') {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.wins++;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  summary.totalWins++;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  } else {
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.losses++;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  summary.totalLosses++;
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.kills += Number(matchesData[i][6] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.deaths += Number(matchesData[i][7] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  stats.assists += Number(matchesData[i][8] || 0);
+Ã‚Â  Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â  }
+Ã‚Â  Ã‚Â Ã‚Â 
+Ã‚Â  Ã‚Â  summary.uniqueChamps = champSet.size;
 
-    // 3. Formatear Estadísticas de Campeones
-    let championStats = [];
-    champMap.forEach((stats, champion) => {
-      const avgK = (stats.kills / stats.played).toFixed(1);
-      const avgD = (stats.deaths / stats.played).toFixed(1);
-      const avgA = (stats.assists / stats.played).toFixed(1);
-      const winRate = ((stats.wins / stats.played) * 100).toFixed(0);
+Ã‚Â  Ã‚Â  // 3. Formatear EstadÃƒÂ­sticas de Campeones
+Ã‚Â  Ã‚Â  let championStats = [];
+Ã‚Â  Ã‚Â  champMap.forEach((stats, champion) => {
+Ã‚Â  Ã‚Â  Ã‚Â  const avgK = (stats.kills / stats.played).toFixed(1);
+Ã‚Â  Ã‚Â  Ã‚Â  const avgD = (stats.deaths / stats.played).toFixed(1);
+Ã‚Â  Ã‚Â  Ã‚Â  const avgA = (stats.assists / stats.played).toFixed(1);
+Ã‚Â  Ã‚Â  Ã‚Â  const winRate = ((stats.wins / stats.played) * 100).toFixed(0);
 
-      championStats.push({
-        champion: champion,
-        played: stats.played,
-        winRate: `${winRate}%`,
-        winLoss: `${stats.wins}V / ${stats.losses}D`, // ¡NUEVO!
-        avgKda: `${avgK} / ${avgD} / ${avgA}`
-      });
-    });
+Ã‚Â  Ã‚Â  Ã‚Â  championStats.push({
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  champion: champion,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  played: stats.played,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  winRate: `${winRate}%`,
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  winLoss: `${stats.wins}V / ${stats.losses}D`, // Ã‚Â¡NUEVO!
+Ã‚Â  Ã‚Â  Ã‚Â  Ã‚Â  avgKda: `${avgK} / ${avgD} / ${avgA}`
+Ã‚Â  Ã‚Â  Ã‚Â  });
+Ã‚Â  Ã‚Â  });
 
-    championStats.sort((a, b) => b.played - a.played);
+Ã‚Â  Ã‚Â  championStats.sort((a, b) => b.played - a.played);
 
-    return {
-      summary: summary,
-      matches: playerMatches, 
-      championStats: championStats
-    };
+Ã‚Â  Ã‚Â  return {
+Ã‚Â  Ã‚Â  Ã‚Â  summary: summary,
+Ã‚Â  Ã‚Â  Ã‚Â  matches: playerMatches,Ã‚Â 
+Ã‚Â  Ã‚Â  Ã‚Â  championStats: championStats
+Ã‚Â  Ã‚Â  };
 
-  } catch (e) {
-    return { error: e.message };
-  }
+Ã‚Â  } catch (e) {
+Ã‚Â  Ã‚Â  return { error: e.message };
+Ã‚Â  }
 }
 
 
 /************************************************************
- * --- DASHBOARD DE GRÁFICOS ---
- * (v8.0: Funciones actualizadas para más estadísticas)
- ************************************************************/
+Ã‚Â * --- DASHBOARD DE GRÃƒÂFICOS ---
+Ã‚Â * (v8.0: Funciones actualizadas para mÃƒÂ¡s estadÃƒÂ­sticas)
+Ã‚Â ************************************************************/
 /* =========================================
    NUEVO DASHBOARD V12 (MODERNO)
    ========================================= */
 
-// 1. Función para abrir el dashboard
+// 1. FunciÃƒÂ³n para abrir el dashboard
 function showDashboardV12() {
   const html = HtmlService.createTemplateFromFile('Grafico_General')
       .evaluate()
@@ -8628,7 +8637,7 @@ function showDashboardV12() {
   SpreadsheetApp.getUi().showModalDialog(html, 'SoloQ Pro Dashboard');
 }
 
-// 2. Función que lee los datos REALES de la hoja MATCHES
+// 2. FunciÃƒÂ³n que lee los datos REALES de la hoja MATCHES
 function getDataForDashboardV12() {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('MATCHES');
@@ -8668,7 +8677,7 @@ function getDataForDashboardV12() {
     }
   }
 
-  // Preparar datos finales para los gráficos
+  // Preparar datos finales para los grÃƒÂ¡ficos
   const processedData = {
     roles: [],
     playRate: [],
@@ -8706,7 +8715,7 @@ function recalculateAllStreaks() {
   const cfg = readConfigMap();
 
   // Usamos la fecha de inicio de temporada de CONFIG.
-  // Si hoy empezó la season, asegúrate de que en CONFIG 'season_start_date' sea la fecha de hoy (ej. 2025-11-10)
+  // Si hoy empezÃƒÂ³ la season, asegÃƒÂºrate de que en CONFIG 'season_start_date' sea la fecha de hoy (ej. 2025-11-10)
   const seasonStart = cfg.seasonStartDateObj || new Date(0);
 
   if (!matchesSheet || !playersSheet) {
@@ -8714,14 +8723,14 @@ function recalculateAllStreaks() {
       return;
   }
 
-  // 1. Leer todas las partidas y ordenarlas por fecha (más antigua a más nueva)
+  // 1. Leer todas las partidas y ordenarlas por fecha (mÃƒÂ¡s antigua a mÃƒÂ¡s nueva)
   const mData = matchesSheet.getDataRange().getValues();
   // Headers de mData: MatchID(0), Date(1), Summoner(2), ..., Result(5)
   const sortedMatches = mData.slice(1).sort((a,b) => new Date(a[1]) - new Date(b[1]));
 
   const streakMap = {};
 
-  // 2. Calcular racha recorriendo cronológicamente
+  // 2. Calcular racha recorriendo cronolÃƒÂ³gicamente
   sortedMatches.forEach(row => {
       const matchDate = new Date(row[1]);
       // SOLO contamos partidas desde la fecha de inicio de temporada
@@ -8733,10 +8742,10 @@ function recalculateAllStreaks() {
       if (!streakMap[summ]) streakMap[summ] = 0;
 
       if (result === 'Win') {
-          // Si ya estaba en racha positiva, suma 1. Si venía de derrota, empieza en 1.
+          // Si ya estaba en racha positiva, suma 1. Si venÃƒÂ­a de derrota, empieza en 1.
           streakMap[summ] = (streakMap[summ] >= 0) ? streakMap[summ] + 1 : 1;
       } else if (result === 'Loss') {
-          // Si ya estaba en racha negativa, resta 1. Si venía de victoria, empieza en -1.
+          // Si ya estaba en racha negativa, resta 1. Si venÃƒÂ­a de victoria, empieza en -1.
           streakMap[summ] = (streakMap[summ] <= 0) ? streakMap[summ] - 1 : -1;
       }
       // Remakes u otros resultados no afectan la racha
@@ -8744,7 +8753,7 @@ function recalculateAllStreaks() {
 
   // 3. Actualizar la hoja PLAYERS con los valores reales
   const pData = playersSheet.getDataRange().getValues();
-  // Asumimos que la columna F (índice 6 en hoja, 5 en array) es 'CurrentStreak'
+  // Asumimos que la columna F (ÃƒÂ­ndice 6 en hoja, 5 en array) es 'CurrentStreak'
   for (let i = 1; i < pData.length; i++) {
       const summ = pData[i][0];
       // Si tiene racha calculada la ponemos, si no (no ha jugado esta season), ponemos 0
@@ -8752,8 +8761,8 @@ function recalculateAllStreaks() {
       playersSheet.getRange(i + 1, 6).setValue(realStreak);
   }
 
-  logToSheet("✅ Rachas recalculadas correctamente desde el inicio de la temporada.");
-  SpreadsheetApp.getUi().alert("Rachas recalculadas basándose en las partidas de esta temporada.");
+  logToSheet("Ã¢Å“â€¦ Rachas recalculadas correctamente desde el inicio de la temporada.");
+  SpreadsheetApp.getUi().alert("Rachas recalculadas basÃƒÂ¡ndose en las partidas de esta temporada.");
 }
 
 function getBestPlayersByRoleV12() {
@@ -8807,20 +8816,20 @@ function getBestPlayersByRoleV12() {
       for (const summ in rolePlayers[role]) {
         const stats = rolePlayers[role][summ];
         
-        // --- ⚖️ NUEVA FÓRMULA DE VETERANÍA ---
-        // 1. Mínimo 5 partidas para optar al título.
+        // --- Ã¢Å¡â€“Ã¯Â¸Â NUEVA FÃƒâ€œRMULA DE VETERANÃƒÂA ---
+        // 1. MÃƒÂ­nimo 5 partidas para optar al tÃƒÂ­tulo.
         if (stats.games >= 5) {
              const avg = stats.totalPoints / stats.games;
              
              // FACTOR DE CONFIANZA:
-             // - Si tienes < 10 partidas: Se reduce tu media (Castigo por muestra pequeña)
+             // - Si tienes < 10 partidas: Se reduce tu media (Castigo por muestra pequeÃƒÂ±a)
              // - Si tienes > 10 partidas: Se bonifica tu media un 1.5% por cada partida extra.
              // Ejemplo: 30 partidas = Media * 1.30 (+30% bonus por constancia)
              let confidenceMult = 1.0 + ((stats.games - 10) * 0.015);
              
              // Topes de seguridad
-             if (confidenceMult < 0.8) confidenceMult = 0.8; // Mínimo 80% del valor real
-             if (confidenceMult > 1.5) confidenceMult = 1.5; // Máximo 150% del valor real
+             if (confidenceMult < 0.8) confidenceMult = 0.8; // MÃƒÂ­nimo 80% del valor real
+             if (confidenceMult > 1.5) confidenceMult = 1.5; // MÃƒÂ¡ximo 150% del valor real
 
              const weightedScore = avg * confidenceMult;
 
@@ -8842,7 +8851,7 @@ function getBestPlayersByRoleV12() {
            topNote = note;
         }
       }
-      // Cálculo de media real para mostrar (sin el truco matemático)
+      // CÃƒÂ¡lculo de media real para mostrar (sin el truco matemÃƒÂ¡tico)
       const realAvg = (rolePlayers[role][bestPlayer].totalPoints / rolePlayers[role][bestPlayer].games).toFixed(1);
 
       bestByRole[role] = {
@@ -8863,7 +8872,7 @@ function showAnalyticsDashboard() {
   const html = HtmlService.createHtmlOutputFromFile('analytics')
       .setWidth(1200)
       .setHeight(800);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard de Analíticas');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard de AnalÃƒÂ­ticas');
 }
 
 
@@ -8874,15 +8883,15 @@ function showGlobalDashboard() {
     .evaluate()
     .setWidth(1200)
     .setHeight(800);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard de Estadísticas Globales');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Dashboard de EstadÃƒÂ­sticas Globales');
 }
 
 /**
- * RECOGE Y PROCESA TODAS LAS ESTADÍSTICAS GLOBALES DEL CHALLENGE
- * Esta es la función principal que alimenta el nuevo dashboard.
+ * RECOGE Y PROCESA TODAS LAS ESTADÃƒÂSTICAS GLOBALES DEL CHALLENGE
+ * Esta es la funciÃƒÂ³n principal que alimenta el nuevo dashboard.
  * Lee las hojas MATCHES y PLAYERS.
  *
- * @returns {Object} Un objeto gigante con todas las estadísticas.
+ * @returns {Object} Un objeto gigante con todas las estadÃƒÂ­sticas.
  */
 function getGlobalChallengeStats() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -8975,18 +8984,18 @@ function getGlobalChallengeStats() {
 
     // --- PROCESAR CAMPEONES (MODIFICADO PARA PUNTOS) ---
     if (!championGlobalStats[champName]) {
-      // ⬇️ AÑADIDO totalPoints: 0
+      // Ã¢Â¬â€¡Ã¯Â¸Â AÃƒâ€˜ADIDO totalPoints: 0
       championGlobalStats[champName] = { games: 0, wins: 0, k: 0, d: 0, a: 0, totalPoints: 0, players: {} };
     }
     const c = championGlobalStats[champName];
     c.games++; c.k += kills; c.d += deaths; c.a += assists;
-    c.totalPoints += points; // ⬇️ SUMAMOS PUNTOS GLOBALES
+    c.totalPoints += points; // Ã¢Â¬â€¡Ã¯Â¸Â SUMAMOS PUNTOS GLOBALES
     if (isWin) c.wins++;
 
     if (!c.players[player]) c.players[player] = { games: 0, wins: 0, k: 0, d: 0, a: 0, totalPoints: 0 };
     const cp = c.players[player];
     cp.games++; cp.k += kills; cp.d += deaths; cp.a += assists;
-    cp.totalPoints += points; // ⬇️ SUMAMOS PUNTOS DEL JUGADOR
+    cp.totalPoints += points; // Ã¢Â¬â€¡Ã¯Â¸Â SUMAMOS PUNTOS DEL JUGADOR
     if (isWin) cp.wins++;
 
     const notesString = row[H.NOTES] || ''; 
@@ -9059,7 +9068,7 @@ function getGlobalChallengeStats() {
           games: p.games, 
           winRate: p.games > 0 ? (p.wins / p.games) * 100 : 0, 
           kda: p.d > 0 ? ((p.k + p.a) / p.d) : (p.k + p.a),
-          avgPoints: pAvgPoints // ⬇️ ENVIAR DATO
+          avgPoints: pAvgPoints // Ã¢Â¬â€¡Ã¯Â¸Â ENVIAR DATO
       });
     }
     
@@ -9068,7 +9077,7 @@ function getGlobalChallengeStats() {
         games: c.games, 
         winRate: (c.wins / c.games) * 100, 
         kda: c.d > 0 ? ((c.k + c.a) / c.d) : (c.k + c.a), 
-        avgPoints: globalAvgPoints, // ⬇️ ENVIAR DATO
+        avgPoints: globalAvgPoints, // Ã¢Â¬â€¡Ã¯Â¸Â ENVIAR DATO
         players: playersList.sort((a, b) => b.games - a.games) 
     });
   }
@@ -9079,14 +9088,14 @@ function getGlobalChallengeStats() {
 
 
 /**
- * SETUP DE MISIONES (VERSIÓN SILENCIOSA - SIN ERRORES DE UI)
+ * SETUP DE MISIONES (VERSIÃƒâ€œN SILENCIOSA - SIN ERRORES DE UI)
  * Crea las hojas necesarias sin preguntar.
  */
 function SetupMisiones() {
   const ss = SpreadsheetApp.getActive();
-  console.log("⏳ Iniciando Setup de Misiones...");
+  console.log("Ã¢ÂÂ³ Iniciando Setup de Misiones...");
 
-  // 1. Crear Hoja de Definición de Misiones (MISSIONS)
+  // 1. Crear Hoja de DefiniciÃƒÂ³n de Misiones (MISSIONS)
   if (!ss.getSheetByName('MISSIONS')) {
     const missionSheet = ss.insertSheet('MISSIONS');
     missionSheet.getRange('A1:H1').setValues([
@@ -9096,15 +9105,15 @@ function SetupMisiones() {
     // --- MISIONES DE EJEMPLO ---
     const exampleMissions = [
       ['FREJORD_3', 'Juega 3 campeones de Freljord', 'CHAMPION_REGION', 'Freljord', 3, 3.0, 'Media', 'Cumulative'],
-      ['LANES_3', 'Juega 3 líneas distintas', 'UNIQUE_LANES', 'ANY', 3, 3.0, 'Fácil', 'Cumulative'],
-      ['KDA_15', 'Consigue un KDA de 15+ en una partida', 'KDA_SINGLE_GAME', 'ANY', 15, 5.0, 'Difícil', 'Single'],
+      ['LANES_3', 'Juega 3 lÃƒÂ­neas distintas', 'UNIQUE_LANES', 'ANY', 3, 3.0, 'FÃƒÂ¡cil', 'Cumulative'],
+      ['KDA_15', 'Consigue un KDA de 15+ en una partida', 'KDA_SINGLE_GAME', 'ANY', 15, 5.0, 'DifÃƒÂ­cil', 'Single'],
       ['PERFECT_GAME', 'Gana una partida con 0 muertes', 'PERFECT_GAME', 'ANY', 0, 10.0, 'Extrema', 'Single']
     ];
     missionSheet.getRange(2, 1, exampleMissions.length, exampleMissions[0].length).setValues(exampleMissions);
     missionSheet.setColumnWidths(1, 8, 180);
-    console.log('✅ Hoja "MISSIONS" creada con ejemplos.');
+    console.log('Ã¢Å“â€¦ Hoja "MISSIONS" creada con ejemplos.');
   } else {
-    console.log('ℹ️ La hoja "MISSIONS" ya existía.');
+    console.log('Ã¢â€žÂ¹Ã¯Â¸Â La hoja "MISSIONS" ya existÃƒÂ­a.');
   }
 
   // 2. Crear Hoja de Estado de Progreso (MISSION_STATE)
@@ -9114,24 +9123,24 @@ function SetupMisiones() {
       ['PlayerName_MissionID', 'PlayerName', 'MissionID', 'Status (InProgress/Completed)', 'CurrentValue']
     ]).setFontWeight('bold');
     stateSheet.setColumnWidths(1, 5, 200);
-    console.log('✅ Hoja "MISSION_STATE" creada.');
+    console.log('Ã¢Å“â€¦ Hoja "MISSION_STATE" creada.');
   } else {
-    console.log('ℹ️ La hoja "MISSION_STATE" ya existía.');
+    console.log('Ã¢â€žÂ¹Ã¯Â¸Â La hoja "MISSION_STATE" ya existÃƒÂ­a.');
   }
 
-  // 3. Borrar la antigua hoja de Reporte (se volverá a generar sola luego)
+  // 3. Borrar la antigua hoja de Reporte (se volverÃƒÂ¡ a generar sola luego)
   const oldReport = ss.getSheetByName('MISSION_PROGRESS');
   if (oldReport) {
     ss.deleteSheet(oldReport);
-    console.log('🗑️ Antigua hoja "MISSION_PROGRESS" eliminada.');
+    console.log('Ã°Å¸â€”â€˜Ã¯Â¸Â Antigua hoja "MISSION_PROGRESS" eliminada.');
   }
   
-  console.log("✨ Setup de Misiones FINALIZADO.");
+  console.log("Ã¢Å“Â¨ Setup de Misiones FINALIZADO.");
 }
 
 
 /**
- * 📜 SINCRONIZADOR DE HISTORIAL DE MISIONES (v8 - Soporte Champion Ocean)
+ * Ã°Å¸â€œÅ“ SINCRONIZADOR DE HISTORIAL DE MISIONES (v8 - Soporte Champion Ocean)
  * Escanea TODAS las partidas y rellena 'MISSION_STATE'.
  * Soporta: UNIQUE_CHAMPIONS, Regiones, Roles y Contadores.
  */
@@ -9140,13 +9149,13 @@ function SincronizarProgresoMisiones() {
   const ui = SpreadsheetApp.getUi();
   
   const response = ui.alert(
-    'Confirmar Sincronización Masiva',
-    'Esto escaneará TODAS las partidas de TODOS los jugadores para reconstruir el estado de las misiones. Sobrescribirá la hoja "MISSION_STATE". ¿Continuar?',
+    'Confirmar SincronizaciÃƒÂ³n Masiva',
+    'Esto escanearÃƒÂ¡ TODAS las partidas de TODOS los jugadores para reconstruir el estado de las misiones. SobrescribirÃƒÂ¡ la hoja "MISSION_STATE". Ã‚Â¿Continuar?',
     ui.ButtonSet.YES_NO
   );
   if (response !== ui.Button.YES) return;
 
-  logToSheet('Iniciando Sincronización Masiva de Misiones...');
+  logToSheet('Iniciando SincronizaciÃƒÂ³n Masiva de Misiones...');
   
   const cfg = readConfigMap();
   const seasonStart = cfg.seasonStartDateObj || new Date(0);
@@ -9175,7 +9184,7 @@ function SincronizarProgresoMisiones() {
     // 1. Inicializar memorias
     missions.forEach(m => {
       if (m.Tracking === 'Cumulative') {
-        // AÑADIDO: UNIQUE_CHAMPIONS se inicializa como un Set (Lista sin duplicados)
+        // AÃƒâ€˜ADIDO: UNIQUE_CHAMPIONS se inicializa como un Set (Lista sin duplicados)
         if (['CHAMPION_REGION', 'UNIQUE_LANES', 'CHAMPION_IN_UNIQUE_LANES', 'UNIQUE_CHAMPIONS'].includes(m.Tipo)) {
            playerProgress[m.MissionID] = new Set();
         } else if (m.Tipo === 'ONE_CHAMP_ALL_LANES') {
@@ -9208,12 +9217,12 @@ function SincronizarProgresoMisiones() {
         // --- TIPO A: Misiones Acumulativas ---
         if (m.Tracking === 'Cumulative') {
           
-          // A1. Misiones de Colección (Sets)
+          // A1. Misiones de ColecciÃƒÂ³n (Sets)
           if (['CHAMPION_REGION', 'UNIQUE_LANES', 'CHAMPION_IN_UNIQUE_LANES', 'UNIQUE_CHAMPIONS'].includes(m.Tipo)) {
              let progressSet = playerProgress[m.MissionID];
              if (progressSet.size >= m.ValorRequerido) continue; 
 
-             // LÓGICA NUEVA: UNIQUE_CHAMPIONS
+             // LÃƒâ€œGICA NUEVA: UNIQUE_CHAMPIONS
              if (m.Tipo === 'UNIQUE_CHAMPIONS') {
                 progressSet.add(matchChampion);
              }
@@ -9249,7 +9258,7 @@ function SincronizarProgresoMisiones() {
              }
           }
         } 
-        // --- TIPO B: Misiones de Partida Única ---
+        // --- TIPO B: Misiones de Partida ÃƒÅ¡nica ---
         else if (m.Tracking === 'Single') {
            if (singleMissionCompleted[m.MissionID] > 0) continue;
 
@@ -9310,26 +9319,26 @@ function SincronizarProgresoMisiones() {
     stateSheet.getRange(2, 1, newStates.length, 5).setValues(newStates);
   }
   
-  logToSheet('¡Sincronización Masiva de Misiones COMPLETADA!');
-  ui.alert('¡Sincronización Masiva de Misiones COMPLETADA!');
+  logToSheet('Ã‚Â¡SincronizaciÃƒÂ³n Masiva de Misiones COMPLETADA!');
+  ui.alert('Ã‚Â¡SincronizaciÃƒÂ³n Masiva de Misiones COMPLETADA!');
 }
 
 
 /* =========================================
-   RANKING ÉPICO (VISUAL) - ACTUALIZADO CON ELO, GAMES, WR
+   RANKING Ãƒâ€°PICO (VISUAL) - ACTUALIZADO CON ELO, GAMES, WR
    ========================================= */
 
-// Función para abrir la ventana (NO CAMBIA)
+// FunciÃƒÂ³n para abrir la ventana (NO CAMBIA)
 function showEpicRanking() {
   const html = HtmlService.createTemplateFromFile('EpicRanking')
       .evaluate()
       .setWidth(1100)
       .setHeight(850)
-      .setTitle('🏆 CLASIFICACIÓN GENERAL 🏆');
+      .setTitle('Ã°Å¸Ââ€  CLASIFICACIÃƒâ€œN GENERAL Ã°Å¸Ââ€ ');
   SpreadsheetApp.getUi().showModalDialog(html, 'SoloQ Pro Ranking');
 }
 
-/* ----------------- RANKING ÉPICO (BACKEND CORREGIDO) ----------------- */
+/* ----------------- RANKING Ãƒâ€°PICO (BACKEND CORREGIDO) ----------------- */
 function getEpicRankingData(seasonFilter) { 
   const ss = SpreadsheetApp.getActive();
   const playersSheet = ss.getSheetByName('PLAYERS');
@@ -9339,7 +9348,7 @@ function getEpicRankingData(seasonFilter) {
   
   if (!playersSheet || !matchesSheet) return [];
 
-  // --- 1. CONFIGURACIÓN DEL FILTRO ---
+  // --- 1. CONFIGURACIÃƒâ€œN DEL FILTRO ---
   let targetSeason = seasonFilter || 'CURRENT'; 
   let currentConfigSeason = 'S3'; // Valor por defecto ultra-seguro
 
@@ -9377,7 +9386,7 @@ function getEpicRankingData(seasonFilter) {
   const matchesLastRow = matchesSheet.getLastRow();
   if (matchesLastRow > 1) {
       const mData = matchesSheet.getRange(2, 1, matchesLastRow - 1, 15).getValues();
-      const seasonIdx = 14; // Índice 14 = Columna 15 (O)
+      const seasonIdx = 14; // ÃƒÂndice 14 = Columna 15 (O)
 
       for (let i = 0; i < mData.length; i++) {
         const row = mData[i];
@@ -9429,9 +9438,9 @@ function getEpicRankingData(seasonFilter) {
   let ranking = Object.values(rankingMap).map(p => {
     const wr = p.t > 0 ? ((p.w / p.t) * 100).toFixed(0) : 0;
     
-    if (p.t > 0 && p.t === maxGames && p.t > 3) p.badges.push("🚜"); 
-    if (Number(wr) >= 60 && p.t >= 5) p.badges.push("🚀");
-    if (Number(wr) <= 40 && p.t >= 5) p.badges.push("💀"); 
+    if (p.t > 0 && p.t === maxGames && p.t > 3) p.badges.push("Ã°Å¸Å¡Å“"); 
+    if (Number(wr) >= 60 && p.t >= 5) p.badges.push("Ã°Å¸Å¡â‚¬");
+    if (Number(wr) <= 40 && p.t >= 5) p.badges.push("Ã°Å¸â€™â‚¬"); 
     
     return {
       name: p.name,
@@ -9446,7 +9455,7 @@ function getEpicRankingData(seasonFilter) {
   });
 
   ranking.sort((a, b) => Number(b.points) - Number(a.points));
-  if (ranking.length > 0 && ranking[0].totalGames > 0) ranking[0].badges.unshift("👑"); 
+  if (ranking.length > 0 && ranking[0].totalGames > 0) ranking[0].badges.unshift("Ã°Å¸â€˜â€˜"); 
   ranking.forEach((r, i) => r.rank = i + 1);
 
   return ranking;
@@ -9455,7 +9464,7 @@ function getEpicRankingData(seasonFilter) {
 
 /* ----------------- ANUNCIO DE ROLES A DISCORD ----------------- */
 function sendDiscordRolesAnnouncement(winnersData) {
-  // 👇 TU WEBHOOK 👇
+  // Ã°Å¸â€˜â€¡ TU WEBHOOK Ã°Å¸â€˜â€¡
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
 
   if (!WEBHOOK_URL) return;
@@ -9465,42 +9474,42 @@ function sendDiscordRolesAnnouncement(winnersData) {
   const hEst = winnersData.HEXTECH.ESTRATEGA.playerName;
   const hTank = winnersData.HEXTECH.TANQUE.playerName;
 
-  const hexText = `⭐ **GENERAL:** ${hGen}\n🧠 **ESTRATEGA:** ${hEst}\n🛡️ **TANQUE:** ${hTank}`;
+  const hexText = `Ã¢Â­Â **GENERAL:** ${hGen}\nÃ°Å¸Â§Â  **ESTRATEGA:** ${hEst}\nÃ°Å¸â€ºÂ¡Ã¯Â¸Â **TANQUE:** ${hTank}`;
 
   // Formatear CHEMTECH
   const cGen = winnersData.CHEMTECH.GENERAL.playerName;
   const cEst = winnersData.CHEMTECH.ESTRATEGA.playerName;
   const cTank = winnersData.CHEMTECH.TANQUE.playerName;
 
-  const chemText = `⭐ **GENERAL:** ${cGen}\n🧠 **ESTRATEGA:** ${cEst}\n🛡️ **TANQUE:** ${cTank}`;
+  const chemText = `Ã¢Â­Â **GENERAL:** ${cGen}\nÃ°Å¸Â§Â  **ESTRATEGA:** ${cEst}\nÃ°Å¸â€ºÂ¡Ã¯Â¸Â **TANQUE:** ${cTank}`;
 
   const payload = {
     username: "SoloQ Referee",
     avatar_url: "https://i.imgur.com/M0k3y3N.png",
-    content: " 🗳️ **¡HABEMUS IMPERATOR!** Las urnas se han cerrado.",
+    content: " Ã°Å¸â€”Â³Ã¯Â¸Â **Ã‚Â¡HABEMUS IMPERATOR!** Las urnas se han cerrado.",
     embeds: [
       {
-        title: "📜 RESULTADOS DE LAS ELECCIONES",
+        title: "Ã°Å¸â€œÅ“ RESULTADOS DE LAS ELECCIONES",
         description: "Los nuevos oficiales han sido asignados para liderar la guerra esta semana.",
         color: 16766720, // Dorado
         fields: [
           {
-            name: "💎 HEXTECH (Fuerza Azul)",
+            name: "Ã°Å¸â€™Å½ HEXTECH (Fuerza Azul)",
             value: hexText,
             inline: true
           },
           {
-            name: "🧪 CHEMTECH (Fuerza Verde)",
+            name: "Ã°Å¸Â§Âª CHEMTECH (Fuerza Verde)",
             value: chemText,
             inline: true
           },
           {
-            name: "📋 Deberes",
-            value: "• **General:** +50% Puntos (Win/Loss)\n• **Estratega:** Bonus en Misiones Diarias\n• **Tanque:** Escudo anti-derrota (50% mitigación)",
+            name: "Ã°Å¸â€œâ€¹ Deberes",
+            value: "Ã¢â‚¬Â¢ **General:** +50% Puntos (Win/Loss)\nÃ¢â‚¬Â¢ **Estratega:** Bonus en Misiones Diarias\nÃ¢â‚¬Â¢ **Tanque:** Escudo anti-derrota (50% mitigaciÃƒÂ³n)",
             inline: false
           }
         ],
-        footer: { text: "SoloQ Challenge • Sistema de Facciones" },
+        footer: { text: "SoloQ Challenge Ã¢â‚¬Â¢ Sistema de Facciones" },
         timestamp: new Date().toISOString()
       }
     ]
@@ -9528,12 +9537,12 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
   const isWin = result === "Win";
   const pts = Number(points);
   
-  // --- 1. GESTIÓN DE COLORES (Escala Ampliada) ---
+  // --- 1. GESTIÃƒâ€œN DE COLORES (Escala Ampliada) ---
   let color = isWin ? 5763719 : 15548997; // Verde o Rojo base
   
   if (!isWin && pts >= 15) color = 16766720;      // Dorado (SVP)
   if (pts >= 40) color = 7419530;                 // Morado
-  if (pts >= 60) color = 3066993;                 // Azul Neón (Extremo)
+  if (pts >= 60) color = 3066993;                 // Azul NeÃƒÂ³n (Extremo)
   if (pts >= 80) color = 16777215;                // Blanco Brillante (Deidad)
   if (pts <= -40) color = 2303786;                // Negro (Desastre)
   if (pts <= -60) color = 0;                      // Negro Absoluto (Apocalipsis)
@@ -9552,73 +9561,73 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
 
   const thumbUrl = `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champClean}.png`;
 
-  // --- 2. JERARQUÍA DE ALERTAS (Escala +80 a -60) ---
+  // --- 2. JERARQUÃƒÂA DE ALERTAS (Escala +80 a -60) ---
   let contentMsg = ""; 
 
-  // COMBOS ÉPICOS
+  // COMBOS Ãƒâ€°PICOS
   if (notes.includes("Penta") && notes.includes("Solo Nashor")) {
-    contentMsg = "@everyone 🦁 **¡DEPREDADOR APEX!** (Penta + Nashor Solo)";
+    contentMsg = "@everyone Ã°Å¸Â¦Â **Ã‚Â¡DEPREDADOR APEX!** (Penta + Nashor Solo)";
   }
   else if (notes.includes("Penta") || notes.includes("PENTAKILL")) {
-    contentMsg = "@everyone 🚨 **¡PENTAKILL DETECTADA!** 🚨";
+    contentMsg = "@everyone Ã°Å¸Å¡Â¨ **Ã‚Â¡PENTAKILL DETECTADA!** Ã°Å¸Å¡Â¨";
   } 
   
   // ESCALA POSITIVA (+80)
   else if (pts >= 80) {
-    contentMsg = " 🌌 **¡¡DEIDAD ABSOLUTA!! (+80 PTS)** 🌌 ¡Este jugador ha roto el tejido de la realidad!";
+    contentMsg = " Ã°Å¸Å’Å’ **Ã‚Â¡Ã‚Â¡DEIDAD ABSOLUTA!! (+80 PTS)** Ã°Å¸Å’Å’ Ã‚Â¡Este jugador ha roto el tejido de la realidad!";
   }
   else if (pts >= 70) {
-    contentMsg = " ✨ **¡NIVEL CÓSMICO! (+70 PTS)** ✨ La Grieta se queda pequeña para este nivel.";
+    contentMsg = " Ã¢Å“Â¨ **Ã‚Â¡NIVEL CÃƒâ€œSMICO! (+70 PTS)** Ã¢Å“Â¨ La Grieta se queda pequeÃƒÂ±a para este nivel.";
   }
   else if (pts >= 60) {
-    contentMsg = " 🚀 **¡COLAPSO DEL BOT! (+60 PTS)** 🚀 ¡Alguien llame a los desarrolladores!";
+    contentMsg = " Ã°Å¸Å¡â‚¬ **Ã‚Â¡COLAPSO DEL BOT! (+60 PTS)** Ã°Å¸Å¡â‚¬ Ã‚Â¡Alguien llame a los desarrolladores!";
   }
   else if (pts >= 50) {
-    contentMsg = " 👑 **¡DIOS HA BAJADO A LA GRIETA! (+50 PTS)** 👑";
+    contentMsg = " Ã°Å¸â€˜â€˜ **Ã‚Â¡DIOS HA BAJADO A LA GRIETA! (+50 PTS)** Ã°Å¸â€˜â€˜";
   }
   else if (pts >= 40) {
-    contentMsg = " ⚛️ **¡NIVEL SCRIPT! (+40 PTS)** ⚛️";
+    contentMsg = " Ã¢Å¡â€ºÃ¯Â¸Â **Ã‚Â¡NIVEL SCRIPT! (+40 PTS)** Ã¢Å¡â€ºÃ¯Â¸Â";
   }
   else if (pts >= 30) {
-    contentMsg = "🦍 **¡ACTUACIÓN DE SMURF! (+30 PTS)**";
+    contentMsg = "Ã°Å¸Â¦Â **Ã‚Â¡ACTUACIÃƒâ€œN DE SMURF! (+30 PTS)**";
   }
   else if (pts >= 20) {
-    contentMsg = "🔥 **¡La Grieta está ardiendo!** (+20 PTS)";
+    contentMsg = "Ã°Å¸â€Â¥ **Ã‚Â¡La Grieta estÃƒÂ¡ ardiendo!** (+20 PTS)";
   }
 
   // ESCALA NEGATIVA (-60)
   else if (pts <= -60) {
-    contentMsg = " ☢️ **¡AMENAZA NACIONAL! (-60 PTS)** ☢️ Este jugador ha sido baneado de la existencia.";
+    contentMsg = " Ã¢ËœÂ¢Ã¯Â¸Â **Ã‚Â¡AMENAZA NACIONAL! (-60 PTS)** Ã¢ËœÂ¢Ã¯Â¸Â Este jugador ha sido baneado de la existencia.";
   }
   else if (pts <= -50) {
-    contentMsg = " 🚨 **¡CRIMINAL DE GUERRA! (-50 PTS)** 🚨 Elo terrorism detected.";
+    contentMsg = " Ã°Å¸Å¡Â¨ **Ã‚Â¡CRIMINAL DE GUERRA! (-50 PTS)** Ã°Å¸Å¡Â¨ Elo terrorism detected.";
   }
   else if (pts <= -40) {
-    contentMsg = " 👮 **¡REPORTADO A LA POLICÍA! (-40 PTS)** 👮 Cadena perpetua.";
+    contentMsg = " Ã°Å¸â€˜Â® **Ã‚Â¡REPORTADO A LA POLICÃƒÂA! (-40 PTS)** Ã°Å¸â€˜Â® Cadena perpetua.";
   }
   else if (pts <= -30) {
-    contentMsg = "🤡 **¡ALERTA DE TROLL! (-30 PTS)** ¿Qué ha sido eso?";
+    contentMsg = "Ã°Å¸Â¤Â¡ **Ã‚Â¡ALERTA DE TROLL! (-30 PTS)** Ã‚Â¿QuÃƒÂ© ha sido eso?";
   }
   else if (pts <= -20) {
-    contentMsg = "📉 **¡DESASTRE TOTAL! (-20 PTS)**";
+    contentMsg = "Ã°Å¸â€œâ€° **Ã‚Â¡DESASTRE TOTAL! (-20 PTS)**";
   }
   else if (pts <= -10) {
-    contentMsg = "🌧️ **¡DÍA GRIS! (-10 PTS)**";
+    contentMsg = "Ã°Å¸Å’Â§Ã¯Â¸Â **Ã‚Â¡DÃƒÂA GRIS! (-10 PTS)**";
   }
 
   // EVENTOS ESPECIALES
   if (contentMsg === "" && (notes.includes("MILAGRO") || notes.includes("Comeback"))) {
-      contentMsg = "📉📈 **¡COMEBACK IS REAL!**";
+      contentMsg = "Ã°Å¸â€œâ€°Ã°Å¸â€œË† **Ã‚Â¡COMEBACK IS REAL!**";
   }
 
-  // --- 3. LÓGICA DE MERCADO ---
+  // --- 3. LÃƒâ€œGICA DE MERCADO ---
   let marketText = "";
   if (priceDelta !== undefined && priceDelta !== null) {
       const deltaVal = Number(priceDelta);
-      const trendIcon = deltaVal >= 0 ? "📈" : "📉";
+      const trendIcon = deltaVal >= 0 ? "Ã°Å¸â€œË†" : "Ã°Å¸â€œâ€°";
       const sign = deltaVal > 0 ? "+" : ""; 
       const highlight = Math.abs(deltaVal) > 5 ? "**" : ""; 
-      marketText = `\n${trendIcon} Acción: ${highlight}${sign}${deltaVal.toFixed(1)} G${highlight}`;
+      marketText = `\n${trendIcon} AcciÃƒÂ³n: ${highlight}${sign}${deltaVal.toFixed(1)} G${highlight}`;
   }
 
   const payload = {
@@ -9631,11 +9640,11 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
       color: color,
       thumbnail: { url: thumbUrl },
       fields: [
-        { name: "⚔️ KDA", value: `\`${kda}\``, inline: true },
-        { name: "💎 Score", value: pts >= 25 ? `**🚀 ${pts > 0 ? '+' : ''}${pts} Pts**${marketText}` : `**${pts > 0 ? '+' : ''}${pts}** Pts${marketText}`, inline: true },
-        { name: "📋 Notas del Árbitro", value: (notes.length > 1024) ? notes.substring(0, 1021) + "..." : (notes || "Sin incidencias."), inline: false }
+        { name: "Ã¢Å¡â€Ã¯Â¸Â KDA", value: `\`${kda}\``, inline: true },
+        { name: "Ã°Å¸â€™Å½ Score", value: pts >= 25 ? `**Ã°Å¸Å¡â‚¬ ${pts > 0 ? '+' : ''}${pts} Pts**${marketText}` : `**${pts > 0 ? '+' : ''}${pts}** Pts${marketText}`, inline: true },
+        { name: "Ã°Å¸â€œâ€¹ Notas del ÃƒÂrbitro", value: (notes.length > 1024) ? notes.substring(0, 1021) + "..." : (notes || "Sin incidencias."), inline: false }
       ],
-      footer: { text: `SoloQ Pro v14 • ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}` }
+      footer: { text: `SoloQ Pro v14 Ã¢â‚¬Â¢ ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}` }
     }]
   };
 
@@ -9650,7 +9659,7 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
   }
 }
 
-// HELPER: Generar URL de gráfico para Discord (Usa QuickChart.io)
+// HELPER: Generar URL de grÃƒÂ¡fico para Discord (Usa QuickChart.io)
 function getDiscordChartUrl(ranking) {
   const labels = ranking.map(p => p.name);
   const data = ranking.map(p => p.points);
@@ -9668,7 +9677,7 @@ function getDiscordChartUrl(ranking) {
       }]
     },
     options: {
-      title: { display: true, text: 'TOP 5 - PUNTUACIÓN', fontColor: '#C8AA6E' },
+      title: { display: true, text: 'TOP 5 - PUNTUACIÃƒâ€œN', fontColor: '#C8AA6E' },
       legend: { display: false },
       scales: {
         yAxes: [{ ticks: { fontColor: '#fff' }, gridLines: { color: 'rgba(255,255,255,0.1)' } }],
@@ -9681,14 +9690,14 @@ function getDiscordChartUrl(ranking) {
   return baseUrl + encodeURIComponent(JSON.stringify(chartConfig));
 }
 
-// 2. PREPARAR DATOS PARA GRÁFICO DE EVOLUCIÓN
+// 2. PREPARAR DATOS PARA GRÃƒÂFICO DE EVOLUCIÃƒâ€œN
 function getEvolutionDataForWeb() {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('MATCHES');
   const data = matchesSheet.getDataRange().getValues();
   // data: [MatchID, Date, Summoner, ..., Points(12)]
   
-  // Obtener los Top 5 actuales para no saturar el gráfico
+  // Obtener los Top 5 actuales para no saturar el grÃƒÂ¡fico
   const topPlayers = getEpicRankingData().slice(0, 5).map(p => p.name);
   
   // Estructura: { "Nombre": [{x: fecha, y: puntosAcumulados}] }
@@ -9698,7 +9707,7 @@ function getEvolutionDataForWeb() {
   const runningScore = {}; // Puntos acumulados temporales
   topPlayers.forEach(p => runningScore[p] = 0);
 
-  // Recorremos las partidas cronológicamente (asumiendo que MATCHES está ordenado o lo ordenamos)
+  // Recorremos las partidas cronolÃƒÂ³gicamente (asumiendo que MATCHES estÃƒÂ¡ ordenado o lo ordenamos)
   // Saltamos header (i=1). Ordenamos por fecha (col 1)
   const sortedMatches = data.slice(1).sort((a, b) => new Date(a[1]) - new Date(b[1]));
 
@@ -9722,7 +9731,7 @@ function getEvolutionDataForWeb() {
 /* ----------------- RANKED DATA FETCHER (COMPLEJO) ----------------- */
 
 /**
- * Obtiene el Rango, División y LP actual de SoloQ.
+ * Obtiene el Rango, DivisiÃƒÂ³n y LP actual de SoloQ.
  * Requiere 2 llamadas API: PUUID -> SummonerID -> LeagueEntry
  */
 function getPlayerRankFromAPI(puuid, summonerName, apiKey) {
@@ -9734,7 +9743,7 @@ function getPlayerRankFromAPI(puuid, summonerName, apiKey) {
   const resSum = riotFetchJson(urlSummoner);
   
   if (!resSum || !resSum.id) {
-    logToSheet(`❌ Error buscando SummonerID para ${summonerName}`);
+    logToSheet(`Ã¢ÂÅ’ Error buscando SummonerID para ${summonerName}`);
     return null;
   }
   
@@ -9754,7 +9763,7 @@ function getPlayerRankFromAPI(puuid, summonerName, apiKey) {
         lp: soloQ.leaguePoints,
         wins: soloQ.wins,
         losses: soloQ.losses,
-        summonerId: summonerId // Guardamos esto para futuras llamadas rápidas
+        summonerId: summonerId // Guardamos esto para futuras llamadas rÃƒÂ¡pidas
       };
     }
   }
@@ -9763,18 +9772,18 @@ function getPlayerRankFromAPI(puuid, summonerName, apiKey) {
 }
 
 /**
- * Función para ejecutar manualmente y actualizar los rangos en la hoja PLAYERS
+ * FunciÃƒÂ³n para ejecutar manualmente y actualizar los rangos en la hoja PLAYERS
  */
 // =========================================================================
-// 🏆 ACTUALIZADOR DE ELOS (RANKED SOLO/DUO)
+// Ã°Å¸Ââ€  ACTUALIZADOR DE ELOS (RANKED SOLO/DUO)
 // =========================================================================
 function updateAllPlayerRanks() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("PLAYERS");
-  if (!sheet) return "No se encontró la hoja PLAYERS";
+  if (!sheet) return "No se encontrÃƒÂ³ la hoja PLAYERS";
 
   const data = sheet.getDataRange().getValues();
-  const apiKey = getRiotApiKey(); // Asegúrate de que esta función existe o pon tu API key aquí directamente
-  const region = "euw1"; // Cambia si tus jugadores están en otra región
+  const apiKey = getRiotApiKey(); // AsegÃƒÂºrate de que esta funciÃƒÂ³n existe o pon tu API key aquÃƒÂ­ directamente
+  const region = "euw1"; // Cambia si tus jugadores estÃƒÂ¡n en otra regiÃƒÂ³n
 
   let updatedCount = 0;
 
@@ -9782,10 +9791,10 @@ function updateAllPlayerRanks() {
   for (let i = 1; i < data.length; i++) {
     const summonerName = data[i][0]; // Columna A (Nombre)
     const puuid = data[i][2];        // Columna C (PUUID)
-    const isActive = data[i][4];     // Columna E (Active Sí/No)
+    const isActive = data[i][4];     // Columna E (Active SÃƒÂ­/No)
 
-    // Solo actualizamos jugadores que tengan PUUID y estén activos
-    if (!puuid || isActive !== "Sí") continue;
+    // Solo actualizamos jugadores que tengan PUUID y estÃƒÂ©n activos
+    if (!puuid || isActive !== "SÃƒÂ­") continue;
 
     try {
       // 1. Obtener el Summoner ID a partir del PUUID
@@ -9814,7 +9823,7 @@ function updateAllPlayerRanks() {
       let rankString = "Unranked";
       let lp = 0;
 
-      // 3. Buscar específicamente la cola de Solo/Duo
+      // 3. Buscar especÃƒÂ­ficamente la cola de Solo/Duo
       for (let j = 0; j < leagueData.length; j++) {
         if (leagueData[j].queueType === "RANKED_SOLO_5x5") {
           // Formatear el tier (Ej: "EMERALD" -> "Emerald")
@@ -9824,7 +9833,7 @@ function updateAllPlayerRanks() {
           let division = leagueData[j].rank;
           lp = leagueData[j].leaguePoints;
           
-          // Si es Master, Grandmaster o Challenger, no tienen división (I, II, III, IV)
+          // Si es Master, Grandmaster o Challenger, no tienen divisiÃƒÂ³n (I, II, III, IV)
           if (["Master", "Grandmaster", "Challenger"].includes(tier)) {
             rankString = `${tier} (${lp} LP)`;
           } else {
@@ -9841,28 +9850,28 @@ function updateAllPlayerRanks() {
       
       updatedCount++;
 
-      // 🛡️ PROTECCIÓN DE RATE LIMIT (Riot permite 100 peticiones cada 2 minutos)
+      // Ã°Å¸â€ºÂ¡Ã¯Â¸Â PROTECCIÃƒâ€œN DE RATE LIMIT (Riot permite 100 peticiones cada 2 minutos)
       // Como hacemos 2 peticiones por jugador, pausamos 1.5 segundos entre jugadores.
       Utilities.sleep(1500); 
 
     } catch (e) {
-      Logger.log(`Fallo crítico con ${summonerName}: ${e.message}`);
+      Logger.log(`Fallo crÃƒÂ­tico con ${summonerName}: ${e.message}`);
     }
   }
   
-  return `¡Se han actualizado los rangos de ${updatedCount} jugadores activos!`;
+  return `Ã‚Â¡Se han actualizado los rangos de ${updatedCount} jugadores activos!`;
 }
 
 
-/* ----------------- HELPER: CÁLCULO DE ORO REAL (TIMELINE) BLINDADO ----------------- */
+/* ----------------- HELPER: CÃƒÂLCULO DE ORO REAL (TIMELINE) BLINDADO ----------------- */
 function fetchRealGoldDeficit(matchId, myTeamId, region, apiKey) {
   const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline`;
   
-  // Usamos tu función segura que ya gestiona errores 429 y 500
+  // Usamos tu funciÃƒÂ³n segura que ya gestiona errores 429 y 500
   const data = riotFetchJson(url); 
 
   if (!data || data.__error || !data.info || !data.info.frames) {
-      Logger.log(`⚠️ Timeline no disponible o error para ${matchId}`);
+      Logger.log(`Ã¢Å¡Â Ã¯Â¸Â Timeline no disponible o error para ${matchId}`);
       return 0; 
   }
 
@@ -9883,7 +9892,7 @@ function fetchRealGoldDeficit(matchId, myTeamId, region, apiKey) {
     
     let diff = (myTeamId === 100) ? (gold100 - gold200) : (gold200 - gold100);
     
-    // Si diff es negativo (vamos perdiendo) y es el peor déficit visto
+    // Si diff es negativo (vamos perdiendo) y es el peor dÃƒÂ©ficit visto
     if (diff < 0 && Math.abs(diff) > maxDeficit) {
       maxDeficit = Math.abs(diff);
     }
@@ -9945,7 +9954,7 @@ function fetchRiotData(url, key) {
 // --- HELPER PARA CONVERTIR ROMANOS (IV -> 4) ---
 function romanToInt(roman) {
   const map = { I: 1, II: 2, III: 3, IV: 4 };
-  return map[roman] || roman; // Si no está en la lista, devuelve el original
+  return map[roman] || roman; // Si no estÃƒÂ¡ en la lista, devuelve el original
 }
 
 /* ----------------- SYNERGY / DUO ANALYZER ----------------- */
@@ -9955,7 +9964,7 @@ function showSynergyDashboard() {
       .evaluate()
       .setWidth(1000)
       .setHeight(800)
-      .setTitle('💞 Analizador de Sinergias (Dúos)');
+      .setTitle('Ã°Å¸â€™Å¾ Analizador de Sinergias (DÃƒÂºos)');
   SpreadsheetApp.getUi().showModalDialog(html, 'Reporte de Bromance');
 }
 
@@ -9994,20 +10003,20 @@ function getSynergyData() {
     });
   }
 
-  // 2. Detectar Dúos (Partidas con >1 jugador trackeado)
+  // 2. Detectar DÃƒÂºos (Partidas con >1 jugador trackeado)
   const synergies = {}; // Key: "PlayerA + PlayerB"
 
   for (const id in matchesById) {
     const match = matchesById[id];
     if (match.players.length > 1) {
       // Es una partida con amigos (Duo, Trio, Flex...)
-      // Generar pares únicos
+      // Generar pares ÃƒÂºnicos
       for (let i = 0; i < match.players.length; i++) {
         for (let j = i + 1; j < match.players.length; j++) {
           const p1 = match.players[i];
           const p2 = match.players[j];
 
-          // Ordenar nombres alfabéticamente para consistencia en la key
+          // Ordenar nombres alfabÃƒÂ©ticamente para consistencia en la key
           const names = [p1.name, p2.name].sort();
           const key = names.join(" & ");
 
@@ -10043,21 +10052,21 @@ function getSynergyData() {
     const p1_avg = (s.p1_totalPoints / s.games).toFixed(1);
     const p2_avg = (s.p2_totalPoints / s.games).toFixed(1);
 
-    // Determinar etiqueta de la relación
-    let tag = "😐 Normal";
+    // Determinar etiqueta de la relaciÃƒÂ³n
+    let tag = "Ã°Å¸ËœÂ Normal";
     let tagColor = "#7f8c8d"; // Gris
 
     if (s.games < 3) {
-       tag = "🆕 Recién Conocidos";
+       tag = "Ã°Å¸â€ â€¢ ReciÃƒÂ©n Conocidos";
     } else {
-      if (winRate >= 65) { tag = "🔥 Power Couple"; tagColor = "#2ecc71"; }
-      else if (winRate <= 35) { tag = "☣️ Tóxicos Juntos"; tagColor = "#e74c3c"; }
+      if (winRate >= 65) { tag = "Ã°Å¸â€Â¥ Power Couple"; tagColor = "#2ecc71"; }
+      else if (winRate <= 35) { tag = "Ã¢ËœÂ£Ã¯Â¸Â TÃƒÂ³xicos Juntos"; tagColor = "#e74c3c"; }
       
       // Detectar mochila (diferencia de puntos grande)
       const diff = Math.abs(p1_avg - p2_avg);
       if (diff > 3.0 && winRate > 45) {
          const carry = Number(p1_avg) > Number(p2_avg) ? s.p1 : s.p2;
-         tag = `🎒 ${carry} Carrilea`;
+         tag = `Ã°Å¸Å½â€™ ${carry} Carrilea`;
          tagColor = "#f1c40f";
       }
     }
@@ -10075,11 +10084,11 @@ function getSynergyData() {
     });
   }
 
-  // Ordenar por número de partidas
+  // Ordenar por nÃƒÂºmero de partidas
   return report.sort((a, b) => b.games - a.games);
 }
 /**
- * ¡BONUS! Actualiza un solo jugador (útil para testing)
+ * Ã‚Â¡BONUS! Actualiza un solo jugador (ÃƒÂºtil para testing)
  */
 function updateSinglePlayerRank() {
   const ui = SpreadsheetApp.getUi();
@@ -10093,7 +10102,7 @@ function updateSinglePlayerRank() {
 
   const playerName = response.getResponseText().trim();
   if (!playerName) {
-    ui.alert('No introdujiste ningún nombre.');
+    ui.alert('No introdujiste ningÃƒÂºn nombre.');
     return;
   }
 
@@ -10111,7 +10120,7 @@ function updateSinglePlayerRank() {
   }
 
   if (rowIndex === -1) {
-    ui.alert('Error', `No se encontró el jugador "${playerName}" en PLAYERS.`, ui.ButtonSet.OK);
+    ui.alert('Error', `No se encontrÃƒÂ³ el jugador "${playerName}" en PLAYERS.`, ui.ButtonSet.OK);
     return;
   }
 
@@ -10130,8 +10139,8 @@ function updateSinglePlayerRank() {
       playersSheet.getRange(rowIndex + 1, 10).setValue(rankData.lp);
       playersSheet.getRange(rowIndex + 1, 11).setValue(rankData.summonerId);
       
-      ui.alert('Éxito', `${playerName}: ${rankData.rank} (${rankData.lp} LP)`, ui.ButtonSet.OK);
-      logToSheet(`✅ Rango actualizado manualmente: ${playerName} → ${rankData.rank}`);
+      ui.alert('Ãƒâ€°xito', `${playerName}: ${rankData.rank} (${rankData.lp} LP)`, ui.ButtonSet.OK);
+      logToSheet(`Ã¢Å“â€¦ Rango actualizado manualmente: ${playerName} Ã¢â€ â€™ ${rankData.rank}`);
     } else {
       ui.alert('Info', `${playerName} no tiene clasificatoria este split.`, ui.ButtonSet.OK);
     }
@@ -10143,23 +10152,23 @@ function updateSinglePlayerRank() {
 
 
 /**
- * AÑADIR AL MENÚ (Pega esto en tu función onOpen)
+ * AÃƒâ€˜ADIR AL MENÃƒÅ¡ (Pega esto en tu funciÃƒÂ³n onOpen)
  */
 function onOpenRankingMenu() {
   const ui = SpreadsheetApp.getUi();
   
   ui.createMenu('SoloQ Challenge')
-    .addSubMenu(ui.createMenu('🏆 Gestión de Rangos')
+    .addSubMenu(ui.createMenu('Ã°Å¸Ââ€  GestiÃƒÂ³n de Rangos')
       .addItem('Actualizar Rangos de Todos', 'updateAllPlayerRanks')
       .addItem('Actualizar Rango Individual', 'updateSinglePlayerRank')
       .addSeparator()
-      .addItem('🔧 Test: Ver respuesta de API', 'testRankAPIResponse'))
+      .addItem('Ã°Å¸â€Â§ Test: Ver respuesta de API', 'testRankAPIResponse'))
     .addToUi();
 }
 
 
 /**
- * DIAGNÓSTICO: Ver qué devuelve Riot para un jugador específico
+ * DIAGNÃƒâ€œSTICO: Ver quÃƒÂ© devuelve Riot para un jugador especÃƒÂ­fico
  */
 function testRankAPIResponse() {
   const ui = SpreadsheetApp.getUi();
@@ -10205,15 +10214,15 @@ function testRankAPIResponse() {
 
 // MEJOR ENFOQUE: Modificar processMatch o syncMatches para actualizar el rango.
 // Como Riot requiere el SummonerID (que es diferente al PUUID) para mirar las ligas,
-// vamos a añadir una función específica que actualice rangos.
+// vamos a aÃƒÂ±adir una funciÃƒÂ³n especÃƒÂ­fica que actualice rangos.
 /**
- * ¡NUEVO! REPORTE DE MISIONES DINÁMICO (v6 - Soporta Hitos Acumulativos)
+ * Ã‚Â¡NUEVO! REPORTE DE MISIONES DINÃƒÂMICO (v6 - Soporta Hitos Acumulativos)
  * Lee de "MISSIONS" y "MISSION_STATE" para generar un reporte.
  */
 function showMissionProgressReport() {
   const ss = SpreadsheetApp.getActive();
   const ui = SpreadsheetApp.getUi();
-  ui.alert("Generando reporte de misiones dinámicas...", "Esto puede tardar un momento.", ui.ButtonSet.OK);
+  ui.alert("Generando reporte de misiones dinÃƒÂ¡micas...", "Esto puede tardar un momento.", ui.ButtonSet.OK);
 
   // 1. Cargar datos
   const missions = getMissions(true); // Forzar recarga de misiones
@@ -10233,7 +10242,7 @@ function showMissionProgressReport() {
     reportSheet = ss.insertSheet("MISSION_PROGRESS");
   }
 
-  // 3. Crear Headers dinámicos
+  // 3. Crear Headers dinÃƒÂ¡micos
   const headers = ['Jugador'];
   missions.forEach(m => {
     headers.push(`${m.Descripcion}\n(${m.Dificultad} / ${m.RecompensaPts}pts)`);
@@ -10241,7 +10250,7 @@ function showMissionProgressReport() {
   headers.push('Misiones Completadas');
   
   reportSheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground("#eeeeee");
-  reportSheet.setRowHeight(1, 60); // Más altura para headers
+  reportSheet.setRowHeight(1, 60); // MÃƒÂ¡s altura para headers
   reportSheet.setColumnWidth(1, 150); // Columna de Jugador
   if (headers.length > 1) {
       reportSheet.setColumnWidths(2, headers.length - 1, 200);
@@ -10261,25 +10270,25 @@ function showMissionProgressReport() {
       
       if (state.Status === 'Completed') {
         if (m.Tracking === 'Single') {
-          row.push(`✅ Completado (x${state.CurrentValue || 1})`);
+          row.push(`Ã¢Å“â€¦ Completado (x${state.CurrentValue || 1})`);
         } else {
-          // ¡NUEVO! Mostrar el valor final de las misiones acumulativas
+          // Ã‚Â¡NUEVO! Mostrar el valor final de las misiones acumulativas
           let finalValue = '';
           if (m.Tipo === 'GAMES_AS_ROLE' || m.Tipo === 'GAMES_AS_CHAMPION' || m.Tipo === 'CUMULATIVE_STAT' || m.Tipo === 'CUMULATIVE_CHALLENGE') {
             finalValue = ` (${state.CurrentValue})`;
           }
-          row.push(`✅ Completado${finalValue}`);
+          row.push(`Ã¢Å“â€¦ Completado${finalValue}`);
         }
         missionsCompleted++;
       } else {
         // Mostrar progreso
         if (m.Tracking === 'Cumulative') {
           let currentCount = 0;
-          // --- LÓGICA ACTUALIZADA ---
+          // --- LÃƒâ€œGICA ACTUALIZADA ---
           if (m.Tipo === 'GAMES_AS_ROLE' || m.Tipo === 'GAMES_AS_CHAMPION' || m.Tipo === 'CUMULATIVE_STAT' || m.Tipo === 'CUMULATIVE_CHALLENGE') {
             currentCount = parseInt(state.CurrentValue) || 0;
           } 
-          // --- FIN LÓGICA ACTUALIZADA ---
+          // --- FIN LÃƒâ€œGICA ACTUALIZADA ---
           else if (m.Tipo === 'CHAMPION_REGION' || m.Tipo === 'UNIQUE_LANES' || m.Tipo === 'CHAMPION_IN_UNIQUE_LANES' || m.Tipo === 'ONE_CHAMP_ALL_LANES') {
             if (m.Tipo === 'ONE_CHAMP_ALL_LANES') {
                 try {
@@ -10295,7 +10304,7 @@ function showMissionProgressReport() {
           }
           row.push(`${currentCount} / ${m.ValorRequerido}`);
         } else {
-          row.push('❌ Pendiente');
+          row.push('Ã¢ÂÅ’ Pendiente');
         }
       }
     } // Fin bucle de misiones
@@ -10311,11 +10320,11 @@ function showMissionProgressReport() {
   }
   
   reportSheet.activate();
-  ui.alert("Éxito", "Se ha generado el reporte 'MISSION_PROGRESS'.", ui.ButtonSet.OK);
+  ui.alert("Ãƒâ€°xito", "Se ha generado el reporte 'MISSION_PROGRESS'.", ui.ButtonSet.OK);
 }
 /* =========================================
-   🧠 ANÁLISIS DE COMPORTAMIENTO (V12.0)
-   Cronotipo + Índice Coinflip
+   Ã°Å¸Â§Â  ANÃƒÂLISIS DE COMPORTAMIENTO (V12.0)
+   Cronotipo + ÃƒÂndice Coinflip
    ========================================= */
 
 function showBehaviorDashboard() {
@@ -10323,8 +10332,8 @@ function showBehaviorDashboard() {
       .evaluate()
       .setWidth(1150)
       .setHeight(850)
-      .setTitle('🧠 Psicología de la Grieta: Cronotipos & Coinflips');
-  SpreadsheetApp.getUi().showModalDialog(html, 'Análisis de Comportamiento');
+      .setTitle('Ã°Å¸Â§Â  PsicologÃƒÂ­a de la Grieta: Cronotipos & Coinflips');
+  SpreadsheetApp.getUi().showModalDialog(html, 'AnÃƒÂ¡lisis de Comportamiento');
 }
 
 function getBehaviorData() {
@@ -10351,10 +10360,10 @@ function getBehaviorData() {
       playersData[summ] = {
         pointsHistory: [],
         timeSlots: {
-          '🌅 Mañana (06-12)': { games: 0, wins: 0 },
-          '☀️ Tarde (12-20)': { games: 0, wins: 0 },
-          '🌙 Noche (20-02)': { games: 0, wins: 0 },
-          '🧟 Zombie (02-06)': { games: 0, wins: 0 }
+          'Ã°Å¸Å’â€¦ MaÃƒÂ±ana (06-12)': { games: 0, wins: 0 },
+          'Ã¢Ëœâ‚¬Ã¯Â¸Â Tarde (12-20)': { games: 0, wins: 0 },
+          'Ã°Å¸Å’â„¢ Noche (20-02)': { games: 0, wins: 0 },
+          'Ã°Å¸Â§Å¸ Zombie (02-06)': { games: 0, wins: 0 }
         }
       };
     }
@@ -10368,12 +10377,12 @@ function getBehaviorData() {
     const hour = date.getHours();
     let slot = '';
     
-    if (hour >= 6 && hour < 12) slot = '🌅 Mañana (06-12)';
-    else if (hour >= 12 && hour < 20) slot = '☀️ Tarde (12-20)';
-    else if (hour >= 20 || hour < 2) slot = '🌙 Noche (20-02)'; // Nota: hour < 2 cubre 00:00 y 01:00
+    if (hour >= 6 && hour < 12) slot = 'Ã°Å¸Å’â€¦ MaÃƒÂ±ana (06-12)';
+    else if (hour >= 12 && hour < 20) slot = 'Ã¢Ëœâ‚¬Ã¯Â¸Â Tarde (12-20)';
+    else if (hour >= 20 || hour < 2) slot = 'Ã°Å¸Å’â„¢ Noche (20-02)'; // Nota: hour < 2 cubre 00:00 y 01:00
     // Fix para javascript getHours() que va de 0 a 23:
-    if (hour >= 0 && hour < 2) slot = '🌙 Noche (20-02)'; 
-    if (hour >= 2 && hour < 6) slot = '🧟 Zombie (02-06)';
+    if (hour >= 0 && hour < 2) slot = 'Ã°Å¸Å’â„¢ Noche (20-02)'; 
+    if (hour >= 2 && hour < 6) slot = 'Ã°Å¸Â§Å¸ Zombie (02-06)';
 
     if (playersData[summ].timeSlots[slot]) {
       playersData[summ].timeSlots[slot].games++;
@@ -10381,27 +10390,27 @@ function getBehaviorData() {
     }
   }
 
-  // 2. Calcular Estadísticas Finales
+  // 2. Calcular EstadÃƒÂ­sticas Finales
   const coinflipRanking = [];
   const chronoRanking = [];
 
   for (const summ in playersData) {
     const d = playersData[summ];
     
-    // --- CÁLCULO COINFLIP (Desviación Estándar) ---
+    // --- CÃƒÂLCULO COINFLIP (DesviaciÃƒÂ³n EstÃƒÂ¡ndar) ---
     const n = d.pointsHistory.length;
-    if (n >= 5) { // Mínimo de partidas para ser estadísticamente relevante
+    if (n >= 5) { // MÃƒÂ­nimo de partidas para ser estadÃƒÂ­sticamente relevante
       const mean = d.pointsHistory.reduce((a,b) => a+b, 0) / n;
       const variance = d.pointsHistory.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / n;
       const stdDev = Math.sqrt(variance);
 
-      let tag = "😐 Estándar";
+      let tag = "Ã°Å¸ËœÂ EstÃƒÂ¡ndar";
       let color = "#95a5a6";
       
-      if (stdDev < 1.8) { tag = "🗿 La Roca"; color = "#27ae60"; } // Muy estable
-      else if (stdDev > 5.0) { tag = "🏥 Psiquiátrico"; color = "#8e44ad"; } // Extremo
-      else if (stdDev > 3.5) { tag = "🎰 Ludópata"; color = "#e74c3c"; } // Coinflip
-      else if (stdDev > 2.5) { tag = "🎲 Arriesgado"; color = "#f39c12"; }
+      if (stdDev < 1.8) { tag = "Ã°Å¸â€”Â¿ La Roca"; color = "#27ae60"; } // Muy estable
+      else if (stdDev > 5.0) { tag = "Ã°Å¸ÂÂ¥ PsiquiÃƒÂ¡trico"; color = "#8e44ad"; } // Extremo
+      else if (stdDev > 3.5) { tag = "Ã°Å¸Å½Â° LudÃƒÂ³pata"; color = "#e74c3c"; } // Coinflip
+      else if (stdDev > 2.5) { tag = "Ã°Å¸Å½Â² Arriesgado"; color = "#f39c12"; }
 
       coinflipRanking.push({
         name: summ,
@@ -10413,7 +10422,7 @@ function getBehaviorData() {
       });
     }
 
-    // --- CÁLCULO CRONOTIPO (Mejor y Peor Hora) ---
+    // --- CÃƒÂLCULO CRONOTIPO (Mejor y Peor Hora) ---
     let bestSlot = { name: 'N/A', wr: -1, games: 0 };
     let worstSlot = { name: 'N/A', wr: 101, games: 0 };
     let totalGamesChrono = 0;
@@ -10421,7 +10430,7 @@ function getBehaviorData() {
     for (const slotName in d.timeSlots) {
       const s = d.timeSlots[slotName];
       totalGamesChrono += s.games;
-      if (s.games >= 3) { // Mínimo 3 partidas en ese horario para considerarlo
+      if (s.games >= 3) { // MÃƒÂ­nimo 3 partidas en ese horario para considerarlo
         const wr = (s.wins / s.games) * 100;
         
         if (wr > bestSlot.wr) { bestSlot = { name: slotName, wr: wr, games: s.games }; }
@@ -10432,7 +10441,7 @@ function getBehaviorData() {
     if (totalGamesChrono >= 5 && bestSlot.wr !== -1) {
       chronoRanking.push({
         name: summ,
-        primeTime: bestSlot.name.split(' ')[1], // Solo el nombre (Mañana/Tarde...)
+        primeTime: bestSlot.name.split(' ')[1], // Solo el nombre (MaÃƒÂ±ana/Tarde...)
         primeWR: bestSlot.wr.toFixed(0),
         kryptonite: worstSlot.name.split(' ')[1],
         kryptoniteWR: worstSlot.wr.toFixed(0),
@@ -10441,7 +10450,7 @@ function getBehaviorData() {
     }
   }
 
-  // Ordenar: Coinflip por volatilidad (desc), Cronotipo alfabético
+  // Ordenar: Coinflip por volatilidad (desc), Cronotipo alfabÃƒÂ©tico
   coinflipRanking.sort((a, b) => b.volatility - a.volatility);
   chronoRanking.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -10468,14 +10477,14 @@ function getPlayerAnalytics(summonerName) {
         }
     }
 
-    // --- 🟢 ESTRUCTURA DE ROLES ---
+    // --- Ã°Å¸Å¸Â¢ ESTRUCTURA DE ROLES ---
     const createBaseStats = () => ({
         games: 0, advGames: 0, wins: 0, losses: 0,
         k: 0, d: 0, a: 0, pts: 0,
         gpm: 0, cs: 0, dpm: 0, vspm: 0, turrets: 0,
         champs: new Set(),
         history: [], // Para calcular la racha
-        pointEvents: [] // Para el gráfico de líneas
+        pointEvents: [] // Para el grÃƒÂ¡fico de lÃƒÂ­neas
     });
 
     const dataMap = {
@@ -10495,7 +10504,7 @@ function getPlayerAnalytics(summonerName) {
         const result = matchesData[i][5];
         let role = (matchesData[i][4] || 'UNKNOWN').toUpperCase();
         
-        // Normalización de roles
+        // NormalizaciÃƒÂ³n de roles
         if (role === "UTILITY") role = "SUPPORT";
         if (role === "BOT") role = "BOTTOM";
         if (role === "MID") role = "MIDDLE";
@@ -10548,7 +10557,7 @@ function getPlayerAnalytics(summonerName) {
         }
     }
 
-    // --- CÁLCULOS FINALES ---
+    // --- CÃƒÂLCULOS FINALES ---
     const finalPayload = {};
     const usedRoles = []; // Para pintar el rosco
     const roleColors = { 'TOP':'#10b981', 'JUNGLE':'#ef4444', 'MIDDLE':'#8b5cf6', 'BOTTOM':'#f59e0b', 'SUPPORT':'#3b82f6' };
@@ -10573,7 +10582,7 @@ function getPlayerAnalytics(summonerName) {
             if (lastRes === 'Loss') streak = -streak;
         }
 
-        // Gráfico de Puntos
+        // GrÃƒÂ¡fico de Puntos
         let runPts = 0;
         const chartPoints = [];
         if (s.pointEvents.length > 0) {
@@ -10630,7 +10639,7 @@ function getPlayerAnalytics(summonerName) {
     };
 
     return {
-      statsMap: finalPayload, // 👈 Enviamos TODO el mapa completo
+      statsMap: finalPayload, // Ã°Å¸â€˜Ë† Enviamos TODO el mapa completo
       roleChartData: roleChartData
     };
 
@@ -10640,7 +10649,7 @@ function getPlayerAnalytics(summonerName) {
 }
 
 /* =========================================
-   💰 MÓDULO DE BOLSA (FALTABA ESTO)
+   Ã°Å¸â€™Â° MÃƒâ€œDULO DE BOLSA (FALTABA ESTO)
    ========================================= */
 
 function SetupMarket() {
@@ -10655,7 +10664,7 @@ function SetupMarket() {
     const pSheet = ss.getSheetByName('PLAYERS');
     if(pSheet) {
       const players = pSheet.getRange(2, 1, pSheet.getLastRow()-1, 1).getValues().flat().filter(String);
-      const initData = players.map(p => [p, 100, 1000, '➡️', 0]);
+      const initData = players.map(p => [p, 100, 1000, 'Ã¢Å¾Â¡Ã¯Â¸Â', 0]);
       if(initData.length > 0) sheet.getRange(2, 1, initData.length, 5).setValues(initData);
     }
   }
@@ -10672,12 +10681,12 @@ function SetupMarket() {
     sheet.getRange('A1:F1').setValues([['Date', 'Type', 'Investor', 'Target', 'Amount', 'Price_At_Moment']]).setFontWeight('bold');
   }
 
-  ui.alert('✅ Setup de Bolsa completado. Se han creado las hojas necesarias.');
+  ui.alert('Ã¢Å“â€¦ Setup de Bolsa completado. Se han creado las hojas necesarias.');
 }
 
 
 /* =========================================
-   💸 EJECUCIÓN DE COMERCIO CON IMPACTO DE MERCADO
+   Ã°Å¸â€™Â¸ EJECUCIÃƒâ€œN DE COMERCIO CON IMPACTO DE MERCADO
    ========================================= */
 
 function executeTrade(action, investor, target, amount) {
@@ -10687,41 +10696,41 @@ function executeTrade(action, investor, target, amount) {
   try {
       lock.waitLock(30000); 
   } catch (e) {
-      return { success: false, msg: "El mercado está muy ocupado. Intenta en 1 minuto." };
+      return { success: false, msg: "El mercado estÃƒÂ¡ muy ocupado. Intenta en 1 minuto." };
   }
   try {
-    // --- ⚙️ CONFIGURACIÓN DE LÍMITES ---
-    const MAX_TOTAL_SUPPLY = 35;   // Límite Global
-    const MAX_PER_PERSON = 15;     // Límite Personal
+    // --- Ã¢Å¡â„¢Ã¯Â¸Â CONFIGURACIÃƒâ€œN DE LÃƒÂMITES ---
+    const MAX_TOTAL_SUPPLY = 35;   // LÃƒÂ­mite Global
+    const MAX_PER_PERSON = 15;     // LÃƒÂ­mite Personal
     
-    // --- 🧹 LIMPIEZA DE NOMBRES (CRÍTICO) ---
+    // --- Ã°Å¸Â§Â¹ LIMPIEZA DE NOMBRES (CRÃƒÂTICO) ---
     // Esto evita el error de "Jugador no encontrado" por culpa de espacios
     const cleanInvestor = String(investor).trim().toLowerCase();
     const cleanTarget = String(target).trim().toLowerCase();
 
-    // 1. Validaciones básicas (Partida en Vivo)
-    // Usamos el nombre original 'target' para buscar PUUID porque esa función ya limpia dentro
+    // 1. Validaciones bÃƒÂ¡sicas (Partida en Vivo)
+    // Usamos el nombre original 'target' para buscar PUUID porque esa funciÃƒÂ³n ya limpia dentro
     const targetPuuid = getPuuidFromSheet(target); 
     if (targetPuuid) {
         const liveCheck = getLiveStatus(targetPuuid); 
         if (liveCheck.isLive) {
-            return { success: false, msg: `⛔ MERCADO CERRADO: ${target} está en partida.` };
+            return { success: false, msg: `Ã¢â€ºâ€ MERCADO CERRADO: ${target} estÃƒÂ¡ en partida.` };
         }
     }
-    if (cleanInvestor === cleanTarget) return { success: false, msg: "⛔ No puedes comerciar contigo mismo." };
+    if (cleanInvestor === cleanTarget) return { success: false, msg: "Ã¢â€ºâ€ No puedes comerciar contigo mismo." };
 
     const ss = SpreadsheetApp.getActive();
     const marketSheet = ss.getSheetByName('MARKET_STATUS');
     const portSheet = ss.getSheetByName('PORTFOLIO');
     const txSheet = ss.getSheetByName('TRANSACTIONS');
 
-    // Configuración Económica
+    // ConfiguraciÃƒÂ³n EconÃƒÂ³mica
     const IMPACT_FACTOR_BASE = 0.006; 
     const MAX_MOVE_PER_TRADE = 0.1;  
     const MIN_PRICE = 15;             
     let TRADE_FEE = 0.05;             
 
-    // Buscar filas de mercado (USANDO COMPARACIÓN LIMPIA)
+    // Buscar filas de mercado (USANDO COMPARACIÃƒâ€œN LIMPIA)
     const marketData = marketSheet.getDataRange().getValues();
     let investorRow = -1, targetRow = -1;
     
@@ -10739,17 +10748,17 @@ function executeTrade(action, investor, target, amount) {
     // LEEMOS EL ESTADO ACTUAL
     const currentTrend = String(marketSheet.getRange(targetRow, 4).getValue()); 
 
-    // Cálculo de Comisiones (Fees)
+    // CÃƒÂ¡lculo de Comisiones (Fees)
     if (currentPrice < 25) TRADE_FEE = 0.30;
     else if (currentPrice < 50) TRADE_FEE = 0.20;
 
     // Suelo de precio
-    if (currentPrice < MIN_PRICE && currentTrend !== '🔒') {
+    if (currentPrice < MIN_PRICE && currentTrend !== 'Ã°Å¸â€â€™') {
         currentPrice = MIN_PRICE;
         marketSheet.getRange(targetRow, 2).setValue(MIN_PRICE);
     }
 
-    // --- 🔍 ANÁLISIS DE PORTAFOLIO (CORREGIDO CON TRIM) ---
+    // --- Ã°Å¸â€Â ANÃƒÂLISIS DE PORTAFOLIO (CORREGIDO CON TRIM) ---
     const pData = portSheet.getDataRange().getValues();
     let portRow = -1;
     let mySharesOwned = 0;
@@ -10760,12 +10769,12 @@ function executeTrade(action, investor, target, amount) {
         const pTarget = String(pData[i][1]).trim().toLowerCase();
         const pInvestor = String(pData[i][0]).trim().toLowerCase();
 
-        // 1. Calcular Circulación Total (Sumar todas las acciones de este Target)
+        // 1. Calcular CirculaciÃƒÂ³n Total (Sumar todas las acciones de este Target)
         if (pTarget === cleanTarget) {
             totalSharesInCirculation += Number(pData[i][2]);
         }
 
-        // 2. Buscar TU fila específica (Inversor + Target)
+        // 2. Buscar TU fila especÃƒÂ­fica (Inversor + Target)
         if(pInvestor === cleanInvestor && pTarget === cleanTarget) {
             portRow = i + 1; 
             mySharesOwned = Number(pData[i][2]);
@@ -10778,25 +10787,25 @@ function executeTrade(action, investor, target, amount) {
 
 
     // ==========================================
-    // 🟢 COMPRA (BUY)
+    // Ã°Å¸Å¸Â¢ COMPRA (BUY)
     // ==========================================
     if (action === 'BUY') {
       
       // 1. BLOQUEO POR BANCARROTA (NUEVO)
-      if (currentTrend === '🔒') {
-          return { success: false, msg: `⛔ MERCADO CERRADO: ${target} está en bancarrota (<30G). Solo se permiten ventas.` };
+      if (currentTrend === 'Ã°Å¸â€â€™') {
+          return { success: false, msg: `Ã¢â€ºâ€ MERCADO CERRADO: ${target} estÃƒÂ¡ en bancarrota (<30G). Solo se permiten ventas.` };
       }
 
       // 2. CHEQUEO DE STOCK GLOBAL
       const remainingSupply = MAX_TOTAL_SUPPLY - totalSharesInCirculation;
       if (amount > remainingSupply) {
-          if (remainingSupply <= 0) return { success: false, msg: `⛔ SOLD OUT! No quedan acciones de ${target}.` };
-          return { success: false, msg: `⛔ Stock insuficiente. Solo quedan ${remainingSupply} disponibles.` };
+          if (remainingSupply <= 0) return { success: false, msg: `Ã¢â€ºâ€ SOLD OUT! No quedan acciones de ${target}.` };
+          return { success: false, msg: `Ã¢â€ºâ€ Stock insuficiente. Solo quedan ${remainingSupply} disponibles.` };
       }
 
-      // 3. CHEQUEO DE LÍMITE PERSONAL
+      // 3. CHEQUEO DE LÃƒÂMITE PERSONAL
       if ((mySharesOwned + amount) > MAX_PER_PERSON) {
-           return { success: false, msg: `⛔ Límite personal. Máximo ${MAX_PER_PERSON} acciones por jugador.` };
+           return { success: false, msg: `Ã¢â€ºâ€ LÃƒÂ­mite personal. MÃƒÂ¡ximo ${MAX_PER_PERSON} acciones por jugador.` };
       }
 
       const baseCost = currentPrice * amount;
@@ -10826,9 +10835,9 @@ function executeTrade(action, investor, target, amount) {
       
       let percentChange = ((newPrice - currentPrice) / currentPrice) * 100;
 
-      // --- CAMBIO AQUÍ: Condición por cantidad (>= 10 acciones) ---
+      // --- CAMBIO AQUÃƒÂ: CondiciÃƒÂ³n por cantidad (>= 10 acciones) ---
       if (amount >= 10) {
-        registerNews("WHALE", `🐋 ¡Ballena! Compra fuerte mueve a ${target} (+${percentChange.toFixed(1)}%)`);
+        registerNews("WHALE", `Ã°Å¸Ââ€¹ Ã‚Â¡Ballena! Compra fuerte mueve a ${target} (+${percentChange.toFixed(1)}%)`);
       }
       // -------------------------------------------------------------
 
@@ -10840,7 +10849,7 @@ function executeTrade(action, investor, target, amount) {
 
 
     // ==========================================
-    // 🔴 VENTA (SELL)
+    // Ã°Å¸â€Â´ VENTA (SELL)
     // ==========================================
     if (action === 'SELL') {
       if (mySharesOwned < amount) return { success: false, msg: "No tienes suficientes acciones." };
@@ -10862,15 +10871,15 @@ function executeTrade(action, investor, target, amount) {
       // Impacto Bajada
       let newPrice = currentPrice * (1 - actualImpact);
       
-      // Respetar mínimos (si está en bancarrota puede bajar hasta 1, si no, mínimo 10)
-      if (currentTrend !== '🔒' && newPrice < MIN_PRICE) newPrice = MIN_PRICE;
-      if (currentTrend === '🔒' && newPrice < 1) newPrice = 1;
+      // Respetar mÃƒÂ­nimos (si estÃƒÂ¡ en bancarrota puede bajar hasta 1, si no, mÃƒÂ­nimo 10)
+      if (currentTrend !== 'Ã°Å¸â€â€™' && newPrice < MIN_PRICE) newPrice = MIN_PRICE;
+      if (currentTrend === 'Ã°Å¸â€â€™' && newPrice < 1) newPrice = 1;
       
       marketSheet.getRange(targetRow, 2).setValue(newPrice);
 
       let percentDrop = ((currentPrice - newPrice) / currentPrice) * 100;
       if (percentDrop > 2.9) {
-        registerNews("DUMP", `📉 Venta fuerte de ${target} (-${percentDrop.toFixed(1)}%)`);
+        registerNews("DUMP", `Ã°Å¸â€œâ€° Venta fuerte de ${target} (-${percentDrop.toFixed(1)}%)`);
       }
 
       if(txSheet) txSheet.appendRow([new Date(), 'SELL', investor, target, amount, totalGain]);
@@ -10879,13 +10888,13 @@ function executeTrade(action, investor, target, amount) {
     }
 
   } catch(e) {
-    return { success: false, msg: "Error crítico: " + e.message };
+    return { success: false, msg: "Error crÃƒÂ­tico: " + e.message };
   } finally {
     lock.releaseLock();
   }
 }
 
-/* --- NUEVA FUNCIÓN PARA HISTORIAL --- */
+/* --- NUEVA FUNCIÃƒâ€œN PARA HISTORIAL --- */
 function getUserHistory(username) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('TRANSACTIONS');
@@ -10903,31 +10912,31 @@ function getUserHistory(username) {
     total: (r[4] * r[5]).toFixed(0)
   }));
   
-  // Devolver las más recientes primero
+  // Devolver las mÃƒÂ¡s recientes primero
   return history.reverse();
 }
 
 // ==========================================
-// 1. LEER DATOS DEL MERCADO (VERSIÓN PRO v3.0)
+// 1. LEER DATOS DEL MERCADO (VERSIÃƒâ€œN PRO v3.0)
 // ==========================================
 function getMarketData() {
   const ss = SpreadsheetApp.getActive();
   
-  // Referencias a las hojas (Asegúrate de que los nombres coincidan exactamente)
+  // Referencias a las hojas (AsegÃƒÂºrate de que los nombres coincidan exactamente)
   const marketSheet = ss.getSheetByName('MARKET_STATUS');
   const newsSheet = ss.getSheetByName('MARKET_NEWS');
   const portSheet = ss.getSheetByName('PORTFOLIO'); 
   const sponsorSheet = ss.getSheetByName('SPONSORSHIPS');
   const playersSheet = ss.getSheetByName('PLAYERS');
-  const transSheet = ss.getSheetByName('TRANSACTIONS'); // 🆕 Necesaria para dividendos
+  const transSheet = ss.getSheetByName('TRANSACTIONS'); // Ã°Å¸â€ â€¢ Necesaria para dividendos
   
-  // Si no existe la hoja principal, devolvemos estructura vacía para evitar crash
+  // Si no existe la hoja principal, devolvemos estructura vacÃƒÂ­a para evitar crash
   if (!marketSheet) return { stocks: [], wallets: {}, news: [], forbes: [], shame: [], topStocks: [], flopStocks: [] };
 
   const MAX_SUPPLY = 30; 
 
-  // --- HELPER: CONVERTIR A NÚMERO SEGURO ---
-  // Convierte cualquier basura (#NUM!, texto, vacio) en un número o 0.
+  // --- HELPER: CONVERTIR A NÃƒÅ¡MERO SEGURO ---
+  // Convierte cualquier basura (#NUM!, texto, vacio) en un nÃƒÂºmero o 0.
   const safeNum = (val, def = 0) => {
       if (val === "#NUM!" || val === "#DIV/0!" || val === "#VALUE!") return def;
       const n = Number(val);
@@ -10935,7 +10944,7 @@ function getMarketData() {
   };
 
   // ----------------------------------------------------
-  // 1. CALCULAR ACCIONES EN CIRCULACIÓN (Supply)
+  // 1. CALCULAR ACCIONES EN CIRCULACIÃƒâ€œN (Supply)
   // ----------------------------------------------------
   const circulationMap = {};
   if (portSheet && portSheet.getLastRow() > 1) {
@@ -10980,8 +10989,8 @@ function getMarketData() {
             const name = String(r[0]).trim();
             const price = safeNum(r[1], 10);        // Col B: Precio
             const walletBalance = safeNum(r[2], 1000); // Col C: Saldo
-            const trend = r[3] || '➡️';             // Col D: Emoji
-            const change = safeNum(r[4], 0);        // Col E: Cambio Última Partida
+            const trend = r[3] || 'Ã¢Å¾Â¡Ã¯Â¸Â';             // Col D: Emoji
+            const change = safeNum(r[4], 0);        // Col E: Cambio ÃƒÅ¡ltima Partida
 
             // Inicializamos la cartera del usuario
             wallets[name] = { 
@@ -10989,12 +10998,12 @@ function getMarketData() {
                 portfolio: {}, 
                 stockValue: 0, 
                 activeSponsors: [],
-                totalDividends: 0, // 🆕 Acumulado de dividendos
-                dailyPL: 0         // 🆕 Ganancia/Pérdida diaria teórica
+                totalDividends: 0, // Ã°Å¸â€ â€¢ Acumulado de dividendos
+                dailyPL: 0         // Ã°Å¸â€ â€¢ Ganancia/PÃƒÂ©rdida diaria teÃƒÂ³rica
             };
 
-            // FILTRO: Si NO es Broker, es una acción comprable
-            if (trend !== '💼') {
+            // FILTRO: Si NO es Broker, es una acciÃƒÂ³n comprable
+            if (trend !== 'Ã°Å¸â€™Â¼') {
                 
                 // Blindaje del Historial JSON (Col F)
                 let history = [];
@@ -11006,7 +11015,7 @@ function getMarketData() {
                     history = [price, price, price, price]; 
                 }
 
-                // Cálculo de Stock Disponible
+                // CÃƒÂ¡lculo de Stock Disponible
                 const used = circulationMap[name] || 0;
                 let available = MAX_SUPPLY - used;
                 if (available < 0) available = 0;
@@ -11060,9 +11069,9 @@ function getMarketData() {
            if(s) {
                currentVal = amount * s.price;
                
-               // 🆕 CÁLCULO DE TENDENCIA (Daily P/L)
+               // Ã°Å¸â€ â€¢ CÃƒÂLCULO DE TENDENCIA (Daily P/L)
                // (Cantidad * Cambio de precio hoy)
-               // Ejemplo: Tienes 10 acciones, subió 5g -> Ganaste 50g hoy.
+               // Ejemplo: Tienes 10 acciones, subiÃƒÂ³ 5g -> Ganaste 50g hoy.
                wallets[investor].dailyPL += (amount * s.lastChange); 
 
            } else if (target === 'Broker') { 
@@ -11076,7 +11085,7 @@ function getMarketData() {
   }
 
   // ----------------------------------------------------
-  // 5. CARGAR DIVIDENDOS HISTÓRICOS 🆕
+  // 5. CARGAR DIVIDENDOS HISTÃƒâ€œRICOS Ã°Å¸â€ â€¢
   // ----------------------------------------------------
   if (transSheet && transSheet.getLastRow() > 1) {
       // Asumimos: Col B=Usuario, Col C=Tipo, Col D=Monto
@@ -11087,7 +11096,7 @@ function getMarketData() {
           const type = String(row[2]).toUpperCase(); 
           const amount = safeNum(row[3], 0);
 
-          // Si es un dividendo o pago del sistema, lo sumamos al histórico
+          // Si es un dividendo o pago del sistema, lo sumamos al histÃƒÂ³rico
           if (wallets[user] && (type === 'DIVIDEND' || type === 'PAYOUT' || type.includes('PASSIVE'))) {
               wallets[user].totalDividends += amount;
           }
@@ -11113,7 +11122,7 @@ function getMarketData() {
   // 7. GENERAR RANKINGS (Filtrados)
   // ----------------------------------------------------
   for (const investor in wallets) {
-    // Solo mostramos en ranking a los que son Jugadores (están en stocks)
+    // Solo mostramos en ranking a los que son Jugadores (estÃƒÂ¡n en stocks)
     // Esto oculta Brokers, Bancos, etc.
     const isPlayer = stocks.some(s => s.name === investor); 
     
@@ -11122,7 +11131,7 @@ function getMarketData() {
        netWorthMap.push({ 
            name: investor, 
            netWorth: w.balance + w.stockValue,
-           // 🆕 Enviamos los datos nuevos al frontend
+           // Ã°Å¸â€ â€¢ Enviamos los datos nuevos al frontend
            dailyPL: w.dailyPL,
            totalDividends: w.totalDividends
        });
@@ -11142,7 +11151,7 @@ function getMarketData() {
   // ----------------------------------------------------
   let news = [];
   if (newsSheet && newsSheet.getLastRow() > 1) {
-    // Últimas 10 noticias
+    // ÃƒÅ¡ltimas 10 noticias
     const startRow = Math.max(2, newsSheet.getLastRow() - 9); 
     const numRows = newsSheet.getLastRow() - startRow + 1;
     const newsData = newsSheet.getRange(startRow, 1, numRows, 3).getValues();
@@ -11160,7 +11169,7 @@ function getMarketData() {
   let sortedStocks = [...stocks].sort((a, b) => b.price - a.price);
   const topStocks = sortedStocks.slice(0, 5);
   
-  // Flop: Los más baratos (filtrando los que valen 0/quebrados)
+  // Flop: Los mÃƒÂ¡s baratos (filtrando los que valen 0/quebrados)
   let cheapStocks = sortedStocks.filter(s => s.price > 1).sort((a,b) => a.price - b.price);
   const flopStocks = cheapStocks.slice(0, 5);
 
@@ -11176,8 +11185,8 @@ function getMarketData() {
 }
 
 /* =========================================
-   💸 ALGORITMO DE PRECIOS V2.1 (STABLE MARKET)
-   Ajustado para reducir volatilidad y evitar economía rota.
+   Ã°Å¸â€™Â¸ ALGORITMO DE PRECIOS V2.1 (STABLE MARKET)
+   Ajustado para reducir volatilidad y evitar economÃƒÂ­a rota.
    ========================================= */
 function updateStockPrice(summonerName, pointsEarned) {
   const ss = SpreadsheetApp.getActive();
@@ -11205,41 +11214,41 @@ function updateStockPrice(summonerName, pointsEarned) {
     const currentTrend = String(marketSheet.getRange(rowIndex, 4).getValue()); 
     const pName = data[rowIndex-1][0]; 
 
-    // ⛔ BLOQUEO DE SEGURIDAD: Si es un Broker (💼), no tocamos nada.
-    if (currentTrend === '💼') return 0;
+    // Ã¢â€ºâ€ BLOQUEO DE SEGURIDAD: Si es un Broker (Ã°Å¸â€™Â¼), no tocamos nada.
+    if (currentTrend === 'Ã°Å¸â€™Â¼') return 0;
 
     // ============================================================
-    // 🧮 CÁLCULO FINANCIERO (AJUSTADO: BAJA VOLATILIDAD)
+    // Ã°Å¸Â§Â® CÃƒÂLCULO FINANCIERO (AJUSTADO: BAJA VOLATILIDAD)
     // ============================================================
     
     // A. Expectativa del Mercado (Yield)
     // Subimos la exigencia un poco (del 4% al 5%). 
-    // Cuanto más cara es la acción, más cuesta mantenerla.
+    // Cuanto mÃƒÂ¡s cara es la acciÃƒÂ³n, mÃƒÂ¡s cuesta mantenerla.
     const marketExpectation = currentPrice * 0.04; 
     
     // B. Diferencial de Rendimiento
     const performanceDiff = pointsEarned - marketExpectation;
 
-    // C. Cálculo Base de Cambio (EL CAMBIO PRINCIPAL ESTÁ AQUÍ)
+    // C. CÃƒÂ¡lculo Base de Cambio (EL CAMBIO PRINCIPAL ESTÃƒÂ AQUÃƒÂ)
     // AHORA: performanceDiff * 0.8 (Movimiento lento y estable)
     let priceChange = performanceDiff * 0.8; 
 
     // --- AJUSTE 1: PENNY STOCKS (Acciones baratas) ---
-    // Antes se multiplicaba x1.5. Lo bajamos a x1.2 para que no sea tan fácil explotarlas.
+    // Antes se multiplicaba x1.5. Lo bajamos a x1.2 para que no sea tan fÃƒÂ¡cil explotarlas.
     if (currentPrice < 50) {
         priceChange = priceChange * 1.2; 
     }
 
     // --- AJUSTE 2: MOMENTUM (INERCIA) ---
-    // Mantenemos el hype/pánico pero reducido (x1.1 en vez de x1.2)
-    if (priceChange > 0 && (currentTrend === '🚀' || currentTrend === '📈')) {
+    // Mantenemos el hype/pÃƒÂ¡nico pero reducido (x1.1 en vez de x1.2)
+    if (priceChange > 0 && (currentTrend === 'Ã°Å¸Å¡â‚¬' || currentTrend === 'Ã°Å¸â€œË†')) {
         priceChange = priceChange * 1.1; 
-    } else if (priceChange < 0 && (currentTrend === '📉' || currentTrend === '🔻')) {
+    } else if (priceChange < 0 && (currentTrend === 'Ã°Å¸â€œâ€°' || currentTrend === 'Ã°Å¸â€Â»')) {
         priceChange = priceChange * 1.1; 
     }
 
     // --- AJUSTE 3: CIRCUIT BREAKERS (TOPES DE SEGURIDAD) ---
-    // AHORA: 15% (Máximo movimiento permitido por partida)
+    // AHORA: 15% (MÃƒÂ¡ximo movimiento permitido por partida)
     const maxSwing = currentPrice * 0.15; 
     if (priceChange > maxSwing) priceChange = maxSwing;
     if (priceChange < -maxSwing) priceChange = -maxSwing;
@@ -11247,21 +11256,21 @@ function updateStockPrice(summonerName, pointsEarned) {
     // D. Precio Final
     let newPrice = currentPrice + priceChange;
     
-    // Suelo técnico de 1 Gold (Nunca puede valer 0 o negativo)
+    // Suelo tÃƒÂ©cnico de 1 Gold (Nunca puede valer 0 o negativo)
     if (newPrice < 1) newPrice = 1; 
 
 
     // ============================================================
-    // 📉 LÓGICA DE ESTADOS (BANCARROTA / CONGELACIÓN)
+    // Ã°Å¸â€œâ€° LÃƒâ€œGICA DE ESTADOS (BANCARROTA / CONGELACIÃƒâ€œN)
     // ============================================================
-    let trend = '➡️';
-    const IS_FROZEN = (currentTrend === '🔒'); 
+    let trend = 'Ã¢Å¾Â¡Ã¯Â¸Â';
+    const IS_FROZEN = (currentTrend === 'Ã°Å¸â€â€™'); 
 
     // CASO A: NUEVA BANCARROTA (Cae a 15 o menos y NO estaba congelado)
     if (!IS_FROZEN && newPrice <= 20) {
-        trend = '🔒'; 
+        trend = 'Ã°Å¸â€â€™'; 
         
-        // EXPROPIACIÓN (Wipe de inversores)
+        // EXPROPIACIÃƒâ€œN (Wipe de inversores)
         if (portSheet) {
             const pData = portSheet.getDataRange().getValues();
             for (let i = pData.length - 1; i >= 1; i--) { // Loop inverso para borrar
@@ -11274,47 +11283,47 @@ function updateStockPrice(summonerName, pointsEarned) {
                 }
             }
         }
-        registerNews('CRASH', `💀 ¡QUIEBRA! ${pName} cae a ${newPrice.toFixed(1)}G. Acciones eliminadas. Mercado CERRADO hasta recuperar 30G.`);
+        registerNews('CRASH', `Ã°Å¸â€™â‚¬ Ã‚Â¡QUIEBRA! ${pName} cae a ${newPrice.toFixed(1)}G. Acciones eliminadas. Mercado CERRADO hasta recuperar 30G.`);
     }
     
-    // CASO B: INTENTO DE RECUPERACIÓN (Está congelado)
+    // CASO B: INTENTO DE RECUPERACIÃƒâ€œN (EstÃƒÂ¡ congelado)
     else if (IS_FROZEN) {
         if (newPrice > 40) {
-            trend = '🌱'; // Renacer
-            registerNews('HYPE', `🔓 ¡RESURRECCIÓN! ${pName} supera los 30G. Se reabre la compra.`);
+            trend = 'Ã°Å¸Å’Â±'; // Renacer
+            registerNews('HYPE', `Ã°Å¸â€â€œ Ã‚Â¡RESURRECCIÃƒâ€œN! ${pName} supera los 30G. Se reabre la compra.`);
         } else {
-            trend = '🔒'; // Sigue congelado
-            if (pointsEarned > 10) registerNews('INFO', `⛓️ ${pName} lucha por salir de la quiebra (${newPrice.toFixed(1)}G / 30G).`);
+            trend = 'Ã°Å¸â€â€™'; // Sigue congelado
+            if (pointsEarned > 10) registerNews('INFO', `Ã¢â€ºâ€œÃ¯Â¸Â ${pName} lucha por salir de la quiebra (${newPrice.toFixed(1)}G / 30G).`);
         }
     }
     
-    // CASO C: MERCADO NORMAL (Asignación de Iconos según % de cambio)
+    // CASO C: MERCADO NORMAL (AsignaciÃƒÂ³n de Iconos segÃƒÂºn % de cambio)
     else {
         const percentChange = (priceChange / currentPrice) * 100;
 
-        if (percentChange >= 25) trend = '🚀';        // Subida fuerte (ajustado al nuevo límite)
-        else if (percentChange >= 10) trend = '📈';    // Subida normal
-        else if (percentChange <= -25) trend = '📉';  // Caída fuerte
-        else if (percentChange <= -10) trend = '🔻';   // Caída normal
-        else trend = '➡️';                            // Estabilidad
+        if (percentChange >= 25) trend = 'Ã°Å¸Å¡â‚¬';        // Subida fuerte (ajustado al nuevo lÃƒÂ­mite)
+        else if (percentChange >= 10) trend = 'Ã°Å¸â€œË†';    // Subida normal
+        else if (percentChange <= -25) trend = 'Ã°Å¸â€œâ€°';  // CaÃƒÂ­da fuerte
+        else if (percentChange <= -10) trend = 'Ã°Å¸â€Â»';   // CaÃƒÂ­da normal
+        else trend = 'Ã¢Å¾Â¡Ã¯Â¸Â';                            // Estabilidad
 
         // Noticias de alto impacto
-        if (percentChange >= 14) registerNews('HYPE', `¡${pName} vuela alto! +${priceChange.toFixed(1)}G (${percentChange.toFixed(0)}%)`);
+        if (percentChange >= 14) registerNews('HYPE', `Ã‚Â¡${pName} vuela alto! +${priceChange.toFixed(1)}G (${percentChange.toFixed(0)}%)`);
         else if (percentChange <= -14) registerNews('PANIC', `DESPLOME: ${pName} pierde -${Math.abs(priceChange).toFixed(1)}G (${percentChange.toFixed(0)}%).`);
     }
 
     
     // ============================================================
-    // 💾 GUARDADO DE DATOS
+    // Ã°Å¸â€™Â¾ GUARDADO DE DATOS
     // ============================================================
     
-    // Historial JSON (Para gráficas)
+    // Historial JSON (Para grÃƒÂ¡ficas)
     let history = [];
     let historyJSON = marketSheet.getRange(rowIndex, 6).getValue();
     try { history = JSON.parse(historyJSON); } catch(e) { history = []; }
     
     history.push(Number(newPrice.toFixed(1)));
-    if (history.length > 30) history.shift(); // Guardamos últimos 30 puntos
+    if (history.length > 30) history.shift(); // Guardamos ÃƒÂºltimos 30 puntos
 
     // Escribir en hoja
     marketSheet.getRange(rowIndex, 2).setValue(Number(newPrice.toFixed(2))); // Precio
@@ -11324,7 +11333,7 @@ function updateStockPrice(summonerName, pointsEarned) {
 
     return priceChange;
   } else {
-      logToSheet(`ERROR: No se encontró a ${summonerName} en el mercado.`);
+      logToSheet(`ERROR: No se encontrÃƒÂ³ a ${summonerName} en el mercado.`);
       return 0;
   }
 }
@@ -11338,7 +11347,7 @@ function generateAsciiTable(rankingData) {
     const pos = (i + 1).toString().padEnd(3);
     const name = p.name.padEnd(15);
     const pts = p.points.toString().padEnd(6);
-    const streak = p.streak > 0 ? `+${p.streak}🔥` : `${p.streak}❄️`;
+    const streak = p.streak > 0 ? `+${p.streak}Ã°Å¸â€Â¥` : `${p.streak}Ã¢Ââ€žÃ¯Â¸Â`;
     
     table += `${pos} | ${name} | ${pts} | ${streak}\n`;
   });
@@ -11347,13 +11356,13 @@ function generateAsciiTable(rankingData) {
   return table;
 }
 
-// Helper para obtener precio rápido (VERSIÓN CORREGIDA)
+// Helper para obtener precio rÃƒÂ¡pido (VERSIÃƒâ€œN CORREGIDA)
 function getStockPriceSimple(summonerName) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('MARKET_STATUS');
   if (!sheet) return 100;
   
-  // Normalizamos para evitar errores de mayúsculas o espacios
+  // Normalizamos para evitar errores de mayÃƒÂºsculas o espacios
   const searchName = String(summonerName).trim().toLowerCase();
 
   // Leemos los datos
@@ -11372,7 +11381,7 @@ function getStockPriceSimple(summonerName) {
 }
 
 /* ==========================================================
-   💸 SISTEMA DE DIVIDENDOS V3.0 (YIELD DINÁMICO + JUNTA DIRECTIVA)
+   Ã°Å¸â€™Â¸ SISTEMA DE DIVIDENDOS V3.0 (YIELD DINÃƒÂMICO + JUNTA DIRECTIVA)
    ========================================================== */
 function distributeDividends(player, pointsScored, label) {
   const ss = SpreadsheetApp.getActive();
@@ -11386,7 +11395,7 @@ function distributeDividends(player, pointsScored, label) {
   const investorMap = {}; 
   let playerRowIdx = -1;  
 
-  // Mapear filas para escritura rápida
+  // Mapear filas para escritura rÃƒÂ¡pida
   for(let i=1; i<marketData.length; i++) {
     investorMap[marketData[i][0]] = i + 1; 
     if (marketData[i][0] === player) playerRowIdx = i + 1;
@@ -11394,14 +11403,14 @@ function distributeDividends(player, pointsScored, label) {
 
   if (playerRowIdx === -1) return;
 
-  // --- 1. CÁLCULO DEL YIELD (RENTABILIDAD) ---
-  // Fórmula: 15% de los Puntos de la partida convertidos a Oro.
-  // Ej: 60 Pts -> 9.0 G por acción.
+  // --- 1. CÃƒÂLCULO DEL YIELD (RENTABILIDAD) ---
+  // FÃƒÂ³rmula: 15% de los Puntos de la partida convertidos a Oro.
+  // Ej: 60 Pts -> 9.0 G por acciÃƒÂ³n.
   let dividendPerShare = pointsScored * 0.25;
   
-  // Límites de seguridad económica
-  if (dividendPerShare > 15) dividendPerShare = 15; // Cap máximo por acción
-  if (dividendPerShare < 1) dividendPerShare = 1;   // Mínimo 1G
+  // LÃƒÂ­mites de seguridad econÃƒÂ³mica
+  if (dividendPerShare > 15) dividendPerShare = 15; // Cap mÃƒÂ¡ximo por acciÃƒÂ³n
+  if (dividendPerShare < 1) dividendPerShare = 1;   // MÃƒÂ­nimo 1G
 
   const portData = portSheet.getDataRange().getValues();
   let totalPayout = 0; 
@@ -11414,8 +11423,8 @@ function distributeDividends(player, pointsScored, label) {
 
     if (target === player && shares > 0) {
       
-      // 👔 BONUS JUNTA DIRECTIVA (INNOVACIÓN)
-      // Si tienes 10+ acciones, eres "Socio Mayoritario" y cobras un 10% más.
+      // Ã°Å¸â€˜â€ BONUS JUNTA DIRECTIVA (INNOVACIÃƒâ€œN)
+      // Si tienes 10+ acciones, eres "Socio Mayoritario" y cobras un 10% mÃƒÂ¡s.
       let bonusMult = 1.0;
       let isWhale = false;
       
@@ -11424,7 +11433,7 @@ function distributeDividends(player, pointsScored, label) {
           isWhale = true;
       }
 
-      // Cálculo final para este inversor
+      // CÃƒÂ¡lculo final para este inversor
       const payout = Math.floor(shares * dividendPerShare * bonusMult);
       const rowIdx = investorMap[investor];
       
@@ -11445,8 +11454,8 @@ function distributeDividends(player, pointsScored, label) {
   }
 
   // --- 3. EFECTO EX-DIVIDEND (AJUSTE DE MERCADO) ---
-  // Si se ha repartido dinero real, la acción corrige su precio.
-  // Baja la mitad de lo pagado por acción (Soft Correction).
+  // Si se ha repartido dinero real, la acciÃƒÂ³n corrige su precio.
+  // Baja la mitad de lo pagado por acciÃƒÂ³n (Soft Correction).
   if (totalPayout > 0) {
     const currentPrice = Number(marketSheet.getRange(playerRowIdx, 2).getValue());
     let drop = dividendPerShare * 1.0;
@@ -11454,9 +11463,9 @@ function distributeDividends(player, pointsScored, label) {
     
     marketSheet.getRange(playerRowIdx, 2).setValue(newPrice);
     
-    // Noticia pública
+    // Noticia pÃƒÂºblica
     if (typeof registerNews === 'function') {
-        registerNews('DIVIDEND', `💸 ${player} reparte ${dividendPerShare.toFixed(2)} G/acción. Motivo: ${label}.`);
+        registerNews('DIVIDEND', `Ã°Å¸â€™Â¸ ${player} reparte ${dividendPerShare.toFixed(2)} G/acciÃƒÂ³n. Motivo: ${label}.`);
     }
   }
 }
@@ -11471,39 +11480,39 @@ function registerNews(type, message) {
 }
 
 /* =========================================
-   🏪 SISTEMA DE TIENDA E INVENTARIO
+   Ã°Å¸ÂÂª SISTEMA DE TIENDA E INVENTARIO
    ========================================= */
 
 // 1. Setup Inicial (Ejecutar una vez)
 function SetupShop() {
   const ss = SpreadsheetApp.getActive();
   
-  // Hoja de Inventario (Quién tiene qué)
+  // Hoja de Inventario (QuiÃƒÂ©n tiene quÃƒÂ©)
   if (!ss.getSheetByName('INVENTORY')) {
     const sheet = ss.insertSheet('INVENTORY');
     sheet.getRange('A1:D1').setValues([['Player', 'ItemID', 'Status', 'DateBought']]).setFontWeight('bold');
   }
   
-  // Hoja de Catálogo (Qué se vende) - Lo creamos y rellenamos automáticamente
+  // Hoja de CatÃƒÂ¡logo (QuÃƒÂ© se vende) - Lo creamos y rellenamos automÃƒÂ¡ticamente
   let shopSheet = ss.getSheetByName('SHOP_ITEMS');
   if (!shopSheet) {
     shopSheet = ss.insertSheet('SHOP_ITEMS');
     shopSheet.getRange('A1:E1').setValues([['ItemID', 'Name', 'Description', 'Price', 'Icon']]).setFontWeight('bold');
     
     const items = [
-      ['POTION_ELO', 'Poción de Elo', 'Multiplica x1.25 los puntos de tu próxima victoria.', 1200, '🧪'],
-      ['ANGEL_GUARD', 'Ángel de la Guarda', 'Te protege de puntos negativos (convierte -X en 0).', 2000, '🛡️'],
-      ['SOBORNO', 'El Soborno', 'Añade +2 puntos base a tu próxima partida.', 600, '💰'],
-      ['FIRST_DRAGON', 'Último Dragón', 'Apuesta al Primer Dragón: +4 si es tuyo, -4 si es del rival.', 900, '🐉'],
-      ['PACT_STREAK', 'Pacto de Win Streak', 'Apuesta de Racha: 2 Wins seguidas = +6 pts. Perder = -3 pts.', 650, '🔥'],
-      ['BET_FIRST_BLOOD', 'Apuesta de Sangre', 'Si TÚ haces la Primera Sangre: +3 pts. Si no: -1 pt.', 550, '🩸']
+      ['POTION_ELO', 'PociÃƒÂ³n de Elo', 'Multiplica x1.25 los puntos de tu prÃƒÂ³xima victoria.', 1200, 'Ã°Å¸Â§Âª'],
+      ['ANGEL_GUARD', 'ÃƒÂngel de la Guarda', 'Te protege de puntos negativos (convierte -X en 0).', 2000, 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â'],
+      ['SOBORNO', 'El Soborno', 'AÃƒÂ±ade +2 puntos base a tu prÃƒÂ³xima partida.', 600, 'Ã°Å¸â€™Â°'],
+      ['FIRST_DRAGON', 'ÃƒÅ¡ltimo DragÃƒÂ³n', 'Apuesta al Primer DragÃƒÂ³n: +4 si es tuyo, -4 si es del rival.', 900, 'Ã°Å¸Ââ€°'],
+      ['PACT_STREAK', 'Pacto de Win Streak', 'Apuesta de Racha: 2 Wins seguidas = +6 pts. Perder = -3 pts.', 650, 'Ã°Å¸â€Â¥'],
+      ['BET_FIRST_BLOOD', 'Apuesta de Sangre', 'Si TÃƒÅ¡ haces la Primera Sangre: +3 pts. Si no: -1 pt.', 550, 'Ã°Å¸Â©Â¸']
     ];
     shopSheet.getRange(2, 1, items.length, 5).setValues(items);
   }
-  Logger.log("✅ Sistema de Tienda configurado.");
+  Logger.log("Ã¢Å“â€¦ Sistema de Tienda configurado.");
 }
 // -------------------------------------------------------
-// NUEVA FUNCIÓN: DATOS PARA LA PESTAÑA DE MISIONES (MEDALLERO)
+// NUEVA FUNCIÃƒâ€œN: DATOS PARA LA PESTAÃƒâ€˜A DE MISIONES (MEDALLERO)
 // -------------------------------------------------------
 function getMissionsForWeb(player) {
   // 1. Cargamos las definiciones y el estado guardado
@@ -11516,25 +11525,25 @@ function getMissionsForWeb(player) {
     let state = playerStates[m.MissionID] || { Status: 'InProgress', CurrentValue: 0 };
     let isCompleted = state.Status === 'Completed';
     let progress = 0;
-    let customDesc = m.Objetivo; // Descripción por defecto
+    let customDesc = m.Objetivo; // DescripciÃƒÂ³n por defecto
 
     // -----------------------------------------------------
-    // 🌊 BLOQUE ESPECIAL: CHAMPION OCEAN
-    // Si la misión es la de los campeones, ignoramos el cache y calculamos en vivo
+    // Ã°Å¸Å’Å  BLOQUE ESPECIAL: CHAMPION OCEAN
+    // Si la misiÃƒÂ³n es la de los campeones, ignoramos el cache y calculamos en vivo
     // -----------------------------------------------------
     if (String(m.MissionID).toUpperCase().includes('OCEAN')) {
-      // Llamamos a tu función auxiliar que lee la hoja KNOWN_CHAMPS
+      // Llamamos a tu funciÃƒÂ³n auxiliar que lee la hoja KNOWN_CHAMPS
       const oceanData = getChampOceanStatus(player);
       
       // Sobrescribimos los valores
       progress = oceanData.percent;
       isCompleted = progress >= 100;
       
-      // Actualizamos la descripción para que muestre la cuenta real (Ej: "Llevas: 33")
+      // Actualizamos la descripciÃƒÂ³n para que muestre la cuenta real (Ej: "Llevas: 33")
       customDesc = `${m.Objetivo} (Llevas: ${oceanData.count})`;
     } 
     // -----------------------------------------------------
-    // ⚙️ BLOQUE ESTÁNDAR (Para el resto de misiones)
+    // Ã¢Å¡â„¢Ã¯Â¸Â BLOQUE ESTÃƒÂNDAR (Para el resto de misiones)
     // -----------------------------------------------------
     else {
       if (m.Tracking === 'Cumulative' && m.ValorRequerido > 0) {
@@ -11553,7 +11562,7 @@ function getMissionsForWeb(player) {
     }
 
     // -----------------------------------------------------
-    // 🏅 LÓGICA VISUAL (IMÁGENES Y TÍTULOS)
+    // Ã°Å¸Ââ€¦ LÃƒâ€œGICA VISUAL (IMÃƒÂGENES Y TÃƒÂTULOS)
     // -----------------------------------------------------
     let medalImage = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/rewards/medals/theme-1-tier-1.png"; 
     let titleReward = "Recluta";
@@ -11561,7 +11570,7 @@ function getMissionsForWeb(player) {
     if (m.Dificultad === 'Media') {
         medalImage = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/rewards/medals/theme-1-tier-2.png";
         titleReward = "Veterano";
-    } else if (m.Dificultad === 'Difícil') {
+    } else if (m.Dificultad === 'DifÃƒÂ­cil') {
         medalImage = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/rewards/medals/theme-1-tier-3.png";
         titleReward = "Elite";
     } else if (m.Dificultad === 'Extrema' || Number(m.RecompensaPts) >= 5) {
@@ -11572,8 +11581,8 @@ function getMissionsForWeb(player) {
     // Retorno de datos limpios para el HTML
     return {
       id: m.MissionID,
-      name: m.Descripcion, // Nombre de la misión
-      desc: customDesc,    // Objetivo o descripción dinámica
+      name: m.Descripcion, // Nombre de la misiÃƒÂ³n
+      desc: customDesc,    // Objetivo o descripciÃƒÂ³n dinÃƒÂ¡mica
       completed: isCompleted,
       img: medalImage,
       reward: `${m.RecompensaPts} pts`,
@@ -11585,7 +11594,7 @@ function getMissionsForWeb(player) {
 
 
 /* =========================================
-   🏪 SISTEMA DE TIENDA UNIFICADO (BACKEND)
+   Ã°Å¸ÂÂª SISTEMA DE TIENDA UNIFICADO (BACKEND)
    ========================================= */
 function buyShopItem(player, itemID, extraData) {
   const lock = LockService.getScriptLock();
@@ -11621,12 +11630,12 @@ function buyShopItem(player, itemID, extraData) {
     const currentBalance = Number(mData[playerRow-1][2]); 
     const currentStatus = mData[playerRow-1][6]; 
 
-    // 🛡️ GESTIÓN DE MUERTOS
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â GESTIÃƒâ€œN DE MUERTOS
     let ghostTax = 0; 
     if (currentStatus === 'ELIMINATED') {
         if (itemID === 'TOXIC_INJECTOR') ghostTax = 100;
         else if (itemID === 'VOTE_BALLOT' || itemID === 'TEAM_ROLE_VOTE') ghostTax = 0;
-        else return { success: false, msg: "💀 Estás ELIMINADO. Solo puedes comprar Venganza o Votar." };
+        else return { success: false, msg: "Ã°Å¸â€™â‚¬ EstÃƒÂ¡s ELIMINADO. Solo puedes comprar Venganza o Votar." };
     }
     
     // --- B. BUSCAR PRECIO ---
@@ -11651,19 +11660,19 @@ function buyShopItem(player, itemID, extraData) {
     }
 
     // ==========================================
-    // 🗳️ 3. LÓGICA DE VOTACIÓN (FACCIÓN)
+    // Ã°Å¸â€”Â³Ã¯Â¸Â 3. LÃƒâ€œGICA DE VOTACIÃƒâ€œN (FACCIÃƒâ€œN)
     // ==========================================
     if (itemID === 'VOTE_BALLOT') {
 
       if (props.getProperty('EVENT_WAR_ACTIVE') !== 'TRUE') {
-             return { success: false, msg: "⛔ La Guerra de Facciones no está activa." };
+             return { success: false, msg: "Ã¢â€ºâ€ La Guerra de Facciones no estÃƒÂ¡ activa." };
         }
-        if (!extraData || !extraData.includes('|')) return { success: false, msg: "Faltan datos de votación." };
+        if (!extraData || !extraData.includes('|')) return { success: false, msg: "Faltan datos de votaciÃƒÂ³n." };
         const parts = extraData.split('|');
         const roleVoted = parts[0]; 
         const candidateInput = parts[1].trim().toLowerCase();
 
-        if (candidateInput === playerClean) return { success: false, msg: "🚫 No puedes votarte a ti mismo." };
+        if (candidateInput === playerClean) return { success: false, msg: "Ã°Å¸Å¡Â« No puedes votarte a ti mismo." };
 
         const roleColumns = { 'GENERAL': 5, 'ESTRATEGA': 6, 'TANQUE': 7 };
         const targetCol = roleColumns[roleVoted];
@@ -11679,9 +11688,9 @@ function buyShopItem(player, itemID, extraData) {
             if (rowName === candidateInput) { candidateRow = i + 1; candidateTeam = fData[i][1]; }
         }
 
-        if (!voterTeam || !candidateTeam) return { success: false, msg: "Error de facción." };
+        if (!voterTeam || !candidateTeam) return { success: false, msg: "Error de facciÃƒÂ³n." };
         if (voterTeam !== candidateTeam) return { success: false, msg: "Solo puedes votar a tu equipo." };
-        if (voteHistory.includes(roleVoted + ",")) return { success: false, msg: `⛔ Ya has votado para ${roleVoted}.` };
+        if (voteHistory.includes(roleVoted + ",")) return { success: false, msg: `Ã¢â€ºâ€ Ya has votado para ${roleVoted}.` };
 
         // Registrar
         let currentVotes = Number(factionSheet.getRange(candidateRow, targetCol).getValue() || 0);
@@ -11692,25 +11701,25 @@ function buyShopItem(player, itemID, extraData) {
         marketSheet.getRange(playerRow, 3).setValue(currentBalance - finalPrice);
         if(txSheet) txSheet.appendRow([new Date(), 'VOTE', player, `${roleVoted} -> ${parts[1]}`, 1, -finalPrice]);
 
-        return { success: true, msg: `🗳️ Voto registrado para ${parts[1]}.` };
+        return { success: true, msg: `Ã°Å¸â€”Â³Ã¯Â¸Â Voto registrado para ${parts[1]}.` };
     }
 
     // ==========================================
-    // ⚔️ 4. CONTRATO DE TORNEO (TEAM_ROLE_VOTE) [ACTUALIZADO FILL/SUB]
+    // Ã¢Å¡â€Ã¯Â¸Â 4. CONTRATO DE TORNEO (TEAM_ROLE_VOTE) [ACTUALIZADO FILL/SUB]
     // ==========================================
     if (itemID === 'TEAM_ROLE_VOTE') {
 
         if (props.getProperty('EVENT_TEAM_BATTLE_ACTIVE') !== 'TRUE') {
-             return { success: false, msg: "⛔ El Torneo no está activo actualmente." };
+             return { success: false, msg: "Ã¢â€ºâ€ El Torneo no estÃƒÂ¡ activo actualmente." };
         }
         
         let roleVote = String(extraData).toUpperCase().trim();
         
-        // 1. AÑADIMOS 'FILL' Y 'SUB' A LA LISTA DE PERMITIDOS
+        // 1. AÃƒâ€˜ADIMOS 'FILL' Y 'SUB' A LA LISTA DE PERMITIDOS
         const validRoles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT', 'FILL', 'SUB'];
         
-        if (!validRoles.includes(roleVote)) return { success: false, msg: "Rol inválido ("+roleVote+")." };
-        if (!battleSheet) return { success: false, msg: "El torneo no está activo." };
+        if (!validRoles.includes(roleVote)) return { success: false, msg: "Rol invÃƒÂ¡lido ("+roleVote+")." };
+        if (!battleSheet) return { success: false, msg: "El torneo no estÃƒÂ¡ activo." };
         
         const bData = battleSheet.getDataRange().getValues();
         let myRow = -1;
@@ -11725,35 +11734,35 @@ function buyShopItem(player, itemID, extraData) {
             }
         }
 
-        if (myRow === -1) return { success: false, msg: "No estás inscrito en el torneo." };
+        if (myRow === -1) return { success: false, msg: "No estÃƒÂ¡s inscrito en el torneo." };
 
-        // --- LÓGICA INTELIGENTE DE FILL ---
+        // --- LÃƒâ€œGICA INTELIGENTE DE FILL ---
         if (roleVote === 'FILL') {
             const standardRoles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
             
-            // Miramos qué roles ya están ocupados en TU equipo
+            // Miramos quÃƒÂ© roles ya estÃƒÂ¡n ocupados en TU equipo
             const takenRoles = bData
-                .filter(r => r[0] === myTeamID && r[2] && r[2] !== "") // Mismo equipo y rol no vacío
+                .filter(r => r[0] === myTeamID && r[2] && r[2] !== "") // Mismo equipo y rol no vacÃƒÂ­o
                 .map(r => String(r[2]).toUpperCase());
 
-            // Buscamos el primero que esté libre
+            // Buscamos el primero que estÃƒÂ© libre
             const freeRole = standardRoles.find(r => !takenRoles.includes(r));
 
             if (freeRole) {
-                roleVote = freeRole; // ¡Asignado!
+                roleVote = freeRole; // Ã‚Â¡Asignado!
             } else {
-                // Si todo está lleno (5 titulares), te manda de Suplente
+                // Si todo estÃƒÂ¡ lleno (5 titulares), te manda de Suplente
                 roleVote = 'SUB';
             }
         }
 
-        // --- VERIFICACIÓN FINAL ---
-        // Verificar si el rol está ocupado (Excepto SUB, que admite infinitos)
+        // --- VERIFICACIÃƒâ€œN FINAL ---
+        // Verificar si el rol estÃƒÂ¡ ocupado (Excepto SUB, que admite infinitos)
         if (roleVote !== 'SUB') {
             const teamRows = bData.filter(r => r[0] === myTeamID);
             const roleTaken = teamRows.some(r => String(r[2]).toUpperCase() === roleVote);
             
-            if (roleTaken) return { success: false, msg: `❌ ${roleVote} ya está ocupado. Elige otro o ve de Suplente.` };
+            if (roleTaken) return { success: false, msg: `Ã¢ÂÅ’ ${roleVote} ya estÃƒÂ¡ ocupado. Elige otro o ve de Suplente.` };
         }
 
         // Asignar en la hoja
@@ -11764,7 +11773,7 @@ function buyShopItem(player, itemID, extraData) {
         marketSheet.getRange(playerRow, 3).setValue(currentBalance - finalPrice);
         if(txSheet) txSheet.appendRow([new Date(), 'ROLE_ASSIGN', player, roleVote, 1, -finalPrice]);
 
-        return { success: true, msg: `✅ Contrato firmado: Jugarás como ${roleVote}.` };
+        return { success: true, msg: `Ã¢Å“â€¦ Contrato firmado: JugarÃƒÂ¡s como ${roleVote}.` };
     }
 
     // --- E. RESTO DE OBJETOS ---
@@ -11776,7 +11785,7 @@ function buyShopItem(player, itemID, extraData) {
        let rewardMsg = "", visualWinner = "";
        let newBalance = Number(marketSheet.getRange(playerRow, 3).getValue());
        
-       // Función segura para dar materiales a la mochila de La Forja
+       // FunciÃƒÂ³n segura para dar materiales a la mochila de La Forja
        const giveMaterial = (pName, mId) => {
            const mSheet = ss.getSheetByName('FORGE_MATERIALS');
            if (!mSheet) return;
@@ -11803,67 +11812,67 @@ function buyShopItem(player, itemID, extraData) {
            'ZAUN_PACT', 'LAST_GASP'
        ];
 
-       // 🎒 45% - OBJETOS CLÁSICOS (Pociones, Sobornos...)
+       // Ã°Å¸Å½â€™ 45% - OBJETOS CLÃƒÂSICOS (Pociones, Sobornos...)
        if (rng < 45) { 
            const drop = class_items[Math.floor(Math.random() * class_items.length)];
            invSheet.appendRow([player, drop, 'ACTIVE', new Date()]);
            rewardMsg = `Objeto de Tienda: ${drop.replace(/_/g, ' ')}`; 
-           visualWinner = `🎒 ${drop}`;
+           visualWinner = `Ã°Å¸Å½â€™ ${drop}`;
        } 
-       // 💰 15% - ORO PURO (200 - 600G)
+       // Ã°Å¸â€™Â° 15% - ORO PURO (200 - 600G)
        else if (rng < 60) { 
            const gold = Math.floor(Math.random() * 400) + 200; 
            newBalance += gold;
-           rewardMsg = `¡Oro! Encuentras ${gold} G.`; 
-           visualWinner = `💰 ${gold} G`;
+           rewardMsg = `Ã‚Â¡Oro! Encuentras ${gold} G.`; 
+           visualWinner = `Ã°Å¸â€™Â° ${gold} G`;
        }
-       // 🔩 13% - TIER 1 (Común)
+       // Ã°Å¸â€Â© 13% - TIER 1 (ComÃƒÂºn)
        else if (rng < 73) { 
            const drop = t1[Math.floor(Math.random() * t1.length)];
            giveMaterial(player, drop);
-           rewardMsg = `Material Común: ${drop}`; visualWinner = `🔩 ${drop}`;
+           rewardMsg = `Material ComÃƒÂºn: ${drop}`; visualWinner = `Ã°Å¸â€Â© ${drop}`;
        }
-       // 💎 10% - TIER 2 (Poco Común)
+       // Ã°Å¸â€™Å½ 10% - TIER 2 (Poco ComÃƒÂºn)
        else if (rng < 83) { 
            const drop = t2[Math.floor(Math.random() * t2.length)];
            giveMaterial(player, drop);
-           rewardMsg = `Material Poco Común: ${drop}`; visualWinner = `💎 ${drop}`;
+           rewardMsg = `Material Poco ComÃƒÂºn: ${drop}`; visualWinner = `Ã°Å¸â€™Å½ ${drop}`;
        }
-       // 🔥 7% - TIER 3 (Raro)
+       // Ã°Å¸â€Â¥ 7% - TIER 3 (Raro)
        else if (rng < 90) { 
            const drop = t3[Math.floor(Math.random() * t3.length)];
            giveMaterial(player, drop);
-           rewardMsg = `¡RARO! Obtienes: ${drop}`; visualWinner = `🔥 ${drop}`;
+           rewardMsg = `Ã‚Â¡RARO! Obtienes: ${drop}`; visualWinner = `Ã°Å¸â€Â¥ ${drop}`;
        }
-       // ⚙️ 4% - TIER 4 (Épico)
+       // Ã¢Å¡â„¢Ã¯Â¸Â 4% - TIER 4 (Ãƒâ€°pico)
        else if (rng < 94) { 
            const drop = t4[Math.floor(Math.random() * t4.length)];
            giveMaterial(player, drop);
-           rewardMsg = `¡ÉPICO! Artefacto: ${drop}`; visualWinner = `⚙️ ${drop}`;
+           rewardMsg = `Ã‚Â¡Ãƒâ€°PICO! Artefacto: ${drop}`; visualWinner = `Ã¢Å¡â„¢Ã¯Â¸Â ${drop}`;
        }
-       // 📜 4% - PLANOS DE CRAFTEO
+       // Ã°Å¸â€œÅ“ 4% - PLANOS DE CRAFTEO
        else if (rng < 98) { 
-           // Damos el plano como ítem de inventario
+           // Damos el plano como ÃƒÂ­tem de inventario
            const drop = blueprints[Math.floor(Math.random() * blueprints.length)];
            // Prefijo 'BP_' para saber que es el Plano y no el objeto final
            invSheet.appendRow([player, 'BP_' + drop, 'ACTIVE', new Date()]);
-           rewardMsg = `📜 ¡PLANO ENCONTRADO: ${drop}!`; 
-           visualWinner = `📜 PLANO FORJA`;
-           if (typeof registerNews === 'function') registerNews('GACHA', `📜 ${player} ha encontrado un Plano de Forja antiguo.`);
+           rewardMsg = `Ã°Å¸â€œÅ“ Ã‚Â¡PLANO ENCONTRADO: ${drop}!`; 
+           visualWinner = `Ã°Å¸â€œÅ“ PLANO FORJA`;
+           if (typeof registerNews === 'function') registerNews('GACHA', `Ã°Å¸â€œÅ“ ${player} ha encontrado un Plano de Forja antiguo.`);
        }
-       // 🌍 1% - TIER 5 (Legendario - WORLD RUNE)
+       // Ã°Å¸Å’Â 1% - TIER 5 (Legendario - WORLD RUNE)
        else if (rng < 99) { 
            giveMaterial(player, 'WORLD_RUNE');
-           rewardMsg = `🌍 **¡RELIQUIA LEGENDARIA: WORLD RUNE!**`; visualWinner = `🌍 WORLD RUNE`;
-           if (typeof registerNews === 'function') registerNews('GACHA', `🌍 ¡El mundo tiembla! ${player} acaba de encontrar una Runa Global en un cofre.`);
+           rewardMsg = `Ã°Å¸Å’Â **Ã‚Â¡RELIQUIA LEGENDARIA: WORLD RUNE!**`; visualWinner = `Ã°Å¸Å’Â WORLD RUNE`;
+           if (typeof registerNews === 'function') registerNews('GACHA', `Ã°Å¸Å’Â Ã‚Â¡El mundo tiembla! ${player} acaba de encontrar una Runa Global en un cofre.`);
        }
-       // 🚨 1% - JACKPOT (ONE PIECE)
+       // Ã°Å¸Å¡Â¨ 1% - JACKPOT (ONE PIECE)
        else { 
            newBalance += 5000;
            invSheet.appendRow([player, 'ONE_PIECE', 'ACTIVE', new Date()]);
-           rewardMsg = `🚨 **¡EL ONE PIECE EXISTE!** 5000 G.`; 
-           visualWinner = `🏴‍☠️ ONE PIECE`;
-           if (typeof registerNews === 'function') registerNews('GACHA', `🚨 ¡ATRACO AL CASINO! ${player} ha encontrado el ONE PIECE.`);
+           rewardMsg = `Ã°Å¸Å¡Â¨ **Ã‚Â¡EL ONE PIECE EXISTE!** 5000 G.`; 
+           visualWinner = `Ã°Å¸ÂÂ´Ã¢â‚¬ÂÃ¢ËœÂ Ã¯Â¸Â ONE PIECE`;
+           if (typeof registerNews === 'function') registerNews('GACHA', `Ã°Å¸Å¡Â¨ Ã‚Â¡ATRACO AL CASINO! ${player} ha encontrado el ONE PIECE.`);
        }
 
        marketSheet.getRange(playerRow, 3).setValue(newBalance);
@@ -11877,18 +11886,18 @@ function buyShopItem(player, itemID, extraData) {
     // Entregar Inyector
     if (itemID === 'TOXIC_INJECTOR') {
        if(sabSheet) sabSheet.appendRow([player, targetName, 'ACTIVE', new Date()]);
-       return { success: true, msg: `💉 Inyector aplicado a ${targetName}.` };
+       return { success: true, msg: `Ã°Å¸â€™â€° Inyector aplicado a ${targetName}.` };
     }
 
     if (itemID === 'ADRENALINE_SHOT') {
-        // Verificar si el jugador ya usó uno en esta fase (buscamos en el historial de consumo)
+        // Verificar si el jugador ya usÃƒÂ³ uno en esta fase (buscamos en el historial de consumo)
         const consumed = invSheet.getValues().some(r => r[0] === player && r[1] === 'ADRENALINE_SHOT' && r[2] === 'USED');
-        if (consumed) return { success: false, msg: "Tu cuerpo no aguanta más adrenalina esta fase." };
+        if (consumed) return { success: false, msg: "Tu cuerpo no aguanta mÃƒÂ¡s adrenalina esta fase." };
     }
     
     // Entregar Item Inventario
     invSheet.appendRow([player, itemID, 'ACTIVE', new Date()]);
-    return { success: true, msg: `¡Has comprado ${itemData.name}!` };
+    return { success: true, msg: `Ã‚Â¡Has comprado ${itemData.name}!` };
     
   } catch(e) {
     return { success: false, msg: "Error Backend: " + e.message };
@@ -11908,7 +11917,7 @@ function SetupCosmetics() {
   }
 }
 
-// Helper rápido para buscar PUUID sin llamar a la API de Riot (ahorra recursos)
+// Helper rÃƒÂ¡pido para buscar PUUID sin llamar a la API de Riot (ahorra recursos)
 function getPuuidFromSheet(summonerName) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('PLAYERS');
@@ -11926,7 +11935,7 @@ function getPuuidFromSheet(summonerName) {
 
 /**
  * Sincroniza la hoja PLAYERS con MARKET_STATUS.
- * Añade a los jugadores nuevos con precio base 100 y cartera 1000.
+ * AÃƒÂ±ade a los jugadores nuevos con precio base 100 y cartera 1000.
  */
 function refreshMarketPlayers() {
   const ss = SpreadsheetApp.getActive();
@@ -11944,9 +11953,9 @@ function refreshMarketPlayers() {
   // Empezamos en 1 para saltar el encabezado
   for (let i = 1; i < pData.length; i++) {
     const name = pData[i][0];
-    const active = String(pData[i][4] || "Sí").toLowerCase(); // Columna E es "Active"
+    const active = String(pData[i][4] || "SÃƒÂ­").toLowerCase(); // Columna E es "Active"
     
-    // Si tiene nombre y no está desactivado
+    // Si tiene nombre y no estÃƒÂ¡ desactivado
     if (name && active !== 'no' && active !== 'false') {
       activePlayers.push(name);
     }
@@ -11965,34 +11974,34 @@ function refreshMarketPlayers() {
     if (!existingStocks.includes(player)) {
       // Estructura: [Name, Price, Wallet, Trend, Change, HistoryJSON]
       // Precio inicial: 100 | Cartera inicial: 1000
-      newRows.push([player, 100, 1000, '➡️', 0, '[100]']);
+      newRows.push([player, 100, 1000, 'Ã¢Å¾Â¡Ã¯Â¸Â', 0, '[100]']);
     }
   });
 
   // 4. Escribir en la hoja
   if (newRows.length > 0) {
     mSheet.getRange(mSheet.getLastRow() + 1, 1, newRows.length, 6).setValues(newRows);
-    SpreadsheetApp.getUi().alert(`✅ Se han añadido ${newRows.length} nuevos jugadores al mercado.`);
+    SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Se han aÃƒÂ±adido ${newRows.length} nuevos jugadores al mercado.`);
   } else {
-    SpreadsheetApp.getUi().alert('El mercado ya está actualizado. No faltan jugadores.');
+    SpreadsheetApp.getUi().alert('El mercado ya estÃƒÂ¡ actualizado. No faltan jugadores.');
   }
 }
 function addMegaphoneToShop() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('SHOP_ITEMS');
   if(sheet) {
-    // ID, Nombre, Descripción, Precio, Icono
-    sheet.appendRow(['MEGAPHONE', 'Megáfono de la Verdad', 'Publica un mensaje personalizado en la barra de noticias para todos.', 500, '📢']);
-    Logger.log("Megáfono añadido.");
+    // ID, Nombre, DescripciÃƒÂ³n, Precio, Icono
+    sheet.appendRow(['MEGAPHONE', 'MegÃƒÂ¡fono de la Verdad', 'Publica un mensaje personalizado en la barra de noticias para todos.', 500, 'Ã°Å¸â€œÂ¢']);
+    Logger.log("MegÃƒÂ¡fono aÃƒÂ±adido.");
   }
 }
 function addChestToShop() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('SHOP_ITEMS');
   if(sheet) {
-    // ID, Nombre, Descripción, Precio, Icono
-    sheet.appendRow(['CHEST_HEXTECH', 'Cofre Hextech', '¿Te sientes con suerte? Contiene oro, objetos o basura.', 500, '🎁']);
-    Logger.log("Cofre añadido a la tienda.");
+    // ID, Nombre, DescripciÃƒÂ³n, Precio, Icono
+    sheet.appendRow(['CHEST_HEXTECH', 'Cofre Hextech', 'Ã‚Â¿Te sientes con suerte? Contiene oro, objetos o basura.', 500, 'Ã°Å¸Å½Â']);
+    Logger.log("Cofre aÃƒÂ±adido a la tienda.");
   }
 }
 function SetupSponsorships() {
@@ -12009,21 +12018,21 @@ function sponsorPlayer(investor, target, amount) {
   if (!lock.tryLock(3000)) return { success: false, msg: "Sistema ocupado." };
 
   try {
-    // --- 🔒 BLOQUEO: JUGADOR EN PARTIDA (NO SE PUEDE APADRINAR) ---
+    // --- Ã°Å¸â€â€™ BLOQUEO: JUGADOR EN PARTIDA (NO SE PUEDE APADRINAR) ---
     const targetPuuid = getPuuidFromSheet(target);
     if (targetPuuid) {
         const liveCheck = getLiveStatus(targetPuuid);
         if (liveCheck.isLive) {
-            return { success: false, msg: `⛔ TARDES: ${target} ya está jugando (${liveCheck.time}). Debiste invertir antes.` };
+            return { success: false, msg: `Ã¢â€ºâ€ TARDES: ${target} ya estÃƒÂ¡ jugando (${liveCheck.time}). Debiste invertir antes.` };
         }
     }
     const ss = SpreadsheetApp.getActive();
     const marketSheet = ss.getSheetByName('MARKET_STATUS');
     const sponsorSheet = ss.getSheetByName('SPONSORSHIPS');
-    const txSheet = ss.getSheetByName('TRANSACTIONS'); // ✅ Necesario
+    const txSheet = ss.getSheetByName('TRANSACTIONS'); // Ã¢Å“â€¦ Necesario
     
     if (investor === target) return { success: false, msg: "No puedes apadrinarte a ti mismo." };
-    if (amount < 100) return { success: false, msg: "El patrocinio mínimo son 50 G." };
+    if (amount < 100) return { success: false, msg: "El patrocinio mÃƒÂ­nimo son 50 G." };
 
     const mData = marketSheet.getDataRange().getValues();
     let invRow = -1;
@@ -12040,14 +12049,14 @@ function sponsorPlayer(investor, target, amount) {
     marketSheet.getRange(invRow, 3).setValue(currentBalance - amount);
     sponsorSheet.appendRow([investor, target, amount, 'ACTIVE', new Date()]);
     
-    // ✅ LOG: Gasto de patrocinio (Precio -1 para que salga negativo)
+    // Ã¢Å“â€¦ LOG: Gasto de patrocinio (Precio -1 para que salga negativo)
     if (txSheet) {
         txSheet.appendRow([new Date(), 'SPONSOR_PAY', investor, target, amount, -1]);
     }
     
-    registerNews('DEAL', `🤝 ${investor} ha apadrinado a ${target} por ${amount} G. ¡Presión máxima!`);
+    registerNews('DEAL', `Ã°Å¸Â¤Â ${investor} ha apadrinado a ${target} por ${amount} G. Ã‚Â¡PresiÃƒÂ³n mÃƒÂ¡xima!`);
 
-    return { success: true, msg: `Has apadrinado a ${target}. Si gana su próxima partida, recibirás ${amount * 2} G.` };
+    return { success: true, msg: `Has apadrinado a ${target}. Si gana su prÃƒÂ³xima partida, recibirÃƒÂ¡s ${amount * 2} G.` };
 
   } catch (e) {
     return { success: false, msg: e.message };
@@ -12057,14 +12066,14 @@ function sponsorPlayer(investor, target, amount) {
 }
 
 
-// Función auxiliar para ver si un jugador está en partida
+// FunciÃƒÂ³n auxiliar para ver si un jugador estÃƒÂ¡ en partida
 function getLiveStatus(puuid) {
   const cfg = readConfigMap();
   const region = cfg.riot_region || 'europe';
   const apiKey = getApiKey();
   
-  // Nota: La API de espectador usa la región de plataforma (ej: euw1) no la de ruta (europe)
-  // Haremos un apaño rápido asumiendo EUW1, si eres de LAN/LAS cámbialo a 'la1' o 'la2'.
+  // Nota: La API de espectador usa la regiÃƒÂ³n de plataforma (ej: euw1) no la de ruta (europe)
+  // Haremos un apaÃƒÂ±o rÃƒÂ¡pido asumiendo EUW1, si eres de LAN/LAS cÃƒÂ¡mbialo a 'la1' o 'la2'.
   const platform = 'euw1'; 
   const url = `https://${platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
   
@@ -12072,10 +12081,10 @@ function getLiveStatus(puuid) {
     const opts = { method: 'get', headers: {'X-Riot-Token': apiKey}, muteHttpExceptions: true };
     const res = UrlFetchApp.fetch(url, opts);
     
-    // Si devuelve 200, está jugando. Si devuelve 404, no está jugando.
+    // Si devuelve 200, estÃƒÂ¡ jugando. Si devuelve 404, no estÃƒÂ¡ jugando.
     if (res.getResponseCode() === 200) {
        const data = JSON.parse(res.getContentText());
-       // Devolvemos info básica: Modo de juego y tiempo
+       // Devolvemos info bÃƒÂ¡sica: Modo de juego y tiempo
        const minutes = Math.floor(data.gameLength / 60);
        return { isLive: true, mode: data.gameMode, time: minutes + "'" };
     }
@@ -12106,11 +12115,11 @@ function getRealTimeLiveStatuses() {
   const liveResults = {};
 
   // 3. Escanear uno a uno (Solo los que tienen PUUID)
-  // Nota: Esto tardará unos segundos, es normal.
+  // Nota: Esto tardarÃƒÂ¡ unos segundos, es normal.
   for (const player of marketNames) {
     const puuid = puuidMap[player];
     if (puuid) {
-       const status = getLiveStatus(puuid); // Tu función auxiliar existente
+       const status = getLiveStatus(puuid); // Tu funciÃƒÂ³n auxiliar existente
        if (status.isLive) {
          liveResults[player] = { isLive: true, time: status.time, mode: status.mode };
        }
@@ -12122,7 +12131,7 @@ function getRealTimeLiveStatuses() {
 
 
 /* ==========================================================
-   🔥 SISTEMA DE RIVALES (NEMESIS SYSTEM)
+   Ã°Å¸â€Â¥ SISTEMA DE RIVALES (NEMESIS SYSTEM)
    ========================================================== */
 
 function SetupRivales() {
@@ -12162,26 +12171,26 @@ function updateRivalryProgress(player, pointsEarned) {
 
       // CASO: Eres el Jugador 1
       if (p1 === player) {
-        if (games1 < 4) { // 🔒 EL CANDADO: Solo suma si llevas menos de 4
+        if (games1 < 4) { // Ã°Å¸â€â€™ EL CANDADO: Solo suma si llevas menos de 4
            games1++;
            score1 += Number(pointsEarned); // Sumamos los puntos de ESTA partida
            
            rivalsSheet.getRange(i + 1, 4).setValue(score1); // Actualizar Puntos (Col D)
            rivalsSheet.getRange(i + 1, 7).setValue(games1); // Actualizar Games (Col G)
            updated = true;
-           console.log(`⚔️ Rivalry P1 (${player}): Game ${games1}/4. Puntos: ${pointsEarned}. Total: ${score1}`);
+           console.log(`Ã¢Å¡â€Ã¯Â¸Â Rivalry P1 (${player}): Game ${games1}/4. Puntos: ${pointsEarned}. Total: ${score1}`);
         }
       } 
       // CASO: Eres el Jugador 2
       else if (p2 === player) {
-        if (games2 < 4) { // 🔒 EL CANDADO
+        if (games2 < 4) { // Ã°Å¸â€â€™ EL CANDADO
            games2++;
            score2 += Number(pointsEarned); 
            
            rivalsSheet.getRange(i + 1, 5).setValue(score2); // Actualizar Puntos (Col E)
            rivalsSheet.getRange(i + 1, 8).setValue(games2); // Actualizar Games (Col H)
            updated = true;
-           console.log(`⚔️ Rivalry P2 (${player}): Game ${games2}/4. Puntos: ${pointsEarned}. Total: ${score2}`);
+           console.log(`Ã¢Å¡â€Ã¯Â¸Â Rivalry P2 (${player}): Game ${games2}/4. Puntos: ${pointsEarned}. Total: ${score2}`);
         }
       }
       
@@ -12213,17 +12222,17 @@ function generarRivales() {
   const alreadyGenerated = existing.slice(1).some(r => r[0] === weekID);
   
   if (alreadyGenerated) {
-    SpreadsheetApp.getUi().alert(`⚠️ Ya existen rivales para ${weekID}.`);
+    SpreadsheetApp.getUi().alert(`Ã¢Å¡Â Ã¯Â¸Â Ya existen rivales para ${weekID}.`);
     return;
   }
 
   const newRivals = [];
   
-  // Si son impares, añadir un Bot para que nadie se quede sin rival
+  // Si son impares, aÃƒÂ±adir un Bot para que nadie se quede sin rival
   if (data.length % 2 !== 0) {
       let totalPts = data.reduce((acc, curr) => acc + Number(curr[1]), 0);
       let avgPts = totalPts / data.length;
-      data.push(["🤖 Training Bot", avgPts.toFixed(2)]); 
+      data.push(["Ã°Å¸Â¤â€“ Training Bot", avgPts.toFixed(2)]); 
   }
   
   // Generar pares
@@ -12232,7 +12241,7 @@ function generarRivales() {
     const p2 = data[i+1][0];
 
     if (p1 && p2) {
-      // CORRECCIÓN AQUÍ: Iniciamos los marcadores en 0 y 0.
+      // CORRECCIÃƒâ€œN AQUÃƒÂ: Iniciamos los marcadores en 0 y 0.
       // Estructura: [WeekID, P1, P2, ScoreP1, ScoreP2, Status, GamesP1, GamesP2]
       newRivals.push([weekID, p1, p2, 0, 0, 'ACTIVE', 0, 0]);
     }
@@ -12242,21 +12251,21 @@ function generarRivales() {
   if (newRivals.length > 0) {
     rivalsSheet.getRange(rivalsSheet.getLastRow() + 1, 1, newRivals.length, 8).setValues(newRivals);
     
-    // Aviso en noticias (si tienes la función registerNews)
+    // Aviso en noticias (si tienes la funciÃƒÂ³n registerNews)
     if (typeof registerNews === 'function') {
-        registerNews('RIVALRY', `⚔️ ¡DUELOS ACTIVOS! Tenéis 4 partidas para superar a vuestro rival. Marcadores a 0. ¡Suerte!`);
+        registerNews('RIVALRY', `Ã¢Å¡â€Ã¯Â¸Â Ã‚Â¡DUELOS ACTIVOS! TenÃƒÂ©is 4 partidas para superar a vuestro rival. Marcadores a 0. Ã‚Â¡Suerte!`);
     }
     
-    SpreadsheetApp.getUi().alert(`✅ Generados ${newRivals.length} duelos (4 partidas max).`);
+    SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Generados ${newRivals.length} duelos (4 partidas max).`);
   }
 }
 
 /**
  * 2. RESOLVER RIVALES (Llamar al final de la semana, antes de generar los nuevos)
- * Compara quién ha ganado más puntos ESTA semana y aplica el robo de "Hype".
+ * Compara quiÃƒÂ©n ha ganado mÃƒÂ¡s puntos ESTA semana y aplica el robo de "Hype".
  */
 /* ----------------- RESOLVER RIVALES (ACUMULADOR) ----------------- */
-function resolverRivales(manual = true) { // Añadido parámetro manual
+function resolverRivales(manual = true) { // AÃƒÂ±adido parÃƒÂ¡metro manual
   const ss = SpreadsheetApp.getActive();
   const rivalsSheet = ss.getSheetByName('RIVALS');
   const marketSheet = ss.getSheetByName('MARKET_STATUS');
@@ -12264,7 +12273,7 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
 
   if (!rivalsSheet || !marketSheet) return;
 
-  // 1. Mapear el mercado para encontrar filas rápido
+  // 1. Mapear el mercado para encontrar filas rÃƒÂ¡pido
   const marketMap = {};
   const mData = marketSheet.getDataRange().getValues();
   for (let i = 1; i < mData.length; i++) marketMap[mData[i][0]] = i + 1;
@@ -12275,7 +12284,7 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
   for (let i = 1; i < rivalsData.length; i++) {
     const row = rivalsData[i];
     
-    // Solo procesar si está ACTIVO
+    // Solo procesar si estÃƒÂ¡ ACTIVO
     if (row[5] === 'ACTIVE') {
       const p1 = row[1];
       const p2 = row[2];
@@ -12302,14 +12311,14 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
           
           // Bajar al Perdedor
           marketSheet.getRange(lRow, 2).setValue(newLPrice);
-          marketSheet.getRange(lRow, 4).setValue('📉');
+          marketSheet.getRange(lRow, 4).setValue('Ã°Å¸â€œâ€°');
           
           // Subir al Ganador
           if (marketMap[winner]) {
               const wRow = marketMap[winner];
               const wPrice = Number(marketSheet.getRange(wRow, 2).getValue());
               marketSheet.getRange(wRow, 2).setValue(wPrice + stealAmount);
-              marketSheet.getRange(wRow, 4).setValue('🚀');
+              marketSheet.getRange(wRow, 4).setValue('Ã°Å¸Å¡â‚¬');
           }
         }
 
@@ -12320,13 +12329,13 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
         }
         
         if (typeof registerNews === 'function') {
-            registerNews('RIVAL_WIN', `🏆 ${winner} (${gain1.toFixed(1)}) vence a ${loser} (${gain2.toFixed(1)}). +10 Pts y Robo de Valor.`);
+            registerNews('RIVAL_WIN', `Ã°Å¸Ââ€  ${winner} (${gain1.toFixed(1)}) vence a ${loser} (${gain2.toFixed(1)}). +10 Pts y Robo de Valor.`);
         }
 
       } else {
         // Empate
         if (typeof registerNews === 'function') {
-            registerNews('RIVAL_DRAW', `🤝 Empate técnico entre ${p1} y ${p2}. Marcador igualado.`);
+            registerNews('RIVAL_DRAW', `Ã°Å¸Â¤Â Empate tÃƒÂ©cnico entre ${p1} y ${p2}. Marcador igualado.`);
         }
       }
       
@@ -12336,14 +12345,14 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
     }
   }
   
-  // --- FINALIZACIÓN ---
+  // --- FINALIZACIÃƒâ€œN ---
   if (resolvedCount > 0) {
       if (typeof updateScores === 'function') updateScores(); // Actualizar tabla general
       
       if (manual !== false) {
-         SpreadsheetApp.getUi().alert(`✅ Se han resuelto ${resolvedCount} duelos.`);
+         SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Se han resuelto ${resolvedCount} duelos.`);
       } else {
-         console.log(`Auto-resolución: ${resolvedCount} duelos procesados.`);
+         console.log(`Auto-resoluciÃƒÂ³n: ${resolvedCount} duelos procesados.`);
       }
   } else {
       if (manual === true) { 
@@ -12354,10 +12363,10 @@ function resolverRivales(manual = true) { // Añadido parámetro manual
 
 
 /* ==========================================================
-   👾 RAID BOSS (BARON NASHOR) - LÓGICA BACKEND
+   Ã°Å¸â€˜Â¾ RAID BOSS (BARON NASHOR) - LÃƒâ€œGICA BACKEND
    ========================================================== */
 
-// Esta función la llama la web para pintar la barra roja
+// Esta funciÃƒÂ³n la llama la web para pintar la barra roja
 function getBossData() {
     const props = PropertiesService.getScriptProperties();
     // Si no existe vida, la creamos (10,000 HP)
@@ -12376,14 +12385,14 @@ function getBossData() {
     };
 }
 
-/* --- GESTIÓN MANUAL DEL RAID BOSS --- */
+/* --- GESTIÃƒâ€œN MANUAL DEL RAID BOSS --- */
 
 // 1. Configurar vida personalizada
 function configureBossCustom() {
   const ui = SpreadsheetApp.getUi();
   const response = ui.prompt(
     'Configurar Raid Boss', 
-    'Introduce la VIDA MÁXIMA para el Dragón (ej: 5000):', 
+    'Introduce la VIDA MÃƒÂXIMA para el DragÃƒÂ³n (ej: 5000):', 
     ui.ButtonSet.OK_CANCEL
   );
 
@@ -12392,7 +12401,7 @@ function configureBossCustom() {
     const hp = parseInt(hpStr);
 
     if (isNaN(hp) || hp <= 0) {
-      ui.alert("Por favor, introduce un número válido.");
+      ui.alert("Por favor, introduce un nÃƒÂºmero vÃƒÂ¡lido.");
       return;
     }
 
@@ -12403,45 +12412,45 @@ function configureBossCustom() {
       'BOSS_STATUS': 'ALIVE'
     });
 
-    ui.alert(`✅ Raid Boss configurado.\nVida: ${hp} / ${hp}\nEstado: VIVO`);
+    ui.alert(`Ã¢Å“â€¦ Raid Boss configurado.\nVida: ${hp} / ${hp}\nEstado: VIVO`);
   }
 }
 
 // 2. Eliminar al Boss (Ocultar barra)
 function removeBoss() {
   const ui = SpreadsheetApp.getUi();
-  const response = ui.alert('Eliminar Boss', '¿Seguro que quieres quitar al Boss? La barra desaparecerá de la web.', ui.ButtonSet.YES_NO);
+  const response = ui.alert('Eliminar Boss', 'Ã‚Â¿Seguro que quieres quitar al Boss? La barra desaparecerÃƒÂ¡ de la web.', ui.ButtonSet.YES_NO);
   
   if (response == ui.Button.YES) {
     const props = PropertiesService.getScriptProperties();
     props.setProperty('BOSS_STATUS', 'DEAD'); // Al ponerlo DEAD, la web deja de mostrarlo o pone 0
     props.setProperty('BOSS_HP', '0');
-    ui.alert('💀 Boss eliminado. El evento ha terminado.');
+    ui.alert('Ã°Å¸â€™â‚¬ Boss eliminado. El evento ha terminado.');
   }
 }
 
-// Esta función resta vida al Boss
+// Esta funciÃƒÂ³n resta vida al Boss
 function damageRaidBoss(points) {
     const props = PropertiesService.getScriptProperties();
     
-    // 1. Ver si está vivo
+    // 1. Ver si estÃƒÂ¡ vivo
     if (props.getProperty('BOSS_STATUS') === 'DEAD') {
-        Logger.log("❌ BOSS DEAD: No se aplica daño porque ya está muerto.");
+        Logger.log("Ã¢ÂÅ’ BOSS DEAD: No se aplica daÃƒÂ±o porque ya estÃƒÂ¡ muerto.");
         return;
     }
 
     let currentHP = Number(props.getProperty('BOSS_HP'));
     if (isNaN(currentHP)) currentHP = 3000;
 
-    // 2. Calcular daño (Tu fórmula original)
-    // Math.max(0, ...) hace que si los puntos son negativos, el daño sea 0.
+    // 2. Calcular daÃƒÂ±o (Tu fÃƒÂ³rmula original)
+    // Math.max(0, ...) hace que si los puntos son negativos, el daÃƒÂ±o sea 0.
     const dmg = Math.max(0, Math.ceil(points)); 
     
-    // --- 🚨 AQUÍ ESTÁ EL CHIVATO ---
-    Logger.log(`👾 INTENTO DE DAÑO: Puntos Partida: ${points} => Daño Calculado: ${dmg}`);
+    // --- Ã°Å¸Å¡Â¨ AQUÃƒÂ ESTÃƒÂ EL CHIVATO ---
+    Logger.log(`Ã°Å¸â€˜Â¾ INTENTO DE DAÃƒâ€˜O: Puntos Partida: ${points} => DaÃƒÂ±o Calculado: ${dmg}`);
 
     if (dmg <= 0) {
-        Logger.log("⚠️ DAÑO NULO: El jugador no ganó suficientes puntos positivos para herir al Boss.");
+        Logger.log("Ã¢Å¡Â Ã¯Â¸Â DAÃƒâ€˜O NULO: El jugador no ganÃƒÂ³ suficientes puntos positivos para herir al Boss.");
         return; 
     }
     
@@ -12451,15 +12460,15 @@ function damageRaidBoss(points) {
         newHP = 0;
         props.setProperty('BOSS_STATUS', 'DEAD');
         props.setProperty('BOSS_HP', '0');
-        Logger.log("💀 ¡BOSS ELIMINADO!");
+        Logger.log("Ã°Å¸â€™â‚¬ Ã‚Â¡BOSS ELIMINADO!");
         
         if(typeof registerNews === 'function') {
-            registerNews('EVENT', '👾 ¡EL RAID BOSS HA CAÍDO! Baron Nashor ha sido derrotado.');
+            registerNews('EVENT', 'Ã°Å¸â€˜Â¾ Ã‚Â¡EL RAID BOSS HA CAÃƒÂDO! Baron Nashor ha sido derrotado.');
         }
         distributeBossRewards();
     } else {
         props.setProperty('BOSS_HP', String(newHP));
-        Logger.log(`✅ DAÑO APLICADO: ${dmg}. Vida baja de ${currentHP} a ${newHP}`);
+        Logger.log(`Ã¢Å“â€¦ DAÃƒâ€˜O APLICADO: ${dmg}. Vida baja de ${currentHP} a ${newHP}`);
     }
 }
 
@@ -12476,7 +12485,7 @@ function distributeBossRewards() {
         const currentPrice = Number(data[i][1]); // Columna B: Precio
         const currentWallet = Number(data[i][2]); // Columna C: Cartera
         
-        // 1. Subida del 15% en el precio de la acción
+        // 1. Subida del 15% en el precio de la acciÃƒÂ³n
         const newPrice = currentPrice * 1.15;
         
         // 2. Ingreso de 500 G
@@ -12487,12 +12496,12 @@ function distributeBossRewards() {
         marketSheet.getRange(i+1, 3).setValue(newWallet);
         
         // Actualizamos tendencia visual a cohete
-        marketSheet.getRange(i+1, 4).setValue('🚀');
+        marketSheet.getRange(i+1, 4).setValue('Ã°Å¸Å¡â‚¬');
     }
     
-    // Noticia extra de euforia bursátil
+    // Noticia extra de euforia bursÃƒÂ¡til
     if(typeof registerNews === 'function') {
-        registerNews('BULL', '📈 ¡EUFORIA! La derrota del Baron dispara el mercado un 15% y reparte dividendos.');
+        registerNews('BULL', 'Ã°Å¸â€œË† Ã‚Â¡EUFORIA! La derrota del Baron dispara el mercado un 15% y reparte dividendos.');
     }
 }
 
@@ -12510,21 +12519,21 @@ function checkBossWeeklyReset() {
         for (let i=1; i<data.length; i++) {
             const currentPrice = Number(data[i][1]); // Columna B: Precio
             
-            // 1. Bajada del 20% en el precio de la acción (CRASH)
+            // 1. Bajada del 20% en el precio de la acciÃƒÂ³n (CRASH)
             let newPrice = currentPrice * 0.80;
-            if (newPrice < 1) newPrice = 1; // Suelo mínimo
+            if (newPrice < 1) newPrice = 1; // Suelo mÃƒÂ­nimo
             
             marketSheet.getRange(i+1, 2).setValue(newPrice);
-            marketSheet.getRange(i+1, 4).setValue('📉'); // Tendencia a la baja
+            marketSheet.getRange(i+1, 4).setValue('Ã°Å¸â€œâ€°'); // Tendencia a la baja
         }
         
         if(typeof registerNews === 'function') {
-            registerNews('CRASH', '👾 La comunidad ha fallado. Baron Nashor arrasa la economía: El mercado cae un 20%.');
+            registerNews('CRASH', 'Ã°Å¸â€˜Â¾ La comunidad ha fallado. Baron Nashor arrasa la economÃƒÂ­a: El mercado cae un 20%.');
         }
     }
     
     // RESETEAR EL BOSS PARA LA SEMANA QUE VIENE
-    // Puedes subirle la vida si quieres hacerlo más difícil cada semana
+    // Puedes subirle la vida si quieres hacerlo mÃƒÂ¡s difÃƒÂ­cil cada semana
     props.setProperties({
       'BOSS_HP': '12000',    // Ej: 12k HP para la siguiente
       'BOSS_MAX_HP': '12000',
@@ -12532,15 +12541,15 @@ function checkBossWeeklyReset() {
     });
 }
 
-// Función para resetear al Boss manualmente si quieres
+// FunciÃƒÂ³n para resetear al Boss manualmente si quieres
 function adminSetBossLife() {
   const props = PropertiesService.getScriptProperties();
   props.setProperties({ 'BOSS_HP': '3000', 'BOSS_MAX_HP': '3000', 'BOSS_STATUS': 'ALIVE' });
-  SpreadsheetApp.getUi().alert("✅ Boss reseteado a 3000 HP.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Boss reseteado a 3000 HP.");
 }
 
 /* =========================================
-   💼 GESTIÓN DE INVERSORES PUROS (BROKERS)
+   Ã°Å¸â€™Â¼ GESTIÃƒâ€œN DE INVERSORES PUROS (BROKERS)
    ========================================= */
 
 function addPureInvestor() {
@@ -12553,28 +12562,28 @@ function addPureInvestor() {
   if (response.getSelectedButton() !== ui.Button.OK) return;
   
   const name = response.getResponseText().trim();
-  if (!name) { ui.alert("El nombre no puede estar vacío."); return; }
+  if (!name) { ui.alert("El nombre no puede estar vacÃƒÂ­o."); return; }
 
   // 2. Verificar si ya existe
   const data = marketSheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0]).toLowerCase() === name.toLowerCase()) {
-      ui.alert("❌ Ese nombre ya existe en el mercado.");
+      ui.alert("Ã¢ÂÅ’ Ese nombre ya existe en el mercado.");
       return;
     }
   }
 
-  // 3. Añadir al Mercado
+  // 3. AÃƒÂ±adir al Mercado
   // Formato: [Summoner, StockPrice, Wallet, Trend, LastChange, History]
-  // IMPORTANTE: Ponemos '💼' en la columna Trend (Col 4) para identificarlo como NO JUGADOR
-  marketSheet.appendRow([name, 1, 1000, '💼', 0, '[]']);
+  // IMPORTANTE: Ponemos 'Ã°Å¸â€™Â¼' en la columna Trend (Col 4) para identificarlo como NO JUGADOR
+  marketSheet.appendRow([name, 1, 1000, 'Ã°Å¸â€™Â¼', 0, '[]']);
 
-  ui.alert(`✅ ¡Bienvenido a Wall Street!  \n${name} añadido como Inversor Puro.\nNo tendrá acción propia ni saldrá en rankings, pero podrá operar.`);
+  ui.alert(`Ã¢Å“â€¦ Ã‚Â¡Bienvenido a Wall Street!  \n${name} aÃƒÂ±adido como Inversor Puro.\nNo tendrÃƒÂ¡ acciÃƒÂ³n propia ni saldrÃƒÂ¡ en rankings, pero podrÃƒÂ¡ operar.`);
 }
 
 
 /* ==========================================================
-   📉 LA BANCA ROTA (EVENTOS GLOBALES)
+   Ã°Å¸â€œâ€° LA BANCA ROTA (EVENTOS GLOBALES)
    ========================================================== */
 
 function triggerEventoMercado() {
@@ -12586,13 +12595,13 @@ function triggerEventoMercado() {
 
   // Lista de Eventos Posibles
   const events = [
-    { id: 'CRASH', name: '💥 CRASH DEL SERVIDOR', desc: 'EUW ha caído. Pánico general.', effect: -0.10 }, // -10%
-    { id: 'BULL', name: '🚀 DOMINGO DE SOLOQ', desc: 'Optimismo en el mercado. Todos suben.', effect: 0.08 }, // +8%
-    { id: 'PATCH', name: '⚖️ PARCHE DE BALANCE', desc: 'Volatilidad extrema. Precios aleatorios.', effect: 'RANDOM' },
-    { id: 'TAX', name: '💸 IMPUESTO REVOLUCIONARIO', desc: 'Hacienda ha llegado. Todos pierden valor fijo.', effect: -5 } // -5G flat
+    { id: 'CRASH', name: 'Ã°Å¸â€™Â¥ CRASH DEL SERVIDOR', desc: 'EUW ha caÃƒÂ­do. PÃƒÂ¡nico general.', effect: -0.10 }, // -10%
+    { id: 'BULL', name: 'Ã°Å¸Å¡â‚¬ DOMINGO DE SOLOQ', desc: 'Optimismo en el mercado. Todos suben.', effect: 0.08 }, // +8%
+    { id: 'PATCH', name: 'Ã¢Å¡â€“Ã¯Â¸Â PARCHE DE BALANCE', desc: 'Volatilidad extrema. Precios aleatorios.', effect: 'RANDOM' },
+    { id: 'TAX', name: 'Ã°Å¸â€™Â¸ IMPUESTO REVOLUCIONARIO', desc: 'Hacienda ha llegado. Todos pierden valor fijo.', effect: -5 } // -5G flat
   ];
 
-  // Selección aleatoria (o puedes hacer un menú para elegir)
+  // SelecciÃƒÂ³n aleatoria (o puedes hacer un menÃƒÂº para elegir)
   const event = events[Math.floor(Math.random() * events.length)];
 
   // Aplicar efectos
@@ -12624,29 +12633,29 @@ function triggerEventoMercado() {
     marketSheet.getRange(i + 2, 2).setValue(newPrice);
     
     // Actualizar tendencia visual
-    const trend = newPrice > currentPrice ? '📈' : '📉';
+    const trend = newPrice > currentPrice ? 'Ã°Å¸â€œË†' : 'Ã°Å¸â€œâ€°';
     marketSheet.getRange(i + 2, 4).setValue(trend);
   }
 
   // Notificar
-  registerNews('EVENT', `🌍 EVENTO GLOBAL: ${event.name}. ${event.desc}`);
-  ui.alert(`⚡ ${event.name} activado`, `El mercado ha reaccionado: ${event.desc}`, ui.ButtonSet.OK);
+  registerNews('EVENT', `Ã°Å¸Å’Â EVENTO GLOBAL: ${event.name}. ${event.desc}`);
+  ui.alert(`Ã¢Å¡Â¡ ${event.name} activado`, `El mercado ha reaccionado: ${event.desc}`, ui.ButtonSet.OK);
 }
 
 
 /* ==========================================================
-   🎰 SISTEMA DE ANIMACIÓN DE RULETA
+   Ã°Å¸Å½Â° SISTEMA DE ANIMACIÃƒâ€œN DE RULETA
    ========================================================== */
 
 /**
- * Lanza la animación de la ruleta.
+ * Lanza la animaciÃƒÂ³n de la ruleta.
  * @param {string} winnerItemName - El nombre exacto del objeto que HA GANADO el jugador.
- * @param {Array<string>} possibleLootArray - Una lista de strings con cosas que PODRÍAN haber tocado (para rellenar la ruleta).
+ * @param {Array<string>} possibleLootArray - Una lista de strings con cosas que PODRÃƒÂAN haber tocado (para rellenar la ruleta).
  */
 function showRouletteAnimation(winnerItemName, possibleLootArray) {
   // Verificar datos
   if (!winnerItemName || !possibleLootArray || possibleLootArray.length === 0) {
-    SpreadsheetApp.getUi().alert("Error en la animación: Faltan datos del premio.");
+    SpreadsheetApp.getUi().alert("Error en la animaciÃƒÂ³n: Faltan datos del premio.");
     return;
   }
 
@@ -12663,32 +12672,32 @@ function showRouletteAnimation(winnerItemName, possibleLootArray) {
       .setHeight(350); // Alto de la ventana modal
 
   // Inyectar los datos en el HTML usando un script en el lado del cliente
-  // Esto llama a la función 'initRoulette' dentro del HTML una vez cargado.
+  // Esto llama a la funciÃƒÂ³n 'initRoulette' dentro del HTML una vez cargado.
   const htmlWithData = html.getContent() + `
     <script>
-      // Llamamos a la función de inicialización del HTML pasando los datos del servidor
+      // Llamamos a la funciÃƒÂ³n de inicializaciÃƒÂ³n del HTML pasando los datos del servidor
       // Usamos comillas simples y escapamos por seguridad
       initRoulette('${lootString.replace(/'/g, "\\'")}', '${winnerItemName.replace(/'/g, "\\'")}');
     </script>
   `;
   
-  // Mostrar el diálogo modal
+  // Mostrar el diÃƒÂ¡logo modal
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(htmlWithData).setWidth(450).setHeight(350), 'Abriendo Cofre...');
 }
 
 
-// --- 🧪 FUNCIÓN DE PRUEBA (BORRAR LUEGO) ---
-// Ejecuta esta función para ver cómo queda la animación sin gastar dinero real.
+// --- Ã°Å¸Â§Âª FUNCIÃƒâ€œN DE PRUEBA (BORRAR LUEGO) ---
+// Ejecuta esta funciÃƒÂ³n para ver cÃƒÂ³mo queda la animaciÃƒÂ³n sin gastar dinero real.
 function TEST_Roulette() {
   const posibleLoot = [
-      "Aspecto Común", "Aspecto Raro", "Gesto", 
+      "Aspecto ComÃƒÂºn", "Aspecto Raro", "Gesto", 
       "Icono", "Esencia Naranja", "Fragmento de Llave", 
-      "Aspecto Épico", "Aspecto Legendario (¡Premio!)", 
+      "Aspecto Ãƒâ€°pico", "Aspecto Legendario (Ã‚Â¡Premio!)", 
       "Hype (+100G)", "Bolsa de Sorpresas"
   ];
   
   // Simulemos que ha ganado un Aspecto Legendario
-  const ganador = "Aspecto Legendario (¡Premio!)";
+  const ganador = "Aspecto Legendario (Ã‚Â¡Premio!)";
 
   showRouletteAnimation(ganador, posibleLoot);
 }
@@ -12738,7 +12747,7 @@ function getGlobalHistoryData() {
     const sheet = ss.getSheetByName('MATCHES');
     if (!sheet || sheet.getLastRow() < 2) return [];
 
-    // OPTIMIZACIÓN: Leemos solo las últimas 100 partidas para velocidad
+    // OPTIMIZACIÃƒâ€œN: Leemos solo las ÃƒÂºltimas 100 partidas para velocidad
     const lastRow = sheet.getLastRow();
     const startRow = Math.max(2, lastRow - 99); 
     const numRows = lastRow - startRow + 1;
@@ -12746,9 +12755,9 @@ function getGlobalHistoryData() {
     // Leemos el rango (Asumiendo 14 columnas A-N)
     const data = sheet.getRange(startRow, 1, numRows, 14).getValues();
     
-    // Procesamos en orden INVERSO (del más nuevo al más viejo)
+    // Procesamos en orden INVERSO (del mÃƒÂ¡s nuevo al mÃƒÂ¡s viejo)
     const history = data.reverse().map(row => {
-      // Protección de Fechas (Esto suele romper el script si no se hace así)
+      // ProtecciÃƒÂ³n de Fechas (Esto suele romper el script si no se hace asÃƒÂ­)
       let dateStr = "---";
       try {
         if (row[1]) {
@@ -12762,13 +12771,13 @@ function getGlobalHistoryData() {
         }
       } catch(e) { dateStr = "Error Fecha"; }
 
-      // Protección de notas (Tags)
+      // ProtecciÃƒÂ³n de notas (Tags)
       let rawNotes = String(row[13] || "");
-      // Limpiamos notas técnicas internas que ensucian el historial visual
+      // Limpiamos notas tÃƒÂ©cnicas internas que ensucian el historial visual
       let cleanNotes = rawNotes
         .replace(/;? ?Mitigado por sacrificio/g, "")
-        .replace(/;? ?Bounty Regalado!/g, "💸 Bounty")
-        .replace(/;? ?Partida desastrosa/g, "☠️ Disaster");
+        .replace(/;? ?Bounty Regalado!/g, "Ã°Å¸â€™Â¸ Bounty")
+        .replace(/;? ?Partida desastrosa/g, "Ã¢ËœÂ Ã¯Â¸Â Disaster");
 
       return {
         id: String(row[0]),
@@ -12797,7 +12806,7 @@ function getGlobalHistoryData() {
 
 
 /* ==========================================================
-   ☠️ LA PURGA 2.0: BATTLE ROYALE (CON CEMENTERIO)
+   Ã¢ËœÂ Ã¯Â¸Â LA PURGA 2.0: BATTLE ROYALE (CON CEMENTERIO)
    ========================================================== */
 
 // 1. ACTIVAR PURGA (SETUP CON COLUMNAS NUEVAS)
@@ -12816,14 +12825,14 @@ function startPurgeEvent() {
   
   const lastRow = marketSheet.getLastRow();
   if (lastRow > 1) {
-      // Resetear valores: Todos VIVOS, 0 Días, Sin Objetivo
+      // Resetear valores: Todos VIVOS, 0 DÃƒÂ­as, Sin Objetivo
       const resetArray = new Array(lastRow - 1).fill(['ALIVE', 0, '']);
       marketSheet.getRange(2, 7, lastRow - 1, 3).setValues(resetArray);
       
       assignDailyBounties(marketSheet);
   }
 
-  // B. Guardar Configuración Global
+  // B. Guardar ConfiguraciÃƒÂ³n Global
   props.setProperty('EVENT_PURGE_ACTIVE', 'TRUE');
   props.setProperty('EVENT_PURGE_START', new Date().toISOString());
   // Inicializamos la toxicidad acumulada en 0
@@ -12838,12 +12847,12 @@ function startPurgeEvent() {
   ScriptApp.newTrigger('runThePurge')
       .timeBased()
       .everyDays(1)
-      .atHour(23)       // <--- AQUÍ: Hora (0 a 23)
-      .nearMinute(50)   // <--- AQUÍ: Minuto aproximado
+      .atHour(23)       // <--- AQUÃƒÂ: Hora (0 a 23)
+      .nearMinute(50)   // <--- AQUÃƒÂ: Minuto aproximado
       .create();
       
-  registerNews('EVENT', '☠️ LA PURGA EXPONENCIAL: La presión es global. Cada día la atmósfera se vuelve más tóxica para todos.');
-  SpreadsheetApp.getUi().alert('✅ Purga Iniciada. Variable global configurada.');
+  registerNews('EVENT', 'Ã¢ËœÂ Ã¯Â¸Â LA PURGA EXPONENCIAL: La presiÃƒÂ³n es global. Cada dÃƒÂ­a la atmÃƒÂ³sfera se vuelve mÃƒÂ¡s tÃƒÂ³xica para todos.');
+  SpreadsheetApp.getUi().alert('Ã¢Å“â€¦ Purga Iniciada. Variable global configurada.');
 }
 
 function executeDailyPurge() {
@@ -12851,40 +12860,40 @@ function executeDailyPurge() {
   const survivors = data.survivors; // Vienen ordenados de peor a mejor
   const invSheet = SpreadsheetApp.getActive().getSheetByName('INVENTORY');
   
-  // 1. PROCESAR EL FOSO (LOS 3 ÚLTIMOS)
+  // 1. PROCESAR EL FOSO (LOS 3 ÃƒÅ¡LTIMOS)
   for (let i = 0; i < 3; i++) {
     let p = survivors[i];
     if (!p) continue;
 
-    // ¿Tiene Adrenalina ACTIVA?
+    // Ã‚Â¿Tiene Adrenalina ACTIVA?
     const invData = invSheet.getDataRange().getValues();
     const adrenalineIdx = invData.findIndex(r => r[0] === p.name && r[1] === 'ADRENALINE_SHOT' && r[2] === 'ACTIVE');
 
     if (adrenalineIdx !== -1) {
       invSheet.getRange(adrenalineIdx + 1, 3).setValue('USED'); // Consumir
-      registerNews('PURGE', `💉 **${p.name}** sobrevive al foso gracias a una dosis de adrenalina.`);
+      registerNews('PURGE', `Ã°Å¸â€™â€° **${p.name}** sobrevive al foso gracias a una dosis de adrenalina.`);
       continue; // SE SALVA
     }
 
-    // PENALIZACIÓN POR INACTIVIDAD
+    // PENALIZACIÃƒâ€œN POR INACTIVIDAD
     if (p.gamesPlayed < 2) {
-       // Aquí llamarías a una función para restar puntos, ej:
+       // AquÃƒÂ­ llamarÃƒÂ­as a una funciÃƒÂ³n para restar puntos, ej:
        // applyInactivityPenalty(p.name, -15);
-       registerNews('PURGE', `💀 **${p.name}** muere por inactividad. Penalización de -15 pts aplicada.`);
+       registerNews('PURGE', `Ã°Å¸â€™â‚¬ **${p.name}** muere por inactividad. PenalizaciÃƒÂ³n de -15 pts aplicada.`);
     }
 
-    // MENSAJE DE ÚLTIMA VOLUNTAD
+    // MENSAJE DE ÃƒÅ¡LTIMA VOLUNTAD
     const lastWill = p.lastWill || "No tuvo tiempo de decir nada...";
-    registerNews('PURGE', `🪦 **${p.name}** ha sido purgado. Su última voluntad: "_${lastWill}_"`);
+    registerNews('PURGE', `Ã°Å¸ÂªÂ¦ **${p.name}** ha sido purgado. Su ÃƒÂºltima voluntad: "_${lastWill}_"`);
     
-    // Función que ya tienes para eliminarlo
+    // FunciÃƒÂ³n que ya tienes para eliminarlo
     eliminatePlayer(p.name);
   }
 
   // 2. RACHAS Y SUMINISTROS
   survivors.forEach((p, index) => {
-    if (index >= 3) { // Está a salvo
-      // Lógica para incrementar racha en MARKET_STATUS y dar cofre cada 2 noches
+    if (index >= 3) { // EstÃƒÂ¡ a salvo
+      // LÃƒÂ³gica para incrementar racha en MARKET_STATUS y dar cofre cada 2 noches
       // if (racha % 2 === 0) giveForgeLoot(p.name);
     }
   });
@@ -12892,7 +12901,7 @@ function executeDailyPurge() {
 
 // --- HELPER: ASIGNAR OBJETIVOS (RULETA DE 1/3) ---
 function assignDailyBounties(sheet) {
-    // 🛡️ FIX: Si ejecutamos manual, buscamos la hoja nosotros mismos
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX: Si ejecutamos manual, buscamos la hoja nosotros mismos
     if (!sheet) {
         const ss = SpreadsheetApp.getActive();
         sheet = ss.getSheetByName('MARKET_STATUS');
@@ -12927,13 +12936,13 @@ function assignDailyBounties(sheet) {
     let hunterCount = Math.floor(survivors.length / 3);
     if (hunterCount < 1 && survivors.length >= 2) hunterCount = 1;
 
-    console.log(`🎯 Generando ${hunterCount} contratos de caza para ${survivors.length} supervivientes.`);
+    console.log(`Ã°Å¸Å½Â¯ Generando ${hunterCount} contratos de caza para ${survivors.length} supervivientes.`);
 
     // 5. Asignar SOLO a los elegidos
     for(let i=0; i<hunterCount; i++) {
         const hunter = shuffled[i];
         
-        // Elegir víctima (un poco alejado en la lista para variedad)
+        // Elegir vÃƒÂ­ctima (un poco alejado en la lista para variedad)
         let targetIndex = (i + hunterCount) % shuffled.length;
         const target = shuffled[targetIndex];
         
@@ -12946,7 +12955,7 @@ function getPurgeRankingData() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('EVENT_PURGE_ACTIVE') !== 'TRUE') return { active: false };
 
-  // --- CONFIGURACIÓN AGRESIVA ---
+  // --- CONFIGURACIÃƒâ€œN AGRESIVA ---
   const BASE_PENALTY = 4.0; 
   const EXP_MULTIPLIER = 2.0;
   const MIN_GAMES_TOTAL = 2;    
@@ -12963,17 +12972,17 @@ function getPurgeRankingData() {
 
   // --- INFO DEL CLIMA ---
   const weatherID = props.getProperty('PURGE_WEATHER') || 'NEUTRAL';
-  let weatherInfo = { icon: '🌑', name: 'Calma Tensa', desc: 'Sin bonificaciones especiales hoy.' };
+  let weatherInfo = { icon: 'Ã°Å¸Å’â€˜', name: 'Calma Tensa', desc: 'Sin bonificaciones especiales hoy.' };
 
   switch (weatherID) {
-      case 'BLIND':  weatherInfo = { icon: '👁️', name: 'NOCHE CIEGA', desc: 'La Visión cuenta DOBLE en la media. ¡Comprad Pinks!' }; break;
-      case 'BLOOD':  weatherInfo = { icon: '🩸', name: 'LUNA DE SANGRE', desc: 'Las Kills otorgan puntuación extra (+0.1 pts/kill).' }; break;
-      case 'SIEGE':  weatherInfo = { icon: '🚜', name: 'ASEDIO', desc: 'Derribar Torres otorga gran bonificación (+2.0 pts).' }; break;
-      case 'ASSIST': weatherInfo = { icon: '🤝', name: 'SINERGIA', desc: 'Media de Asistencias > 12 otorga +3.0 Pts.' }; break;
-      case 'HUNT':   weatherInfo = { icon: '🦄', name: 'CAZA MAYOR', desc: 'Pentakills, Solo Nashor o Inmortal dan +5.0 Pts.' }; break;
-      case 'JUDGE':  weatherInfo = { icon: '⚖️', name: 'JUICIO FINAL', desc: 'PELIGRO: Cada Derrota resta -2.0 Pts extra.' }; break;
-      case 'MINES':  weatherInfo = { icon: '💣', name: 'CAMPO DE MINAS', desc: 'PELIGRO: Cada Muerte resta -0.5 Pts a la media.' }; break;
-      case 'CALM':   weatherInfo = { icon: '🌪️', name: 'OJO DE TORMENTA', desc: 'Día de suerte. La penalización nocturna será la mitad.' }; break;
+      case 'BLIND':  weatherInfo = { icon: 'Ã°Å¸â€˜ÂÃ¯Â¸Â', name: 'NOCHE CIEGA', desc: 'La VisiÃƒÂ³n cuenta DOBLE en la media. Ã‚Â¡Comprad Pinks!' }; break;
+      case 'BLOOD':  weatherInfo = { icon: 'Ã°Å¸Â©Â¸', name: 'LUNA DE SANGRE', desc: 'Las Kills otorgan puntuaciÃƒÂ³n extra (+0.1 pts/kill).' }; break;
+      case 'SIEGE':  weatherInfo = { icon: 'Ã°Å¸Å¡Å“', name: 'ASEDIO', desc: 'Derribar Torres otorga gran bonificaciÃƒÂ³n (+2.0 pts).' }; break;
+      case 'ASSIST': weatherInfo = { icon: 'Ã°Å¸Â¤Â', name: 'SINERGIA', desc: 'Media de Asistencias > 12 otorga +3.0 Pts.' }; break;
+      case 'HUNT':   weatherInfo = { icon: 'Ã°Å¸Â¦â€ž', name: 'CAZA MAYOR', desc: 'Pentakills, Solo Nashor o Inmortal dan +5.0 Pts.' }; break;
+      case 'JUDGE':  weatherInfo = { icon: 'Ã¢Å¡â€“Ã¯Â¸Â', name: 'JUICIO FINAL', desc: 'PELIGRO: Cada Derrota resta -2.0 Pts extra.' }; break;
+      case 'MINES':  weatherInfo = { icon: 'Ã°Å¸â€™Â£', name: 'CAMPO DE MINAS', desc: 'PELIGRO: Cada Muerte resta -0.5 Pts a la media.' }; break;
+      case 'CALM':   weatherInfo = { icon: 'Ã°Å¸Å’ÂªÃ¯Â¸Â', name: 'OJO DE TORMENTA', desc: 'DÃƒÂ­a de suerte. La penalizaciÃƒÂ³n nocturna serÃƒÂ¡ la mitad.' }; break;
   }
 
   const ss = SpreadsheetApp.getActive();
@@ -13070,14 +13079,14 @@ function getPurgeRankingData() {
           const avgAssists = s.assists / games;
           const avgDeaths = s.deaths / games;
           
-          if (weatherID === 'BLIND' && s.vision >= 1) { bonusPoints += 2.0; weatherNote = " (👁️)"; }
-          else if (weatherID === 'BLOOD' && avgKills >= 7) { bonusPoints += (avgKills * 0.3); weatherNote = " (🩸)"; }
-          else if (weatherID === 'SIEGE' && s.siegeTagsCount >= 1) { bonusPoints += 4.0; weatherNote = " (🚜)"; }
-          else if (weatherID === 'ASSIST' && avgAssists >= 12) { bonusPoints += 3.0; weatherNote = " (🤝)"; }
-          else if (weatherID === 'HUNT' && s.rareTagsCount >= 1) { bonusPoints += 5.0; weatherNote = " (🦄)"; }
+          if (weatherID === 'BLIND' && s.vision >= 1) { bonusPoints += 2.0; weatherNote = " (Ã°Å¸â€˜ÂÃ¯Â¸Â)"; }
+          else if (weatherID === 'BLOOD' && avgKills >= 7) { bonusPoints += (avgKills * 0.3); weatherNote = " (Ã°Å¸Â©Â¸)"; }
+          else if (weatherID === 'SIEGE' && s.siegeTagsCount >= 1) { bonusPoints += 4.0; weatherNote = " (Ã°Å¸Å¡Å“)"; }
+          else if (weatherID === 'ASSIST' && avgAssists >= 12) { bonusPoints += 3.0; weatherNote = " (Ã°Å¸Â¤Â)"; }
+          else if (weatherID === 'HUNT' && s.rareTagsCount >= 1) { bonusPoints += 5.0; weatherNote = " (Ã°Å¸Â¦â€ž)"; }
           
-          if (weatherID === 'JUDGE' && s.losses > 0) { extraPenalty += (s.losses * 2.0); weatherNote = " (⚖️)"; }
-          if (weatherID === 'MINES') { extraPenalty += (avgDeaths * 0.5); weatherNote = " (💣)"; }
+          if (weatherID === 'JUDGE' && s.losses > 0) { extraPenalty += (s.losses * 2.0); weatherNote = " (Ã¢Å¡â€“Ã¯Â¸Â)"; }
+          if (weatherID === 'MINES') { extraPenalty += (avgDeaths * 0.5); weatherNote = " (Ã°Å¸â€™Â£)"; }
       }
 
       let averagePoints = -9999;
@@ -13086,7 +13095,7 @@ function getPurgeRankingData() {
 
       if (games === 0) {
            averagePoints = -9999;
-           displayNote = " (💀 AFK)";
+           displayNote = " (Ã°Å¸â€™â‚¬ AFK)";
            isPunished = true;
       } else {
            // RESTAMOS SABOTAJE Y TOXICIDAD GLOBAL (Sin error NaN)
@@ -13097,7 +13106,7 @@ function getPurgeRankingData() {
            averagePoints = realAvg + bonusPoints;
            
            if (weatherNote) displayNote = weatherNote;
-           if (sabotagePenalty > 0) displayNote += " (💉)"; // Icono si te inyectaron veneno
+           if (sabotagePenalty > 0) displayNote += " (Ã°Å¸â€™â€°)"; // Icono si te inyectaron veneno
            
            if (averagePoints < 0) isPunished = true; 
       }
@@ -13123,7 +13132,7 @@ function getPurgeRankingData() {
       survivors: survivors, 
       graveyard: graveyard,
       uiInfo: {
-          dayText: `DÍA ${daysRunning}`,
+          dayText: `DÃƒÂA ${daysRunning}`,
           penaltyText: `ACUMULADO: -${currentTotalToxicity.toFixed(1)} (HOY CAEN -${nextDrop.toFixed(1)})`,
           weather: weatherInfo 
       }
@@ -13131,12 +13140,12 @@ function getPurgeRankingData() {
 }
 
 function runThePurge() {
-  console.log("⏰ EJECUTANDO PURGA (FÓRMULA DILUIDA + AGRESIVA)..."); 
+  console.log("Ã¢ÂÂ° EJECUTANDO PURGA (FÃƒâ€œRMULA DILUIDA + AGRESIVA)..."); 
   
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('EVENT_PURGE_ACTIVE') !== 'TRUE') return;
 
-  // --- ⚙️ CONFIGURACIÓN AGRESIVA ---
+  // --- Ã¢Å¡â„¢Ã¯Â¸Â CONFIGURACIÃƒâ€œN AGRESIVA ---
   const BASE_PENALTY = 4.0;      // SUBIDO A 4.0 (Antes 0.7)
   const EXP_MULTIPLIER = 2.0;    
   const MIN_GAMES_TOTAL = 2;     
@@ -13144,7 +13153,7 @@ function runThePurge() {
   const BOUNTY_REWARD = 200; 
   // ------------------------
 
-  // 1. CÁLCULO DE TIEMPO
+  // 1. CÃƒÂLCULO DE TIEMPO
   const startDateStr = props.getProperty('EVENT_PURGE_START');
   const startTime = startDateStr ? new Date(startDateStr).getTime() : new Date().getTime();
   const nowTime = new Date().getTime();
@@ -13164,7 +13173,7 @@ function runThePurge() {
   props.setProperty('PURGE_TOTAL_TOXICITY', String(totalToxicity));
 
   if (typeof registerNews === 'function') {
-      registerNews('INFO', `☠️ NOCHE ${daysRunning} (${currentWeather}): Toxicidad sube -${todayGlobalPenalty.toFixed(1)}. Total Acumulado: -${totalToxicity.toFixed(1)} pts.`);
+      registerNews('INFO', `Ã¢ËœÂ Ã¯Â¸Â NOCHE ${daysRunning} (${currentWeather}): Toxicidad sube -${todayGlobalPenalty.toFixed(1)}. Total Acumulado: -${totalToxicity.toFixed(1)} pts.`);
   }
 
   // --- 2. CARGA DE DATOS ---
@@ -13199,7 +13208,7 @@ function runThePurge() {
       }
   }
 
-  // --- 4. MÁSCARAS ---
+  // --- 4. MÃƒÂSCARAS ---
   const maskMap = {}; 
   if (invSheet && invSheet.getLastRow() > 1) {
       const invData = invSheet.getDataRange().getValues();
@@ -13280,7 +13289,7 @@ function runThePurge() {
       }
   }
 
-  // --- 7. CÁLCULO DE NOTA FINAL (FÓRMULA NUEVA) ---
+  // --- 7. CÃƒÂLCULO DE NOTA FINAL (FÃƒâ€œRMULA NUEVA) ---
   candidates.forEach(c => {
       const total = scoreMap[c.name];
       const games = gamesMap[c.name];
@@ -13296,24 +13305,24 @@ function runThePurge() {
           const avgAssists = s.assists / games;
           const avgDeaths = s.deaths / games;
           
-          if (currentWeather === 'BLIND' && s.vision >= 1.5) { bonusPoints += 2.0; weatherNote = " (👁️ Visión)"; }
-          else if (currentWeather === 'BLOOD' && avgKills >= 11) { bonusPoints += (avgKills * 0.1); weatherNote = " (🩸 Sangre)"; }
-          else if (currentWeather === 'SIEGE' && s.siegeTagsCount >= 1) { bonusPoints += 2.0; weatherNote = " (🚜 Asedio)"; }
-          else if (currentWeather === 'ASSIST' && avgAssists >= 15) { bonusPoints += 2.0; weatherNote = " (🤝 Sinergia)"; }
-          else if (currentWeather === 'HUNT' && s.rareTagsCount >= 1) { bonusPoints += 5.0; weatherNote = " (🦄 Legendario)"; }
+          if (currentWeather === 'BLIND' && s.vision >= 1.5) { bonusPoints += 2.0; weatherNote = " (Ã°Å¸â€˜ÂÃ¯Â¸Â VisiÃƒÂ³n)"; }
+          else if (currentWeather === 'BLOOD' && avgKills >= 11) { bonusPoints += (avgKills * 0.1); weatherNote = " (Ã°Å¸Â©Â¸ Sangre)"; }
+          else if (currentWeather === 'SIEGE' && s.siegeTagsCount >= 1) { bonusPoints += 2.0; weatherNote = " (Ã°Å¸Å¡Å“ Asedio)"; }
+          else if (currentWeather === 'ASSIST' && avgAssists >= 15) { bonusPoints += 2.0; weatherNote = " (Ã°Å¸Â¤Â Sinergia)"; }
+          else if (currentWeather === 'HUNT' && s.rareTagsCount >= 1) { bonusPoints += 5.0; weatherNote = " (Ã°Å¸Â¦â€ž Legendario)"; }
           
-          if (currentWeather === 'JUDGE' && s.losses > 0) { extraPenalty += (s.losses * 2.0); weatherNote = ` (⚖️ -${extraPenalty} Juicio)`; }
-          if (currentWeather === 'MINES') { const deathPen = (avgDeaths * 0.1); extraPenalty += deathPen; weatherNote = ` (💣 -${deathPen.toFixed(1)} Minas)`; }
+          if (currentWeather === 'JUDGE' && s.losses > 0) { extraPenalty += (s.losses * 2.0); weatherNote = ` (Ã¢Å¡â€“Ã¯Â¸Â -${extraPenalty} Juicio)`; }
+          if (currentWeather === 'MINES') { const deathPen = (avgDeaths * 0.1); extraPenalty += deathPen; weatherNote = ` (Ã°Å¸â€™Â£ -${deathPen.toFixed(1)} Minas)`; }
       }
 
       let sabotagePenalty = sabotageMap[c.name] || 0;
       if (sabotagePenalty > 0) {
           if (maskMap[c.name]) {
               sabotagePenalty = 0;
-              sabotageNote = " 🛡️ BLOCK";
+              sabotageNote = " Ã°Å¸â€ºÂ¡Ã¯Â¸Â BLOCK";
               invSheet.getRange(maskMap[c.name], 3).setValue('USED');
           } else {
-              sabotageNote = ` 💉 -${sabotagePenalty}`;
+              sabotageNote = ` Ã°Å¸â€™â€° -${sabotagePenalty}`;
           }
       }
 
@@ -13321,7 +13330,7 @@ function runThePurge() {
           c.sortScore = -9999; 
           c.note = "(AFK)";
       } else {
-          // --- FÓRMULA DILUIDA ---
+          // --- FÃƒâ€œRMULA DILUIDA ---
           let netPoints = total - (totalToxicity + sabotagePenalty + extraPenalty);
           let realAvg = netPoints / Math.max(games, MIN_GAMES_TOTAL);
           let finalScore = realAvg + bonusPoints;
@@ -13334,7 +13343,7 @@ function runThePurge() {
   });
 
   // --- 8. FASE BOUNTIES 2.0: DEPREDADOR vs PRESA ---
-  // (Mantengo tu código de Bounties 2.0 que ya tenías, funciona bien con c.sortScore)
+  // (Mantengo tu cÃƒÂ³digo de Bounties 2.0 que ya tenÃƒÂ­as, funciona bien con c.sortScore)
   let bountyNews = [];
   const candidateMap = {};
   candidates.forEach((c, index) => { candidateMap[c.name] = index; });
@@ -13354,7 +13363,7 @@ function runThePurge() {
                   prey.wallet = Math.max(0, prey.wallet - stealAmount); 
                   marketSheet.getRange(hunter.row, 3).setValue(hunter.wallet);
                   marketSheet.getRange(prey.row, 3).setValue(prey.wallet);
-                  bountyNews.push(`🩸 **${hunter.name}** cazó a ${prey.name}. Le robó **${stealAmount} G**.`);
+                  bountyNews.push(`Ã°Å¸Â©Â¸ **${hunter.name}** cazÃƒÂ³ a ${prey.name}. Le robÃƒÂ³ **${stealAmount} G**.`);
               }
               else if (preyScore > hunterScore) {
                   let counterAmount = Math.floor(hunter.wallet * 0.10);
@@ -13363,7 +13372,7 @@ function runThePurge() {
                   hunter.wallet = Math.max(0, hunter.wallet - counterAmount);
                   marketSheet.getRange(hunter.row, 3).setValue(hunter.wallet);
                   marketSheet.getRange(prey.row, 3).setValue(prey.wallet);
-                  bountyNews.push(`🛡️ **${prey.name}** se defendió de ${hunter.name}. Le quitó **${counterAmount} G**.`);
+                  bountyNews.push(`Ã°Å¸â€ºÂ¡Ã¯Â¸Â **${prey.name}** se defendiÃƒÂ³ de ${hunter.name}. Le quitÃƒÂ³ **${counterAmount} G**.`);
               }
           }
       }
@@ -13371,10 +13380,10 @@ function runThePurge() {
 
   if (bountyNews.length > 0 && typeof registerNews === 'function') {
       const newsSlice = bountyNews.slice(0, 5).join('\n');
-      registerNews('BOUNTY', `⚔️ **REPORTE DE CACERÍA:**\n${newsSlice}`);
+      registerNews('BOUNTY', `Ã¢Å¡â€Ã¯Â¸Â **REPORTE DE CACERÃƒÂA:**\n${newsSlice}`);
   }
 
-  // --- 9. FASE ELIMINACIÓN INTELIGENTE ---
+  // --- 9. FASE ELIMINACIÃƒâ€œN INTELIGENTE ---
   candidates.sort((a, b) => {
       if (a.sortScore !== b.sortScore) return a.sortScore - b.sortScore;
       return a.price - b.price; 
@@ -13415,16 +13424,16 @@ function runThePurge() {
 
       marketSheet.getRange(v.row, 2).setValue(newPrice);
       marketSheet.getRange(v.row, 3).setValue(newWallet);
-      marketSheet.getRange(v.row, 4).setValue('📉');
+      marketSheet.getRange(v.row, 4).setValue('Ã°Å¸â€œâ€°');
       marketSheet.getRange(v.row, 7).setValue('ELIMINATED');
       marketSheet.getRange(v.row, 9).setValue(''); 
 
-      const msg = `☠️ ELIMINADO: ${v.name} [${v.note}]. Impuesto: -${taxPaid} G.`;
+      const msg = `Ã¢ËœÂ Ã¯Â¸Â ELIMINADO: ${v.name} [${v.note}]. Impuesto: -${taxPaid} G.`;
       console.log(msg);
       if (typeof registerNews === 'function') registerNews('PURGE', msg);
   });
 
-  // --- 10. REPARTO DE BOTÍN ---
+  // --- 10. REPARTO DE BOTÃƒÂN ---
   if (survivors.length > 0 && lootPool > 0) {
       const reward = lootPool / survivors.length;
       survivors.forEach(s => {
@@ -13432,11 +13441,11 @@ function runThePurge() {
           marketSheet.getRange(s.row, 3).setValue(s.wallet);
       });
       if (typeof registerNews === 'function') {
-          registerNews('DEAL', `🛡️ Botín repartido: +${reward.toFixed(0)}G a cada superviviente.`);
+          registerNews('DEAL', `Ã°Å¸â€ºÂ¡Ã¯Â¸Â BotÃƒÂ­n repartido: +${reward.toFixed(0)}G a cada superviviente.`);
       }
   }
 
-  // --- 11. PREMIOS VETERANÍA ---
+  // --- 11. PREMIOS VETERANÃƒÂA ---
   let chestWinners = [];
   survivors.forEach(s => {
       const newDays = s.days + 1;
@@ -13449,19 +13458,19 @@ function runThePurge() {
       }
   });
   if (chestWinners.length > 0 && typeof registerNews === 'function') {
-      registerNews('REWARD', `🎁 ${chestWinners.length} veteranos reciben un Cofre Hextech.`);
+      registerNews('REWARD', `Ã°Å¸Å½Â ${chestWinners.length} veteranos reciben un Cofre Hextech.`);
   }
 
   // --- 11.5 CHEQUEO DE VICTORIA ---
   if (survivors.length === 1 && victims.length > 0) {
       const winner = survivors[0];
-      marketSheet.getRange(winner.row, 7).setValue('👑 WINNER');
+      marketSheet.getRange(winner.row, 7).setValue('Ã°Å¸â€˜â€˜ WINNER');
       const jackpot = 3000; 
       const newBalance = winner.wallet + jackpot;
       marketSheet.getRange(winner.row, 3).setValue(newBalance);
-      marketSheet.getRange(winner.row, 4).setValue('👑');
+      marketSheet.getRange(winner.row, 4).setValue('Ã°Å¸â€˜â€˜');
 
-      const winMsg = `🏆👑 ¡TENEMOS UN GANADOR! ${winner.name} es el último superviviente de La Purga. Se lleva el Bote de +${jackpot} G.`;
+      const winMsg = `Ã°Å¸Ââ€ Ã°Å¸â€˜â€˜ Ã‚Â¡TENEMOS UN GANADOR! ${winner.name} es el ÃƒÂºltimo superviviente de La Purga. Se lleva el Bote de +${jackpot} G.`;
       if (typeof registerNews === 'function') registerNews('WIN', winMsg);
       
       props.setProperty('EVENT_PURGE_ACTIVE', 'FALSE');
@@ -13469,21 +13478,21 @@ function runThePurge() {
       for (const t of triggers) { 
           if (t.getHandlerFunction() === 'runThePurge') ScriptApp.deleteTrigger(t); 
       }
-      SpreadsheetApp.getUi().alert(`🏆 LA PURGA HA TERMINADO.\nGanador: ${winner.name}`);
+      SpreadsheetApp.getUi().alert(`Ã°Å¸Ââ€  LA PURGA HA TERMINADO.\nGanador: ${winner.name}`);
       return; 
   }
 
-  // --- 12. SORTEO CLIMA MAÑANA ---
+  // --- 12. SORTEO CLIMA MAÃƒâ€˜ANA ---
   const weathers = [
-      {id: 'NEUTRAL', prob: 24, txt: '🌑 Calma tensa. Sin efectos especiales.'},
-      {id: 'BLIND',   prob: 12, txt: '👁️ NOCHE CIEGA: La visión cuenta DOBLE. ¡Comprad Pinks!'},
-      {id: 'BLOOD',   prob: 13, txt: '🩸 LUNA DE SANGRE: Kills > 11 dan puntos masivos.'},
-      {id: 'SIEGE',   prob: 8, txt: '🚜 ASEDIO: Solo cuentan hazañas de torres.'},
-      {id: 'ASSIST',  prob: 12, txt: '🤝 SINERGIA: Media de Asistencias > 15 otorga +2 Pts.'},
-      {id: 'HUNT',    prob: 5,  txt: '🦄 CAZA MAYOR: Solo cuentan Pentas, Solo Nashor o Inmortal.'},
-      {id: 'JUDGE',   prob: 10, txt: '⚖️ JUICIO FINAL: Las derrotas restan -2.0 Puntos EXTRA.'},
-      {id: 'MINES',   prob: 8, txt: '💣 CAMPO DE MINAS: Cada muerte resta -0.1 Puntos a la media.'},
-      {id: 'CALM',    prob: 8,  txt: '🌪️ OJO DE LA TORMENTA: La penalización global será la mitad.'}
+      {id: 'NEUTRAL', prob: 24, txt: 'Ã°Å¸Å’â€˜ Calma tensa. Sin efectos especiales.'},
+      {id: 'BLIND',   prob: 12, txt: 'Ã°Å¸â€˜ÂÃ¯Â¸Â NOCHE CIEGA: La visiÃƒÂ³n cuenta DOBLE. Ã‚Â¡Comprad Pinks!'},
+      {id: 'BLOOD',   prob: 13, txt: 'Ã°Å¸Â©Â¸ LUNA DE SANGRE: Kills > 11 dan puntos masivos.'},
+      {id: 'SIEGE',   prob: 8, txt: 'Ã°Å¸Å¡Å“ ASEDIO: Solo cuentan hazaÃƒÂ±as de torres.'},
+      {id: 'ASSIST',  prob: 12, txt: 'Ã°Å¸Â¤Â SINERGIA: Media de Asistencias > 15 otorga +2 Pts.'},
+      {id: 'HUNT',    prob: 5,  txt: 'Ã°Å¸Â¦â€ž CAZA MAYOR: Solo cuentan Pentas, Solo Nashor o Inmortal.'},
+      {id: 'JUDGE',   prob: 10, txt: 'Ã¢Å¡â€“Ã¯Â¸Â JUICIO FINAL: Las derrotas restan -2.0 Puntos EXTRA.'},
+      {id: 'MINES',   prob: 8, txt: 'Ã°Å¸â€™Â£ CAMPO DE MINAS: Cada muerte resta -0.1 Puntos a la media.'},
+      {id: 'CALM',    prob: 8,  txt: 'Ã°Å¸Å’ÂªÃ¯Â¸Â OJO DE LA TORMENTA: La penalizaciÃƒÂ³n global serÃƒÂ¡ la mitad.'}
   ];
   
   let roll = Math.random() * 100;
@@ -13496,11 +13505,11 @@ function runThePurge() {
   }
   
   props.setProperty('PURGE_WEATHER', nextWeather.id);
-  if (typeof registerNews === 'function') registerNews('WEATHER', `🌩️ PRONÓSTICO MAÑANA: ${nextWeather.txt}`);
+  if (typeof registerNews === 'function') registerNews('WEATHER', `Ã°Å¸Å’Â©Ã¯Â¸Â PRONÃƒâ€œSTICO MAÃƒâ€˜ANA: ${nextWeather.txt}`);
 
   if (typeof assignDailyBounties === 'function') assignDailyBounties(marketSheet);
   
-  if (typeof logToSheet === 'function') logToSheet("✅ Purga Completa Ejecutada.");
+  if (typeof logToSheet === 'function') logToSheet("Ã¢Å“â€¦ Purga Completa Ejecutada.");
 }
 
 function stopPurgeEvent() {
@@ -13513,17 +13522,17 @@ function stopPurgeEvent() {
 function configurarFechaPurga() {
   const props = PropertiesService.getScriptProperties();
   
-  // 👇 ESCRIBE AQUÍ LA FECHA DEL LUNES (Formato: Año-Mes-Día)
-  // Por ejemplo: Si el lunes fue día 26, pon '2026-01-26'
+  // Ã°Å¸â€˜â€¡ ESCRIBE AQUÃƒÂ LA FECHA DEL LUNES (Formato: AÃƒÂ±o-Mes-DÃƒÂ­a)
+  // Por ejemplo: Si el lunes fue dÃƒÂ­a 26, pon '2026-01-26'
   const fechaLunes = '2026-01-26'; 
   
-  // Guardamos la configuración
+  // Guardamos la configuraciÃƒÂ³n
   props.setProperty('EVENT_PURGE_START', fechaLunes);
   props.setProperty('EVENT_PURGE_ACTIVE', 'TRUE'); 
   
-  console.log(`✅ CONFIGURACIÓN GUARDADA`);
+  console.log(`Ã¢Å“â€¦ CONFIGURACIÃƒâ€œN GUARDADA`);
   console.log(`La Purga ahora empieza a contar desde el: ${fechaLunes}`);
-  console.log(`Si hoy es Jueves, el sistema calculará 3 o 4 días de penalización (-6 o -8 pts).`);
+  console.log(`Si hoy es Jueves, el sistema calcularÃƒÂ¡ 3 o 4 dÃƒÂ­as de penalizaciÃƒÂ³n (-6 o -8 pts).`);
 }
 
 function deleteTriggerByName(functionName) {
@@ -13536,14 +13545,14 @@ function deleteTriggerByName(functionName) {
 }
 
 /* ==========================================================
-   👾 EVENTO: LA HORDA DEL VACÍO (COOP GLOBAL)
+   Ã°Å¸â€˜Â¾ EVENTO: LA HORDA DEL VACÃƒÂO (COOP GLOBAL)
    ========================================================== */
 
 function startVoidHorde() {
   const props = PropertiesService.getScriptProperties();
   const ui = SpreadsheetApp.getUi();
   
-  // Configuración
+  // ConfiguraciÃƒÂ³n
   const TARGET_KILLS = 500; 
   
   props.setProperties({
@@ -13553,13 +13562,13 @@ function startVoidHorde() {
     'VOID_STATUS': 'IN_PROGRESS'
   });
   
-  registerNews('EVENT', `👾 ¡PORTAL ABIERTO! La Horda del Vacío invade la grieta. Objetivo global: ${TARGET_KILLS} Kills.`);
-  ui.alert('Evento Horda del Vacío INICIADO.');
+  registerNews('EVENT', `Ã°Å¸â€˜Â¾ Ã‚Â¡PORTAL ABIERTO! La Horda del VacÃƒÂ­o invade la grieta. Objetivo global: ${TARGET_KILLS} Kills.`);
+  ui.alert('Evento Horda del VacÃƒÂ­o INICIADO.');
 }
 
 function updateVoidHordeProgress(killsInMatch) {
    const props = PropertiesService.getScriptProperties();
-   // Solo si el evento está activo
+   // Solo si el evento estÃƒÂ¡ activo
    if (props.getProperty('EVENT_VOID_ACTIVE') !== 'TRUE') return;
    if (props.getProperty('VOID_STATUS') !== 'IN_PROGRESS') return;
 
@@ -13572,7 +13581,7 @@ function updateVoidHordeProgress(killsInMatch) {
    // Check Hito (Solo notificar una vez al completar)
    if (currentKills >= targetKills) {
        props.setProperty('VOID_STATUS', 'VICTORY_PENDING'); // Espera a finalizar para dar premios
-       registerNews('EVENT', `👾 ¡OBJETIVO ALCANZADO! La comunidad ha logrado ${currentKills}/${targetKills} kills. El portal se cerrará pronto.`);
+       registerNews('EVENT', `Ã°Å¸â€˜Â¾ Ã‚Â¡OBJETIVO ALCANZADO! La comunidad ha logrado ${currentKills}/${targetKills} kills. El portal se cerrarÃƒÂ¡ pronto.`);
    }
 }
 
@@ -13581,7 +13590,7 @@ function endVoidHorde() {
   const ui = SpreadsheetApp.getUi();
   
   if (props.getProperty('EVENT_VOID_ACTIVE') !== 'TRUE') {
-    ui.alert("El evento no está activo.");
+    ui.alert("El evento no estÃƒÂ¡ activo.");
     return;
   }
 
@@ -13591,7 +13600,7 @@ function endVoidHorde() {
   
   if (current >= target) {
     // --- VICTORIA: COFRE PARA TODOS ---
-    registerNews('EVENT', `✨ ¡VICTORIA! La Horda ha sido rechazada (${current} kills). Todos reciben un Cofre Hextech.`);
+    registerNews('EVENT', `Ã¢Å“Â¨ Ã‚Â¡VICTORIA! La Horda ha sido rechazada (${current} kills). Todos reciben un Cofre Hextech.`);
     
     const invSheet = ss.getSheetByName('INVENTORY');
     const marketSheet = ss.getSheetByName('MARKET_STATUS');
@@ -13600,11 +13609,11 @@ function endVoidHorde() {
     players.forEach(p => {
        invSheet.appendRow([p, 'CHEST_HEXTECH', 'ACTIVE', new Date()]);
     });
-    ui.alert("¡Victoria! Premios repartidos.");
+    ui.alert("Ã‚Â¡Victoria! Premios repartidos.");
 
   } else {
     // --- DERROTA: CRASH DEL MERCADO ---
-    registerNews('CRASH', `💀 FRACASO. Solo ${current}/${target} kills. El Vacío corrompe la economía: -10% en todas las acciones.`);
+    registerNews('CRASH', `Ã°Å¸â€™â‚¬ FRACASO. Solo ${current}/${target} kills. El VacÃƒÂ­o corrompe la economÃƒÂ­a: -10% en todas las acciones.`);
     
     const marketSheet = ss.getSheetByName('MARKET_STATUS');
     const prices = marketSheet.getRange(2, 2, marketSheet.getLastRow()-1, 1).getValues();
@@ -13613,7 +13622,7 @@ function endVoidHorde() {
        let newPrice = prices[i][0] * 0.85; // -15%
        if(newPrice < 1) newPrice = 1;
        marketSheet.getRange(i+2, 2).setValue(newPrice);
-       marketSheet.getRange(i+2, 4).setValue('📉');
+       marketSheet.getRange(i+2, 4).setValue('Ã°Å¸â€œâ€°');
     }
     ui.alert("Derrota. Mercado crasheado.");
   }
@@ -13622,7 +13631,7 @@ function endVoidHorde() {
   props.setProperty('EVENT_VOID_ACTIVE', 'FALSE');
 }
 
-// Función para que la web lea el progreso (Barra de carga)
+// FunciÃƒÂ³n para que la web lea el progreso (Barra de carga)
 function getVoidHordeStatus() {
   const props = PropertiesService.getScriptProperties();
   return {
@@ -13632,15 +13641,15 @@ function getVoidHordeStatus() {
   };
 }
 
-/* --- FUNCIÓN FALTANTE: ENVIAR ESTADO DE EVENTOS A LA WEB --- */
+/* --- FUNCIÃƒâ€œN FALTANTE: ENVIAR ESTADO DE EVENTOS A LA WEB --- */
 function getActiveEventsForWeb() {
   const props = PropertiesService.getScriptProperties();
   
   return {
     purge: {
       active: props.getProperty('EVENT_PURGE_ACTIVE') === 'TRUE',
-      title: "💀 LA PURGA",
-      desc: "El peor jugador del día perderá el 20% de su oro."
+      title: "Ã°Å¸â€™â‚¬ LA PURGA",
+      desc: "El peor jugador del dÃƒÂ­a perderÃƒÂ¡ el 20% de su oro."
     },
     voidHorde: {
       active: props.getProperty('EVENT_VOID_ACTIVE') === 'TRUE',
@@ -13654,10 +13663,10 @@ function getActiveEventsForWeb() {
 function useInventoryItem(player, itemID) {
   const lock = LockService.getScriptLock();
   
-  // 🔧 FIX: Aumentamos el tiempo de espera de 3000 a 15000 (15 segundos)
+  // Ã°Å¸â€Â§ FIX: Aumentamos el tiempo de espera de 3000 a 15000 (15 segundos)
   // Esto evita el error "Inventario ocupado" si el sistema va un poco lento.
   if (!lock.tryLock(15000)) {
-      return { success: false, msg: "⚠️ El sistema está saturado. Espera 10 segundos y vuelve a intentar." };
+      return { success: false, msg: "Ã¢Å¡Â Ã¯Â¸Â El sistema estÃƒÂ¡ saturado. Espera 10 segundos y vuelve a intentar." };
   }
 
   try {
@@ -13680,7 +13689,7 @@ function useInventoryItem(player, itemID) {
 
     if (itemRow === -1) return { success: false, msg: "No tienes este objeto o ya fue usado." };
 
-    // 2. LÓGICA DEL COFRE / ONE PIECE
+    // 2. LÃƒâ€œGICA DEL COFRE / ONE PIECE
     if (itemID === 'CHEST_HEXTECH' || itemID === 'ONE_PIECE') { 
        
        // A. Marcar como USADO inmediatamente
@@ -13705,18 +13714,18 @@ function useInventoryItem(player, itemID) {
            const trashGold = 10; 
            newBalance += trashGold;
            marketSheet.getRange(playerRow, 3).setValue(newBalance);
-           rewardMsg = `💩 Chatarra: El One Piece era mentira. Te dan ${trashGold} G por el cofre vacío.`;
-           visualWinner = `💩 Chatarra (${trashGold} G)`;
+           rewardMsg = `Ã°Å¸â€™Â© Chatarra: El One Piece era mentira. Te dan ${trashGold} G por el cofre vacÃƒÂ­o.`;
+           visualWinner = `Ã°Å¸â€™Â© Chatarra (${trashGold} G)`;
        }
        // 2. CONSUMIBLE (25%)
        else if (rng < 50) {
            const items = ['POTION_ELO', 'SOBORNO','ANGEL_GUARD','PACT_STREAK'];
-           const itemNames = {'POTION_ELO': '🧪 Poción', 'SOBORNO': '💰 Soborno', 'ANGEL_GUARD': '🛡️ Ángel', 'PACT_STREAK': '🔥 Pacto'};
+           const itemNames = {'POTION_ELO': 'Ã°Å¸Â§Âª PociÃƒÂ³n', 'SOBORNO': 'Ã°Å¸â€™Â° Soborno', 'ANGEL_GUARD': 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â ÃƒÂngel', 'PACT_STREAK': 'Ã°Å¸â€Â¥ Pacto'};
            const wonItem = items[Math.floor(Math.random() * items.length)];
            
            invSheet.appendRow([player, wonItem, 'ACTIVE', new Date()]);
            
-           rewardMsg = `🎒 Has encontrado: **${itemNames[wonItem]}**.`;
+           rewardMsg = `Ã°Å¸Å½â€™ Has encontrado: **${itemNames[wonItem]}**.`;
            visualWinner = itemNames[wonItem];
        }
        // 3. ACCIONES (30%)
@@ -13727,8 +13736,8 @@ function useInventoryItem(player, itemID) {
            
            if(portSheet) portSheet.appendRow([player, randomTarget, totalShares, 0]);
            
-           rewardMsg = `📈 Insider: Encuentras ${totalShares} acciones de ${randomTarget}.`;
-           visualWinner = `📈 ${totalShares}x ${randomTarget}`;
+           rewardMsg = `Ã°Å¸â€œË† Insider: Encuentras ${totalShares} acciones de ${randomTarget}.`;
+           visualWinner = `Ã°Å¸â€œË† ${totalShares}x ${randomTarget}`;
            type = "LUCKY";
        }
        // 4. ORO PURO (19%)
@@ -13736,16 +13745,16 @@ function useInventoryItem(player, itemID) {
            const gold = Math.floor(Math.random() * 700) + 800; 
            newBalance += gold;
            marketSheet.getRange(playerRow, 3).setValue(newBalance);
-           rewardMsg = `💰 ¡Tesoro! Encuentras **${gold} G**.`;
-           visualWinner = `💰 Saco (${gold} G)`;
+           rewardMsg = `Ã°Å¸â€™Â° Ã‚Â¡Tesoro! Encuentras **${gold} G**.`;
+           visualWinner = `Ã°Å¸â€™Â° Saco (${gold} G)`;
        }
        // 5. JACKPOT (1%)
        else {
            const jack = 5000;
            newBalance += jack;
            marketSheet.getRange(playerRow, 3).setValue(newBalance);
-           rewardMsg = `🚨 **¡EL ONE PIECE EXISTE!** JACKPOT DE ${jack} G.`;
-           visualWinner = "🚨 ONE PIECE";
+           rewardMsg = `Ã°Å¸Å¡Â¨ **Ã‚Â¡EL ONE PIECE EXISTE!** JACKPOT DE ${jack} G.`;
+           visualWinner = "Ã°Å¸Å¡Â¨ ONE PIECE";
            type = "HYPE";
        }
 
@@ -13764,7 +13773,7 @@ function useInventoryItem(player, itemID) {
 }
 
 /* ==========================================================
-   💣 EVENTO: LA PATATA CALIENTE (HOT POTATO)
+   Ã°Å¸â€™Â£ EVENTO: LA PATATA CALIENTE (HOT POTATO)
    ========================================================== */
 
 // 1. INICIAR EL EVENTO (El Admin lo lanza manualmente o por trigger)
@@ -13775,9 +13784,9 @@ function startHotPotato() {
   
   // Limpiar bombas anteriores
   const data = invSheet.getDataRange().getValues();
-  // (Opcional: borrar filas antiguas con HOT_POTATO, aquí lo simplificamos añadiendo una nueva)
+  // (Opcional: borrar filas antiguas con HOT_POTATO, aquÃƒÂ­ lo simplificamos aÃƒÂ±adiendo una nueva)
   
-  // Elegir una víctima aleatoria del Mercado
+  // Elegir una vÃƒÂ­ctima aleatoria del Mercado
   const players = marketSheet.getRange(2, 1, marketSheet.getLastRow()-1, 1).getValues().flat();
   const victim = players[Math.floor(Math.random() * players.length)];
   
@@ -13785,12 +13794,12 @@ function startHotPotato() {
   // Formato: [Player, ItemID, Status, Date]
   invSheet.appendRow([victim, 'HOT_POTATO', 'ACTIVE', new Date()]);
   
-  registerNews('BOMB', `💣 ¡LA PATATA CALIENTE! Se la ha quedado ${victim}. ¡Si pierde, EXPLOTA!`);
-  SpreadsheetApp.getUi().alert(`💣 Bomba entregada a: ${victim}`);
+  registerNews('BOMB', `Ã°Å¸â€™Â£ Ã‚Â¡LA PATATA CALIENTE! Se la ha quedado ${victim}. Ã‚Â¡Si pierde, EXPLOTA!`);
+  SpreadsheetApp.getUi().alert(`Ã°Å¸â€™Â£ Bomba entregada a: ${victim}`);
 }
 
 /* ------------------------------------------------
-   🧯 DETENER LA PATATA CALIENTE (MANUAL)
+   Ã°Å¸Â§Â¯ DETENER LA PATATA CALIENTE (MANUAL)
    Borra cualquier bomba activa del inventario.
    ------------------------------------------------ */
 function stopHotPotato() {
@@ -13803,9 +13812,9 @@ function stopHotPotato() {
   const data = invSheet.getDataRange().getValues();
   let deletedCount = 0;
 
-  // Recorremos de abajo a arriba para borrar filas sin romper índices
+  // Recorremos de abajo a arriba para borrar filas sin romper ÃƒÂ­ndices
   for (let i = data.length - 1; i >= 1; i--) {
-    // Si el objeto es HOT_POTATO y está ACTIVE
+    // Si el objeto es HOT_POTATO y estÃƒÂ¡ ACTIVE
     if (data[i][1] === 'HOT_POTATO' && data[i][2] === 'ACTIVE') {
       invSheet.deleteRow(i + 1); // +1 porque el array empieza en 0 y las filas en 1
       deletedCount++;
@@ -13813,17 +13822,17 @@ function stopHotPotato() {
   }
 
   if (deletedCount > 0) {
-    // Opcional: Avisar en noticias que el admin paró el juego
+    // Opcional: Avisar en noticias que el admin parÃƒÂ³ el juego
     if (typeof registerNews === 'function') {
-        registerNews('INFO', '🧯 El Admin ha desactivado la Patata Caliente. Nadie explota hoy.');
+        registerNews('INFO', 'Ã°Å¸Â§Â¯ El Admin ha desactivado la Patata Caliente. Nadie explota hoy.');
     }
-    ui.alert(`✅ Evento detenido.\nSe han desactivado ${deletedCount} bomba(s).`);
+    ui.alert(`Ã¢Å“â€¦ Evento detenido.\nSe han desactivado ${deletedCount} bomba(s).`);
   } else {
-    ui.alert('ℹ️ No se encontró ninguna Patata Caliente activa.');
+    ui.alert('Ã¢â€žÂ¹Ã¯Â¸Â No se encontrÃƒÂ³ ninguna Patata Caliente activa.');
   }
 }
 
-// 2. LÓGICA DE PASE O EXPLOSIÓN (Llamar dentro de processMatch)
+// 2. LÃƒâ€œGICA DE PASE O EXPLOSIÃƒâ€œN (Llamar dentro de processMatch)
 function handleHotPotato(player, result, matchId) {
   const ss = SpreadsheetApp.getActive();
   const invSheet = ss.getSheetByName('INVENTORY');
@@ -13843,12 +13852,12 @@ function handleHotPotato(player, result, matchId) {
 
   if (bombRow === -1) return; // No tiene la bomba, no hacemos nada
 
-  // B. CASO DERROTA: ¡EXPLOSIÓN! 💥
+  // B. CASO DERROTA: Ã‚Â¡EXPLOSIÃƒâ€œN! Ã°Å¸â€™Â¥
   if (result !== 'Win') {
       // 1. Quitar bomba
       invSheet.getRange(bombRow, 3).setValue('EXPLODED');
       
-      // 2. Aplicar Penalización (Dinero y Acciones)
+      // 2. Aplicar PenalizaciÃƒÂ³n (Dinero y Acciones)
       // Buscar fila en mercado
       const mData = marketSheet.getDataRange().getValues();
       let mRow = -1;
@@ -13860,43 +13869,43 @@ function handleHotPotato(player, result, matchId) {
           
           marketSheet.getRange(mRow, 3).setValue(Math.max(0, currentBal - 500)); // 500G
           marketSheet.getRange(mRow, 2).setValue(Math.max(1, currentPrice * 0.85)); // -15% Valor
-          marketSheet.getRange(mRow, 4).setValue('🤕'); // Icono herido
+          marketSheet.getRange(mRow, 4).setValue('Ã°Å¸Â¤â€¢'); // Icono herido
 
           const txSheet = ss.getSheetByName('TRANSACTIONS');
           if(txSheet) {
               txSheet.appendRow([new Date(), 'BOMB_TIMEOUT', player, 'Hot Potato', 1, -500]);
           }
           
-          registerNews('BOOM', `💥 ¡BOOM! La patata ha explotado en manos de ${player}. Pierde 500G y un 15% de valor.`);
+          registerNews('BOOM', `Ã°Å¸â€™Â¥ Ã‚Â¡BOOM! La patata ha explotado en manos de ${player}. Pierde 500G y un 15% de valor.`);
       }
   }
   
-  // C. CASO VICTORIA: ¡PASE AL SIGUIENTE! 🏐
+  // C. CASO VICTORIA: Ã‚Â¡PASE AL SIGUIENTE! Ã°Å¸ÂÂ
   else {
       // 1. Desactivar bomba actual (Pase exitoso)
       invSheet.getRange(bombRow, 3).setValue('PASSED');
       
-      // 2. Encontrar al siguiente víctima (El que esté DEBAJO en el ranking)
+      // 2. Encontrar al siguiente vÃƒÂ­ctima (El que estÃƒÂ© DEBAJO en el ranking)
       const sData = scoresSheet.getDataRange().getValues();
-      // Asumimos que SCORES está ordenado o lo ordenamos nosotros por puntos
+      // Asumimos que SCORES estÃƒÂ¡ ordenado o lo ordenamos nosotros por puntos
       // Filtramos header y ordenamos desc
       const ranking = sData.slice(1).sort((a,b) => b[1] - a[1]).map(r => r[0]);
       
       let myIndex = ranking.indexOf(player);
       let nextIndex = myIndex + 1;
-      if (nextIndex >= ranking.length) nextIndex = 0; // Si es el último, pasa al primero (ciclo)
+      if (nextIndex >= ranking.length) nextIndex = 0; // Si es el ÃƒÂºltimo, pasa al primero (ciclo)
       
       const nextVictim = ranking[nextIndex];
       
       // 3. Dar bomba al siguiente
       invSheet.appendRow([nextVictim, 'HOT_POTATO', 'ACTIVE', new Date()]);
       
-      registerNews('PASS', `🏐 ¡SALVADO! ${player} gana y le pasa la 💣 Patata Caliente a ${nextVictim}.`);
+      registerNews('PASS', `Ã°Å¸ÂÂ Ã‚Â¡SALVADO! ${player} gana y le pasa la Ã°Å¸â€™Â£ Patata Caliente a ${nextVictim}.`);
   }
 }
 
 /* ==========================================================
-   ⚔️ EVENTO SEMANAL: GUERRA DE FACCIONES (HEXTECH VS CHEMTECH)
+   Ã¢Å¡â€Ã¯Â¸Â EVENTO SEMANAL: GUERRA DE FACCIONES (HEXTECH VS CHEMTECH)
    ========================================================== */
 function startFactionWar() {
   const ss = SpreadsheetApp.getActive();
@@ -13929,19 +13938,19 @@ function startFactionWar() {
 
   const newRows = [];
   
-  // 4. Algoritmo de distribución "Serpiente" (ABBA)
+  // 4. Algoritmo de distribuciÃƒÂ³n "Serpiente" (ABBA)
   for (let i = 0; i < data.length; i++) {
     const player = data[i][0];
     const currentPoints = Number(data[i][1]);
     
-    // Distribución: 0->Hex, 1->Chem, 2->Chem, 3->Hex...
+    // DistribuciÃƒÂ³n: 0->Hex, 1->Chem, 2->Chem, 3->Hex...
     const isHextech = (i % 4 === 0 || i % 4 === 3); 
     const team = isHextech ? 'HEXTECH' : 'CHEMTECH';
     
     // Empezamos todos como SOLDADOS para que la gente vote al General
     const role = 'SOLDIER'; 
     
-    // IMPORTANTE: Añadimos el '0' al final para la columna de Votos
+    // IMPORTANTE: AÃƒÂ±adimos el '0' al final para la columna de Votos
     newRows.push([player, team, currentPoints, role, 0]);
   }
 
@@ -13954,10 +13963,10 @@ function startFactionWar() {
   props.setProperty('EVENT_WAR_ACTIVE', 'TRUE');
   
   if (typeof registerNews === 'function') {
-      registerNews('WAR', '⚔️ ¡GUERRA DECLARADA! Equipos formados. ¡Las urnas para elegir General están abiertas!');
+      registerNews('WAR', 'Ã¢Å¡â€Ã¯Â¸Â Ã‚Â¡GUERRA DECLARADA! Equipos formados. Ã‚Â¡Las urnas para elegir General estÃƒÂ¡n abiertas!');
   }
   
-  SpreadsheetApp.getUi().alert(`✅ Guerra Iniciada.\n- Equipos generados.\n- Columna 'Votes' creada.\n- Marcadores a 0.`);
+  SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Guerra Iniciada.\n- Equipos generados.\n- Columna 'Votes' creada.\n- Marcadores a 0.`);
 }
 
 function getFactionWarData() {
@@ -14006,20 +14015,20 @@ function getFactionWarData() {
       const pData = manualSheet.getDataRange().getValues();
       for(let i=1; i<pData.length; i++) {
           
-          // Forzamos conversión de fecha
+          // Forzamos conversiÃƒÂ³n de fecha
           let mDate = pData[i][0];
           if (!(mDate instanceof Date)) mDate = new Date(mDate);
 
           const player = String(pData[i][1]).trim(); // Limpiamos nombre
           const pts = Number(pData[i][2]);
           
-          // DIAGNÓSTICO: Si es hello piti, chivamos al log si entra o no
+          // DIAGNÃƒâ€œSTICO: Si es hello piti, chivamos al log si entra o no
           if (player.includes('hello piti') && pts === 300) {
-             console.log(`DEBUG PITI: Fecha=${mDate}, WarStart=${warStart}, ¿Entra en fecha?: ${mDate >= warStart}`);
+             console.log(`DEBUG PITI: Fecha=${mDate}, WarStart=${warStart}, Ã‚Â¿Entra en fecha?: ${mDate >= warStart}`);
           }
 
           if (mDate >= warStart) {
-              // 🛡️ REGLA: Puntos >= 50 se restan de la guerra
+              // Ã°Å¸â€ºÂ¡Ã¯Â¸Â REGLA: Puntos >= 50 se restan de la guerra
               if (pts >= 100) {
                   if (!contrabandMap[player]) contrabandMap[player] = 0;
                   contrabandMap[player] += pts;
@@ -14058,7 +14067,7 @@ function getFactionWarData() {
           const currentTotal = scoreMap.hasOwnProperty(player) ? scoreMap[player] : startPoints;
           let weeklyGain = currentTotal - startPoints;
 
-          // 🛑 APLICAR DEDUCCIÓN
+          // Ã°Å¸â€ºâ€˜ APLICAR DEDUCCIÃƒâ€œN
           const deduction = contrabandMap[player] || 0;
           weeklyGain = weeklyGain - deduction; 
 
@@ -14066,12 +14075,12 @@ function getFactionWarData() {
           let multiplier = 1.0;
           let namePrefix = "";
 
-          if (role === 'GENERAL') { multiplier = 1.5; namePrefix = "⭐ "; }
+          if (role === 'GENERAL') { multiplier = 1.5; namePrefix = "Ã¢Â­Â "; }
           else if (role === 'TANQUE') {
-              namePrefix = "🛡️ ";
+              namePrefix = "Ã°Å¸â€ºÂ¡Ã¯Â¸Â ";
               if (weeklyGain < 0) multiplier = 0.5;
           }
-          else if (role === 'ESTRATEGA') { namePrefix = "🧠 "; }
+          else if (role === 'ESTRATEGA') { namePrefix = "Ã°Å¸Â§Â  "; }
 
           let finalContribution = weeklyGain * multiplier;
 
@@ -14099,7 +14108,7 @@ function getFactionWarData() {
 }
 
 /* ==========================================================
-   ⏳ CHECK TIME-OUT PATATA CALIENTE (48H)
+   Ã¢ÂÂ³ CHECK TIME-OUT PATATA CALIENTE (48H)
    ========================================================== */
 function checkHotPotatoTimeout() {
   const ss = SpreadsheetApp.getActive();
@@ -14111,7 +14120,7 @@ function checkHotPotatoTimeout() {
   const invData = invSheet.getDataRange().getValues();
   const now = new Date();
   
-  // --- CAMBIO AQUÍ: 48 HORAS ---
+  // --- CAMBIO AQUÃƒÂ: 48 HORAS ---
   const TIMEOUT_HOURS = 48; 
   // -----------------------------
 
@@ -14121,7 +14130,7 @@ function checkHotPotatoTimeout() {
     const player = row[0];
     const itemID = row[1];
     const status = row[2];
-    const dateAcquired = new Date(row[3]); // Columna D es la fecha de adquisición
+    const dateAcquired = new Date(row[3]); // Columna D es la fecha de adquisiciÃƒÂ³n
 
     // Buscamos bombas que sigan ACTIVAS
     if (itemID === 'HOT_POTATO' && status === 'ACTIVE') {
@@ -14130,13 +14139,13 @@ function checkHotPotatoTimeout() {
       const diffMs = now - dateAcquired;
       const diffHours = diffMs / (1000 * 60 * 60);
 
-      // Si ha pasado más de 48 horas sin jugar... ¡BOOM!
+      // Si ha pasado mÃƒÂ¡s de 48 horas sin jugar... Ã‚Â¡BOOM!
       if (diffHours >= TIMEOUT_HOURS) {
         
         // 1. Marcar como explotada por inactividad
         invSheet.getRange(i + 1, 3).setValue('EXPLODED_AFK');
 
-        // 2. Aplicar Castigo Económico
+        // 2. Aplicar Castigo EconÃƒÂ³mico
         const marketData = marketSheet.getDataRange().getValues();
         let mRow = -1;
         
@@ -14151,11 +14160,11 @@ function checkHotPotatoTimeout() {
             // Castigo: -500G y -15% Valor
             marketSheet.getRange(mRow, 3).setValue(Math.max(0, currentBal - 500)); 
             marketSheet.getRange(mRow, 2).setValue(Math.max(1, currentPrice * 0.85)); 
-            marketSheet.getRange(mRow, 4).setValue('🤕'); // Icono herido
+            marketSheet.getRange(mRow, 4).setValue('Ã°Å¸Â¤â€¢'); // Icono herido
             
             // 3. Notificar (Mensaje actualizado)
             if (typeof registerNews === 'function') {
-                registerNews('BOOM', `⏰ ¡TIEMPO AGOTADO! La patata explotó en manos de ${player} por inactividad (+48h sin jugar).`);
+                registerNews('BOOM', `Ã¢ÂÂ° Ã‚Â¡TIEMPO AGOTADO! La patata explotÃƒÂ³ en manos de ${player} por inactividad (+48h sin jugar).`);
             }
         }
         
@@ -14178,7 +14187,7 @@ function endFactionWar() {
   if (hScore > cScore) winningTeam = 'HEXTECH';
   else if (cScore > hScore) winningTeam = 'CHEMTECH';
   else {
-      registerNews('WAR', '🤝 La Guerra ha terminado en EMPATE. Nadie pierde dinero.');
+      registerNews('WAR', 'Ã°Å¸Â¤Â La Guerra ha terminado en EMPATE. Nadie pierde dinero.');
       props.setProperty('EVENT_WAR_ACTIVE', 'FALSE');
       return;
   }
@@ -14219,7 +14228,7 @@ function endFactionWar() {
   let lootPool = 5000; // Bote base del Admin
   let winnersCount = 0;
   
-  // --- FASE 1: RECAUDACIÓN (PERDEDORES) ---
+  // --- FASE 1: RECAUDACIÃƒâ€œN (PERDEDORES) ---
   for (let i=1; i<marketData.length; i++) {
       const player = marketData[i][0];
       const team = playerTeam[player];
@@ -14228,25 +14237,25 @@ function endFactionWar() {
           const currentPrice = Number(marketData[i][1]);
           const currentWallet = Number(marketData[i][2]);
           
-          // --- CÁLCULO DEL 10% DEL PATRIMONIO ---
+          // --- CÃƒÂLCULO DEL 10% DEL PATRIMONIO ---
           const stocksValue = stockWealthMap[player] || 0;
           const netWorth = currentWallet + stocksValue; // Dinero + Acciones
           
-          // El impuesto es el 10% del total, pero mínimo 500G para que duela algo
+          // El impuesto es el 10% del total, pero mÃƒÂ­nimo 500G para que duela algo
           let tax = Math.floor(netWorth * 0.10); 
           // Aplicar castigo al Wallet (Se queda a 0 si no tiene suficiente, no vende acciones auto)
           let newWallet = Math.max(0, currentWallet - tax);
           
-          // El Loot Pool crece con el impuesto teórico (El banco pone la diferencia si el jugador está arruinado)
+          // El Loot Pool crece con el impuesto teÃƒÂ³rico (El banco pone la diferencia si el jugador estÃƒÂ¡ arruinado)
           lootPool += tax; 
           
-          // Castigo a la acción (-25% valor)
+          // Castigo a la acciÃƒÂ³n (-25% valor)
           let newPrice = currentPrice * 0.75;
           if (newPrice < 1) newPrice = 1;
 
           marketSheet.getRange(i+1, 2).setValue(newPrice);
           marketSheet.getRange(i+1, 3).setValue(newWallet);
-          marketSheet.getRange(i+1, 4).setValue('🤕'); // Icono herido
+          marketSheet.getRange(i+1, 4).setValue('Ã°Å¸Â¤â€¢'); // Icono herido
           
           Logger.log(`PERDEDOR: ${player} | Patrimonio: ${netWorth} | Impuesto: ${tax}`);
 
@@ -14272,32 +14281,32 @@ function endFactionWar() {
           // 2. ENTREGA DE PREMIO MONETARIO
           let newWallet = currentWallet + prizePerWinner;
 
-          // 3. ENTREGA DEL ÍTEM "ONE_PIECE"
-          let newItemStatus = '🎁 ONE_PIECE'; 
+          // 3. ENTREGA DEL ÃƒÂTEM "ONE_PIECE"
+          let newItemStatus = 'Ã°Å¸Å½Â ONE_PIECE'; 
 
           // Guardamos datos
           marketSheet.getRange(i+1, 2).setValue(newPrice);
           marketSheet.getRange(i+1, 3).setValue(newWallet);
           marketSheet.getRange(i+1, 4).setValue(newItemStatus); 
           
-          // NOTA: Si usas la hoja INVENTORY separada, añade aquí:
+          // NOTA: Si usas la hoja INVENTORY separada, aÃƒÂ±ade aquÃƒÂ­:
           // const invSheet = ss.getSheetByName('INVENTORY');
           // invSheet.appendRow([player, 'ONE_PIECE', 'ACTIVE', new Date()]);
       }
   }
 
   const loserTeam = winningTeam === 'HEXTECH' ? 'CHEMTECH' : 'HEXTECH';
-  registerNews('WAR_END', `🏴‍☠️ EL ONE PIECE EXISTE! ${winningTeam} gana ${prizePerWinner.toFixed(0)}G (Botín acumulado), sus acciones suben un 10% y obtienen un Cofre.`);
+  registerNews('WAR_END', `Ã°Å¸ÂÂ´Ã¢â‚¬ÂÃ¢ËœÂ Ã¯Â¸Â EL ONE PIECE EXISTE! ${winningTeam} gana ${prizePerWinner.toFixed(0)}G (BotÃƒÂ­n acumulado), sus acciones suben un 10% y obtienen un Cofre.`);
   
   props.setProperty('EVENT_WAR_ACTIVE', 'FALSE');
   SpreadsheetApp.getUi().alert(`Guerra finalizada.\nGanador: ${winningTeam}\nPremio por cabeza: ${prizePerWinner.toFixed(0)} G`);
 }
 
 /* ==========================================================
-   🌤️ MEJORA VISUAL: CLIMA DEL MERCADO (SKIN)
+   Ã°Å¸Å’Â¤Ã¯Â¸Â MEJORA VISUAL: CLIMA DEL MERCADO (SKIN)
    ========================================================== */
 
-// Añadir esta lógica dentro de tu función existente 'getMarketData' o crear una nueva para consultar el estado
+// AÃƒÂ±adir esta lÃƒÂ³gica dentro de tu funciÃƒÂ³n existente 'getMarketData' o crear una nueva para consultar el estado
 function getMarketMood() {
     const props = PropertiesService.getScriptProperties();
     const isPurge = props.getProperty('EVENT_PURGE_ACTIVE') === 'TRUE';
@@ -14326,7 +14335,7 @@ function getProcessedMatchIds() {
   
   // Leemos la Columna A (MatchID) entera
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
-  // Aplanamos el array 2D a 1D y filtramos vacíos
+  // Aplanamos el array 2D a 1D y filtramos vacÃƒÂ­os
   return data.flat().filter(String);
 }
 
@@ -14351,15 +14360,15 @@ function removeDuplicateMatches() {
     }
   }
 
-  // Borrar de abajo hacia arriba para no romper índices
+  // Borrar de abajo hacia arriba para no romper ÃƒÂ­ndices
   if (rowsToDelete.length > 0) {
     Logger.log(`Eliminando ${rowsToDelete.length} duplicados...`);
     rowsToDelete.reverse().forEach(row => {
        sheet.deleteRow(row);
     });
-    SpreadsheetApp.getUi().alert(`🧹 Se han eliminado ${rowsToDelete.length} filas duplicadas.`);
+    SpreadsheetApp.getUi().alert(`Ã°Å¸Â§Â¹ Se han eliminado ${rowsToDelete.length} filas duplicadas.`);
   } else {
-    SpreadsheetApp.getUi().alert(`✅ No se encontraron duplicados.`);
+    SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ No se encontraron duplicados.`);
   }
 }
 
@@ -14375,15 +14384,15 @@ function weeklyResetPlayers() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
   
-  // Reactiva a todos poniendo "Sí" en la columna E (5)
+  // Reactiva a todos poniendo "SÃƒÂ­" en la columna E (5)
   // Sobrescribe cualquier "Cupo (15)" o "No" que hubiera.
-  sheet.getRange(2, 5, lastRow - 1, 1).setValue("Sí");
+  sheet.getRange(2, 5, lastRow - 1, 1).setValue("SÃƒÂ­");
   
-  logToSheet("🔄 RESET SEMANAL: Cupos reiniciados. ¡A jugar!");
+  logToSheet("Ã°Å¸â€â€ž RESET SEMANAL: Cupos reiniciados. Ã‚Â¡A jugar!");
 }
 
 /* ==========================================================
-   🧹 MANTENIMIENTO: LIMPIEZA DE LOGS
+   Ã°Å¸Â§Â¹ MANTENIMIENTO: LIMPIEZA DE LOGS
    ========================================================== */
 function cleanUpLogs() {
   const ss = SpreadsheetApp.getActive();
@@ -14391,17 +14400,17 @@ function cleanUpLogs() {
   
   if (!logSheet) return;
 
-  const maxRowsToKeep = 500; // Guardar solo las últimas 500 líneas
+  const maxRowsToKeep = 500; // Guardar solo las ÃƒÂºltimas 500 lÃƒÂ­neas
   const lastRow = logSheet.getLastRow();
 
-  // Si hay más filas de las que queremos guardar (+1 por el encabezado)
+  // Si hay mÃƒÂ¡s filas de las que queremos guardar (+1 por el encabezado)
   if (lastRow > (maxRowsToKeep + 1)) {
     const rowsToDelete = lastRow - maxRowsToKeep - 1;
     // Borramos desde la fila 2 (respetando encabezado) hacia abajo
     logSheet.deleteRows(2, rowsToDelete);
     
-    // Añadimos una nota de que se limpió
-    logSheet.appendRow([new Date(), `🧹 Limpieza automática: Se borraron ${rowsToDelete} filas antiguas.`]);
+    // AÃƒÂ±adimos una nota de que se limpiÃƒÂ³
+    logSheet.appendRow([new Date(), `Ã°Å¸Â§Â¹ Limpieza automÃƒÂ¡tica: Se borraron ${rowsToDelete} filas antiguas.`]);
     console.log(`Logs limpiados. Se borraron ${rowsToDelete} filas.`);
   }
 }
@@ -14412,9 +14421,9 @@ function TEST_DIAGNOSTICO() {
   const playersSheet = ss.getSheetByName("PLAYERS");
   const cfg = readConfigMap(); // Lee tu config
   
-  Logger.log("=== INICIO DIAGNÓSTICO ===");
-  Logger.log(`1. Configuración leída:`);
-  Logger.log(`   - Región: ${cfg.riot_region}`);
+  Logger.log("=== INICIO DIAGNÃƒâ€œSTICO ===");
+  Logger.log(`1. ConfiguraciÃƒÂ³n leÃƒÂ­da:`);
+  Logger.log(`   - RegiÃƒÂ³n: ${cfg.riot_region}`);
   Logger.log(`   - Colas: ${cfg.queue_filter}`);
   Logger.log(`   - API Key (primeros 5 chars): ${getApiKey().substring(0,5)}...`);
 
@@ -14422,7 +14431,7 @@ function TEST_DIAGNOSTICO() {
   Logger.log(`2. Total filas en PLAYERS: ${playersData.length}`);
 
   if (playersData.length <= 1) {
-    Logger.log("❌ ERROR: No hay jugadores en la hoja (solo encabezados).");
+    Logger.log("Ã¢ÂÅ’ ERROR: No hay jugadores en la hoja (solo encabezados).");
     return;
   }
 
@@ -14437,11 +14446,11 @@ function TEST_DIAGNOSTICO() {
   Logger.log(`   - Activo (Celda E${i+1}): "${active}"`);
 
   if (String(active).toLowerCase() === 'no' || String(active).toLowerCase() === 'false') {
-    Logger.log("❌ ERROR: El jugador está marcado como INACTIVO en el Excel.");
+    Logger.log("Ã¢ÂÅ’ ERROR: El jugador estÃƒÂ¡ marcado como INACTIVO en el Excel.");
     return;
   }
 
-  // 4. PRUEBA DE CONEXIÓN REAL A RIOT
+  // 4. PRUEBA DE CONEXIÃƒâ€œN REAL A RIOT
   Logger.log("4. Intentando conectar con Riot API...");
   const region = cfg.riot_region || 'europe';
   // Probamos SoloQ (420)
@@ -14455,32 +14464,32 @@ function TEST_DIAGNOSTICO() {
     const code = res.getResponseCode();
     const content = res.getContentText();
 
-    Logger.log(`   - Código Respuesta HTTP: ${code}`);
+    Logger.log(`   - CÃƒÂ³digo Respuesta HTTP: ${code}`);
     
     if (code === 200) {
       const matches = JSON.parse(content);
-      Logger.log(`   ✅ ÉXITO: La API devolvió ${matches.length} partidas.`);
+      Logger.log(`   Ã¢Å“â€¦ Ãƒâ€°XITO: La API devolviÃƒÂ³ ${matches.length} partidas.`);
       Logger.log(`   - IDs: ${JSON.stringify(matches)}`);
       
       if (matches.length === 0) {
-        Logger.log("   ⚠️ AVISO: La API funciona, pero dice que este jugador no tiene partidas recientes en SoloQ.");
-        Logger.log("   -> ¿Ha jugado en los últimos días? ¿Es la región correcta?");
+        Logger.log("   Ã¢Å¡Â Ã¯Â¸Â AVISO: La API funciona, pero dice que este jugador no tiene partidas recientes en SoloQ.");
+        Logger.log("   -> Ã‚Â¿Ha jugado en los ÃƒÂºltimos dÃƒÂ­as? Ã‚Â¿Es la regiÃƒÂ³n correcta?");
       }
     } else if (code === 403) {
-      Logger.log("   ❌ ERROR 403: API KEY CADUCADA O INVÁLIDA.");
-      Logger.log("   -> Solución: Regenera la key en developer.riotgames.com");
+      Logger.log("   Ã¢ÂÅ’ ERROR 403: API KEY CADUCADA O INVÃƒÂLIDA.");
+      Logger.log("   -> SoluciÃƒÂ³n: Regenera la key en developer.riotgames.com");
     } else {
-      Logger.log(`   ❌ ERROR API: ${content}`);
+      Logger.log(`   Ã¢ÂÅ’ ERROR API: ${content}`);
     }
 
   } catch (e) {
-    Logger.log(`   ❌ EXCEPCIÓN AL CONECTAR: ${e.message}`);
+    Logger.log(`   Ã¢ÂÅ’ EXCEPCIÃƒâ€œN AL CONECTAR: ${e.message}`);
   }
-  Logger.log("=== FIN DIAGNÓSTICO ===");
+  Logger.log("=== FIN DIAGNÃƒâ€œSTICO ===");
 }
 
 /* ==============================================
-   🛠️ HERRAMIENTA DE REPARACIÓN DE JUGADORES (V2 BLINDADA)
+   Ã°Å¸â€ºÂ Ã¯Â¸Â HERRAMIENTA DE REPARACIÃƒâ€œN DE JUGADORES (V2 BLINDADA)
    ============================================== */
 function forceFillPuuids() {
   const ss = SpreadsheetApp.getActive();
@@ -14489,7 +14498,7 @@ function forceFillPuuids() {
   const apiKey = getApiKey(); 
   const regionAccount = "europe"; 
 
-  Logger.log("🚀 Iniciando reparación de PUUIDs...");
+  Logger.log("Ã°Å¸Å¡â‚¬ Iniciando reparaciÃƒÂ³n de PUUIDs...");
 
   for (let i = 1; i < data.length; i++) {
     const name = String(data[i][0]).trim();
@@ -14497,7 +14506,7 @@ function forceFillPuuids() {
     const currentPuuid = String(data[i][2]).trim();
 
     if (name && (!currentPuuid || currentPuuid === "")) {
-      Logger.log(`🔎 Buscando PUUID para: ${name} #${tag}...`);
+      Logger.log(`Ã°Å¸â€Å½ Buscando PUUID para: ${name} #${tag}...`);
       
       try {
         const url = `https://${regionAccount}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
@@ -14511,31 +14520,31 @@ function forceFillPuuids() {
 
           // Guardar y FORZAR ESCRITURA INMEDIATA
           sheet.getRange(i + 1, 3).setValue(newPuuid);
-          SpreadsheetApp.flush(); // <--- ¡ESTO ES LA CLAVE!
+          SpreadsheetApp.flush(); // <--- Ã‚Â¡ESTO ES LA CLAVE!
           
-          Logger.log(`   ✅ Guardado: ${newPuuid}`);
+          Logger.log(`   Ã¢Å“â€¦ Guardado: ${newPuuid}`);
         } else {
-          Logger.log(`   ❌ Error ${code}: ${res.getContentText()}`);
+          Logger.log(`   Ã¢ÂÅ’ Error ${code}: ${res.getContentText()}`);
           if (code === 403) break; 
         }
       } catch (e) {
-        Logger.log(`   ❌ Excepción: ${e.message}`);
+        Logger.log(`   Ã¢ÂÅ’ ExcepciÃƒÂ³n: ${e.message}`);
       }
       Utilities.sleep(1200); 
     }
   }
-  Logger.log("✅ Proceso finalizado. Revisa la hoja PLAYERS.");
+  Logger.log("Ã¢Å“â€¦ Proceso finalizado. Revisa la hoja PLAYERS.");
 }
 
 // ==========================================
-// 🛑 CONTROL DE LÍMITE SEMANAL (15 PARTIDAS)
+// Ã°Å¸â€ºâ€˜ CONTROL DE LÃƒÂMITE SEMANAL (15 PARTIDAS)
 // ==========================================
 function checkWeeklyLimits() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('PLAYERS');
   
   // Obtenemos todos los datos de la hoja PLAYERS
-  // Asumimos: Col E = Activo (Índice 4), Col G = TotalGames (Índice 6)
+  // Asumimos: Col E = Activo (ÃƒÂndice 4), Col G = TotalGames (ÃƒÂndice 6)
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return; // Si no hay jugadores, salir
 
@@ -14546,24 +14555,24 @@ function checkWeeklyLimits() {
     const isActive = row[4];       // Columna E (Active)
     const totalGames = Number(row[6]); // Columna G (TotalGames)
 
-    // LÓGICA:
-    // 1. Si está activo ('Si')
+    // LÃƒâ€œGICA:
+    // 1. Si estÃƒÂ¡ activo ('Si')
     // 2. Y tiene partidas jugadas (> 0)
-    // 3. Y el número es múltiplo de 15 (residuo de la división es 0)
+    // 3. Y el nÃƒÂºmero es mÃƒÂºltiplo de 15 (residuo de la divisiÃƒÂ³n es 0)
     if (isActive === 'Si' && totalGames > 0 && totalGames % 15 === 0) {
       
       // Desactivamos al jugador
       // (index + 2 porque el array empieza en 0 y la hoja tiene cabecera en fila 1)
       sheet.getRange(index + 2, 5).setValue('No'); 
       
-      Logger.log(`🛑 LÍMITE ALCANZADO: ${name} lleva ${totalGames} partidas. Desactivado.`);
+      Logger.log(`Ã°Å¸â€ºâ€˜ LÃƒÂMITE ALCANZADO: ${name} lleva ${totalGames} partidas. Desactivado.`);
     }
   });
 }
 
 
 /* ===============================================================
-   🛠️ HERRAMIENTA DE REPARACIÓN: RECALCULAR RACHAS Y TOTALES (V3 SAFE)
+   Ã°Å¸â€ºÂ Ã¯Â¸Â HERRAMIENTA DE REPARACIÃƒâ€œN: RECALCULAR RACHAS Y TOTALES (V3 SAFE)
    =============================================================== */
 function forceRecalculatePlayerStats() {
   const ss = SpreadsheetApp.getActive();
@@ -14575,9 +14584,9 @@ function forceRecalculatePlayerStats() {
     return;
   }
 
-  // --- CORRECCIÓN: FORZAMOS FECHA AL 1 DE ENERO DE 2026 ---
+  // --- CORRECCIÃƒâ€œN: FORZAMOS FECHA AL 1 DE ENERO DE 2026 ---
   const seasonStart = new Date('2026-01-01T00:00:00Z'); 
-  console.log(`🔄 Iniciando recálculo total desde: ${seasonStart.toISOString()}`);
+  console.log(`Ã°Å¸â€â€ž Iniciando recÃƒÂ¡lculo total desde: ${seasonStart.toISOString()}`);
 
   // 2. LEER DATOS
   const matchesData = matchesSheet.getDataRange().getValues();
@@ -14594,7 +14603,7 @@ function forceRecalculatePlayerStats() {
     }
   }
 
-  // 3. PROCESAR PARTIDAS (CRONOLÓGICAMENTE)
+  // 3. PROCESAR PARTIDAS (CRONOLÃƒâ€œGICAMENTE)
   const sortedMatches = matchesData.slice(1).sort((a, b) => new Date(a[1]) - new Date(b[1]));
   let processedCount = 0;
 
@@ -14606,7 +14615,7 @@ function forceRecalculatePlayerStats() {
 
     if (matchDate >= seasonStart) {
       if (playerStats[playerName]) {
-        // A. Sumar Total Histórico
+        // A. Sumar Total HistÃƒÂ³rico
         playerStats[playerName].total++;
         playerStats[playerName].lastMatchId = matchId;
 
@@ -14651,7 +14660,7 @@ function forceRecalculatePlayerStats() {
       playersSheet.getRange(2, 4, lastMatchCol.length, 1).setValues(lastMatchCol); 
   }
 
-  const msg = `✅ Recálculo total finalizado. ${processedCount} partidas procesadas.`;
+  const msg = `Ã¢Å“â€¦ RecÃƒÂ¡lculo total finalizado. ${processedCount} partidas procesadas.`;
   console.log(msg);
   logToSheet(msg);
 
@@ -14659,11 +14668,11 @@ function forceRecalculatePlayerStats() {
   try {
     SpreadsheetApp.getUi().alert(msg);
   } catch (e) {
-    // Si falla (trigger automático), no hacemos nada, ya se logueó.
+    // Si falla (trigger automÃƒÂ¡tico), no hacemos nada, ya se logueÃƒÂ³.
   }
 }
 
-/* ----------------- RESOLUCIÓN DE PATROCINIOS (SPONSORS) ----------------- */
+/* ----------------- RESOLUCIÃƒâ€œN DE PATROCINIOS (SPONSORS) ----------------- */
 function checkSponsorships(targetPlayer, result) {
   const ss = SpreadsheetApp.getActive();
   const sponsorSheet = ss.getSheetByName('SPONSORSHIPS');
@@ -14675,10 +14684,10 @@ function checkSponsorships(targetPlayer, result) {
   const sData = sponsorSheet.getDataRange().getValues();
   const marketData = marketSheet.getDataRange().getValues();
   
-  // Mapa rápido para encontrar la fila del inversor en MARKET_STATUS
+  // Mapa rÃƒÂ¡pido para encontrar la fila del inversor en MARKET_STATUS
   const walletMap = {}; 
   for (let i = 1; i < marketData.length; i++) {
-    walletMap[marketData[i][0]] = i + 1; // Guardamos el número de fila
+    walletMap[marketData[i][0]] = i + 1; // Guardamos el nÃƒÂºmero de fila
   }
 
   // Recorremos los patrocinios buscando al jugador que acaba de jugar
@@ -14689,7 +14698,7 @@ function checkSponsorships(targetPlayer, result) {
     const amount = Number(row[2]);
     const status = row[3];
 
-    // Condición: Que sea el jugador objetivo Y que el patrocinio esté ACTIVO
+    // CondiciÃƒÂ³n: Que sea el jugador objetivo Y que el patrocinio estÃƒÂ© ACTIVO
     if (target === targetPlayer && status === 'ACTIVE') {
        
        if (result === 'Win') {
@@ -14704,14 +14713,14 @@ function checkSponsorships(targetPlayer, result) {
              // 1. Marcar como PAGADO en la hoja SPONSORSHIPS
              sponsorSheet.getRange(i + 1, 4).setValue('WON');
              
-             // 2. Registrar transacción
+             // 2. Registrar transacciÃƒÂ³n
              if (txSheet) {
                  txSheet.appendRow([new Date(), 'SPONSOR_WIN', investor, target, 1, payout]);
              }
              
              // 3. Notificar
              if (typeof registerNews === 'function') {
-                 registerNews('DEAL', `💰 ¡APUESTA GANADA! ${investor} recibe ${payout} G gracias a la victoria de ${target}.`);
+                 registerNews('DEAL', `Ã°Å¸â€™Â° Ã‚Â¡APUESTA GANADA! ${investor} recibe ${payout} G gracias a la victoria de ${target}.`);
              }
           }
        } else {
@@ -14720,9 +14729,9 @@ function checkSponsorships(targetPlayer, result) {
           sponsorSheet.getRange(i + 1, 4).setValue('LOST');
           
           if (typeof registerNews === 'function') {
-             // Solo notificamos si la inversión fue grande (>500) para no spamear
+             // Solo notificamos si la inversiÃƒÂ³n fue grande (>500) para no spamear
              if (amount >= 500) {
-                 registerNews('DEAL', `💸 INVERSIÓN FALLIDA: ${investor} pierde sus ${amount} G. ${target} ha perdido la partida.`);
+                 registerNews('DEAL', `Ã°Å¸â€™Â¸ INVERSIÃƒâ€œN FALLIDA: ${investor} pierde sus ${amount} G. ${target} ha perdido la partida.`);
              }
           }
        }
@@ -14735,8 +14744,8 @@ function checkSponsorships(targetPlayer, result) {
 function resetActiveRivals() {
   const ui = SpreadsheetApp.getUi();
   const response = ui.alert(
-     '⚠️ REINICIAR DUELOS',
-     '¿Seguro que quieres poner todos los marcadores de Rivales a 0-0?\n\nEsto NO borrará los puntos del Ranking global, solo reiniciará el progreso del duelo de esta semana.',
+     'Ã¢Å¡Â Ã¯Â¸Â REINICIAR DUELOS',
+     'Ã‚Â¿Seguro que quieres poner todos los marcadores de Rivales a 0-0?\n\nEsto NO borrarÃƒÂ¡ los puntos del Ranking global, solo reiniciarÃƒÂ¡ el progreso del duelo de esta semana.',
      ui.ButtonSet.YES_NO
   );
 
@@ -14761,26 +14770,26 @@ function resetActiveRivals() {
      }
   }
 
-  // Escribimos todo de golpe (mucho más rápido)
+  // Escribimos todo de golpe (mucho mÃƒÂ¡s rÃƒÂ¡pido)
   sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
   
   if (typeof registerNews === 'function') {
-      registerNews('INFO', '🔄 El árbitro ha reiniciado los marcadores de Rivales. ¡Todo empieza de nuevo!');
+      registerNews('INFO', 'Ã°Å¸â€â€ž El ÃƒÂ¡rbitro ha reiniciado los marcadores de Rivales. Ã‚Â¡Todo empieza de nuevo!');
   }
 
-  ui.alert('✅ Duelos reiniciados a 0-0.');
+  ui.alert('Ã¢Å“â€¦ Duelos reiniciados a 0-0.');
 }
 
 
 function getChampOceanStatus(playerName) {
   // 1. Accedemos a la hoja CORRECTA
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('KNOWN_CHAMPS'); // Nombre exacto de tu pestaña
+  const sheet = ss.getSheetByName('KNOWN_CHAMPS'); // Nombre exacto de tu pestaÃƒÂ±a
   
   if (!sheet) return { count: 0, percent: 0, error: "Hoja no encontrada" };
 
-  // 2. Leemos todos los datos de una vez (Más rápido)
-  // Asumimos según tu foto: Columna B = Nombre (Índice 1), Columna C = Campeones (Índice 2)
+  // 2. Leemos todos los datos de una vez (MÃƒÂ¡s rÃƒÂ¡pido)
+  // Asumimos segÃƒÂºn tu foto: Columna B = Nombre (ÃƒÂndice 1), Columna C = Campeones (ÃƒÂndice 2)
   const data = sheet.getDataRange().getValues();
   
   let champString = "";
@@ -14801,15 +14810,15 @@ function getChampOceanStatus(playerName) {
     return { count: 0, percent: 0, list: [] };
   }
 
-  // 4. Procesamos la lista (Separar por comas y contar únicos)
+  // 4. Procesamos la lista (Separar por comas y contar ÃƒÂºnicos)
   let champList = [];
   if (champString && champString.trim() !== "") {
     champList = champString.split(',')
       .map(c => c.trim())       // Quitar espacios alrededor de nombres
-      .filter(c => c !== "");   // Quitar vacíos
+      .filter(c => c !== "");   // Quitar vacÃƒÂ­os
   }
 
-  // Usamos Set para asegurar que no haya repetidos, aunque el CSV ya debería estar limpio
+  // Usamos Set para asegurar que no haya repetidos, aunque el CSV ya deberÃƒÂ­a estar limpio
   const uniqueChamps = [...new Set(champList)];
   const currentCount = uniqueChamps.length;
   
@@ -14818,7 +14827,7 @@ function getChampOceanStatus(playerName) {
   let percentage = Math.floor((currentCount / GOAL) * 100);
   if (percentage > 100) percentage = 100;
 
-  Logger.log(`Misión Ocean para ${playerName}: ${currentCount}/${GOAL} (${percentage}%)`);
+  Logger.log(`MisiÃƒÂ³n Ocean para ${playerName}: ${currentCount}/${GOAL} (${percentage}%)`);
 
   return {
     count: currentCount,
@@ -14829,7 +14838,7 @@ function getChampOceanStatus(playerName) {
 
 
 /* ===============================================================
-   🛠️ HERRAMIENTA: RECONSTRUIR CHAMPION POOL DESDE HISTORIAL
+   Ã°Å¸â€ºÂ Ã¯Â¸Â HERRAMIENTA: RECONSTRUIR CHAMPION POOL DESDE HISTORIAL
    =============================================================== */
 function forceUpdateKnownChamps() {
   const ss = SpreadsheetApp.getActive();
@@ -14838,7 +14847,7 @@ function forceUpdateKnownChamps() {
   const knownSheet = ss.getSheetByName('KNOWN_CHAMPS');
 
   if (!matchesSheet || !playersSheet || !knownSheet) {
-    SpreadsheetApp.getUi().alert("❌ Error: Faltan hojas necesarias (MATCHES, PLAYERS o KNOWN_CHAMPS).");
+    SpreadsheetApp.getUi().alert("Ã¢ÂÅ’ Error: Faltan hojas necesarias (MATCHES, PLAYERS o KNOWN_CHAMPS).");
     return;
   }
 
@@ -14854,7 +14863,7 @@ function forceUpdateKnownChamps() {
   pData.forEach(row => {
     const name = String(row[0]).trim();
     const puuid = String(row[2]).trim();
-    // Usamos el nombre en minúsculas como clave para evitar errores de mayúsculas
+    // Usamos el nombre en minÃƒÂºsculas como clave para evitar errores de mayÃƒÂºsculas
     if (name) {
       playerMap[name.toLowerCase()] = { 
         realName: name, 
@@ -14870,7 +14879,7 @@ function forceUpdateKnownChamps() {
     return;
   }
 
-  // Leemos: Col C (Jugador) y Col D (Campeón)
+  // Leemos: Col C (Jugador) y Col D (CampeÃƒÂ³n)
   // Indices: 2 y 3 respectivamente en el array
   const mData = matchesSheet.getRange(2, 1, mLastRow - 1, 4).getValues();
   
@@ -14880,7 +14889,7 @@ function forceUpdateKnownChamps() {
     const player = String(row[2]).trim().toLowerCase();
     const champion = String(row[3]).trim();
 
-    // Si tenemos jugador y campeón válido
+    // Si tenemos jugador y campeÃƒÂ³n vÃƒÂ¡lido
     if (player && champion && champion !== "" && champion !== "undefined") {
       if (!poolMap[player]) {
         poolMap[player] = new Set();
@@ -14902,8 +14911,8 @@ function forceUpdateKnownChamps() {
       // Formato: [PUUID, SummonerName, ChampionsCSV]
       output.push([pInfo.puuid, pInfo.realName, uniqueChamps]);
     } else {
-      // Si el jugador está en MATCHES pero no en PLAYERS (raro, pero posible)
-      // Lo añadimos sin PUUID o lo ignoramos. Aquí lo añadimos con PUUID vacío por seguridad.
+      // Si el jugador estÃƒÂ¡ en MATCHES pero no en PLAYERS (raro, pero posible)
+      // Lo aÃƒÂ±adimos sin PUUID o lo ignoramos. AquÃƒÂ­ lo aÃƒÂ±adimos con PUUID vacÃƒÂ­o por seguridad.
       const uniqueChamps = Array.from(poolMap[pKey]).sort().join(",");
       // Intentamos capitalizar el nombre key
       const displayName = pKey.charAt(0).toUpperCase() + pKey.slice(1);
@@ -14918,10 +14927,10 @@ function forceUpdateKnownChamps() {
   if (output.length > 0) {
     knownSheet.getRange(2, 1, output.length, 3).setValues(output);
     const count = output.length;
-    Logger.log(`✅ KNOWN_CHAMPS actualizado. ${count} jugadores procesados.`);
-    SpreadsheetApp.getUi().alert(`✅ Champion Pool actualizada.\nSe han procesado ${count} jugadores basados en el historial.`);
+    Logger.log(`Ã¢Å“â€¦ KNOWN_CHAMPS actualizado. ${count} jugadores procesados.`);
+    SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Champion Pool actualizada.\nSe han procesado ${count} jugadores basados en el historial.`);
   } else {
-    SpreadsheetApp.getUi().alert("⚠️ No se encontraron datos para actualizar.");
+    SpreadsheetApp.getUi().alert("Ã¢Å¡Â Ã¯Â¸Â No se encontraron datos para actualizar.");
   }
 }
 
@@ -14933,15 +14942,15 @@ function syncMissionStateSheet() {
   const knownSheet = ss.getSheetByName('KNOWN_CHAMPS');
 
   if (!stateSheet || !missionsSheet || !knownSheet) {
-    Logger.log("❌ Error: Faltan hojas (MISSION_STATE, MISSIONS o KNOWN_CHAMPS).");
+    Logger.log("Ã¢ÂÅ’ Error: Faltan hojas (MISSION_STATE, MISSIONS o KNOWN_CHAMPS).");
     return;
   }
 
   // 1. OBTENER METAS (TARGETS) DE TODAS LAS MISIONES
-  // Mapa: ID_MISION -> Meta Numérica (Columna E de MISSIONS)
+  // Mapa: ID_MISION -> Meta NumÃƒÂ©rica (Columna E de MISSIONS)
   const missionTargets = {};
   const missionsData = missionsSheet.getDataRange().getValues();
-  // Asumimos que la meta está en la columna E (índice 4) y el ID en la A (índice 0)
+  // Asumimos que la meta estÃƒÂ¡ en la columna E (ÃƒÂ­ndice 4) y el ID en la A (ÃƒÂ­ndice 0)
   for (let i = 1; i < missionsData.length; i++) {
     let mID = String(missionsData[i][0]).trim();
     let mTarget = Number(missionsData[i][4]); 
@@ -14963,7 +14972,7 @@ function syncMissionStateSheet() {
   const stateRange = stateSheet.getDataRange();
   const stateValues = stateRange.getValues();
   
-  // Índices basados en tus imágenes (B=Player, C=ID, D=Status, E=Value)
+  // ÃƒÂndices basados en tus imÃƒÂ¡genes (B=Player, C=ID, D=Status, E=Value)
   const COL_PLAYER = 1; 
   const COL_MISSION = 2;
   const COL_STATUS = 3;
@@ -14979,34 +14988,34 @@ function syncMissionStateSheet() {
 
     let target = missionTargets[missionID];
 
-    // --- A. ARREGLO ESPECÍFICO CHAMP_OCEAN (Sincronizar CSV) ---
+    // --- A. ARREGLO ESPECÃƒÂFICO CHAMP_OCEAN (Sincronizar CSV) ---
     if (missionID.includes('CHAMP_OCEAN')) {
       let realCSV = playerChampionsMap[player] || "";
       stateValues[i][COL_VALUE] = realCSV; // Actualizamos la lista
       currentValue = realCSV; // Para que el chequeo de abajo use el dato nuevo
     }
 
-    // --- B. CHEQUEO GENERAL DE FINALIZACIÓN ---
-    // Si la misión tiene una meta numérica definida
+    // --- B. CHEQUEO GENERAL DE FINALIZACIÃƒâ€œN ---
+    // Si la misiÃƒÂ³n tiene una meta numÃƒÂ©rica definida
     if (target > 0) {
       let currentCount = 0;
 
       // Si el valor es una lista separada por comas (Ej: "Top,Mid,Jungle")
       if (currentValue.includes(',')) {
-        // Limpiamos y contamos únicos
+        // Limpiamos y contamos ÃƒÂºnicos
         let list = currentValue.split(',').filter(x => x && x.trim().length > 0);
         currentCount = new Set(list).size;
       } 
-      // Si el valor es un número simple (Ej: "33")
+      // Si el valor es un nÃƒÂºmero simple (Ej: "33")
       else if (!isNaN(parseFloat(currentValue))) {
         currentCount = Number(currentValue);
       }
 
-      // LA CORRECCIÓN MÁGICA:
-      // Si ya tienes lo necesario o más, y no está marcada como Completed...
+      // LA CORRECCIÃƒâ€œN MÃƒÂGICA:
+      // Si ya tienes lo necesario o mÃƒÂ¡s, y no estÃƒÂ¡ marcada como Completed...
       if (currentCount >= target && currentStatus !== 'Completed') {
         stateValues[i][COL_STATUS] = 'Completed';
-        Logger.log(`🎉 ¡CORREGIDO! ${player} completó ${missionID} (${currentCount}/${target}).`);
+        Logger.log(`Ã°Å¸Å½â€° Ã‚Â¡CORREGIDO! ${player} completÃƒÂ³ ${missionID} (${currentCount}/${target}).`);
         updatesCount++;
       }
     }
@@ -15016,12 +15025,12 @@ function syncMissionStateSheet() {
   if (updatesCount > 0) {
     stateRange.setValues(stateValues);
     SpreadsheetApp.flush();
-    let msg = `✅ Se han completado ${updatesCount} misiones atascadas (incluyendo la de Líneas).`;
+    let msg = `Ã¢Å“â€¦ Se han completado ${updatesCount} misiones atascadas (incluyendo la de LÃƒÂ­neas).`;
     Logger.log(msg);
     SpreadsheetApp.getUi().alert(msg);
   } else {
-    Logger.log("👍 Todo parece estar correcto. No hubo cambios.");
-    SpreadsheetApp.getUi().alert("Todas las misiones están sincronizadas correctamente.");
+    Logger.log("Ã°Å¸â€˜Â Todo parece estar correcto. No hubo cambios.");
+    SpreadsheetApp.getUi().alert("Todas las misiones estÃƒÂ¡n sincronizadas correctamente.");
   }
 }
 
@@ -15034,7 +15043,7 @@ function syncRoleMissionsFromHistory() {
 
   if (!historySheet || !stateSheet || !missionsSheet) return;
 
-  // CONFIGURACIÓN COLUMNAS (Ajustado a tu hoja MATCHES)
+  // CONFIGURACIÃƒâ€œN COLUMNAS (Ajustado a tu hoja MATCHES)
   // Columna C (2) = Player, Columna E (4) = Role/Lane
   const COL_PLAYER_HIST = 2; 
   const COL_ROLE_HIST = 4;   
@@ -15078,7 +15087,7 @@ function syncRoleMissionsFromHistory() {
   const stateRange = stateSheet.getDataRange();
   const stateValues = stateRange.getValues();
   
-  // Índices MISSION_STATE: B=Player(1), C=ID(2), D=Status(3), E=Value(4)
+  // ÃƒÂndices MISSION_STATE: B=Player(1), C=ID(2), D=Status(3), E=Value(4)
   let updates = 0;
 
   for (let i = 1; i < stateValues.length; i++) {
@@ -15095,7 +15104,7 @@ function syncRoleMissionsFromHistory() {
       }
 
       let currentStatus = stateValues[i][3];
-      // Si el número está mal O si ya cumplió pero no sale 'Completed'
+      // Si el nÃƒÂºmero estÃƒÂ¡ mal O si ya cumpliÃƒÂ³ pero no sale 'Completed'
       if (stateValues[i][4] != realCount || (realCount >= target && currentStatus !== 'Completed')) {
         stateValues[i][4] = realCount; // Valor
         if (realCount >= target) stateValues[i][3] = 'Completed';
@@ -15107,7 +15116,7 @@ function syncRoleMissionsFromHistory() {
 
   if (updates > 0) {
     stateRange.setValues(stateValues);
-    console.log(`✅ Sincronizadas ${updates} misiones de Roles.`);
+    console.log(`Ã¢Å“â€¦ Sincronizadas ${updates} misiones de Roles.`);
   }
 }
 
@@ -15128,8 +15137,8 @@ function syncRoleMissionsFromHistory() {
       }
     }
 
-  // 2. Filtro de Muestra Mínima (15 partidas)
-  // Evita que alguien con 2-0 (100% WR) reciba el premio máximo injustamente.
+  // 2. Filtro de Muestra MÃƒÂ­nima (15 partidas)
+  // Evita que alguien con 2-0 (100% WR) reciba el premio mÃƒÂ¡ximo injustamente.
   if (games < 15) return { bonus: 0, label: "", wr: 0 };
 
   const wr = wins / games;
@@ -15142,26 +15151,26 @@ function syncRoleMissionsFromHistory() {
   // Mantener 70% WR en >15 partidas es nivel Smurf alto.
   if (wr >= 0.70) {
     bonus = 2.0; 
-    label = "👑 PRESTIGIO: GOD";
+    label = "Ã°Å¸â€˜â€˜ PRESTIGIO: GOD";
   }
   // TIER 2: SMURF (> 60%)
-  // Un 60% sólido merece respeto.
+  // Un 60% sÃƒÂ³lido merece respeto.
   else if (wr >= 0.65) {
     bonus = 1.5;
-    label = "🚀 PRESTIGIO: ALTO ELO";
+    label = "Ã°Å¸Å¡â‚¬ PRESTIGIO: ALTO ELO";
   }
   // TIER 1: POSITIVE (> 53%)
   // Un poco por encima de la media (50%).
   else if (wr >= 0.60) {
     bonus = 1.0;
-    label = "📈 PRESTIGIO: SÓLIDO";
+    label = "Ã°Å¸â€œË† PRESTIGIO: SÃƒâ€œLIDO";
   }
 
   return { bonus, label, wr: (wr * 100).toFixed(1) + "%" };
 }
 
 
-/* --- NUEVA FUNCIÓN PARA DASHBOARD V13 (Hazañas y Récords) --- */
+/* --- NUEVA FUNCIÃƒâ€œN PARA DASHBOARD V13 (HazaÃƒÂ±as y RÃƒÂ©cords) --- */
 function getEpicDashboardData() {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('MATCHES');
@@ -15190,7 +15199,7 @@ function getEpicDashboardData() {
   // Ordenar y coger top 5
   const topGames = allGames.sort((a, b) => b.points - a.points).slice(0, 5);
 
-  // 2. TÍTULOS ÚNICOS (Best in Class)
+  // 2. TÃƒÂTULOS ÃƒÅ¡NICOS (Best in Class)
   // Calculamos acumulados por jugador
   const playerStats = {}; 
   
@@ -15217,11 +15226,11 @@ function getEpicDashboardData() {
       s.totalDeaths += d;
       
       if (notes.includes("Demoledor") || notes.includes("Estructuras") || notes.includes("Placas")) s.towerDmgNoteCount++;
-      if (notes.includes("Visión") || notes.includes("OJO DE SAURON") || notes.includes("Vigía")) s.visionNoteCount++;
+      if (notes.includes("VisiÃƒÂ³n") || notes.includes("OJO DE SAURON") || notes.includes("VigÃƒÂ­a")) s.visionNoteCount++;
       if (notes.includes("Economista") || notes.includes("Magnate") || notes.includes("Wall Street")) s.wealthNoteCount++;
   }
 
-  // Encontrar líderes
+  // Encontrar lÃƒÂ­deres
   let titles = {
       destructor: { player: 'N/A', val: 0 },
       visionary: { player: 'N/A', val: 0 },
@@ -15232,7 +15241,7 @@ function getEpicDashboardData() {
 
   for (const p in playerStats) {
       const s = playerStats[p];
-      if (s.games < 3) continue; // Mínimo 3 partidas para optar a título
+      if (s.games < 3) continue; // MÃƒÂ­nimo 3 partidas para optar a tÃƒÂ­tulo
 
       const avgKills = s.totalKills / s.games;
       const avgDeaths = s.totalDeaths / s.games;
@@ -15246,11 +15255,11 @@ function getEpicDashboardData() {
 
   // Formatear para enviar
   const finalTitles = [
-      { id: 'DEMOLEDOR', player: titles.destructor.player, label: '🚜 El Demoledor', sub: `${titles.destructor.val} hazañas` },
-      { id: 'VISION', player: titles.visionary.player, label: '👁️ El Ojo', sub: `${titles.visionary.val} menciones` },
-      { id: 'BUTCHER', player: titles.butcher.player, label: '🩸 Carnicero', sub: `${titles.butcher.val.toFixed(1)} kills/game` },
-      { id: 'IMMORTAL', player: titles.immortal.player, label: '🛡️ Inmortal', sub: `${titles.immortal.val.toFixed(1)} deaths/game` },
-      { id: 'TYCOON', player: titles.tycoon.player, label: '💰 Magnate', sub: `${titles.tycoon.val} menciones` }
+      { id: 'DEMOLEDOR', player: titles.destructor.player, label: 'Ã°Å¸Å¡Å“ El Demoledor', sub: `${titles.destructor.val} hazaÃƒÂ±as` },
+      { id: 'VISION', player: titles.visionary.player, label: 'Ã°Å¸â€˜ÂÃ¯Â¸Â El Ojo', sub: `${titles.visionary.val} menciones` },
+      { id: 'BUTCHER', player: titles.butcher.player, label: 'Ã°Å¸Â©Â¸ Carnicero', sub: `${titles.butcher.val.toFixed(1)} kills/game` },
+      { id: 'IMMORTAL', player: titles.immortal.player, label: 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â Inmortal', sub: `${titles.immortal.val.toFixed(1)} deaths/game` },
+      { id: 'TYCOON', player: titles.tycoon.player, label: 'Ã°Å¸â€™Â° Magnate', sub: `${titles.tycoon.val} menciones` }
   ];
 
   return { topGames, titles: finalTitles };
@@ -15260,7 +15269,7 @@ function getEpicDashboardData() {
    FUNCIONES AUXILIARES FALTANTES
    ========================================= */
 
-// Necesaria para el desplegable de víctimas en la web
+// Necesaria para el desplegable de vÃƒÂ­ctimas en la web
 function getAliveTargets(currentUser) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('MARKET_STATUS');
@@ -15282,7 +15291,7 @@ function getAliveTargets(currentUser) {
   return targets.sort();
 }
 
-// Necesaria para crear la hoja de sabotajes y añadir items a la tienda
+// Necesaria para crear la hoja de sabotajes y aÃƒÂ±adir items a la tienda
 function SetupPurgeExtras() {
   const ss = SpreadsheetApp.getActive();
   
@@ -15292,16 +15301,16 @@ function SetupPurgeExtras() {
     sheet.getRange('A1:D1').setValues([['Attacker', 'Victim', 'Status', 'Date']]).setFontWeight('bold');
   }
 
-  // 2. Añadir Objetos a la Tienda
+  // 2. AÃƒÂ±adir Objetos a la Tienda
   const shopSheet = ss.getSheetByName('SHOP_ITEMS');
   if (shopSheet) {
     const currentItems = shopSheet.getDataRange().getValues().map(r => r[0]);
     
     if (!currentItems.includes('TOXIC_INJECTOR')) {
-      shopSheet.appendRow(['TOXIC_INJECTOR', 'Inyector Tóxico', 'Aumenta la penalización de una víctima en -1.0 pts esta noche.', 600, '💉']);
+      shopSheet.appendRow(['TOXIC_INJECTOR', 'Inyector TÃƒÂ³xico', 'Aumenta la penalizaciÃƒÂ³n de una vÃƒÂ­ctima en -1.0 pts esta noche.', 600, 'Ã°Å¸â€™â€°']);
     }
     if (!currentItems.includes('GAS_MASK')) {
-      shopSheet.appendRow(['GAS_MASK', 'Máscara de Gas', 'Bloquea TODOS los sabotajes recibidos esta noche (Se consume al uso).', 800, '😷']);
+      shopSheet.appendRow(['GAS_MASK', 'MÃƒÂ¡scara de Gas', 'Bloquea TODOS los sabotajes recibidos esta noche (Se consume al uso).', 800, 'Ã°Å¸ËœÂ·']);
     }
   }
   
@@ -15311,19 +15320,19 @@ function SetupPurgeExtras() {
     props.setProperty('PURGE_WEATHER', 'NEUTRAL');
   }
 
-  Logger.log("✅ Extras de Purga configurados.");
+  Logger.log("Ã¢Å“â€¦ Extras de Purga configurados.");
 }
 
 
 function addVoteBallot() {
   const ss = SpreadsheetApp.getActive();
   const shopSheet = ss.getSheetByName('SHOP_ITEMS');
-  // ID, Nombre, Descripción, Precio, Icono
-  shopSheet.appendRow(['VOTE_BALLOT', 'Papeleta de Voto', 'Vota por el General de tu facción. Escribe su nombre al comprar.', 1, '🗳️']);
+  // ID, Nombre, DescripciÃƒÂ³n, Precio, Icono
+  shopSheet.appendRow(['VOTE_BALLOT', 'Papeleta de Voto', 'Vota por el General de tu facciÃƒÂ³n. Escribe su nombre al comprar.', 1, 'Ã°Å¸â€”Â³Ã¯Â¸Â']);
 }
 
 /* ==========================================
-   🏁 FINALIZAR VOTACIÓN: ASIGNAR ROLES + ANUNCIO
+   Ã°Å¸ÂÂ FINALIZAR VOTACIÃƒâ€œN: ASIGNAR ROLES + ANUNCIO
    ========================================== */
 function updateAllRoles() {
   const ss = SpreadsheetApp.getActive();
@@ -15335,7 +15344,7 @@ function updateAllRoles() {
   // 1. LIMPIEZA: Reiniciar a todos a 'SOLDIER' antes de contar
   sheet.getRange(2, 4, sheet.getLastRow() - 1, 1).setValue('SOLDIER');
 
-  // 2. CONFIGURACIÓN DE ESCANEO
+  // 2. CONFIGURACIÃƒâ€œN DE ESCANEO
   const roleConfig = [
     { name: "GENERAL",   voteIndex: 4 },
     { name: "ESTRATEGA", voteIndex: 5 },
@@ -15366,19 +15375,19 @@ function updateAllRoles() {
         roleConfig.forEach(role => {
             const votes = Number(row[role.voteIndex] || 0);
             
-            // Si supera al líder actual de ese rol en su equipo
+            // Si supera al lÃƒÂ­der actual de ese rol en su equipo
             if (votes > winners[playerTeam][role.name].maxVotes && votes > 0) {
                 winners[playerTeam][role.name] = { 
                     playerRow: i + 1, 
                     maxVotes: votes,
-                    playerName: pName // <--- GUARDAMOS EL NOMBRE AQUÍ
+                    playerName: pName // <--- GUARDAMOS EL NOMBRE AQUÃƒÂ
                 };
             }
         });
     }
   }
 
-  // 4. ASIGNAR LOS TÍTULOS EN EL EXCEL
+  // 4. ASIGNAR LOS TÃƒÂTULOS EN EL EXCEL
   const finalAssignments = {};
 
   ["HEXTECH", "CHEMTECH"].forEach(team => {
@@ -15400,7 +15409,7 @@ function updateAllRoles() {
   // 5. ANUNCIO A DISCORD (LA NOVEDAD)
   sendDiscordRolesAnnouncement(winners);
 
-  SpreadsheetApp.getUi().alert("✅ Recuento finalizado y anunciado en Discord.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Recuento finalizado y anunciado en Discord.");
 }
 
 /* ----------------- ESCARAMUZA DIARIA (DETALLADA) ----------------- */
@@ -15412,17 +15421,17 @@ function runDailySkirmish() {
   const matchesSheet = ss.getSheetByName('MATCHES');
   const factionSheet = ss.getSheetByName('FACTIONS');
   
-  // 1. Definir Misión
+  // 1. Definir MisiÃƒÂ³n
   const today = new Date();
   const dayIndex = today.getDay(); 
   
   const missions = {
       1: { name: "LUNES DE SANGRE", stat: 'kills', unit: 'Kills' },
-      2: { name: "MARTES TÁCTICO", stat: 'assists', unit: 'Asistencias' },
-      3: { name: "MIÉRCOLES DE ASEDIO", stat: 'turrets', unit: 'Daño Torres' },
-      4: { name: "JUEVES DE VISIÓN", stat: 'vision', unit: 'Puntuación Visión' }, 
-      5: { name: "VIERNES DE ORO", stat: 'gold', unit: 'Oro' }, // Se dividirá por 1000 visualmente
-      6: { name: "SÁBADO DEL VACÍO", stat: 'obj', unit: 'Objetivos' },
+      2: { name: "MARTES TÃƒÂCTICO", stat: 'assists', unit: 'Asistencias' },
+      3: { name: "MIÃƒâ€°RCOLES DE ASEDIO", stat: 'turrets', unit: 'DaÃƒÂ±o Torres' },
+      4: { name: "JUEVES DE VISIÃƒâ€œN", stat: 'vision', unit: 'PuntuaciÃƒÂ³n VisiÃƒÂ³n' }, 
+      5: { name: "VIERNES DE ORO", stat: 'gold', unit: 'Oro' }, // Se dividirÃƒÂ¡ por 1000 visualmente
+      6: { name: "SÃƒÂBADO DEL VACÃƒÂO", stat: 'obj', unit: 'Objetivos' },
       0: { name: "DOMINGO DE SUPERVIVENCIA", stat: 'deaths_reverse', unit: 'Muertes (Menos es mejor)' }
   };
 
@@ -15496,7 +15505,7 @@ function runDailySkirmish() {
           chemDetails.push({ name: name, score: data.score, isStrat: data.isStrat });
       }
 
-      // MVP Check (Ignorar lógica inversa de domingo para simplificar MVP visual)
+      // MVP Check (Ignorar lÃƒÂ³gica inversa de domingo para simplificar MVP visual)
       if (mission.stat !== 'deaths_reverse' && data.score > mvpValue) {
           mvpValue = data.score;
           mvpName = name;
@@ -15530,18 +15539,18 @@ function runDailySkirmish() {
   }
 }
 
-/* ----------------- ENVÍO DISCORD ESCARAMUZA DETALLADA ----------------- */
+/* ----------------- ENVÃƒÂO DISCORD ESCARAMUZA DETALLADA ----------------- */
 function sendDiscordWarNotification(missionName, winner, hexScore, chemScore, hexList, chemList, unitLabel) {
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
   
   let color = (winner === 'HEXTECH') ? 3447003 : 5763719; 
 
-  // Función auxiliar para crear el texto de la lista
+  // FunciÃƒÂ³n auxiliar para crear el texto de la lista
   const formatList = (list) => {
-      if (list.length === 0) return "💤 Sin actividad hoy.";
+      if (list.length === 0) return "Ã°Å¸â€™Â¤ Sin actividad hoy.";
       return list.map(p => {
-          let icon = p.isStrat ? "🧠 " : ""; // Icono de Estratega
-          // Formato numérico limpio (si es oro grande lo ponemos en k)
+          let icon = p.isStrat ? "Ã°Å¸Â§Â  " : ""; // Icono de Estratega
+          // Formato numÃƒÂ©rico limpio (si es oro grande lo ponemos en k)
           let valStr = (unitLabel === 'Oro' && p.score > 1000) ? (p.score/100).toFixed(1) + "k" : p.score.toFixed(0);
           return `**${p.score.toFixed(0)}** - ${icon}${p.name}`;
       }).join('\n');
@@ -15553,29 +15562,29 @@ function sendDiscordWarNotification(missionName, winner, hexScore, chemScore, he
   const payload = {
     username: "SoloQ Referee",
     avatar_url: "https://i.imgur.com/M0k3y3N.png",
-    content: "⚔️ **REPORTE DEL FRENTE**",
+    content: "Ã¢Å¡â€Ã¯Â¸Â **REPORTE DEL FRENTE**",
     embeds: [{
       title: `ESCARAMUZA: ${missionName}`,
       description: `La batalla ha terminado. **${winner}** se lleva el bonus (+50 Pts).`,
       color: color,
       fields: [
         { 
-            name: `💎 HEXTECH (Total: ${hexScore.toFixed(0)})`, 
+            name: `Ã°Å¸â€™Å½ HEXTECH (Total: ${hexScore.toFixed(0)})`, 
             value: hexBody, 
             inline: true 
         },
         { 
-            name: `🧪 CHEMTECH (Total: ${chemScore.toFixed(0)})`, 
+            name: `Ã°Å¸Â§Âª CHEMTECH (Total: ${chemScore.toFixed(0)})`, 
             value: chemBody, 
             inline: true 
         },
         {
-            name: "📊 Detalle",
-            value: `Unidad de medida: **${unitLabel}**.\n*(🧠 = Aporte Doble de Estratega)*`,
+            name: "Ã°Å¸â€œÅ  Detalle",
+            value: `Unidad de medida: **${unitLabel}**.\n*(Ã°Å¸Â§Â  = Aporte Doble de Estratega)*`,
             inline: false
         }
       ],
-      footer: { text: "Guerra de Facciones • Reporte Diario" },
+      footer: { text: "Guerra de Facciones Ã¢â‚¬Â¢ Reporte Diario" },
       timestamp: new Date().toISOString()
     }]
   };
@@ -15611,7 +15620,7 @@ function configurarHorariosGuerra() {
     .atHour(9)
     .create();
 
-  // B. CIERRE DE URNAS Y NOMBRAMIENTO (Lunes 23:00) - ¡TU PETICIÓN!
+  // B. CIERRE DE URNAS Y NOMBRAMIENTO (Lunes 23:00) - Ã‚Â¡TU PETICIÃƒâ€œN!
   // Se ejecuta 1 vez a la semana. Cuenta votos y asigna Generales.
   ScriptApp.newTrigger('updateFactionRoles')
     .timeBased()
@@ -15620,10 +15629,10 @@ function configurarHorariosGuerra() {
     .create();
 
   // C. ESCARAMUZAS DIARIAS (Cada noche a las 23:45, de Martes a Domingo)
-  // Nota: No lo ponemos el lunes porque el lunes es día de votación.
-  // Creamos un trigger diario, y dentro de la función 'runDailySkirmish'
+  // Nota: No lo ponemos el lunes porque el lunes es dÃƒÂ­a de votaciÃƒÂ³n.
+  // Creamos un trigger diario, y dentro de la funciÃƒÂ³n 'runDailySkirmish'
   // podemos poner un 'if (day === 1) return;' si queremos saltar el lunes,
-  // pero ejecutarlo todos los días a las 23:45 está bien.
+  // pero ejecutarlo todos los dÃƒÂ­as a las 23:45 estÃƒÂ¡ bien.
   ScriptApp.newTrigger('runDailySkirmish')
     .timeBased()
     .everyDays(1)
@@ -15640,16 +15649,16 @@ function configurarHorariosGuerra() {
     .nearMinute(30)
     .create();
 
-  console.log("✅ Horarios de Guerra configurados perfectamente.");
-  SpreadsheetApp.getUi().alert("✅ Calendario de Guerra configurado:\n\n- Lunes 09:00: Inicio y Equipos.\n- Lunes 23:00: Recuento de Votos (Generales).\n- Diario 23:45: Escaramuzas.\n- Domingo 23:30: Final.");
+  console.log("Ã¢Å“â€¦ Horarios de Guerra configurados perfectamente.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Calendario de Guerra configurado:\n\n- Lunes 09:00: Inicio y Equipos.\n- Lunes 23:00: Recuento de Votos (Generales).\n- Diario 23:45: Escaramuzas.\n- Domingo 23:30: Final.");
 }
 
 /* ==================================================
-   🗳️ SISTEMA DE VOTACIÓN VISUAL (INTERFAZ)
+   Ã°Å¸â€”Â³Ã¯Â¸Â SISTEMA DE VOTACIÃƒâ€œN VISUAL (INTERFAZ)
    ================================================== */
 
 /* ==========================================================
-   🗳️ GESTIÓN DE VOTOS DESDE INVENTARIO
+   Ã°Å¸â€”Â³Ã¯Â¸Â GESTIÃƒâ€œN DE VOTOS DESDE INVENTARIO
    ========================================================== */
 
 // 1. Abrir la urna en MODO INVENTARIO
@@ -15661,11 +15670,11 @@ function abrirUrnaInventario() {
   const html = template.evaluate()
       .setWidth(400)
       .setHeight(450)
-      .setTitle('🗳️ Usar Voto del Inventario');
+      .setTitle('Ã°Å¸â€”Â³Ã¯Â¸Â Usar Voto del Inventario');
   SpreadsheetApp.getUi().showModalDialog(html, 'Urna Electoral');
 }
 
-// 2. Procesar el voto (CONSUME ÍTEM, NO COBRA ORO)
+// 2. Procesar el voto (CONSUME ÃƒÂTEM, NO COBRA ORO)
 function procesarVotoInventario(player, candidateName) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return { success: false, msg: "Sistema ocupado." };
@@ -15675,7 +15684,7 @@ function procesarVotoInventario(player, candidateName) {
     const factionSheet = ss.getSheetByName('FACTIONS');
     const invSheet = ss.getSheetByName('INVENTORY');
     
-    // A. Validar que tiene el ítem en inventario
+    // A. Validar que tiene el ÃƒÂ­tem en inventario
     const iData = invSheet.getDataRange().getValues();
     let itemRow = -1;
     
@@ -15687,7 +15696,7 @@ function procesarVotoInventario(player, candidateName) {
     }
     if (itemRow === -1) return { success: false, msg: "No tienes una papeleta activa." };
 
-    // B. Validar Facción y Candidato (Igual que en tienda)
+    // B. Validar FacciÃƒÂ³n y Candidato (Igual que en tienda)
     const fData = factionSheet.getDataRange().getValues();
     let voterTeam = null, candidateTeam = null, candidateRow = -1, voterRow = -1;
     let voteHistory = "";
@@ -15704,7 +15713,7 @@ function procesarVotoInventario(player, candidateName) {
         }
     }
 
-    if (!voterTeam || !candidateTeam) return { success: false, msg: "Datos de facción inválidos." };
+    if (!voterTeam || !candidateTeam) return { success: false, msg: "Datos de facciÃƒÂ³n invÃƒÂ¡lidos." };
     if (voterTeam !== candidateTeam) return { success: false, msg: "Solo puedes votar a tu equipo." };
     if (voteHistory.includes("GENERAL")) return { success: false, msg: "Ya has votado para General." };
 
@@ -15716,7 +15725,7 @@ function procesarVotoInventario(player, candidateName) {
     // 2. Marcar historial
     factionSheet.getRange(voterRow, 6).setValue(voteHistory + "GENERAL,");
 
-    // 3. CONSUMIR ÍTEM
+    // 3. CONSUMIR ÃƒÂTEM
     invSheet.getRange(itemRow, 3).setValue('USED');
 
     return { success: true, msg: `Voto usado para ${candidateName}.` };
@@ -15728,7 +15737,7 @@ function procesarVotoInventario(player, candidateName) {
   }
 }
 
-// 3. Modificar la función de apertura normal (para que sepa que es MODO TIENDA)
+// 3. Modificar la funciÃƒÂ³n de apertura normal (para que sepa que es MODO TIENDA)
 function abrirUrnaVotacion() {
   const template = HtmlService.createTemplateFromFile('VotingBooth');
   template.mode = 'SHOP'; // Modo por defecto
@@ -15736,11 +15745,11 @@ function abrirUrnaVotacion() {
   const html = template.evaluate()
       .setWidth(400)
       .setHeight(450)
-      .setTitle('🗳️ Urna Electoral (Tienda)');
+      .setTitle('Ã°Å¸â€”Â³Ã¯Â¸Â Urna Electoral (Tienda)');
   SpreadsheetApp.getUi().showModalDialog(html, 'Elecciones Generales');
 }
 
-// 2. Función auxiliar: Obtener lista de TODOS los jugadores (para saber quién eres)
+// 2. FunciÃƒÂ³n auxiliar: Obtener lista de TODOS los jugadores (para saber quiÃƒÂ©n eres)
 function getAllFactionPlayers() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('FACTIONS');
@@ -15751,7 +15760,7 @@ function getAllFactionPlayers() {
   return data.filter(String).sort();
 }
 
-// 3. Función auxiliar: Obtener compañeros de equipo (para el desplegable)
+// 3. FunciÃƒÂ³n auxiliar: Obtener compaÃƒÂ±eros de equipo (para el desplegable)
 function getTeammatesForVoting(voterName) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('FACTIONS');
@@ -15770,10 +15779,10 @@ function getTeammatesForVoting(voterName) {
 
   if (!myTeam) return { error: "No tienes equipo asignado." };
 
-  // 2. Filtrar compañeros
+  // 2. Filtrar compaÃƒÂ±eros
   for (let i = 1; i < data.length; i++) {
     if (data[i][1] === myTeam) {
-      // Opcional: Si quieres que puedan votarse a sí mismos, quita la condición `!== voterName`
+      // Opcional: Si quieres que puedan votarse a sÃƒÂ­ mismos, quita la condiciÃƒÂ³n `!== voterName`
       // if (data[i][0] !== voterName) { 
          teammates.push(data[i][0]);
       // }
@@ -15785,14 +15794,14 @@ function getTeammatesForVoting(voterName) {
 
 // 4. Procesar el voto desde el HTML
 function procesarVotoWeb(voter, candidate) {
-  // Reutilizamos tu potente función buyShopItem para no duplicar lógica
-  // Simula que el jugador compra el ítem 'VOTE_BALLOT' con el nombre del candidato
+  // Reutilizamos tu potente funciÃƒÂ³n buyShopItem para no duplicar lÃƒÂ³gica
+  // Simula que el jugador compra el ÃƒÂ­tem 'VOTE_BALLOT' con el nombre del candidato
   return buyShopItem(voter, 'VOTE_BALLOT', candidate);
 }
 
 
 /* ==========================================================
-   🛍️ BOTÓN MAESTRO (ASIGNAR ESTA FUNCIÓN AL BOTÓN DEL EXCEL)
+   Ã°Å¸â€ºÂÃ¯Â¸Â BOTÃƒâ€œN MAESTRO (ASIGNAR ESTA FUNCIÃƒâ€œN AL BOTÃƒâ€œN DEL EXCEL)
    ========================================================== */
 function comprarObjetoActual() {
   const ss = SpreadsheetApp.getActive();
@@ -15801,38 +15810,38 @@ function comprarObjetoActual() {
 
   // 1. Validar que estamos en la Tienda
   if (sheet.getName() !== 'SHOP_ITEMS') {
-    ui.alert("❌ Este botón solo funciona en la hoja SHOP_ITEMS.");
+    ui.alert("Ã¢ÂÅ’ Este botÃƒÂ³n solo funciona en la hoja SHOP_ITEMS.");
     return;
   }
 
   // 2. Leer el objeto seleccionado (Fila actual)
   const row = sheet.getActiveCell().getRow();
-  if (row < 2) return; // Si está en la cabecera, no hace nada
+  if (row < 2) return; // Si estÃƒÂ¡ en la cabecera, no hace nada
 
   const itemID = String(sheet.getRange(row, 1).getValue()).trim(); // Col A: ID
   const itemName = String(sheet.getRange(row, 2).getValue()).trim(); // Col B: Nombre
   const price = Number(sheet.getRange(row, 4).getValue()); // Col D: Precio
 
   if (!itemID) {
-    ui.alert("❌ Selecciona una fila válida con un objeto.");
+    ui.alert("Ã¢ÂÅ’ Selecciona una fila vÃƒÂ¡lida con un objeto.");
     return;
   }
 
   // ======================================================
-  // 🗳️ CASO A: ES UN VOTO -> ABRIMOS LA URNA HTML
+  // Ã°Å¸â€”Â³Ã¯Â¸Â CASO A: ES UN VOTO -> ABRIMOS LA URNA HTML
   // ======================================================
   if (itemID === 'VOTE_BALLOT') {
-    // Esta función abre el archivo HTML 'VotingBooth'
+    // Esta funciÃƒÂ³n abre el archivo HTML 'VotingBooth'
     if (typeof abrirUrnaVotacion === 'function') {
         abrirUrnaVotacion(); 
     } else {
-        ui.alert("❌ Error: No se encuentra la función 'abrirUrnaVotacion'. Revisa que copiaste el código de la interfaz.");
+        ui.alert("Ã¢ÂÅ’ Error: No se encuentra la funciÃƒÂ³n 'abrirUrnaVotacion'. Revisa que copiaste el cÃƒÂ³digo de la interfaz.");
     }
     return; // Salimos, la web se encarga del resto
   }
 
   // ======================================================
-  // 🎁 CASO B: RESTO DE OBJETOS (COFRES, POCIONES...)
+  // Ã°Å¸Å½Â CASO B: RESTO DE OBJETOS (COFRES, POCIONES...)
   // ======================================================
   
   const response = ui.prompt(
@@ -15849,40 +15858,40 @@ function comprarObjetoActual() {
   // Pedir datos extra si es necesario
   let extraData = null;
   if (itemID === 'TOXIC_INJECTOR' || itemID === 'MEGAPHONE') {
-      const extraRes = ui.prompt("Dato Adicional", itemID === 'MEGAPHONE' ? "Escribe el mensaje:" : "Escribe el nombre de la víctima:", ui.ButtonSet.OK);
+      const extraRes = ui.prompt("Dato Adicional", itemID === 'MEGAPHONE' ? "Escribe el mensaje:" : "Escribe el nombre de la vÃƒÂ­ctima:", ui.ButtonSet.OK);
       extraData = extraRes.getResponseText();
   }
 
-  // LLAMADA AL MOTOR (Tu función buyShopItem)
+  // LLAMADA AL MOTOR (Tu funciÃƒÂ³n buyShopItem)
   const result = buyShopItem(player, itemID, extraData);
 
   // Resultado
   if (result.success) {
-      // 🎰 Si es un COFRE, lanzamos la RULETA
+      // Ã°Å¸Å½Â° Si es un COFRE, lanzamos la RULETA
       if (itemID === 'CHEST_HEXTECH' || itemID === 'ONE_PIECE') {
           const lootVisual = [
-              "💩 Chatarra (5G)", "🧪 Poción de Elo", "🛡️ Ángel Guardián", 
-              "💰 Soborno", "📈 Acciones (Insider)", "💰 Tesoro (800G)"
+              "Ã°Å¸â€™Â© Chatarra (5G)", "Ã°Å¸Â§Âª PociÃƒÂ³n de Elo", "Ã°Å¸â€ºÂ¡Ã¯Â¸Â ÃƒÂngel GuardiÃƒÂ¡n", 
+              "Ã°Å¸â€™Â° Soborno", "Ã°Å¸â€œË† Acciones (Insider)", "Ã°Å¸â€™Â° Tesoro (800G)"
           ];
-          if (itemID === 'ONE_PIECE') lootVisual.push("🚨 JACKPOT ONE PIECE");
+          if (itemID === 'ONE_PIECE') lootVisual.push("Ã°Å¸Å¡Â¨ JACKPOT ONE PIECE");
 
           if (typeof showRouletteAnimation === 'function') {
              showRouletteAnimation(result.winnerItem, lootVisual);
           } else {
-             ui.alert(`✅ COMPRA ÉXITOSA\n${result.msg}`);
+             ui.alert(`Ã¢Å“â€¦ COMPRA Ãƒâ€°XITOSA\n${result.msg}`);
           }
       } 
       else {
-          ui.alert(`✅ COMPRA ÉXITOSA\n${result.msg}`);
+          ui.alert(`Ã¢Å“â€¦ COMPRA Ãƒâ€°XITOSA\n${result.msg}`);
       }
   } else {
-      ui.alert(`❌ ERROR\n${result.msg}`);
+      ui.alert(`Ã¢ÂÅ’ ERROR\n${result.msg}`);
   }
 }
 
 
 /* ==========================================================
-   🎒 BOTÓN MAESTRO DE INVENTARIO (Asignar al botón de INVENTORY)
+   Ã°Å¸Å½â€™ BOTÃƒâ€œN MAESTRO DE INVENTARIO (Asignar al botÃƒÂ³n de INVENTORY)
    ========================================================== */
 function usarObjetoActual() {
   const ss = SpreadsheetApp.getActive();
@@ -15890,7 +15899,7 @@ function usarObjetoActual() {
   const ui = SpreadsheetApp.getUi();
 
   if (sheet.getName() !== 'INVENTORY') {
-    ui.alert("❌ Este botón solo funciona en la hoja INVENTORY.");
+    ui.alert("Ã¢ÂÅ’ Este botÃƒÂ³n solo funciona en la hoja INVENTORY.");
     return;
   }
 
@@ -15901,44 +15910,44 @@ function usarObjetoActual() {
   const itemID = String(sheet.getRange(row, 2).getValue()).trim();
   const status = String(sheet.getRange(row, 3).getValue()).trim();
 
-  // Validación básica
+  // ValidaciÃƒÂ³n bÃƒÂ¡sica
   if (status !== 'ACTIVE') {
-      ui.alert(`❌ Este objeto no se puede usar (Estado: ${status})`);
+      ui.alert(`Ã¢ÂÅ’ Este objeto no se puede usar (Estado: ${status})`);
       return;
   }
 
   // --- 1. CASO VOTO -> ABRIR URNA (MODO INVENTARIO) ---
   if (itemID === 'VOTE_BALLOT') {
-      abrirUrnaInventario(); // <--- Llama a la nueva función
+      abrirUrnaInventario(); // <--- Llama a la nueva funciÃƒÂ³n
       return;
   }
 
   // --- 2. CASO COFRE -> RULETA ---
   if (itemID === 'CHEST_HEXTECH' || itemID === 'ONE_PIECE') {
-      // Usamos la función existente de usar inventario
+      // Usamos la funciÃƒÂ³n existente de usar inventario
       const result = useInventoryItem(player, itemID);
       
       if (result.success) {
           const lootVisual = [
-              "💩 Chatarra", "🧪 Poción", "🛡️ Ángel", "💰 Soborno", "📈 Acciones", "💰 800 G"
+              "Ã°Å¸â€™Â© Chatarra", "Ã°Å¸Â§Âª PociÃƒÂ³n", "Ã°Å¸â€ºÂ¡Ã¯Â¸Â ÃƒÂngel", "Ã°Å¸â€™Â° Soborno", "Ã°Å¸â€œË† Acciones", "Ã°Å¸â€™Â° 800 G"
           ];
-          if (itemID === 'ONE_PIECE') lootVisual.push("🚨 ONE PIECE");
+          if (itemID === 'ONE_PIECE') lootVisual.push("Ã°Å¸Å¡Â¨ ONE PIECE");
           
           showRouletteAnimation(result.winnerItem, lootVisual);
       } else {
-          ui.alert("❌ Error: " + result.msg);
+          ui.alert("Ã¢ÂÅ’ Error: " + result.msg);
       }
       return;
   }
 
   // --- 3. OTROS OBJETOS ---
-  // Preguntar confirmación para objetos que no tienen interfaz
-  const confirm = ui.alert(`Usar ${itemID}`, `¿Seguro que quieres consumir este objeto?`, ui.ButtonSet.YES_NO);
+  // Preguntar confirmaciÃƒÂ³n para objetos que no tienen interfaz
+  const confirm = ui.alert(`Usar ${itemID}`, `Ã‚Â¿Seguro que quieres consumir este objeto?`, ui.ButtonSet.YES_NO);
   if (confirm === ui.Button.YES) {
-      // Lógica genérica de uso (si tienes una función para pociones, etc.)
+      // LÃƒÂ³gica genÃƒÂ©rica de uso (si tienes una funciÃƒÂ³n para pociones, etc.)
       // Por defecto marcamos como USED
       sheet.getRange(row, 3).setValue('USED');
-      ui.alert("✅ Objeto consumido.");
+      ui.alert("Ã¢Å“â€¦ Objeto consumido.");
   }
 }
 
@@ -15965,7 +15974,7 @@ function getTeammatesForVoting(voterName) {
 
   if (!myTeam) return { error: "No tienes equipo asignado." };
 
-  // 2. Filtrar compañeros
+  // 2. Filtrar compaÃƒÂ±eros
   for (let i = 1; i < data.length; i++) {
     if (data[i][1] === myTeam) {
        teammates.push(data[i][0]);
@@ -15975,24 +15984,24 @@ function getTeammatesForVoting(voterName) {
   return { team: myTeam, candidates: teammates.sort() };
 }
 
-/* --- HELPER PARA LA WEB: OBTENER MISIÓN DIARIA --- */
+/* --- HELPER PARA LA WEB: OBTENER MISIÃƒâ€œN DIARIA --- */
 function getCurrentDailyMission() {
   const today = new Date();
   // Ajuste horario: Si es antes de las 09:00 AM (inicio guerra), mostramos la de ayer o "Descanso"
-  // Pero para simplificar, usaremos el día natural.
+  // Pero para simplificar, usaremos el dÃƒÂ­a natural.
   const dayIndex = today.getDay(); // 0=Domingo, 1=Lunes...
 
   const missions = {
-    1: { name: "LUNES DE SANGRE", icon: "🩸", desc: "Objetivo: Acumular más Kills totales." },
-    2: { name: "MARTES TÁCTICO", icon: "🤝", desc: "Objetivo: Acumular más Asistencias." },
-    3: { name: "MIÉRCOLES DE ASEDIO", icon: "🚜", desc: "Objetivo: Destruir más Torres e Inhibidores." },
-    4: { name: "JUEVES DE VISIÓN", icon: "👁️", desc: "Objetivo: Mejor puntuación de Visión." },
-    5: { name: "VIERNES DE ORO", icon: "💰", desc: "Objetivo: Acumular más Oro total." },
-    6: { name: "SÁBADO DEL VACÍO", icon: "👾", desc: "Objetivo: Matar más Dragones y Barones." },
-    0: { name: "DOMINGO DE SUPERVIVENCIA", icon: "🛡️", desc: "Objetivo: Morir menos veces." }
+    1: { name: "LUNES DE SANGRE", icon: "Ã°Å¸Â©Â¸", desc: "Objetivo: Acumular mÃƒÂ¡s Kills totales." },
+    2: { name: "MARTES TÃƒÂCTICO", icon: "Ã°Å¸Â¤Â", desc: "Objetivo: Acumular mÃƒÂ¡s Asistencias." },
+    3: { name: "MIÃƒâ€°RCOLES DE ASEDIO", icon: "Ã°Å¸Å¡Å“", desc: "Objetivo: Destruir mÃƒÂ¡s Torres e Inhibidores." },
+    4: { name: "JUEVES DE VISIÃƒâ€œN", icon: "Ã°Å¸â€˜ÂÃ¯Â¸Â", desc: "Objetivo: Mejor puntuaciÃƒÂ³n de VisiÃƒÂ³n." },
+    5: { name: "VIERNES DE ORO", icon: "Ã°Å¸â€™Â°", desc: "Objetivo: Acumular mÃƒÂ¡s Oro total." },
+    6: { name: "SÃƒÂBADO DEL VACÃƒÂO", icon: "Ã°Å¸â€˜Â¾", desc: "Objetivo: Matar mÃƒÂ¡s Dragones y Barones." },
+    0: { name: "DOMINGO DE SUPERVIVENCIA", icon: "Ã°Å¸â€ºÂ¡Ã¯Â¸Â", desc: "Objetivo: Morir menos veces." }
   };
 
-  return missions[dayIndex] || { name: "DÍA DE PAZ", icon: "🏳️", desc: "Sin misión activa hoy." };
+  return missions[dayIndex] || { name: "DÃƒÂA DE PAZ", icon: "Ã°Å¸ÂÂ³Ã¯Â¸Â", desc: "Sin misiÃƒÂ³n activa hoy." };
 }
 
 function getRankingByDivision(seasonFilter) {
@@ -16001,7 +16010,7 @@ function getRankingByDivision(seasonFilter) {
   
   // 1. OBTENER DATOS YA FILTRADOS
   // En lugar de leer la hoja SCORES (que tiene todo mezclado), 
-  // llamamos a tu función que SÍ sabe filtrar las partidas por S1, S2 o ALL.
+  // llamamos a tu funciÃƒÂ³n que SÃƒÂ sabe filtrar las partidas por S1, S2 o ALL.
   const epicData = getEpicRankingData(seasonFilter);
   
   // 2. CREAR MAPA DE PUNTOS Y PARTIDAS FILTRADAS
@@ -16017,7 +16026,7 @@ function getRankingByDivision(seasonFilter) {
   
   // Buscar columna DIVISION
   const headers = pData[0];
-  let divColIndex = headers.length - 1; // Por defecto la última
+  let divColIndex = headers.length - 1; // Por defecto la ÃƒÂºltima
   for(let h=0; h < headers.length; h++){
     if(String(headers[h]).toUpperCase().includes("DIVISION")) {
       divColIndex = h;
@@ -16062,7 +16071,7 @@ function getRankingByDivision(seasonFilter) {
     }
   }
 
-  // 4. Ordenar de mayor a menor puntuación
+  // 4. Ordenar de mayor a menor puntuaciÃƒÂ³n
   listDiv1.sort((a, b) => b.points - a.points);
   listDiv2.sort((a, b) => b.points - a.points);
 
@@ -16081,7 +16090,7 @@ function SetupTeamBattleSheet() {
 }
 
 /* ==========================================================
-   🏆 GESTIÓN DEL TORNEO POR FASES (SEMIS -> FINAL)
+   Ã°Å¸Ââ€  GESTIÃƒâ€œN DEL TORNEO POR FASES (SEMIS -> FINAL)
    ========================================================== */
 
 // 1. INICIAR TORNEO (CONFIGURA LAS SEMIFINALES)
@@ -16089,29 +16098,29 @@ function startTeamBattleEvent() {
   const ss = SpreadsheetApp.getActive();
   const props = PropertiesService.getScriptProperties();
   
-  // ... (Tu lógica de Snake Draft existente para crear equipos se mantiene igual) ...
-  // ... (Asegúrate de que crea 4 equipos preferiblemente, o múltiplos pares) ...
+  // ... (Tu lÃƒÂ³gica de Snake Draft existente para crear equipos se mantiene igual) ...
+  // ... (AsegÃƒÂºrate de que crea 4 equipos preferiblemente, o mÃƒÂºltiplos pares) ...
   
-  // [AQUÍ PEGAS TU LÓGICA DE CREACIÓN DE EQUIPOS/HOJA QUE YA TIENES]
-  // Si no tienes la función a mano, usa la que te pasé anteriormente que crea la hoja TEAM_BATTLE
+  // [AQUÃƒÂ PEGAS TU LÃƒâ€œGICA DE CREACIÃƒâ€œN DE EQUIPOS/HOJA QUE YA TIENES]
+  // Si no tienes la funciÃƒÂ³n a mano, usa la que te pasÃƒÂ© anteriormente que crea la hoja TEAM_BATTLE
   // ...
   
-  // --- NUEVA LÓGICA DE FASES ---
+  // --- NUEVA LÃƒâ€œGICA DE FASES ---
   // Guardamos en memoria que estamos en SEMIFINALES
   props.setProperty('EVENT_TEAM_BATTLE_ACTIVE', 'TRUE');
   props.setProperty('TEAM_BATTLE_PHASE', 'LOCKED'); // Fase de juego
   props.setProperty('TOURNAMENT_ROUND', 'SEMIS'); // Ronda actual
 
-  // Definimos los emparejamientos de Semifinales (1vs4 y 2vs3 típicos)
+  // Definimos los emparejamientos de Semifinales (1vs4 y 2vs3 tÃƒÂ­picos)
   // Guardamos un JSON: [[Team1, Team4], [Team2, Team3]]
   const matchups = JSON.stringify([[1, 4], [2, 3]]);
   props.setProperty('TOURNAMENT_MATCHUPS', matchups);
 
-  SpreadsheetApp.getUi().alert("✅ Torneo Iniciado: SEMIFINALES.\n\nEmparejamientos:\n⚔️ Equipo 1 vs Equipo 4\n⚔️ Equipo 2 vs Equipo 3");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Torneo Iniciado: SEMIFINALES.\n\nEmparejamientos:\nÃ¢Å¡â€Ã¯Â¸Â Equipo 1 vs Equipo 4\nÃ¢Å¡â€Ã¯Â¸Â Equipo 2 vs Equipo 3");
 }
 
 /* ==========================================================
-   🏆 RESOLUCIÓN DEL TORNEO (V5.0 - CON SUPLENTES)
+   Ã°Å¸Ââ€  RESOLUCIÃƒâ€œN DEL TORNEO (V5.0 - CON SUPLENTES)
    ========================================================== */
 
 function resolveTeamBattleRound() {
@@ -16136,14 +16145,14 @@ function resolveTeamBattleRound() {
     const player = data[i][1];
     let role = String(data[i][2]).toUpperCase().trim();
     
-    // Normalización de Roles
+    // NormalizaciÃƒÂ³n de Roles
     if (role === 'UTILITY') role = 'SUPPORT';
     if (role === 'BOT') role = 'BOTTOM';
     if (role === 'MID') role = 'MIDDLE';
     if (role === 'SUPLENTE') role = 'SUB'; // <--- Nuevo Rol
 
     let score = 0;
-    if (String(player).startsWith('🤖')) {
+    if (String(player).startsWith('Ã°Å¸Â¤â€“')) {
        score = Math.floor(Math.random() * 21); 
     } else {
        score = getPlayerCurrentScore(player); 
@@ -16169,44 +16178,44 @@ function resolveTeamBattleRound() {
   const MAX_PENALTY_POOL = 25;
   const CHAMPION_BONUS = 50;
 
-  // --- LÓGICA DE PARTIDO CON SUPLENTES ---
+  // --- LÃƒâ€œGICA DE PARTIDO CON SUPLENTES ---
   const calculateMatchResult = (teamA, teamB) => {
       let scoreA = 0;
       let scoreB = 0;
       const laneValues = { 'TOP': 1, 'JUNGLE': 2, 'MIDDLE': 2, 'BOTTOM': 1, 'SUPPORT': 1 };
       const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
 
-      // Banderas para saber si el suplente ya se usó en este partido
+      // Banderas para saber si el suplente ya se usÃƒÂ³ en este partido
       let subUsedA = false;
       let subUsedB = false;
 
       roles.forEach(lane => {
-          // Obtener titular o hueco vacío
-          let pA = teamA.members[lane] || {score: -1, player: "Vacío"};
-          let pB = teamB.members[lane] || {score: -1, player: "Vacío"};
+          // Obtener titular o hueco vacÃƒÂ­o
+          let pA = teamA.members[lane] || {score: -1, player: "VacÃƒÂ­o"};
+          let pB = teamB.members[lane] || {score: -1, player: "VacÃƒÂ­o"};
 
-          // --- MECÁNICA DE SUPLENTE (TEAM A) ---
-          // Si el titular falta (score -1) o tiene 0 puntos (no jugó), y hay suplente disponible
+          // --- MECÃƒÂNICA DE SUPLENTE (TEAM A) ---
+          // Si el titular falta (score -1) o tiene 0 puntos (no jugÃƒÂ³), y hay suplente disponible
           if ((pA.score <= 0) && teamA.members['SUB'] && !subUsedA) {
               const sub = teamA.members['SUB'];
               if (sub.score > pA.score) { // Solo cambiamos si el suplente mejora al titular
-                  pA = sub; // ¡El suplente entra al campo!
+                  pA = sub; // Ã‚Â¡El suplente entra al campo!
                   subUsedA = true; // Gastamos el cambio
-                  Logger.log(`🔄 CAMBIO T${teamA.id}: Entra ${sub.player} por ${lane}`);
+                  Logger.log(`Ã°Å¸â€â€ž CAMBIO T${teamA.id}: Entra ${sub.player} por ${lane}`);
               }
           }
 
-          // --- MECÁNICA DE SUPLENTE (TEAM B) ---
+          // --- MECÃƒÂNICA DE SUPLENTE (TEAM B) ---
           if ((pB.score <= 0) && teamB.members['SUB'] && !subUsedB) {
               const sub = teamB.members['SUB'];
               if (sub.score > pB.score) {
                   pB = sub;
                   subUsedB = true;
-                  Logger.log(`🔄 CAMBIO T${teamB.id}: Entra ${sub.player} por ${lane}`);
+                  Logger.log(`Ã°Å¸â€â€ž CAMBIO T${teamB.id}: Entra ${sub.player} por ${lane}`);
               }
           }
           
-          // Duelo de Línea
+          // Duelo de LÃƒÂ­nea
           if (pA.score > pB.score) {
               scoreA += laneValues[lane];
               if (typeof giveHextechChest === 'function') giveHextechChest(pA.player);
@@ -16216,7 +16225,7 @@ function resolveTeamBattleRound() {
           }
       });
 
-      // Bonus Botlane (Nota: Aquí no aplicamos suplente para simplificar, o usa el titular)
+      // Bonus Botlane (Nota: AquÃƒÂ­ no aplicamos suplente para simplificar, o usa el titular)
       const scoreABot = teamA.members['BOTTOM']?.score || -1;
       const scoreBBot = teamB.members['BOTTOM']?.score || -1;
       const scoreASupp = teamA.members['SUPPORT']?.score || -1;
@@ -16228,12 +16237,12 @@ function resolveTeamBattleRound() {
       return { scoreA, scoreB };
   };
 
-  // --- EJECUCIÓN DE RONDAS ---
+  // --- EJECUCIÃƒâ€œN DE RONDAS ---
 
   if (currentRound === 'SEMIS') {
       const winners = [];
       const losers = [];
-      logMsg += "📢 **RESULTADOS SEMIFINALES (Con Suplentes)**\n";
+      logMsg += "Ã°Å¸â€œÂ¢ **RESULTADOS SEMIFINALES (Con Suplentes)**\n";
 
       matchups.forEach(match => {
           const tA = teams[match[0]];
@@ -16255,18 +16264,18 @@ function resolveTeamBattleRound() {
           applyScaledTeamResult(winner, reward, false);
           applyScaledTeamResult(loser, penalty, true);
 
-          logMsg += `🔹 **T${winner.id}** (${Math.max(res.scoreA, res.scoreB)}) def. T${loser.id} (${Math.min(res.scoreA, res.scoreB)})\n`;
+          logMsg += `Ã°Å¸â€Â¹ **T${winner.id}** (${Math.max(res.scoreA, res.scoreB)}) def. T${loser.id} (${Math.min(res.scoreA, res.scoreB)})\n`;
       });
 
       if (winners.length >= 2) {
           const finalsConfig = [[winners[0], winners[1]], [losers[0], losers[1]]];
           props.setProperty('TOURNAMENT_MATCHUPS', JSON.stringify(finalsConfig));
           props.setProperty('TOURNAMENT_ROUND', 'FINALS');
-          logMsg += "\n🔥 **¡FINAL DEFINIDA!**";
+          logMsg += "\nÃ°Å¸â€Â¥ **Ã‚Â¡FINAL DEFINIDA!**";
       }
 
   } else if (currentRound === 'FINALS') {
-      logMsg += "🏆 **GRAN FINAL DEL TORNEO**\n";
+      logMsg += "Ã°Å¸Ââ€  **GRAN FINAL DEL TORNEO**\n";
       
       const finalMatch = matchups[0];
       const fA = teams[finalMatch[0]];
@@ -16285,10 +16294,10 @@ function resolveTeamBattleRound() {
           applyScaledTeamResult(champion, champTotalReward, false);
           applyScaledTeamResult(runnerUp, runnerPenalty, true);
 
-          logMsg += `🥇 **CAMPEÓN: TEAM ${champion.id}**\n🥈 Subcampeón: Team ${runnerUp.id}\n`;
+          logMsg += `Ã°Å¸Â¥â€¡ **CAMPEÃƒâ€œN: TEAM ${champion.id}**\nÃ°Å¸Â¥Ë† SubcampeÃƒÂ³n: Team ${runnerUp.id}\n`;
       }
       
-      // Consolación
+      // ConsolaciÃƒÂ³n
       const loserMatch = matchups[1];
       const lA = teams[loserMatch[0]];
       const lB = teams[loserMatch[1]];
@@ -16306,7 +16315,7 @@ function resolveTeamBattleRound() {
           applyScaledTeamResult(third, thirdReward, false);
           applyScaledTeamResult(fourth, fourthPenalty, true);
           
-          logMsg += `🥉 3º: Team ${third.id} | 🤡 4º: Team ${fourth.id}\n`;
+          logMsg += `Ã°Å¸Â¥â€° 3Ã‚Âº: Team ${third.id} | Ã°Å¸Â¤Â¡ 4Ã‚Âº: Team ${fourth.id}\n`;
       }
       
       props.setProperty('EVENT_TEAM_BATTLE_ACTIVE', 'FALSE');
@@ -16350,12 +16359,12 @@ function getFullLeaderboard() {
     });
   }
   
-  // Ordenar de mayor a menor puntuación
+  // Ordenar de mayor a menor puntuaciÃƒÂ³n
   return players.sort((a, b) => b.score - a.score);
 }
 
 function giveHextechChest(player) {
-    if (!player || String(player).startsWith('🤖') || player === "Vacío") return;
+    if (!player || String(player).startsWith('Ã°Å¸Â¤â€“') || player === "VacÃƒÂ­o") return;
     const ss = SpreadsheetApp.getActive();
     let invSheet = ss.getSheetByName('INVENTORY');
     if (!invSheet) {
@@ -16377,7 +16386,7 @@ function applyScaledTeamResult(teamObj, totalPool, isPenalty) {
     if (teamObj && teamObj.members) {
         Object.values(teamObj.members).forEach(slot => {
             const player = slot.player;
-            if (player && !String(player).startsWith('🤖') && player !== "Vacío") {
+            if (player && !String(player).startsWith('Ã°Å¸Â¤â€“') && player !== "VacÃƒÂ­o") {
                 
                 if (manualSheet) manualSheet.appendRow([new Date(), player, finalAmount, reason]);
                 
@@ -16400,23 +16409,23 @@ function applyScaledTeamResult(teamObj, totalPool, isPenalty) {
 }
 
 /* ==========================================================
-   🛠️ HERRAMIENTAS ADMIN TEAM BATTLE (GESTIÓN)
+   Ã°Å¸â€ºÂ Ã¯Â¸Â HERRAMIENTAS ADMIN TEAM BATTLE (GESTIÃƒâ€œN)
    ========================================================== */
 
-// 1. Añadir el objeto a la tienda (Ejecutar SOLO UNA VEZ)
+// 1. AÃƒÂ±adir el objeto a la tienda (Ejecutar SOLO UNA VEZ)
 function addTeamBattleItemToShop() {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('SHOP_ITEMS');
   if(!sheet) return;
-  // ID | Nombre | Descripción | Precio | Icono
+  // ID | Nombre | DescripciÃƒÂ³n | Precio | Icono
   sheet.appendRow([
     'TEAM_ROLE_VOTE', 
     'Contrato de Equipo', 
-    'Reclama tu posición en el equipo. Escribe el rol al comprar: TOP, JUNGLE, MID, BOT o SUPPORT.', 
-    50, // Precio simbólico
-    '📜'
+    'Reclama tu posiciÃƒÂ³n en el equipo. Escribe el rol al comprar: TOP, JUNGLE, MID, BOT o SUPPORT.', 
+    50, // Precio simbÃƒÂ³lico
+    'Ã°Å¸â€œÅ“'
   ]);
-  SpreadsheetApp.getUi().alert("✅ Objeto 'Contrato de Equipo' añadido a la tienda.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Objeto 'Contrato de Equipo' aÃƒÂ±adido a la tienda.");
 }
 
 // 2. BLOQUEAR ROLES (Empieza la Guerra)
@@ -16425,17 +16434,17 @@ function lockTeamBattlePhase() {
   const current = props.getProperty('EVENT_TEAM_BATTLE_ACTIVE');
   
   if (current !== 'TRUE') {
-      SpreadsheetApp.getUi().alert("❌ El evento no está activo. Ejecuta 'startTeamBattleEvent' primero.");
+      SpreadsheetApp.getUi().alert("Ã¢ÂÅ’ El evento no estÃƒÂ¡ activo. Ejecuta 'startTeamBattleEvent' primero.");
       return;
   }
   
   props.setProperty('TEAM_BATTLE_PHASE', 'LOCKED');
   
   if (typeof registerNews === 'function') {
-      registerNews('WAR', '🔒 FASE DE BLOQUEO: Los roles son definitivos. ¡Si jugáis off-role no puntuaréis!');
+      registerNews('WAR', 'Ã°Å¸â€â€™ FASE DE BLOQUEO: Los roles son definitivos. Ã‚Â¡Si jugÃƒÂ¡is off-role no puntuarÃƒÂ©is!');
   }
   
-  SpreadsheetApp.getUi().alert("🔒 ROLES BLOQUEADOS. \nAhora el sistema castigará a quien no respete su posición.");
+  SpreadsheetApp.getUi().alert("Ã°Å¸â€â€™ ROLES BLOQUEADOS. \nAhora el sistema castigarÃƒÂ¡ a quien no respete su posiciÃƒÂ³n.");
 }
 
 // 3. FINALIZAR EVENTO (Limpieza)
@@ -16444,13 +16453,13 @@ function stopTeamBattleEvent() {
    props.setProperty('EVENT_TEAM_BATTLE_ACTIVE', 'FALSE');
    props.setProperty('TEAM_BATTLE_PHASE', 'OFF');
    
-   SpreadsheetApp.getUi().alert("🏳️ Evento Team Battle finalizado.");
+   SpreadsheetApp.getUi().alert("Ã°Å¸ÂÂ³Ã¯Â¸Â Evento Team Battle finalizado.");
 }
 
 
 
 /* ==========================================
-   📡 DATOS PARA LA WEB: TEAM BATTLE (CON CAPITÁN)
+   Ã°Å¸â€œÂ¡ DATOS PARA LA WEB: TEAM BATTLE (CON CAPITÃƒÂN)
    ========================================== */
 function getTeamBattleDataForWeb() {
   const props = PropertiesService.getScriptProperties();
@@ -16471,22 +16480,22 @@ function getTeamBattleDataForWeb() {
     const teamID = data[i][0];
     const player = data[i][1];
     const role = data[i][2];
-    const score = Number(data[i][4]) || 0; // 👈 Lo forzamos a ser número
+    const score = Number(data[i][4]) || 0; // Ã°Å¸â€˜Ë† Lo forzamos a ser nÃƒÂºmero
 
     if (!teams[teamID]) {
       teams[teamID] = { 
         id: teamID, 
-        score: 0, // 👈 NUEVO: Creamos el contador total del equipo
+        score: 0, // Ã°Å¸â€˜Ë† NUEVO: Creamos el contador total del equipo
         members: [], 
         captain: null, 
         slots: { TOP: null, JUNGLE: null, MIDDLE: null, BOTTOM: null, SUPPORT: null, SUB: null }
       };
     }
 
-    // 👈 NUEVO: Sumamos los puntos del jugador al total del equipo
+    // Ã°Å¸â€˜Ë† NUEVO: Sumamos los puntos del jugador al total del equipo
     teams[teamID].score += score;
 
-    // El primer jugador que encontramos de cada equipo es el Capitán 
+    // El primer jugador que encontramos de cada equipo es el CapitÃƒÂ¡n 
     if (teams[teamID].members.length === 0 && teams[teamID].captain === null) {
         teams[teamID].captain = player;
     }
@@ -16497,7 +16506,7 @@ function getTeamBattleDataForWeb() {
     if (role && role !== "") {
        teams[teamID].slots[role] = { name: player, score: score, isCaptain: isCap };
     } 
-    // Si no tiene rol (está en el banquillo/pending)
+    // Si no tiene rol (estÃƒÂ¡ en el banquillo/pending)
     else {
        teams[teamID].members.push({ name: player, isCaptain: isCap });
     }
@@ -16516,8 +16525,8 @@ function getTeamBattleDataForWeb() {
 
 
 /* ==========================================================
-   🗳️ SISTEMA CENTRALIZADO DE VOTACIONES Y MODALES
-   (Versión Definitiva Unificada)
+   Ã°Å¸â€”Â³Ã¯Â¸Â SISTEMA CENTRALIZADO DE VOTACIONES Y MODALES
+   (VersiÃƒÂ³n Definitiva Unificada)
    ========================================================== */
 
 // 1. ABRIR MODAL (Router Central)
@@ -16525,11 +16534,11 @@ function openVotingModalGeneric(mode) {
   const template = HtmlService.createTemplateFromFile('VotingBooth');
   template.mode = mode; // 'TOURNAMENT' o 'FACTION'
   
-  let title = '🗳️ Urna Electoral';
+  let title = 'Ã°Å¸â€”Â³Ã¯Â¸Â Urna Electoral';
   let height = 500;
   
   if (mode === 'TOURNAMENT') {
-      title = '📜 Contrato de Equipo';
+      title = 'Ã°Å¸â€œÅ“ Contrato de Equipo';
       height = 600;
   }
   
@@ -16550,8 +16559,8 @@ function getPlayerList() {
   
   // Empezamos en 1 para saltar cabeceras
   for (let i = 1; i < data.length; i++) {
-    // Si la columna E (Activo) es "Sí"
-    if (data[i][4] === "Sí") {
+    // Si la columna E (Activo) es "SÃƒÂ­"
+    if (data[i][4] === "SÃƒÂ­") {
       let name = data[i][0];
       let rank = data[i][8] || "Unranked"; // Columna I
       
@@ -16572,9 +16581,9 @@ function getPlayerList() {
 function getTeamTeammates(player) {
   const props = PropertiesService.getScriptProperties();
   
-  // Verificación de seguridad: ¿Está activo el evento?
+  // VerificaciÃƒÂ³n de seguridad: Ã‚Â¿EstÃƒÂ¡ activo el evento?
   if (props.getProperty('EVENT_TEAM_BATTLE_ACTIVE') !== 'TRUE') {
-      return { error: "⛔ El torneo está cerrado o finalizado." };
+      return { error: "Ã¢â€ºâ€ El torneo estÃƒÂ¡ cerrado o finalizado." };
   }
 
   const ss = SpreadsheetApp.getActive();
@@ -16595,31 +16604,31 @@ function getTeamTeammates(player) {
     }
   }
   
-  if (!myTeamID) return { error: "No estás inscrito en ningún equipo." };
+  if (!myTeamID) return { error: "No estÃƒÂ¡s inscrito en ningÃƒÂºn equipo." };
 
-  // B. Buscar compañeros de equipo
+  // B. Buscar compaÃƒÂ±eros de equipo
   const members = [];
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === myTeamID) {
        const memberName = data[i][1];
-       // Solo añadimos humanos al desplegable (filtramos los bots 🤖)
-       if (!String(memberName).startsWith('🤖')) {
+       // Solo aÃƒÂ±adimos humanos al desplegable (filtramos los bots Ã°Å¸Â¤â€“)
+       if (!String(memberName).startsWith('Ã°Å¸Â¤â€“')) {
            members.push(memberName);
        }
     }
   }
   
-  // Devolvemos 'teamID' porque así lo espera tu index.html en la sección Tournament
+  // Devolvemos 'teamID' porque asÃƒÂ­ lo espera tu index.html en la secciÃƒÂ³n Tournament
   return { teamID: "EQUIPO " + myTeamID, members: members };
 }
 
-// 2. OBTENER DATOS DE FACCIÓN (Para el Modal de Facción)
+// 2. OBTENER DATOS DE FACCIÃƒâ€œN (Para el Modal de FacciÃƒÂ³n)
 function getFactionTeammates(player) {
     const props = PropertiesService.getScriptProperties();
     
-    // Verificación de seguridad: ¿Está activa la guerra?
+    // VerificaciÃƒÂ³n de seguridad: Ã‚Â¿EstÃƒÂ¡ activa la guerra?
     if (props.getProperty('EVENT_WAR_ACTIVE') !== 'TRUE') {
-        return { error: "⛔ No hay guerra activa en este momento." };
+        return { error: "Ã¢â€ºâ€ No hay guerra activa en este momento." };
     }
 
     const ss = SpreadsheetApp.getActive();
@@ -16632,7 +16641,7 @@ function getFactionTeammates(player) {
     const candidates = [];
     const cleanPlayer = String(player).trim().toLowerCase();
     
-    // A. Buscar facción del jugador
+    // A. Buscar facciÃƒÂ³n del jugador
     for (let i = 1; i < data.length; i++) {
         if (String(data[i][0]).trim().toLowerCase() === cleanPlayer) {
             myTeam = data[i][1]; // Columna B es el Equipo (HEXTECH/CHEMTECH)
@@ -16640,32 +16649,32 @@ function getFactionTeammates(player) {
         }
     }
     
-    if (!myTeam) return { error: "No tienes facción asignada." };
+    if (!myTeam) return { error: "No tienes facciÃƒÂ³n asignada." };
     
-    // B. Buscar compañeros para llenar el desplegable
+    // B. Buscar compaÃƒÂ±eros para llenar el desplegable
     for (let i = 1; i < data.length; i++) {
         if (data[i][1] === myTeam) {
             candidates.push(data[i][0]);
         }
     }
     
-    // Devolvemos 'team' y 'candidates' porque así lo espera tu index.html en la sección Faction
+    // Devolvemos 'team' y 'candidates' porque asÃƒÂ­ lo espera tu index.html en la secciÃƒÂ³n Faction
     return { team: myTeam, candidates: candidates.sort() };
 }
 
 // 3. EL PUENTE (WRAPPER) OBLIGATORIO
-// Tu código HTML llama a veces a 'getTeammatesForVoting', así que redirigimos esa llamada
-// a la función de facciones que acabamos de definir arriba.
+// Tu cÃƒÂ³digo HTML llama a veces a 'getTeammatesForVoting', asÃƒÂ­ que redirigimos esa llamada
+// a la funciÃƒÂ³n de facciones que acabamos de definir arriba.
 function getTeammatesForVoting(player) {
     return getFactionTeammates(player);
 }
 
 /* ==========================================================
-   🔄 SISTEMA DE CAMBIO TÁCTICO (CAPITÁN)
+   Ã°Å¸â€â€ž SISTEMA DE CAMBIO TÃƒÂCTICO (CAPITÃƒÂN)
    ========================================================== */
 function executeTacticalSwap(captainName, targetRole) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return { success: false, msg: "El mercado de fichajes está ocupado." };
+  if (!lock.tryLock(5000)) return { success: false, msg: "El mercado de fichajes estÃƒÂ¡ ocupado." };
 
   try {
     const ss = SpreadsheetApp.getActive();
@@ -16676,9 +16685,9 @@ function executeTacticalSwap(captainName, targetRole) {
     const cleanCap = String(captainName).trim().toLowerCase();
     const targetRoleClean = String(targetRole).toUpperCase().trim();
 
-    // 1. Buscar el equipo del Capitán
-    // Asumimos que el primer jugador de cada equipo en la lista (ordenada por puntos) es el capitán virtual
-    // O buscamos simplemente en qué equipo está el usuario que solicita el cambio.
+    // 1. Buscar el equipo del CapitÃƒÂ¡n
+    // Asumimos que el primer jugador de cada equipo en la lista (ordenada por puntos) es el capitÃƒÂ¡n virtual
+    // O buscamos simplemente en quÃƒÂ© equipo estÃƒÂ¡ el usuario que solicita el cambio.
     let myTeamID = null;
     
     // Mapa de filas: { 'TOP': rowIndex, 'SUB': rowIndex }
@@ -16722,7 +16731,7 @@ function executeTacticalSwap(captainName, targetRole) {
 
     // 5. Noticia Drama
     if (typeof registerNews === 'function') {
-        registerNews('TRANSFER', `🔄 **CAMBIO TÁCTICO T${myTeamID}:** El capitán envía al banquillo a **${mainPlayer.name}** (${targetRoleClean}). Entra **${subPlayer.name}**.`);
+        registerNews('TRANSFER', `Ã°Å¸â€â€ž **CAMBIO TÃƒÂCTICO T${myTeamID}:** El capitÃƒÂ¡n envÃƒÂ­a al banquillo a **${mainPlayer.name}** (${targetRoleClean}). Entra **${subPlayer.name}**.`);
     }
 
     return { success: true, msg: `Cambio realizado: ${subPlayer.name} ahora es ${targetRoleClean}.` };
@@ -16736,7 +16745,7 @@ function executeTacticalSwap(captainName, targetRole) {
 
 
 /* ==========================================================
-   🔨 SETUP FORJA: AÑADIR MATERIALES Y RELIQUIAS A LA TIENDA
+   Ã°Å¸â€Â¨ SETUP FORJA: AÃƒâ€˜ADIR MATERIALES Y RELIQUIAS A LA TIENDA
    ========================================================== */
 function SetupForgeItems() {
   const ss = SpreadsheetApp.getActive();
@@ -16745,31 +16754,31 @@ function SetupForgeItems() {
 
   const forgeItems = [
     // Tier 1 (Comunes)
-    ['SCRAP_METAL', 'Chatarra', 'Material de Forja Común (Tier 1)', 0, '🔩'],
-    ['BENT_NAIL', 'Clavo Torcido', 'Material de Forja Común (Tier 1)', 0, '📍'],
-    ['RUSTY_CHAIN', 'Cadena Oxidada', 'Material de Forja Común (Tier 1)', 0, '🔗'],
-    ['OLD_BOOT', 'Bota Vieja', 'Material de Forja Común (Tier 1)', 0, '👢'],
+    ['SCRAP_METAL', 'Chatarra', 'Material de Forja ComÃƒÂºn (Tier 1)', 0, 'Ã°Å¸â€Â©'],
+    ['BENT_NAIL', 'Clavo Torcido', 'Material de Forja ComÃƒÂºn (Tier 1)', 0, 'Ã°Å¸â€œÂ'],
+    ['RUSTY_CHAIN', 'Cadena Oxidada', 'Material de Forja ComÃƒÂºn (Tier 1)', 0, 'Ã°Å¸â€â€”'],
+    ['OLD_BOOT', 'Bota Vieja', 'Material de Forja ComÃƒÂºn (Tier 1)', 0, 'Ã°Å¸â€˜Â¢'],
     // Tier 2 (Poco Comunes)
-    ['BROKEN_RUNE', 'Runa Quebrada', 'Componente Poco Común (Tier 2)', 0, '🧿'],
-    ['ARCANE_DUST', 'Polvo Arcano', 'Componente Poco Común (Tier 2)', 0, '✨'],
-    ['CRYSTAL_SHARD', 'Esquirla de Cristal', 'Componente Poco Común (Tier 2)', 0, '💎'],
+    ['BROKEN_RUNE', 'Runa Quebrada', 'Componente Poco ComÃƒÂºn (Tier 2)', 0, 'Ã°Å¸Â§Â¿'],
+    ['ARCANE_DUST', 'Polvo Arcano', 'Componente Poco ComÃƒÂºn (Tier 2)', 0, 'Ã¢Å“Â¨'],
+    ['CRYSTAL_SHARD', 'Esquirla de Cristal', 'Componente Poco ComÃƒÂºn (Tier 2)', 0, 'Ã°Å¸â€™Å½'],
     // Tier 3 (Raros)
-    ['LIQUID_FIRE', 'Fuego Líquido', 'Esencia Rara (Tier 3)', 0, '🔥'],
-    ['TRUE_ICE', 'Hielo Puro', 'Esencia Rara (Tier 3)', 0, '❄️'],
-    ['VOID_ESSENCE', 'Esencia del Vacío', 'Esencia Rara (Tier 3)', 0, '🟣'],
-    // Tier 4 (Épicos)
-    ['HEX_CORE', 'Núcleo Hextech', 'Artefacto Épico (Tier 4)', 0, '⚙️'],
-    ['DRAGON_SCALE', 'Escama de Dragón', 'Artefacto Épico (Tier 4)', 0, '🐲'],
+    ['LIQUID_FIRE', 'Fuego LÃƒÂ­quido', 'Esencia Rara (Tier 3)', 0, 'Ã°Å¸â€Â¥'],
+    ['TRUE_ICE', 'Hielo Puro', 'Esencia Rara (Tier 3)', 0, 'Ã¢Ââ€žÃ¯Â¸Â'],
+    ['VOID_ESSENCE', 'Esencia del VacÃƒÂ­o', 'Esencia Rara (Tier 3)', 0, 'Ã°Å¸Å¸Â£'],
+    // Tier 4 (Ãƒâ€°picos)
+    ['HEX_CORE', 'NÃƒÂºcleo Hextech', 'Artefacto Ãƒâ€°pico (Tier 4)', 0, 'Ã¢Å¡â„¢Ã¯Â¸Â'],
+    ['DRAGON_SCALE', 'Escama de DragÃƒÂ³n', 'Artefacto Ãƒâ€°pico (Tier 4)', 0, 'Ã°Å¸ÂÂ²'],
     // Tier 5 (Legendario)
-    ['WORLD_RUNE', 'Runa Global', 'Reliquia Legendaria (Tier 5)', 0, '🌍'],
+    ['WORLD_RUNE', 'Runa Global', 'Reliquia Legendaria (Tier 5)', 0, 'Ã°Å¸Å’Â'],
     
     // OBJETOS CRAFTEABLES (Los resultados)
-    ['ORNN_ANVIL', 'Yunque de Ornn', 'Otorga +8 Puntos base al total de tu próxima partida.', 0, '🔨'],
-    ['ZHONYA_HOURGLASS', 'Reloj de Zhonya', 'Inmunidad. Si tu partida es derrota y el total es negativo, lo convierte en 0.', 0, '⏳'],
-    ['ELIXIR_SORCERY', 'Elixir de Brujería', 'Otorga +15 Puntos base y te ingresa +200G en tu cartera inmediatamente.', 0, '🧪'],
-    ['INFINITY_PRIME', 'Filo Infinito Primigenio', 'Si ganas la partida (puntos > 0), multiplica tu puntuación x2.5', 0, '⚔️'],
-    ['GAUNTLET_GOD', 'Guantelete del Dios', 'Si ganas la partida (puntos > 0), multiplica tu puntuación x3.5', 0, '🥊'],
-    ['GOD_CALL', 'Llamada de la Forja', 'Invoca el poder absoluto de Ornn (Objeto Supremo).', 0, '🌋']
+    ['ORNN_ANVIL', 'Yunque de Ornn', 'Otorga +8 Puntos base al total de tu prÃƒÂ³xima partida.', 0, 'Ã°Å¸â€Â¨'],
+    ['ZHONYA_HOURGLASS', 'Reloj de Zhonya', 'Inmunidad. Si tu partida es derrota y el total es negativo, lo convierte en 0.', 0, 'Ã¢ÂÂ³'],
+    ['ELIXIR_SORCERY', 'Elixir de BrujerÃƒÂ­a', 'Otorga +15 Puntos base y te ingresa +200G en tu cartera inmediatamente.', 0, 'Ã°Å¸Â§Âª'],
+    ['INFINITY_PRIME', 'Filo Infinito Primigenio', 'Si ganas la partida (puntos > 0), multiplica tu puntuaciÃƒÂ³n x2.5', 0, 'Ã¢Å¡â€Ã¯Â¸Â'],
+    ['GAUNTLET_GOD', 'Guantelete del Dios', 'Si ganas la partida (puntos > 0), multiplica tu puntuaciÃƒÂ³n x3.5', 0, 'Ã°Å¸Â¥Å '],
+    ['GOD_CALL', 'Llamada de la Forja', 'Invoca el poder absoluto de Ornn (Objeto Supremo).', 0, 'Ã°Å¸Å’â€¹']
   ];
 
   const currentIDs = shopSheet.getDataRange().getValues().map(r => r[0]);
@@ -16782,97 +16791,97 @@ function SetupForgeItems() {
     }
   });
 
-  SpreadsheetApp.getUi().alert(`✅ Setup completado. Se han añadido ${added} objetos de la Forja a la tienda.`);
+  SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Setup completado. Se han aÃƒÂ±adido ${added} objetos de la Forja a la tienda.`);
 }
 
 /* ==========================================================
-   🌋 MOTOR DE LA FORJA: LECTURA Y CRAFTEO (FRONTEND LINK)
+   Ã°Å¸Å’â€¹ MOTOR DE LA FORJA: LECTURA Y CRAFTEO (FRONTEND LINK)
    ========================================================== */
 
 // Diccionario completo de Recetas y Costes (Originales + Nuevas)
 const FORGE_RECIPES = {
-  // --- 🔨 RECETAS ORIGINALES ---
+  // --- Ã°Å¸â€Â¨ RECETAS ORIGINALES ---
   'ORNN_ANVIL': { 
     name: 'Yunque de Ornn', 
     req: { 'SCRAP_METAL': 3, 'BENT_NAIL': 2 }, 
-    icon: '🔨',
-    desc: 'Garantiza +5 puntos extra en tu próxima victoria.' 
+    icon: 'Ã°Å¸â€Â¨',
+    desc: 'Garantiza +5 puntos extra en tu prÃƒÂ³xima victoria.' 
   },
   'ZHONYA_HOURGLASS': { 
     name: 'Reloj de Zhonya', 
     req: { 'RUSTY_CHAIN': 1, 'CRYSTAL_SHARD': 2, 'ARCANE_DUST': 2 }, 
-    icon: '⏳',
+    icon: 'Ã¢ÂÂ³',
     desc: 'Te protege de perder puntos en una derrota (puntos = 0).'
   },
   'ELIXIR_SORCERY': { 
-    name: 'Elixir de Brujería', 
+    name: 'Elixir de BrujerÃƒÂ­a', 
     req: { 'OLD_BOOT': 1, 'LIQUID_FIRE': 2, 'BROKEN_RUNE': 1 }, 
-    icon: '🧪',
-    desc: 'Añade daño verdadero a tus puntos basado en tus asistencias.'
+    icon: 'Ã°Å¸Â§Âª',
+    desc: 'AÃƒÂ±ade daÃƒÂ±o verdadero a tus puntos basado en tus asistencias.'
   },
   'INFINITY_PRIME': { 
     name: 'Filo Infinito Primigenio', 
     req: { 'SCRAP_METAL': 1, 'TRUE_ICE': 1, 'HEX_CORE': 1 }, 
-    icon: '⚔️',
-    desc: 'Tus críticos de puntos valen el doble en victorias.'
+    icon: 'Ã¢Å¡â€Ã¯Â¸Â',
+    desc: 'Tus crÃƒÂ­ticos de puntos valen el doble en victorias.'
   },
   'GAUNTLET_GOD': { 
     name: 'Guantelete del Dios', 
     req: { 'SCRAP_METAL': 2, 'DRAGON_SCALE': 1, 'VOID_ESSENCE': 1 }, 
-    icon: '🥊',
+    icon: 'Ã°Å¸Â¥Å ',
     desc: 'Roba 2 puntos extra al rival que elijas en un duelo.'
   },
   'GOD_CALL': { 
     name: 'Llamada de la Forja', 
     req: { 'WORLD_RUNE': 1, 'HEX_CORE': 1, 'LIQUID_FIRE': 1 }, 
-    icon: '🌋',
+    icon: 'Ã°Å¸Å’â€¹',
     desc: 'Invoca un evento global que beneficia a tu equipo por 24h.'
   },
 
-  // 🌌 RUNA MAESTRA (BUFFED TIER 5)
+  // Ã°Å¸Å’Å’ RUNA MAESTRA (BUFFED TIER 5)
   // Ahora es un "Seguro de Victoria Absoluta"
   'MASTERWORK_RUNE': { 
     name: 'Runa Maestra', 
     req: { 'WORLD_RUNE': 1, 'HEX_CORE': 1, 'ARCANE_DUST': 5 }, 
-    icon: '🌌',
-    desc: 'Tu próxima victoria otorga +15 puntos extra y TRIPLY (3x) el oro. Si pierdes, la Runa NO se consume (permanece activa hasta que ganes).'
+    icon: 'Ã°Å¸Å’Å’',
+    desc: 'Tu prÃƒÂ³xima victoria otorga +15 puntos extra y TRIPLY (3x) el oro. Si pierdes, la Runa NO se consume (permanece activa hasta que ganes).'
   },
 
-  // ⚖️ SIFÓN DE DESTINO (ACTUALIZADA: CAOS ALEATORIO)
+  // Ã¢Å¡â€“Ã¯Â¸Â SIFÃƒâ€œN DE DESTINO (ACTUALIZADA: CAOS ALEATORIO)
   'FATE_SIPHON': { 
-    name: 'Sifón de Destino', 
+    name: 'SifÃƒÂ³n de Destino', 
     req: { 'SHIMMER_VIAL': 2, 'HEX_CORE': 1, 'AGONY_ESSENCE': 1 }, 
-    icon: '⚖️',
-    desc: 'Roba puntos a un jugador aleatorio por encima de ti y dáselos a uno aleatorio por debajo. ¡Siembra el caos!'
+    icon: 'Ã¢Å¡â€“Ã¯Â¸Â',
+    desc: 'Roba puntos a un jugador aleatorio por encima de ti y dÃƒÂ¡selos a uno aleatorio por debajo. Ã‚Â¡Siembra el caos!'
   },
 
-  // --- 🧪 NUEVAS RECETAS DE SHIMMER (CORRUPCIÓN) ---
+  // --- Ã°Å¸Â§Âª NUEVAS RECETAS DE SHIMMER (CORRUPCIÃƒâ€œN) ---
   'SHIMMER_OVERDOSE': { 
     name: 'Sobredosis de Shimmer', 
     req: { 'SHIMMER_VIAL': 2, 'TAINTED_METAL': 1 }, 
-    icon: '💉',
+    icon: 'Ã°Å¸â€™â€°',
     desc: 'Riesgo total: Si ganas sumas +20 pts, pero si pierdes restas -25 pts.'
   },
   'ZAUN_PACT': { 
     name: 'Pacto de Zaun', 
     req: { 'AGONY_ESSENCE': 1, 'SHIMMER_VIAL': 1 }, 
-    icon: '☣️',
-    desc: 'Inmunidad a la Purga por esta noche, pero mañana no ganas oro.'
+    icon: 'Ã¢ËœÂ£Ã¯Â¸Â',
+    desc: 'Inmunidad a la Purga por esta noche, pero maÃƒÂ±ana no ganas oro.'
   },
   'LAST_GASP': { 
-    name: 'Último Aliento', 
+    name: 'ÃƒÅ¡ltimo Aliento', 
     req: { 'AGONY_ESSENCE': 2, 'TAINTED_METAL': 2 }, 
-    icon: '💀',
+    icon: 'Ã°Å¸â€™â‚¬',
     desc: 'Si mueres en la Purga, tu objetivo de recompensa pierde -15 pts.'
   }
 };
 
 
 // =======================================================
-// 🔨 OVERRIDE DEFINITIVO DE LA FORJA Y TIENDA
+// Ã°Å¸â€Â¨ OVERRIDE DEFINITIVO DE LA FORJA Y TIENDA
 // =======================================================
 
-// 1. OBTENER DATOS PARA LA WEB (Inventario + Recetas) - VERSIÓN CORREGIDA
+// 1. OBTENER DATOS PARA LA WEB (Inventario + Recetas) - VERSIÃƒâ€œN CORREGIDA
 function getForgeData(player) {
   const ss = SpreadsheetApp.getActive();
   const invSheet = ss.getSheetByName('INVENTORY');
@@ -16895,14 +16904,14 @@ function getForgeData(player) {
       if(String(iData[i][0]).toLowerCase().trim() === String(player).toLowerCase().trim() && iData[i][2] === 'ACTIVE') {
           const itemID = String(iData[i][1]).trim();
           
-          // 🔥 FIX: Aceptamos si está en la tienda O si es un Plano (BP_)
+          // Ã°Å¸â€Â¥ FIX: Aceptamos si estÃƒÂ¡ en la tienda O si es un Plano (BP_)
           if (itemMap[itemID] || itemID.startsWith('BP_')) {
               myMats[itemID] = (myMats[itemID] || 0) + 1;
               
               // Si es un plano y no tiene icono registrado en la tienda, se lo creamos al vuelo
               if (!itemMap[itemID]) {
                   const baseName = itemID.replace('BP_', '').replace(/_/g, ' ');
-                  itemMap[itemID] = { name: 'Plano: ' + baseName, icon: '📜' };
+                  itemMap[itemID] = { name: 'Plano: ' + baseName, icon: 'Ã°Å¸â€œÅ“' };
               }
           }
       }
@@ -16914,17 +16923,17 @@ function getForgeData(player) {
           id: itemID, 
           name: itemMap[itemID].name, 
           count: myMats[itemID], 
-          icon: itemMap[itemID].icon || '📦' 
+          icon: itemMap[itemID].icon || 'Ã°Å¸â€œÂ¦' 
       });
   }
 
   return { inventory: cleanInventory, recipes: FORGE_RECIPES, itemsDb: itemMap };
 }
 
-// 2. EL YUNQUE (Fabricar Objeto) - VERSIÓN CORREGIDA
+// 2. EL YUNQUE (Fabricar Objeto) - VERSIÃƒâ€œN CORREGIDA
 function craftOrnnItem(player, recipeID) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return { success: false, msg: "El Yunque está ocupado por otro jugador." };
+  if (!lock.tryLock(10000)) return { success: false, msg: "El Yunque estÃƒÂ¡ ocupado por otro jugador." };
 
   try {
       const recipe = FORGE_RECIPES[recipeID];
@@ -16945,7 +16954,7 @@ function craftOrnnItem(player, recipeID) {
           }
       }
 
-      // 🔥 FIX: Añadimos el Plano a la comprobación
+      // Ã°Å¸â€Â¥ FIX: AÃƒÂ±adimos el Plano a la comprobaciÃƒÂ³n
       const blueprintID = 'BP_' + recipeID;
 
       // Comprobar el Plano
@@ -16979,10 +16988,10 @@ function craftOrnnItem(player, recipeID) {
       invSheet.appendRow([player, recipeID, 'ACTIVE', new Date()]);
 
       if (typeof registerNews === 'function') {
-          registerNews('FORGE', `🌋 **¡EL YUNQUE RESUENA!** ${player} acaba de forjar un Artefacto Legendario: **${recipe.icon} ${recipe.name}**.`);
+          registerNews('FORGE', `Ã°Å¸Å’â€¹ **Ã‚Â¡EL YUNQUE RESUENA!** ${player} acaba de forjar un Artefacto Legendario: **${recipe.icon} ${recipe.name}**.`);
       }
 
-      return { success: true, msg: `¡ÉXITO! Has forjado: ${recipe.name} ${recipe.icon}` };
+      return { success: true, msg: `Ã‚Â¡Ãƒâ€°XITO! Has forjado: ${recipe.name} ${recipe.icon}` };
 
   } catch(e) {
       return { success: false, msg: "Error en la Forja: " + e.message };
@@ -16991,7 +17000,7 @@ function craftOrnnItem(player, recipeID) {
   }
 }
 
-// 3. TIENDA LIMPIA (Oculta materiales) - VERSIÓN CORREGIDA
+// 3. TIENDA LIMPIA (Oculta materiales) - VERSIÃƒâ€œN CORREGIDA
 function getShopData(player) {
   const ss = SpreadsheetApp.getActive();
   const shopSheet = ss.getSheetByName('SHOP_ITEMS');
@@ -17011,7 +17020,7 @@ function getShopData(player) {
       
       itemDictionary[id] = { name: name, icon: icon };
       
-      // SOLO lo añadimos a la tienda si cuesta más de 0 G
+      // SOLO lo aÃƒÂ±adimos a la tienda si cuesta mÃƒÂ¡s de 0 G
       if (price > 0) {
         catalog.push({ id: id, name: name, desc: desc, price: price, icon: icon });
       }
@@ -17027,7 +17036,7 @@ function getShopData(player) {
         myItems.push({
           id: data[i][1],
           name: itemDef ? itemDef.name : data[i][1],
-          icon: itemDef ? itemDef.icon : '📦'
+          icon: itemDef ? itemDef.icon : 'Ã°Å¸â€œÂ¦'
         });
       }
     }
@@ -17035,28 +17044,28 @@ function getShopData(player) {
   return { catalog: catalog, inventory: myItems };
 }
 
-// Guardar el mensaje de Última Voluntad
+// Guardar el mensaje de ÃƒÅ¡ltima Voluntad
 function savePlayerLastWill(player, message) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName('MARKET_STATUS'); // Usamos esta hoja para centralizar datos
   const data = sheet.getDataRange().getValues();
   
   // Buscamos la columna de LastWill (supongamos que es la J, columna 10)
-  // Deberías añadir una cabecera "LastWill" en tu Excel si no existe.
+  // DeberÃƒÂ­as aÃƒÂ±adir una cabecera "LastWill" en tu Excel si no existe.
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === player) {
       sheet.getRange(i + 1, 10).setValue(message); // Ajusta el '10' a tu columna real
       return { success: true, msg: "Testamento sellado. Que Ornn te guarde." };
     }
   }
-  return { success: false, msg: "No se encontró al invocador." };
+  return { success: false, msg: "No se encontrÃƒÂ³ al invocador." };
 }
 
 // ==========================================================
-// 🔨 MOTOR DE DROPS DE LA FORJA (VERSION BLINDADA)
+// Ã°Å¸â€Â¨ MOTOR DE DROPS DE LA FORJA (VERSION BLINDADA)
 // ==========================================================
 function rollForgeDrop(points, p, teamInfo, notes) {
-    // 🛡️ SHIELD: Inicialización de seguridad para evitar "is not defined"
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â SHIELD: InicializaciÃƒÂ³n de seguridad para evitar "is not defined"
     const safeP = p || {};
     const safeTeamInfo = teamInfo || {};
     const safeNotes = notes || [];
@@ -17081,7 +17090,7 @@ function rollForgeDrop(points, p, teamInfo, notes) {
     if (kda < 0.5 && rollSpecial < 25) return 'SHIMMER_VIAL';
     if (lossStreak >= 4 && rollSpecial < 30) return 'AGONY_ESSENCE';
 
-    // --- FASE A: DROPS TEMÁTICOS ---
+    // --- FASE A: DROPS TEMÃƒÂTICOS ---
     if (d_stats >= 10 && rollSpecial < 15) return 'OLD_BOOT';
     if (stolen > 0 && rollSpecial < 10) return 'VOID_ESSENCE';
     if (dragonsCount >= 4 && rollSpecial < 10) return 'DRAGON_SCALE';
@@ -17089,7 +17098,7 @@ function rollForgeDrop(points, p, teamInfo, notes) {
     if (mitigated >= 40000 && rollSpecial < 10) return 'TRUE_ICE';
     if (notesStr.includes("SVP") && rollSpecial < 10) return 'BROKEN_RUNE';
 
-    // --- FASE B: BENDICIÓN DE ORNN ---
+    // --- FASE B: BENDICIÃƒâ€œN DE ORNN ---
     const roll = Math.random() * 100;
     let tier = 0;
     let luckBonus = winStreak * 5; 
@@ -17127,7 +17136,7 @@ function rollForgeDrop(points, p, teamInfo, notes) {
 
 function fetchLeaguePressure(puuid, region) {
     try {
-        // 🛡️ FIX 3: Las llamadas a perfil exigen la plataforma (euw1), NO la región (europe)
+        // Ã°Å¸â€ºÂ¡Ã¯Â¸Â FIX 3: Las llamadas a perfil exigen la plataforma (euw1), NO la regiÃƒÂ³n (europe)
         let platform = "euw1";
         if (region === "americas") platform = "na1"; 
         
@@ -17148,7 +17157,7 @@ function fetchLeaguePressure(puuid, region) {
     } catch(e) { return { lp: 50, hotStreak: false }; }
 }
 /* ==========================================================
-   📡 OBTENER ESTADÍSTICAS AVANZADAS DE UNA PARTIDA
+   Ã°Å¸â€œÂ¡ OBTENER ESTADÃƒÂSTICAS AVANZADAS DE UNA PARTIDA
    Ideal para mostrar un modal "Detalles de Partida" en la web
    ========================================================== */
 function getAdvancedMatchStats(matchId, playerName) {
@@ -17163,16 +17172,16 @@ function getAdvancedMatchStats(matchId, playerName) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === matchId && String(data[i][2]).toLowerCase() === String(playerName).toLowerCase()) {
       
-      const rawJson = data[i][15]; // Columna P (índice 15) donde guardamos el JSON
+      const rawJson = data[i][15]; // Columna P (ÃƒÂ­ndice 15) donde guardamos el JSON
       
       try {
         if (rawJson) {
           return JSON.parse(rawJson); // Devuelve el objeto completo (gpm, dpm, vision, diffs...)
         } else {
-          return { error: "Partida antigua. No tiene estadísticas avanzadas guardadas." };
+          return { error: "Partida antigua. No tiene estadÃƒÂ­sticas avanzadas guardadas." };
         }
       } catch(e) {
-        return { error: "Error leyendo las estadísticas avanzadas." };
+        return { error: "Error leyendo las estadÃƒÂ­sticas avanzadas." };
       }
     }
   }
@@ -17182,7 +17191,7 @@ function getAdvancedMatchStats(matchId, playerName) {
 
 
 /* ==========================================================
-   📡 OBTENER PARTIDAS DE UN JUGADOR (Para el Dropdown de la web)
+   Ã°Å¸â€œÂ¡ OBTENER PARTIDAS DE UN JUGADOR (Para el Dropdown de la web)
    ========================================================== */
 function getPlayerMatchesForDropdown(playerName) {
   const ss = SpreadsheetApp.getActive();
@@ -17192,11 +17201,11 @@ function getPlayerMatchesForDropdown(playerName) {
   const data = sheet.getDataRange().getValues();
   const matches = [];
   
-  // Recorremos de abajo a arriba (más recientes primero)
+  // Recorremos de abajo a arriba (mÃƒÂ¡s recientes primero)
   for (let i = data.length - 1; i >= 1; i--) {
     if (String(data[i][2]).trim().toLowerCase() === String(playerName).trim().toLowerCase()) {
       
-      // SOLO mostramos las partidas que ya tienen guardado el JSON en la columna P (índice 15)
+      // SOLO mostramos las partidas que ya tienen guardado el JSON en la columna P (ÃƒÂ­ndice 15)
       if (data[i][15] && String(data[i][15]).includes('{')) {
           let dateStr = "Fecha";
           try {
@@ -17210,7 +17219,7 @@ function getPlayerMatchesForDropdown(playerName) {
           });
       }
       
-      // Limitamos a las últimas 30 partidas válidas
+      // Limitamos a las ÃƒÂºltimas 30 partidas vÃƒÂ¡lidas
       if (matches.length >= 30) break;
     }
   }
@@ -17218,7 +17227,7 @@ function getPlayerMatchesForDropdown(playerName) {
 }
 
 /* ==========================================================
-   📡 OBTENER ESTADÍSTICAS AVANZADAS (JSON) PARA EL DASHBOARD
+   Ã°Å¸â€œÂ¡ OBTENER ESTADÃƒÂSTICAS AVANZADAS (JSON) PARA EL DASHBOARD
    ========================================================== */
 function getAdvancedMatchDetails(matchId, playerName) {
   const ss = SpreadsheetApp.getActive();
@@ -17231,16 +17240,16 @@ function getAdvancedMatchDetails(matchId, playerName) {
     if (String(data[i][0]).trim() === String(matchId).trim() && 
         String(data[i][2]).trim().toLowerCase() === String(playerName).trim().toLowerCase()) {
       
-      const rawJson = data[i][15]; // Columna P (índice 15) donde guardas el JSON
+      const rawJson = data[i][15]; // Columna P (ÃƒÂ­ndice 15) donde guardas el JSON
       let stats = {};
       
       try {
         if (rawJson) stats = JSON.parse(rawJson);
-      } catch(e) { /* Ignorar si no es JSON válido */ }
+      } catch(e) { /* Ignorar si no es JSON vÃƒÂ¡lido */ }
           
       return {
         champion: data[i][3],
-        role: data[i][4], // <--- 🟢 AÑADE ESTA LÍNEA EXACTAMENTE AQUÍ
+        role: data[i][4], // <--- Ã°Å¸Å¸Â¢ AÃƒâ€˜ADE ESTA LÃƒÂNEA EXACTAMENTE AQUÃƒÂ
         result: data[i][5],
         kda: data[i][6] + " / " + data[i][7] + " / " + data[i][8],
         points: Number(data[i][12]).toFixed(2),
@@ -17253,7 +17262,7 @@ function getAdvancedMatchDetails(matchId, playerName) {
 
 
 // ====================================================================
-// 🧪 FUNCIÓN DE PRUEBA: DOMINIO DE LÍNEA (VERSIÓN SÓLIDA MIN 10)
+// Ã°Å¸Â§Âª FUNCIÃƒâ€œN DE PRUEBA: DOMINIO DE LÃƒÂNEA (VERSIÃƒâ€œN SÃƒâ€œLIDA MIN 10)
 // ====================================================================
 function testEarlyLaneGap(p, opponent, role) {
     if (!p || !opponent || role === 'JUNGLE') {
@@ -17278,7 +17287,7 @@ function testEarlyLaneGap(p, opponent, role) {
         logs.push(`${cs10Diff.toFixed(0)} CS Deficit (@10min)`);
     }
 
-    // 2. VENTAJA MÁXIMA DE CS EN LÍNEA (Pico absoluto)
+    // 2. VENTAJA MÃƒÂXIMA DE CS EN LÃƒÂNEA (Pico absoluto)
     const myMaxCsLead = Number(p.challenges?.maxCsAdvantageOnLaneOpponent || 0);
     const oppMaxCsLead = Number(opponent.challenges?.maxCsAdvantageOnLaneOpponent || 0);
     
@@ -17289,7 +17298,7 @@ function testEarlyLaneGap(p, opponent, role) {
         score -= Math.min(1.5, oppMaxCsLead * 0.04);
     }
 
-    // 3. VENTAJA MÁXIMA DE NIVEL EN LÍNEA
+    // 3. VENTAJA MÃƒÂXIMA DE NIVEL EN LÃƒÂNEA
     const myLvlLead = Number(p.challenges?.maxLevelLeadLaneOpponent || 0);
     const oppLvlLead = Number(opponent.challenges?.maxLevelLeadLaneOpponent || 0);
     
@@ -17314,13 +17323,13 @@ function testEarlyLaneGap(p, opponent, role) {
 
     return {
         finalScore: parseFloat(score.toFixed(2)),
-        debugLog: logs.length > 0 ? logs.join(" | ") : "Línea Igualada"
+        debugLog: logs.length > 0 ? logs.join(" | ") : "LÃƒÂ­nea Igualada"
     };
 }
 
 
 /* ==========================================================
-   🏆 ACTUALIZAR RESULTADO Y ENLAZAR CON STATS (CORREGIDO)
+   Ã°Å¸Ââ€  ACTUALIZAR RESULTADO Y ENLAZAR CON STATS (CORREGIDO)
    ========================================================== */
 function updateMatchResult(matchId, scoreA, scoreB, riotId) {
   const ss = SpreadsheetApp.getActive();
@@ -17344,6 +17353,9 @@ function updateMatchResult(matchId, scoreA, scoreB, riotId) {
       matchesSheet.getRange(i + 1, 7).setValue(scoreB);      
       matchesSheet.getRange(i + 1, 8).setValue(winnerId);      
       matchesSheet.getRange(i + 1, 9).setValue('COMPLETED'); 
+      
+      // AUTO-PAYOUT: Resolvemos apuestas inmediatamente
+      try { payoutLeagueBets(matchId, scoreA, scoreB); } catch(e) {}
 
       if (riotId && String(riotId).trim() !== "") {
           matchesSheet.getRange(i + 1, 11).setValue(String(riotId).trim());
@@ -17378,12 +17390,12 @@ function updateMatchResult(matchId, scoreA, scoreB, riotId) {
     else if (format === 'swiss') {
         checkAndGenerateSwissRound();
     }
-    return { success: true, msg: "¡Resultado guardado y estadísticas enlazadas!" };
+    return { success: true, msg: "Ã‚Â¡Resultado guardado y estadÃƒÂ­sticas enlazadas!" };
   }
   return { success: false, msg: "Error al actualizar." };
 }
 
-// 🧠 MOTOR DINÁMICO SUIZO
+// Ã°Å¸Â§Â  MOTOR DINÃƒÂMICO SUIZO
 function checkAndGenerateSwissRound() {
     const ss = SpreadsheetApp.getActive();
     const mSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
@@ -17391,7 +17403,7 @@ function checkAndGenerateSwissRound() {
     const mData = mSheet.getDataRange().getValues();
     const tData = tSheet.getDataRange().getValues();
 
-    // 1. Encontrar la ronda actual (la más alta)
+    // 1. Encontrar la ronda actual (la mÃƒÂ¡s alta)
     let currentRoundNum = 1;
     let allCompleted = true;
 
@@ -17401,7 +17413,7 @@ function checkAndGenerateSwissRound() {
         if (rNum > currentRoundNum) currentRoundNum = rNum;
     }
 
-    // 2. Verificar si TODOS los partidos de la ronda actual están acabados
+    // 2. Verificar si TODOS los partidos de la ronda actual estÃƒÂ¡n acabados
     for (let i=1; i<mData.length; i++) {
         let rStr = String(mData[i][1]);
         let rNum = parseInt(rStr.replace('Ronda ', ''));
@@ -17410,14 +17422,14 @@ function checkAndGenerateSwissRound() {
         }
     }
 
-    if (!allCompleted) return; // Aún quedan partidos en juego
+    if (!allCompleted) return; // AÃƒÂºn quedan partidos en juego
 
-    // 3. Obtener equipos y sus récords (Victorias y Derrotas)
+    // 3. Obtener equipos y sus rÃƒÂ©cords (Victorias y Derrotas)
     let activeTeams = [];
     for (let i=1; i<tData.length; i++) {
         let w = Number(tData[i][2]);
         let l = Number(tData[i][3]);
-        // Equipos que aún no se han clasificado (3W) ni eliminado (3L)
+        // Equipos que aÃƒÂºn no se han clasificado (3W) ni eliminado (3L)
         if (w < 3 && l < 3) {
             activeTeams.push({ id: tData[i][0], name: tData[i][1], pool: `${w}-${l}` });
         }
@@ -17425,7 +17437,7 @@ function checkAndGenerateSwissRound() {
 
     if (activeTeams.length === 0) return; // Torneo Suizo terminado
 
-    // 4. Agrupar por Récord (Pools) y generar nuevos partidos
+    // 4. Agrupar por RÃƒÂ©cord (Pools) y generar nuevos partidos
     let nextMatchId = mData.length; // Si hay 8 partidos, el siguiente es M9
     let pools = {};
     activeTeams.forEach(t => {
@@ -17496,7 +17508,7 @@ function createTournamentBackend(config) {
           for (let i = 0; i < half; i++) {
               let t1 = tournamentTeams[i]; let t2 = tournamentTeams[numTeams - 1 - i];
               let home = (r % 2 === 0) ? t1 : t2; let away = (r % 2 === 0) ? t2 : t1;
-              // 🟢 CAMBIO: Ahora genera "Jornada 1", "Jornada 2", etc.
+              // Ã°Å¸Å¸Â¢ CAMBIO: Ahora genera "Jornada 1", "Jornada 2", etc.
               matchData.push([`M${matchCounter}`, `Jornada ${r + 1}`, 'Regular', home.id, away.id, 0, 0, '', 'PENDING', `${home.name} vs ${away.name}`]);
               matchCounter++;
           }
@@ -17559,7 +17571,7 @@ function createTournamentBackend(config) {
       let numTeams = teamIds.length; let matchCounter = 1;
       for (let i=0; i<numTeams; i+=2) {
           let t1 = teamIds[i]; let t2 = teamIds[i+1];
-          // 🟢 CAMBIO: Jornada en Suizo
+          // Ã°Å¸Å¸Â¢ CAMBIO: Jornada en Suizo
           matchData.push([`M${matchCounter}`, `Jornada 1`, '0-0', t1.id, t2.id, 0, 0, '', 'PENDING', `${t1.name} vs ${t2.name}`]);
           matchCounter++;
       }
@@ -17567,14 +17579,14 @@ function createTournamentBackend(config) {
 
   if (matchData.length > 0) matchesSheet.getRange(2, 1, matchData.length, 10).setValues(matchData);
   SpreadsheetApp.flush();
-  return "¡Torneo configurado con éxito!";
+  return "Ã‚Â¡Torneo configurado con ÃƒÂ©xito!";
 }
 
 // ==========================================================
-// 🔗 CONFIGURACIÓN DE DISCORD (WEBHOOK BLINDADO)
+// Ã°Å¸â€â€” CONFIGURACIÃƒâ€œN DE DISCORD (WEBHOOK BLINDADO)
 // ==========================================================
 function sendDiscordAlert(mensaje) {
-    // Ponemos el enlace directamente aquí dentro para evitar problemas de variables globales
+    // Ponemos el enlace directamente aquÃƒÂ­ dentro para evitar problemas de variables globales
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo"; 
 
     if (!WEBHOOK_URL) return;
@@ -17594,15 +17606,15 @@ function sendDiscordAlert(mensaje) {
         };
 
         const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
-        Logger.log("Discord enviado. Código: " + response.getResponseCode());
+        Logger.log("Discord enviado. CÃƒÂ³digo: " + response.getResponseCode());
 
     } catch (e) { 
-        Logger.log("Error crítico Discord: " + e.message); 
+        Logger.log("Error crÃƒÂ­tico Discord: " + e.message); 
     }
 }
 
 // ==========================================================
-// 📊 OBTENER DATOS (CON SISTEMA DE NEGOCIACIÓN DE CAPITANES)
+// Ã°Å¸â€œÅ  OBTENER DATOS (CON SISTEMA DE NEGOCIACIÃƒâ€œN DE CAPITANES)
 // ==========================================================
 function getTournamentData() {
   const ss = SpreadsheetApp.getActive();
@@ -17668,7 +17680,7 @@ function getTournamentData() {
          id: mId, round: mData[i][1], bracket: mData[i][2], tA: tA, tB: tB, 
          sA: sA, sB: sB, winner: mData[i][7], status: mStatus, names: mData[i][9],
          riotId: String(mData[i][10] || ""), vod: vodUrl,      
-         date: matchDate, proposedDate: propDate, proposedBy: propBy, // 📅 Añadimos la propuesta
+         date: matchDate, proposedDate: propDate, proposedBy: propBy, // Ã°Å¸â€œâ€¦ AÃƒÂ±adimos la propuesta
          votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0,
          volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0
      });
@@ -17688,7 +17700,7 @@ function getTournamentData() {
 }
 
 // ==========================================================
-// 🤝 EL ÁRBITRO DE LA NEGOCIACIÓN (Vestuario)
+// Ã°Å¸Â¤Â EL ÃƒÂRBITRO DE LA NEGOCIACIÃƒâ€œN (Vestuario)
 // ==========================================================
 function handleMatchNegotiation(action, matchId, teamId, pin, dateStr) {
   const lock = LockService.getScriptLock();
@@ -17709,7 +17721,7 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr) {
          break;
       }
     }
-    if(!validPin) return {success: false, msg: "❌ Acceso Denegado. El PIN de Capitán es incorrecto."};
+    if(!validPin) return {success: false, msg: "Ã¢ÂÅ’ Acceso Denegado. El PIN de CapitÃƒÂ¡n es incorrecto."};
 
     // 2. Buscamos el partido
     const mData = mSheet.getDataRange().getValues();
@@ -17719,45 +17731,45 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr) {
     }
     if(matchRow === -1) return {success: false, msg: "Partido no encontrado."};
 
-    // 🛡️ SEGURO: Si el Excel no tiene las columnas N (14) y O (15), las crea para que no de error
+    // Ã°Å¸â€ºÂ¡Ã¯Â¸Â SEGURO: Si el Excel no tiene las columnas N (14) y O (15), las crea para que no de error
     if (mSheet.getMaxColumns() < 15) {
         mSheet.insertColumnsAfter(mSheet.getMaxColumns(), 15 - mSheet.getMaxColumns());
     }
 
-    // 3. Ejecutamos la acción en el Excel
+    // 3. Ejecutamos la acciÃƒÂ³n en el Excel
     if(action === 'PROPOSE') {
       mSheet.getRange(matchRow, 14).setValue(dateStr.replace("T", " ")); // N (Propuesta)
-      mSheet.getRange(matchRow, 15).setValue(teamId);  // O (Por quién)
-      return {success: true, msg: "✅ Propuesta enviada. El equipo rival debe aceptarla."};
+      mSheet.getRange(matchRow, 15).setValue(teamId);  // O (Por quiÃƒÂ©n)
+      return {success: true, msg: "Ã¢Å“â€¦ Propuesta enviada. El equipo rival debe aceptarla."};
     }
     else if(action === 'ACCEPT') {
       let propDate = mSheet.getRange(matchRow, 14).getValue();
       mSheet.getRange(matchRow, 13).setValue(propDate); // Movemos a M (Fecha Final)
       mSheet.getRange(matchRow, 14).setValue(""); // Limpiamos N
       mSheet.getRange(matchRow, 15).setValue(""); // Limpiamos O
-      return {success: true, msg: "🤝 ¡PACTO SELLADO! El horario ya es oficial en la web."};
+      return {success: true, msg: "Ã°Å¸Â¤Â Ã‚Â¡PACTO SELLADO! El horario ya es oficial en la web."};
     }
     else if(action === 'REJECT') {
       mSheet.getRange(matchRow, 14).setValue("");
       mSheet.getRange(matchRow, 15).setValue("");
-      return {success: true, msg: "❌ Propuesta rechazada. El cuadro vuelve a estar vacío."};
+      return {success: true, msg: "Ã¢ÂÅ’ Propuesta rechazada. El cuadro vuelve a estar vacÃƒÂ­o."};
     }
   } catch(e) { return {success: false, msg: "Error: " + e.message}; } 
   finally { lock.releaseLock(); }
 }
 
 
-// 🔮 FUNCIÓN DE VOTACIÓN BLINDADA (Con LockService y Anti-Fraude)
+// Ã°Å¸â€Â® FUNCIÃƒâ€œN DE VOTACIÃƒâ€œN BLINDADA (Con LockService y Anti-Fraude)
 function castVoteBackend(matchId, teamIndex, voterName) {
     const lock = LockService.getScriptLock();
     // Si 50 personas votan a la vez, esperan en fila hasta 10 segundos
-    if (!lock.tryLock(10000)) return { success: false, msg: "El sistema de votos está muy concurrido. Intenta de nuevo en 5 segundos." };
+    if (!lock.tryLock(10000)) return { success: false, msg: "El sistema de votos estÃƒÂ¡ muy concurrido. Intenta de nuevo en 5 segundos." };
 
     try {
         const ss = SpreadsheetApp.getActive();
-        const realVoter = voterName ? String(voterName).trim() : "Anónimo";
+        const realVoter = voterName ? String(voterName).trim() : "AnÃƒÂ³nimo";
 
-        // 1. COMPROBAR SI YA VOTÓ (Backend check, imposible de burlar)
+        // 1. COMPROBAR SI YA VOTÃƒâ€œ (Backend check, imposible de burlar)
         let recordsSheet = ss.getSheetByName('PICKEMS_RECORDS');
         if (!recordsSheet) {
             recordsSheet = ss.insertSheet('PICKEMS_RECORDS');
@@ -17765,9 +17777,9 @@ function castVoteBackend(matchId, teamIndex, voterName) {
         } else {
             const rData = recordsSheet.getDataRange().getValues();
             for (let i = 1; i < rData.length; i++) {
-                // Si el MatchID coincide Y el nombre coincide = ¡Fraude!
+                // Si el MatchID coincide Y el nombre coincide = Ã‚Â¡Fraude!
                 if (rData[i][2] === matchId && String(rData[i][1]).toLowerCase() === realVoter.toLowerCase()) {
-                    return { success: false, msg: `❌ ${realVoter}, ya has votado en este partido. No intentes hacer trampas.` };
+                    return { success: false, msg: `Ã¢ÂÅ’ ${realVoter}, ya has votado en este partido. No intentes hacer trampas.` };
                 }
             }
         }
@@ -17797,7 +17809,7 @@ function castVoteBackend(matchId, teamIndex, voterName) {
             votesSheet.appendRow([matchId, vA, vB]);
         }
 
-        // 3. GUARDAR EL REGISTRO DE QUIÉN VOTÓ
+        // 3. GUARDAR EL REGISTRO DE QUIÃƒâ€°N VOTÃƒâ€œ
         let teamVoted = teamIndex === 0 ? "Equipo A" : "Equipo B";
         const mSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
         if (mSheet) {
@@ -17812,7 +17824,7 @@ function castVoteBackend(matchId, teamIndex, voterName) {
         }
 
         recordsSheet.appendRow([new Date(), realVoter, matchId, teamVoted]);
-        return { success: true, msg: `✅ Voto registrado correctamente para ${teamVoted}.` }; 
+        return { success: true, msg: `Ã¢Å“â€¦ Voto registrado correctamente para ${teamVoted}.` }; 
 
     } catch(e) {
         return { success: false, msg: "Error de servidor: " + e.message };
@@ -17822,7 +17834,7 @@ function castVoteBackend(matchId, teamIndex, voterName) {
 }
 
 /* ==========================================================
-   🏆 SISTEMA DE TORNEOS: ARCHIVO HISTÓRICO (SALÓN DE LA FAMA)
+   Ã°Å¸Ââ€  SISTEMA DE TORNEOS: ARCHIVO HISTÃƒâ€œRICO (SALÃƒâ€œN DE LA FAMA)
    ========================================================== */
 
 function resetTournamentData() {
@@ -17831,11 +17843,11 @@ function resetTournamentData() {
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
   const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
   
-  // 1. Crear la hoja del Archivo Histórico si no existe
+  // 1. Crear la hoja del Archivo HistÃƒÂ³rico si no existe
   let archiveSheet = ss.getSheetByName('TOURNAMENT_ARCHIVE');
   if (!archiveSheet) {
       archiveSheet = ss.insertSheet('TOURNAMENT_ARCHIVE');
-      archiveSheet.getRange('A1:D1').setValues([['Fecha', 'Formato', 'Campeón', 'Detalles']]).setFontWeight('bold').setBackground('#f1c40f');
+      archiveSheet.getRange('A1:D1').setValues([['Fecha', 'Formato', 'CampeÃƒÂ³n', 'Detalles']]).setFontWeight('bold').setBackground('#f1c40f');
   }
 
   // 2. Intentar buscar al Ganador antes de borrar los datos
@@ -17873,7 +17885,7 @@ function resetTournamentData() {
               archiveSheet.appendRow([new Date(), format, winnerName, details]);
           }
       } catch (e) {
-          Logger.log("Error guardando histórico: " + e.message);
+          Logger.log("Error guardando histÃƒÂ³rico: " + e.message);
       }
   }
 
@@ -17884,7 +17896,7 @@ function resetTournamentData() {
   try { ss.deleteSheet(ss.getSheetByName('TOURNAMENT_VOTES')); } catch(e){}
   try { ss.deleteSheet(ss.getSheetByName('PICKEMS_RECORDS')); } catch(e){}
   
-  return "Torneo finalizado. El Campeón ha sido registrado en el Salón de la Fama y las urnas han sido limpiadas.";
+  return "Torneo finalizado. El CampeÃƒÂ³n ha sido registrado en el SalÃƒÂ³n de la Fama y las urnas han sido limpiadas.";
 }
 
 // Lector del Historial para la Web
@@ -17899,12 +17911,12 @@ function getTournamentArchive() {
       format: r[1],
       winner: r[2],
       details: r[3]
-  })).reverse(); // Del más reciente al más antiguo
+  })).reverse(); // Del mÃƒÂ¡s reciente al mÃƒÂ¡s antiguo
 }
 
 
 
-// Esta función lee todos los partidos completados y reconstruye la clasificación desde 0
+// Esta funciÃƒÂ³n lee todos los partidos completados y reconstruye la clasificaciÃƒÂ³n desde 0
 function recalculateStandings() {
   const ss = SpreadsheetApp.getActive();
   const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
@@ -17916,13 +17928,13 @@ function recalculateStandings() {
   // 1. Crear un diccionario con todos los equipos a 0
   let stats = {};
   for (let i = 1; i < tData.length; i++) {
-    // Guardamos la fila para luego escribir los datos rápido
+    // Guardamos la fila para luego escribir los datos rÃƒÂ¡pido
     stats[tData[i][0]] = { w: 0, l: 0, d: 0, pts: 0, row: i + 1 };
   }
 
   // 2. Recorrer partidos y sumar victorias/derrotas/puntos (3 pts victoria, 1 pt empate)
   for (let i = 1; i < mData.length; i++) {
-    if (mData[i][8] === 'COMPLETED') { // Índice 8 es Status
+    if (mData[i][8] === 'COMPLETED') { // ÃƒÂndice 8 es Status
        const tA = mData[i][3]; // ID Team A
        const tB = mData[i][4]; // ID Team B
        const winner = mData[i][7]; // Winner ID o 'DRAW'
@@ -17940,7 +17952,7 @@ function recalculateStandings() {
     }
   }
 
-  // 3. Volcar los nuevos números a la hoja TOURNAMENT_TEAMS
+  // 3. Volcar los nuevos nÃƒÂºmeros a la hoja TOURNAMENT_TEAMS
   for (let id in stats) {
     let s = stats[id];
     teamsSheet.getRange(s.row, 3).setValue(s.w);   // Wins
@@ -17954,7 +17966,7 @@ function recalculateStandings() {
 
 
 /* ==========================================================
-   💰 SISTEMA DE MERCADO DE FICHAJES (BASADO EN ELO Y RANKING)
+   Ã°Å¸â€™Â° SISTEMA DE MERCADO DE FICHAJES (BASADO EN ELO Y RANKING)
    ========================================================== */
 
 function generateTransferMarket() {
@@ -17966,7 +17978,7 @@ function generateTransferMarket() {
   const matchesSheet = ss.getSheetByName('MATCHES');
   
   if (!playersSheet || !rankingSheet || !matchesSheet) {
-    SpreadsheetApp.getUi().alert("❌ Error: Faltan las hojas PLAYERS, RANKING o MATCHES.");
+    SpreadsheetApp.getUi().alert("Ã¢ÂÅ’ Error: Faltan las hojas PLAYERS, RANKING o MATCHES.");
     return;
   }
 
@@ -18011,18 +18023,18 @@ function generateTransferMarket() {
   let playersList = Object.values(playersDb).sort((a, b) => b.points - a.points);
   playersList.forEach((p, index) => {
     let position = index + 1;
-    // Solo damos bonus a los que tengan puntos positivos, máximo a los 15 primeros.
+    // Solo damos bonus a los que tengan puntos positivos, mÃƒÂ¡ximo a los 15 primeros.
     if (p.points > 0 && position <= 15) {
       p.bonusValue = 16 - position; // Top 1 = +15M, Top 2 = +14M, etc.
     }
   });
 
-  // B) CÁLCULO DE ELO PURO
+  // B) CÃƒÂLCULO DE ELO PURO
   let marketData = [];
   playersList.forEach(p => {
     let rUp = p.rank.toUpperCase();
     let base = 5;
-    let step = 0; // Valor extra por cada división que suba (Ej: Plata 4 vs Plata 1)
+    let step = 0; // Valor extra por cada divisiÃƒÂ³n que suba (Ej: Plata 4 vs Plata 1)
 
     if (rUp.includes("CHALLENGER")) { base = 110; }
     else if (rUp.includes("GRANDMASTER")) { base = 95; }
@@ -18046,7 +18058,7 @@ function generateTransferMarket() {
     if (finalValue < 1) finalValue = 1;
 
     // Determinar Roles
-    let topRoles = ["Comodín", "-"];
+    let topRoles = ["ComodÃƒÂ­n", "-"];
     let sortedRoles = Object.keys(p.roles).sort((a, b) => p.roles[b] - p.roles[a]);
     if (sortedRoles.length > 0) topRoles[0] = roleNames[sortedRoles[0]] || sortedRoles[0];
     if (sortedRoles.length > 1) topRoles[1] = roleNames[sortedRoles[1]] || sortedRoles[1];
@@ -18063,7 +18075,7 @@ function generateTransferMarket() {
     ]);
   });
 
-  // Ordenar por Valor de Mercado final (Los más caros arriba)
+  // Ordenar por Valor de Mercado final (Los mÃƒÂ¡s caros arriba)
   marketData.sort((a, b) => b[5] - a[5]);
 
   // 6. CALCULAR PRESUPUESTO EQUILIBRADO PARA EL DRAFT
@@ -18084,13 +18096,13 @@ function generateTransferMarket() {
   }
 
   // Estilos de la Cabecera
-  marketSheet.getRange('A1:F1').merge().setValue('📊 MERCADO DE FICHAJES: WARGODS PREMIER').setFontSize(16).setFontWeight('bold').setHorizontalAlignment('center').setBackground('#0f172a').setFontColor('#fbbf24');
-  marketSheet.getRange('A2:B2').setValues([['💰 LÍMITE SALARIAL POR EQUIPO:', `${recommendedBudget} Millones`]]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#10b981').setFontSize(12);
+  marketSheet.getRange('A1:F1').merge().setValue('Ã°Å¸â€œÅ  MERCADO DE FICHAJES: WARGODS PREMIER').setFontSize(16).setFontWeight('bold').setHorizontalAlignment('center').setBackground('#0f172a').setFontColor('#fbbf24');
+  marketSheet.getRange('A2:B2').setValues([['Ã°Å¸â€™Â° LÃƒÂMITE SALARIAL POR EQUIPO:', `${recommendedBudget} Millones`]]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#10b981').setFontSize(12);
   
   marketSheet.getRange('A3:F3').merge().setValue(`Regla del Draft: La suma del Valor de Mercado de los 5 titulares de un equipo no puede superar los ${recommendedBudget} Millones.`).setFontStyle('italic').setFontColor('#64748b');
 
   // Cabeceras de la Tabla
-  marketSheet.getRange('A5:F5').setValues([['JUGADOR', 'ELO (RANK)', 'PUNTOS SOLOQ (BONUS)', 'LÍNEA PRINCIPAL', 'LÍNEA SECUNDARIA', 'VALOR DE MERCADO']])
+  marketSheet.getRange('A5:F5').setValues([['JUGADOR', 'ELO (RANK)', 'PUNTOS SOLOQ (BONUS)', 'LÃƒÂNEA PRINCIPAL', 'LÃƒÂNEA SECUNDARIA', 'VALOR DE MERCADO']])
     .setFontWeight('bold')
     .setBackground('#334155')
     .setFontColor('white')
@@ -18113,12 +18125,12 @@ function generateTransferMarket() {
   marketSheet.setColumnWidth(6, 170);
 
   SpreadsheetApp.flush();
-  SpreadsheetApp.getUi().alert(`✅ ¡Mercado Generado!\n\nEl límite salarial recomendado para equilibrar a los capitanes es de ${recommendedBudget} Millones por equipo.\n\nRevisa la pestaña TRANSFER_MARKET.`);
+  SpreadsheetApp.getUi().alert(`Ã¢Å“â€¦ Ã‚Â¡Mercado Generado!\n\nEl lÃƒÂ­mite salarial recomendado para equilibrar a los capitanes es de ${recommendedBudget} Millones por equipo.\n\nRevisa la pestaÃƒÂ±a TRANSFER_MARKET.`);
 }
 
 
 /* ==========================================================
-   🔮 ANUNCIAR QUINIELAS A DISCORD (PICK'EMS)
+   Ã°Å¸â€Â® ANUNCIAR QUINIELAS A DISCORD (PICK'EMS)
    ========================================================== */
 function announcePickemsToDiscord() {
   const ss = SpreadsheetApp.getActive();
@@ -18132,7 +18144,7 @@ function announcePickemsToDiscord() {
   for (let i = 1; i < data.length; i++) {
     if (data[i][8] === 'PENDING') {
       const names = String(data[i][9]).split(' vs ');
-      pendingMatches.push(`🔸 **${names[0]}** 🆚  **${names[1]}**`);
+      pendingMatches.push(`Ã°Å¸â€Â¸ **${names[0]}** Ã°Å¸â€ Å¡  **${names[1]}**`);
     }
   }
 
@@ -18140,17 +18152,17 @@ function announcePickemsToDiscord() {
     return SpreadsheetApp.getUi().alert("No hay partidos pendientes para anunciar.");
   }
 
-  // 👇 PON TU WEBHOOK AQUÍ 👇
+  // Ã°Å¸â€˜â€¡ PON TU WEBHOOK AQUÃƒÂ Ã°Å¸â€˜â€¡
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
   const webUrl = ScriptApp.getService().getUrl() + "?p=tournaments";
 
   const payload = {
-    content: " 🔮 **¡LAS QUINIELAS ESTÁN ABIERTAS!**",
+    content: " Ã°Å¸â€Â® **Ã‚Â¡LAS QUINIELAS ESTÃƒÂN ABIERTAS!**",
     embeds: [{
-      title: "🏆 PICK'EMS: PRÓXIMOS PARTIDOS",
-      description: "Entra a la web oficial, analiza las estadísticas (Scouting) y vota por los ganadores.\n\n" + 
+      title: "Ã°Å¸Ââ€  PICK'EMS: PRÃƒâ€œXIMOS PARTIDOS",
+      description: "Entra a la web oficial, analiza las estadÃƒÂ­sticas (Scouting) y vota por los ganadores.\n\n" + 
                    pendingMatches.join("\n\n") + 
-                   "\n\n👉 **[HAZ CLIC AQUÍ PARA VOTAR EN LA WEB](" + webUrl + ")**",
+                   "\n\nÃ°Å¸â€˜â€° **[HAZ CLIC AQUÃƒÂ PARA VOTAR EN LA WEB](" + webUrl + ")**",
       color: 16766720,
       image: { url: "https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg" }
     }]
@@ -18162,7 +18174,7 @@ function announcePickemsToDiscord() {
       contentType: 'application/json',
       payload: JSON.stringify(payload)
     });
-    SpreadsheetApp.getUi().alert("✅ Quinielas anunciadas en Discord con éxito.");
+    SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Quinielas anunciadas en Discord con ÃƒÂ©xito.");
   } catch(e) {
     SpreadsheetApp.getUi().alert("Error enviando a Discord: " + e.message);
   }
@@ -18170,10 +18182,10 @@ function announcePickemsToDiscord() {
 
 
 /* ==========================================================
-   🎙️ ANUNCIAR RESULTADOS DEL TORNEO A DISCORD
+   Ã°Å¸Å½â„¢Ã¯Â¸Â ANUNCIAR RESULTADOS DEL TORNEO A DISCORD
    ========================================================== */
 function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
-  // 👇 PEGA TU WEBHOOK DE DISCORD AQUÍ 👇
+  // Ã°Å¸â€˜â€¡ PEGA TU WEBHOOK DE DISCORD AQUÃƒÂ Ã°Å¸â€˜â€¡
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_ENLACE_AQUI")) return;
@@ -18196,10 +18208,10 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   } else {
       // Empate
       const payloadDraw = {
-        content: "⚖️ **¡RESULTADO DEL TORNEO!**",
+        content: "Ã¢Å¡â€“Ã¯Â¸Â **Ã‚Â¡RESULTADO DEL TORNEO!**",
         embeds: [{
-          title: `Empate técnico entre ${teamA} y ${teamB}`,
-          description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**. ¡Reparto de puntos para ambos!`,
+          title: `Empate tÃƒÂ©cnico entre ${teamA} y ${teamB}`,
+          description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**. Ã‚Â¡Reparto de puntos para ambos!`,
           color: 9807270
         }]
       };
@@ -18208,13 +18220,13 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   }
 
   const payload = {
-    content: "🏆 **¡NUEVO RESULTADO OFICIAL DE LA LIGA!**",
+    content: "Ã°Å¸Ââ€  **Ã‚Â¡NUEVO RESULTADO OFICIAL DE LA LIGA!**",
     embeds: [{
-      title: `🔥 ${winner} aplasta a ${loser} 🔥`,
-      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\n💸 *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
+      title: `Ã°Å¸â€Â¥ ${winner} aplasta a ${loser} Ã°Å¸â€Â¥`,
+      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\nÃ°Å¸â€™Â¸ *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
       color: color,
       image: { url: "https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg" },
-      footer: { text: "Wargods Premier • Resultados Oficiales" }
+      footer: { text: "Wargods Premier Ã¢â‚¬Â¢ Resultados Oficiales" }
     }]
   };
 
@@ -18230,7 +18242,7 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
 }
 
 /* ==========================================================
-   📊 OBTENER POST-GAME LOBBY (CON TANK, MVP, TIMELINE Y EVENTOS)
+   Ã°Å¸â€œÅ  OBTENER POST-GAME LOBBY (CON TANK, MVP, TIMELINE Y EVENTOS)
    ========================================================== */
 function getPostGameLobbyData(matchId) {
   const ss = SpreadsheetApp.getActive();
@@ -18244,7 +18256,7 @@ function getPostGameLobbyData(matchId) {
   let officialAce = null;
   let isResolved = false;
 
-  // 🟢 AÑADIDO: Variables para guardar los datos globales del partido
+  // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO: Variables para guardar los datos globales del partido
   let matchWinStats = null;
   let matchLosStats = null;
   let matchTimeline = null;
@@ -18276,8 +18288,8 @@ function getPostGameLobbyData(matchId) {
       
       let cs = "0.0";
       let csTotal = 0;
-      let cs15 = 0;      // 🟢 NUEVO
-      let plates = 0;    // 🟢 NUEVO
+      let cs15 = 0;      // Ã°Å¸Å¸Â¢ NUEVO
+      let plates = 0;    // Ã°Å¸Å¸Â¢ NUEVO
       let gpm = "0";
       let gold = 0;
       let tank = "-";
@@ -18287,8 +18299,8 @@ function getPostGameLobbyData(matchId) {
       let items = [];
       let spells = [];
 
-      let dmgObj = 0;      // 🟢 AÑADIDO
-      let dmgTurrets = 0;  // 🟢 AÑADIDO
+      let dmgObj = 0;      // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
+      let dmgTurrets = 0;  // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
 
       const rawJson = data[i][15]; 
       if (rawJson) {
@@ -18312,8 +18324,8 @@ function getPostGameLobbyData(matchId) {
               if (adv.items) items = adv.items;
               if (adv.spells) spells = adv.spells;
               
-              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         // 🟢 AÑADIDO
-              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); // 🟢 AÑADIDO
+              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
+              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
               
               if (adv.goldTimeline && matchTimeline === null) {
                   matchTimeline = adv.goldTimeline;
@@ -18341,17 +18353,17 @@ function getPostGameLobbyData(matchId) {
         votes: currentMatchVotes[pName] || 0,
         cs: cs,
         csTotal: csTotal,
-        cs15: cs15,       // 🟢 NUEVO
-        plates: plates,   // 🟢 NUEVO
+        cs15: cs15,       // Ã°Å¸Å¸Â¢ NUEVO
+        plates: plates,   // Ã°Å¸Å¸Â¢ NUEVO
         gpm: gpm,
         gold: gold,
         tank: tank,
         vspm: vspm,
         visionScore: visionScore,
-        items: items,   // 🟢 NUEVO
-        spells: spells,  // 🟢 NUEVO
-        dmgObj: dmgObj,        // 🟢 AÑADIDO
-        dmgTurrets: dmgTurrets // 🟢 AÑADIDO
+        items: items,   // Ã°Å¸Å¸Â¢ NUEVO
+        spells: spells,  // Ã°Å¸Å¸Â¢ NUEVO
+        dmgObj: dmgObj,        // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
+        dmgTurrets: dmgTurrets // Ã°Å¸Å¸Â¢ AÃƒâ€˜ADIDO
       };
 
       if (data[i][5] === 'Win') winners.push(pData);
@@ -18373,7 +18385,7 @@ function getPostGameLobbyData(matchId) {
       winStats: matchWinStats, 
       losStats: matchLosStats, 
       timeline: matchTimeline,  
-      events: matchEvents // 🟢 ¡ESTO ES LO QUE LE FALTABA A LA WEB PARA PINTAR EL TIMELINE DE OBJETIVOS!
+      events: matchEvents // Ã°Å¸Å¸Â¢ Ã‚Â¡ESTO ES LO QUE LE FALTABA A LA WEB PARA PINTAR EL TIMELINE DE OBJETIVOS!
   };
 }
 
@@ -18420,7 +18432,7 @@ function resolveMatchAwardsBackend(matchId) {
         if(finalAce) mvpSheet.appendRow([new Date(), 'SYSTEM_RESOLVED', matchId, finalAce, 'ACE']);
 
 
-        // 3. 🎰 LÓGICA DEL CASINO: ENCONTRAR AL GANADOR DEL PARTIDO PARA PAGAR LAS APUESTAS
+        // 3. Ã°Å¸Å½Â° LÃƒâ€œGICA DEL CASINO: ENCONTRAR AL GANADOR DEL PARTIDO PARA PAGAR LAS APUESTAS
         try {
             var matchSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
             if (matchSheet) {
@@ -18431,14 +18443,14 @@ function resolveMatchAwardsBackend(matchId) {
                 // Buscamos el partido en la base de datos
                 for (var m = 1; m < mData.length; m++) {
                     if (String(mData[m][0]) === String(matchId)) {
-                        // Las columnas F (índice 5) y G (índice 6) suelen ser los Scores A y B en tu formato
+                        // Las columnas F (ÃƒÂ­ndice 5) y G (ÃƒÂ­ndice 6) suelen ser los Scores A y B en tu formato
                         sA = parseInt(mData[m][5]) || 0;
                         sB = parseInt(mData[m][6]) || 0;
                         break;
                     }
                 }
                 
-                // Determinamos quién ganó (0 = Equipo A, 1 = Equipo B)
+                // Determinamos quiÃƒÂ©n ganÃƒÂ³ (0 = Equipo A, 1 = Equipo B)
                 if (sA > sB) winnerIdx = 0;
                 else if (sB > sA) winnerIdx = 1;
                 
@@ -18454,10 +18466,10 @@ function resolveMatchAwardsBackend(matchId) {
         // 4. FINALIZAR Y ENVIAR MENSAJE
         SpreadsheetApp.flush();
         
-        let msg = "¡Acta Cerrada Oficialmente!\n\n";
-        msg += "⭐ MVP: " + (finalMvp || 'Nadie') + "\n";
-        msg += "🛡️ ACE: " + (finalAce || 'Nadie') + "\n";
-        msg += "💰 Apuestas del Casino resueltas y pagadas.";
+        let msg = "Ã‚Â¡Acta Cerrada Oficialmente!\n\n";
+        msg += "Ã¢Â­Â MVP: " + (finalMvp || 'Nadie') + "\n";
+        msg += "Ã°Å¸â€ºÂ¡Ã¯Â¸Â ACE: " + (finalAce || 'Nadie') + "\n";
+        msg += "Ã°Å¸â€™Â° Apuestas del Casino resueltas y pagadas.";
         
         return {success: true, msg: msg};
         
@@ -18469,7 +18481,7 @@ function resolveMatchAwardsBackend(matchId) {
 }
 
 /* ==========================================================
-   🗳️ VOTACIÓN DE MVP Y ACE (PERMITE 1 DE CADA POR PARTIDO)
+   Ã°Å¸â€”Â³Ã¯Â¸Â VOTACIÃƒâ€œN DE MVP Y ACE (PERMITE 1 DE CADA POR PARTIDO)
    ========================================================== */
 function castMvpVoteBackend(matchId, playerName, voterName, voteType) {
     const lock = LockService.getScriptLock();
@@ -18489,7 +18501,7 @@ function castMvpVoteBackend(matchId, playerName, voterName, voteType) {
         // 1. Comprobar si el partido ya ha sido cerrado oficialmente por el Admin
         for (let i = 1; i < data.length; i++) {
             if (String(data[i][2]) === String(matchId) && String(data[i][1]) === 'SYSTEM_RESOLVED') {
-                return { success: false, msg: "❌ Las votaciones para este partido ya están cerradas (Acta Oficial generada)." };
+                return { success: false, msg: "Ã¢ÂÅ’ Las votaciones para este partido ya estÃƒÂ¡n cerradas (Acta Oficial generada)." };
             }
         }
         
@@ -18502,7 +18514,7 @@ function castMvpVoteBackend(matchId, playerName, voterName, voteType) {
             if (rowVoter === voterName && rowMatch === matchId && rowType === voteType.toUpperCase()) {
                 return { 
                     success: false, 
-                    msg: "❌ " + voterName + ", ya has emitido tu voto para el " + voteType + " de este partido." 
+                    msg: "Ã¢ÂÅ’ " + voterName + ", ya has emitido tu voto para el " + voteType + " de este partido." 
                 };
             }
         }
@@ -18512,7 +18524,7 @@ function castMvpVoteBackend(matchId, playerName, voterName, voteType) {
         
         return { 
             success: true, 
-            msg: "✅ Voto para " + voteType + " registrado a favor de " + playerName + "!" 
+            msg: "Ã¢Å“â€¦ Voto para " + voteType + " registrado a favor de " + playerName + "!" 
         };
         
     } catch (e) {
@@ -18524,7 +18536,7 @@ function castMvpVoteBackend(matchId, playerName, voterName, voteType) {
 
 
 /* ==========================================================
-   🕵️ SCOUTING PRE-PARTIDO (ACTUALIZADO PARA HEAD 2 HEAD)
+   Ã°Å¸â€¢ÂµÃ¯Â¸Â SCOUTING PRE-PARTIDO (ACTUALIZADO PARA HEAD 2 HEAD)
    ========================================================== */
 function getMatchScoutingData(matchId) {
     const ss = SpreadsheetApp.getActive();
@@ -18593,7 +18605,7 @@ function getMatchScoutingData(matchId) {
 }
 
 /* ==========================================================
-   📊 ESTADÍSTICAS AVANZADAS (CON DICCIONARIO RIOT API)
+   Ã°Å¸â€œÅ  ESTADÃƒÂSTICAS AVANZADAS (PARA EL SALÃƒâ€œN DE LA FAMA Y FANTASY)
    ========================================================== */
 function getTournamentStatsForWeb(roundFilter) {
   roundFilter = roundFilter || 'ALL';
@@ -18666,6 +18678,7 @@ function getTournamentStatsForWeb(roundFilter) {
                 form: [], 
                 dmgObjTotal: 0, 
                 dmgTurretsTotal: 0,
+                // Ã°Å¸Å¸Â¢ NUEVOS CONTADORES PARA EL SALÃƒâ€œN DE LA FAMA
                 tankTotal: 0, 
                 pinksTotal: 0,
                 epicsTotal: 0,
@@ -18689,7 +18702,7 @@ function getTournamentStatsForWeb(roundFilter) {
           
           if (mData[i][3]) s.champs.add(mData[i][3]); 
           
-          // 🟢 LECTOR NATIVO DE RIOT GAMES API
+          // Ã°Å¸Å¸Â¢ RECOLECTOR DE DATOS OCULTOS
           const rawJson = mData[i][15];
           if (rawJson) {
               try {
@@ -18697,28 +18710,14 @@ function getTournamentStatsForWeb(roundFilter) {
                   s.csTotal += Number(adv.csMin || 0);
                   s.vsTotal += Number(adv.vspm || 0);
                   s.gpmTotal += Number(adv.gpm || 0);
-                  s.dmgObjTotal += Number(adv.dmgObj || adv.damageDealtToObjectives || 0);        
-                  s.dmgTurretsTotal += Number(adv.dmgTurrets || adv.damageDealtToBuildings || adv.damageDealtToTurrets || 0);
+                  s.dmgObjTotal += Number(adv.dmgObj || 0);        
+                  s.dmgTurretsTotal += Number(adv.dmgTurrets || 0);
                   
-                  // 🛡️ Daño Tanqueado (Daño Recibido + Daño Mitigado)
-                  let tanked = Number(adv.totalDamageTaken || 0) + Number(adv.damageSelfMitigated || 0);
-                  s.tankTotal += tanked > 0 ? tanked : Number(adv.tank || adv.dmgTaken || 0);
-
-                  // 💡 Pinks (Riot lo llama visionWardsBoughtInGame)
-                  s.pinksTotal += Number(adv.visionWardsBoughtInGame || adv.controlWards || adv.pinks || 0);
-
-                  // 🐉 Monstruos Épicos (Dragones + Barones + Heraldos)
-                  let epics = Number(adv.dragonKills || 0) + Number(adv.baronKills || 0) + Number(adv.objectivesStolen || 0);
-                  if (adv.challenges) {
-                      epics += Number(adv.challenges.dragonTakedowns || 0) + 
-                               Number(adv.challenges.baronTakedowns || 0) + 
-                               Number(adv.challenges.riftHeraldTakedowns || 0);
-                  }
-                  s.epicsTotal += epics > 0 ? epics : Number(adv.epicMonsters || adv.epics || 0);
-
-                  // 🌟 Pentakills
-                  s.pentasTotal += Number(adv.pentaKills || adv.pentakills || adv.pentas || 0);
-
+                  // Rescatamos los datos clave de tu json
+                  s.tankTotal += Number(adv.dmgTaken || adv.damageTaken || adv.totalDamageTaken || 0);
+                  s.pinksTotal += Number(adv.pinks || adv.controlWards || adv.visionWardsBoughtInGame || 0);
+                  s.epicsTotal += Number(adv.epicMonsters || adv.epics || adv.dragonKills || 0);
+                  s.pentasTotal += Number(adv.pentas || adv.pentaKills || adv.pentakills || 0);
               } catch(e) {}
           }
           
@@ -18748,6 +18747,7 @@ function getTournamentStatsForWeb(roundFilter) {
               else if (s.form[0] === 'L' && s.form[1] === 'L') trend = 'COLD';
           }
 
+          // Ã°Å¸Å¸Â¢ AQUÃƒÂ EMPAQUETAMOS TODO PARA MANDARLO A LA WEB
           result.push({
               name: s.name, team: s.team, role: Object.keys(s.rolesCount).reduce((a, b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL"), games: s.games,
               winrate: winrate, mvps: myVotes.mvps, aces: myVotes.aces,
@@ -18757,6 +18757,8 @@ function getTournamentStatsForWeb(roundFilter) {
               dmgObj: s.dmgObjTotal,          
               dmgTurrets: s.dmgTurretsTotal,  
               trend: trend,
+              
+              // Ã°Å¸â€Â´ ENVIAMOS LOS DATOS MÃƒÂGICOS A LA WEB (Se envÃƒÂ­an como totales acumulados)
               tank: s.tankTotal,
               pinks: s.pinksTotal,
               epicMonsters: s.epicsTotal,
@@ -18771,7 +18773,7 @@ function getTournamentStatsForWeb(roundFilter) {
 }
 
 /* ==========================================================
-   📰 MOTOR DE NOTICIAS Y TENDENCIAS (CON ANALISTA IA EXTENDIDO)
+   Ã°Å¸â€œÂ° MOTOR DE NOTICIAS Y TENDENCIAS (CON ANALISTA IA EXTENDIDO)
    ========================================================== */
 function getNewsAndTrends() {
   const ss = SpreadsheetApp.getActive();
@@ -18789,7 +18791,7 @@ function getNewsAndTrends() {
 
   let headlines = [];
   
-  // 🤖 1. EL ANALISTA IA (PREDICCIÓN DEL PRÓXIMO PARTIDO)
+  // Ã°Å¸Â¤â€“ 1. EL ANALISTA IA (PREDICCIÃƒâ€œN DEL PRÃƒâ€œXIMO PARTIDO)
   const tournamentData = getTournamentData();
   if (tournamentData && tournamentData.matches) {
       let pending = tournamentData.matches.filter(m => m.status !== 'COMPLETED');
@@ -18802,73 +18804,73 @@ function getNewsAndTrends() {
           let bestB = players.filter(p => p.team === tB).sort((a,b)=>b.points - a.points)[0];
           
           if (bestA && bestB) {
-              headlines.push({ type: '🔮 IA ANALYTICS', text: `Análisis del próximo duelo: ¿Podrá el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?` });
+              headlines.push({ type: 'Ã°Å¸â€Â® IA ANALYTICS', text: `AnÃƒÂ¡lisis del prÃƒÂ³ximo duelo: Ã‚Â¿PodrÃƒÂ¡ el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?` });
           } else {
-              headlines.push({ type: '🔮 IA ANALYTICS', text: `Tensión máxima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.` });
+              headlines.push({ type: 'Ã°Å¸â€Â® IA ANALYTICS', text: `TensiÃƒÂ³n mÃƒÂ¡xima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.` });
           }
       }
   }
 
-  // 🔥 2. JUGADORES "ON FIRE"
+  // Ã°Å¸â€Â¥ 2. JUGADORES "ON FIRE"
   const onFirePlayers = players.filter(p => p.trend === 'ON_FIRE');
   if (onFirePlayers.length > 0) {
       let pFire = onFirePlayers[Math.floor(Math.random() * onFirePlayers.length)];
-      headlines.push({ type: '🔥 HOT', text: `Estado de gracia: **${pFire.name}** está ON FIRE. Sus rivales deberían plantearse banear sus mejores campeones en el próximo draft.` });
+      headlines.push({ type: 'Ã°Å¸â€Â¥ HOT', text: `Estado de gracia: **${pFire.name}** estÃƒÂ¡ ON FIRE. Sus rivales deberÃƒÂ­an plantearse banear sus mejores campeones en el prÃƒÂ³ximo draft.` });
   }
 
-  // 🧊 3. ALERTA DE TILT (Mala Racha)
+  // Ã°Å¸Â§Å  3. ALERTA DE TILT (Mala Racha)
   const coldPlayers = players.filter(p => p.trend === 'COLD');
   if (coldPlayers.length > 0) {
       let pCold = coldPlayers[Math.floor(Math.random() * coldPlayers.length)];
-      headlines.push({ type: '🧊 TILT ALERT', text: `Alarma roja para **${pCold.name}**, que atraviesa una racha de derrotas. ¿Podrá romper la maldición en su próximo partido?` });
+      headlines.push({ type: 'Ã°Å¸Â§Å  TILT ALERT', text: `Alarma roja para **${pCold.name}**, que atraviesa una racha de derrotas. Ã‚Â¿PodrÃƒÂ¡ romper la maldiciÃƒÂ³n en su prÃƒÂ³ximo partido?` });
   }
 
-  // 👑 4. RACHA DE MVPs
+  // Ã°Å¸â€˜â€˜ 4. RACHA DE MVPs
   players.forEach(p => {
-    if (p.mvps >= 2) headlines.push({ type: 'ALERTA', text: '¡Incontrolable! **' + p.name + '** encadena ' + p.mvps + ' MVPs y es el terror de la liga.' });
+    if (p.mvps >= 2) headlines.push({ type: 'ALERTA', text: 'Ã‚Â¡Incontrolable! **' + p.name + '** encadena ' + p.mvps + ' MVPs y es el terror de la liga.' });
   });
 
-  // 💥 5. MAYOR DPM
+  // Ã°Å¸â€™Â¥ 5. MAYOR DPM
   const topDpmPlayer = [...players].sort((a,b) => b.dpm - a.dpm)[0];
   if (topDpmPlayer && topDpmPlayer.dpm > 800) {
     headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpmPlayer.name + '** revienta los medidores con una media de DPM de ' + topDpmPlayer.dpm + '.' });
   }
   
-  // 🚜 6. GRANJERO SUPREMO
+  // Ã°Å¸Å¡Å“ 6. GRANJERO SUPREMO
   const topCsPlayer = [...players].sort((a,b) => b.cs - a.cs)[0];
   if (topCsPlayer && topCsPlayer.cs >= 8.0) {
-    headlines.push({ type: 'TENDENCIA', text: 'Máquina de farmear: **' + topCsPlayer.name + '** arrasa con los súbditos a un ritmo de ' + topCsPlayer.cs + ' CS/Min.' });
+    headlines.push({ type: 'TENDENCIA', text: 'MÃƒÂ¡quina de farmear: **' + topCsPlayer.name + '** arrasa con los sÃƒÂºbditos a un ritmo de ' + topCsPlayer.cs + ' CS/Min.' });
   }
 
-  // 🛡️ 7. EL INMORTAL
+  // Ã°Å¸â€ºÂ¡Ã¯Â¸Â 7. EL INMORTAL
   const immortal = [...players].filter(p => p.games >= 2).sort((a,b) => a.avgDeaths - b.avgDeaths)[0];
   if (immortal && immortal.avgDeaths < 2.5) {
     headlines.push({ type: 'REPORTE', text: 'Muro infranqueable: Es casi imposible matar a **' + immortal.name + '** (Media de solo ' + immortal.avgDeaths + ' muertes por partido).' });
   }
 
-  // 🎯 8. KDA SUPREMO
+  // Ã°Å¸Å½Â¯ 8. KDA SUPREMO
   const topKdaPlayer = [...players].sort((a,b) => b.kdaNum - a.kdaNum)[0];
   if (topKdaPlayer && topKdaPlayer.kdaNum >= 6.0 && topKdaPlayer.games >= 2) {
-      headlines.push({ type: '🎯 PRECISIÓN', text: 'Intocable y letal: **' + topKdaPlayer.name + '** ostenta un KDA de ' + topKdaPlayer.kdaText + ' liderando la tabla de eficiencia en combate.' });
+      headlines.push({ type: 'Ã°Å¸Å½Â¯ PRECISIÃƒâ€œN', text: 'Intocable y letal: **' + topKdaPlayer.name + '** ostenta un KDA de ' + topKdaPlayer.kdaText + ' liderando la tabla de eficiencia en combate.' });
   }
 
-  // 👁️ 9. DIOS DE LA VISIÓN
+  // Ã°Å¸â€˜ÂÃ¯Â¸Â 9. DIOS DE LA VISIÃƒâ€œN
   const topVisPlayer = [...players].sort((a,b) => b.vspm - a.vspm)[0];
   if (topVisPlayer && topVisPlayer.vspm >= 2.0) {
-      headlines.push({ type: '👁️ MAP CONTROL', text: 'El mapa no tiene secretos para **' + topVisPlayer.name + '**, que ilumina la Grieta con ' + topVisPlayer.vspm + ' de Visión por Minuto.' });
+      headlines.push({ type: 'Ã°Å¸â€˜ÂÃ¯Â¸Â MAP CONTROL', text: 'El mapa no tiene secretos para **' + topVisPlayer.name + '**, que ilumina la Grieta con ' + topVisPlayer.vspm + ' de VisiÃƒÂ³n por Minuto.' });
   }
 
-  // 💰 10. REY DEL ORO (GPM)
+  // Ã°Å¸â€™Â° 10. REY DEL ORO (GPM)
   const topGpmPlayer = [...players].sort((a,b) => b.gpm - a.gpm)[0];
   if (topGpmPlayer && topGpmPlayer.gpm >= 450) {
-      headlines.push({ type: '💰 ECONOMÍA', text: 'Auténtico magnate: **' + topGpmPlayer.name + '** genera ' + topGpmPlayer.gpm + ' de oro por minuto, marcando la diferencia en compras de objetos.' });
+      headlines.push({ type: 'Ã°Å¸â€™Â° ECONOMÃƒÂA', text: 'AutÃƒÂ©ntico magnate: **' + topGpmPlayer.name + '** genera ' + topGpmPlayer.gpm + ' de oro por minuto, marcando la diferencia en compras de objetos.' });
   }
 
   if (headlines.length === 0) {
-    headlines.push({ type: 'INFO', text: "La liga está al rojo vivo. Analiza los scouting para preparar tus Pick'ems." });
+    headlines.push({ type: 'INFO', text: "La liga estÃƒÂ¡ al rojo vivo. Analiza los scouting para preparar tus Pick'ems." });
   }
 
-  // Mezclamos aleatoriamente y ahora extraemos hasta 9 noticias para llenar bien el periódico panorámico
+  // Mezclamos aleatoriamente y ahora extraemos hasta 9 noticias para llenar bien el periÃƒÂ³dico panorÃƒÂ¡mico
   headlines = headlines.sort(() => 0.5 - Math.random()).slice(0, 9);
 
   return {
@@ -18878,7 +18880,7 @@ function getNewsAndTrends() {
 }
 
 /* ==========================================================
-   🔮 RÉCORDS Y ORÁCULOS (FIX: CÁLCULO EXACTO DEL COLOSO)
+   Ã°Å¸â€Â® RÃƒâ€°CORDS Y ORÃƒÂCULOS (FIX: CÃƒÂLCULO EXACTO DEL COLOSO)
    ========================================================== */
 function getLeagueRecordsAndPickems(roundFilter) {
     roundFilter = roundFilter || 'ALL';
@@ -18917,7 +18919,7 @@ function getLeagueRecordsAndPickems(roundFilter) {
 
     let records = {
         bloodiest: { player: '-', val: 0, sub: 'Kills' },
-        pacifist: { player: '-', val: 999999, sub: 'Daño (Win)' },
+        pacifist: { player: '-', val: 999999, sub: 'DaÃƒÂ±o (Win)' },
         tank: { player: '-', val: 0, sub: '% Absorbido (Media)' },
         farmer: { player: '-', val: 0, sub: 'CS/M' }
     };
@@ -18937,19 +18939,19 @@ function getLeagueRecordsAndPickems(roundFilter) {
             const rawJson = mData[i][15]; // Columna P
             
             if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
-            if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+            if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'DaÃƒÂ±o (Win)' };
             
             if (rawJson) {
                 try {
                     let adv = JSON.parse(rawJson);
                     if (Number(adv.csMin || 0) > records.farmer.val) records.farmer = { player: p, val: Number(adv.csMin).toFixed(1), sub: 'CS/M' };
                     
-                    // 💡 FIX: Leemos el % de tanqueo directamente de la base de datos de Riot
+                    // Ã°Å¸â€™Â¡ FIX: Leemos el % de tanqueo directamente de la base de datos de Riot
                     let pct = 0;
                     if (adv.tank !== undefined) pct = Number(adv.tank);
                     else if (adv.dmgTakenPct !== undefined) pct = Number(adv.dmgTakenPct);
                     
-                    // Si el número viene como 0.27, lo pasamos a 27 para sacar la media entera
+                    // Si el nÃƒÂºmero viene como 0.27, lo pasamos a 27 para sacar la media entera
                     if (pct > 0 && pct <= 1) {
                         pct = pct * 100;
                     }
@@ -18963,7 +18965,7 @@ function getLeagueRecordsAndPickems(roundFilter) {
             }
         }
         
-        // Calcular la media y ver quién es el Coloso absoluto
+        // Calcular la media y ver quiÃƒÂ©n es el Coloso absoluto
         let bestTank = { player: '-', val: 0 };
         for (let p in playerTankAcc) {
             let avg = playerTankAcc[p].sum / playerTankAcc[p].count;
@@ -18996,7 +18998,7 @@ function getLeagueRecordsAndPickems(roundFilter) {
 
 
 /* ==========================================================
-   ESTADÍSTICAS AVANZADAS DE EQUIPO (PARA EL PERFIL AL HACER CLIC)
+   ESTADÃƒÂSTICAS AVANZADAS DE EQUIPO (PARA EL PERFIL AL HACER CLIC)
    ========================================================== */
 function getTeamAdvancedStats(rosterStr) {
   const ss = SpreadsheetApp.getActive();
@@ -19020,7 +19022,7 @@ function getTeamAdvancedStats(rosterStr) {
         let d = Number(mData[i][7] || 0);
         let a = Number(mData[i][8] || 0);
         let dmg = Number(mData[i][9] || 0);
-        let dur = Number(mData[i][11] || 1); // Duración
+        let dur = Number(mData[i][11] || 1); // DuraciÃƒÂ³n
         
         let vision = 0;
         let gold = 0;
@@ -19028,7 +19030,7 @@ function getTeamAdvancedStats(rosterStr) {
         if(adv){
            try { 
                let j = JSON.parse(adv); 
-               // Intentamos sacar los pinks o wards, si no, multiplicamos la visión por minuto
+               // Intentamos sacar los pinks o wards, si no, multiplicamos la visiÃƒÂ³n por minuto
                vision = j.pinks ? Number(j.pinks) : (Number(j.vspm || 0) * dur);
                gold = Number(j.gpm || 0) * dur;
            } catch(e) {}
@@ -19075,7 +19077,7 @@ function getTeamAdvancedStats(rosterStr) {
 }
 
 /* ==========================================================
-   📡 ESCÁNER MANUAL DE PARTIDAS DE TORNEO (CUSTOMS)
+   Ã°Å¸â€œÂ¡ ESCÃƒÂNER MANUAL DE PARTIDAS DE TORNEO (CUSTOMS)
    ========================================================== */
 function registerTournamentMatch(matchId) {
   try {
@@ -19084,7 +19086,7 @@ function registerTournamentMatch(matchId) {
     
     matchId = String(matchId).trim();
     if (!matchId.includes('_')) {
-      return { success: false, msg: "❌ Formato incorrecto. Debe incluir la región (Ej: EUW1_12345678)" };
+      return { success: false, msg: "Ã¢ÂÅ’ Formato incorrecto. Debe incluir la regiÃƒÂ³n (Ej: EUW1_12345678)" };
     }
 
     // 1. Descargar la partida directamente de Riot API
@@ -19092,11 +19094,11 @@ function registerTournamentMatch(matchId) {
     const matchData = riotFetchJson(url);
 
     if (!matchData || matchData.__error) {
-      return { success: false, msg: "❌ Riot no encuentra la partida. Verifica que el ID es correcto." };
+      return { success: false, msg: "Ã¢ÂÅ’ Riot no encuentra la partida. Verifica que el ID es correcto." };
     }
 
     // =====================================================
-    // 🟢 NUEVO: EXTRAER OBJETIVOS Y LÍNEA DE TIEMPO (ORO Y EVENTOS)
+    // Ã°Å¸Å¸Â¢ NUEVO: EXTRAER OBJETIVOS Y LÃƒÂNEA DE TIEMPO (ORO Y EVENTOS)
     // =====================================================
     const timelineUrl = `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline`;
     const timelineData = riotFetchJson(timelineUrl);
@@ -19136,8 +19138,8 @@ function registerTournamentMatch(matchId) {
             let firstBloodFound = false;
             let firstTowerFound = false;
 
-            // 🟢 EXTRAEMOS EL CS AL MINUTO 15 DESDE LA CACHÉ
-            // Si la partida duró menos de 15 min, coge el último frame
+            // Ã°Å¸Å¸Â¢ EXTRAEMOS EL CS AL MINUTO 15 DESDE LA CACHÃƒâ€°
+            // Si la partida durÃƒÂ³ menos de 15 min, coge el ÃƒÂºltimo frame
             let min15Frame = timelineData.info.frames[15] || timelineData.info.frames[timelineData.info.frames.length - 1]; 
             if (min15Frame && min15Frame.participantFrames) {
                 for (let pId in min15Frame.participantFrames) {
@@ -19146,7 +19148,7 @@ function registerTournamentMatch(matchId) {
                 }
             }
 
-            // 🟢 EXTRAER BANS REALES DE LA PARTIDA
+            // Ã°Å¸Å¸Â¢ EXTRAER BANS REALES DE LA PARTIDA
             let matchBans = [];
             if (matchData && matchData.info && matchData.info.teams) {
                 matchData.info.teams.forEach(t => {
@@ -19159,7 +19161,7 @@ function registerTournamentMatch(matchId) {
                 });
             }
 
-            // 🟢 LÓGICA DE EVENTOS (AHORA BASADA EN GANADOR/PERDEDOR, NO EN AZUL/ROJO)
+            // Ã°Å¸Å¸Â¢ LÃƒâ€œGICA DE EVENTOS (AHORA BASADA EN GANADOR/PERDEDOR, NO EN AZUL/ROJO)
             timelineData.info.frames.forEach(frame => {
                 let wGold = 0, lGold = 0;
                 for (let pId in frame.participantFrames) {
@@ -19170,7 +19172,7 @@ function registerTournamentMatch(matchId) {
                         else lGold += pf.totalGold;
                     }
                 }
-                // La gráfica de oro siempre será Ganador - Perdedor
+                // La grÃƒÂ¡fica de oro siempre serÃƒÂ¡ Ganador - Perdedor
                 goldTimeline.push(wGold - lGold); 
 
                 if (frame.events) {
@@ -19252,17 +19254,17 @@ function registerTournamentMatch(matchId) {
       }
     }
 
-    // --- 🟢 NUEVO: NOTIFICACIÓN PARA EL FANTASY PREMIER ---
+    // --- Ã°Å¸Å¸Â¢ NUEVO: NOTIFICACIÃƒâ€œN PARA EL FANTASY PREMIER ---
     try {
         var txSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Transactions");
         if (txSheet) {
-            // Buscamos los nombres de los equipos para la notificación
+            // Buscamos los nombres de los equipos para la notificaciÃƒÂ³n
             var tA_Name = teamA_Db ? teamA_Db.name : "Equipo Azul";
             var tB_Name = teamB_Db ? teamB_Db.name : "Equipo Rojo";
             
             var matchMsg = "Se ha registrado el acta oficial de: " + tA_Name + " vs " + tB_Name;
             
-            // Lo añadimos al historial de transacciones con el tipo MATCH
+            // Lo aÃƒÂ±adimos al historial de transacciones con el tipo MATCH
             txSheet.appendRow([new Date(), 'MATCH', 'LIGA', matchMsg, 0]);
         }
     } catch(e) {
@@ -19271,9 +19273,9 @@ function registerTournamentMatch(matchId) {
     // -----------------------------------------------------
 
     if (processedCount > 0) {
-      return { success: true, msg: `✅ ¡Partida Escaneada! Se han guardado las estadísticas de ${processedCount} jugadores.` };
+      return { success: true, msg: `Ã¢Å“â€¦ Ã‚Â¡Partida Escaneada! Se han guardado las estadÃƒÂ­sticas de ${processedCount} jugadores.` };
     } else {
-      return { success: false, msg: "⚠️ La partida existe, pero NINGUNO de los 10 jugadores está en tu pestaña PLAYERS." };
+      return { success: false, msg: "Ã¢Å¡Â Ã¯Â¸Â La partida existe, pero NINGUNO de los 10 jugadores estÃƒÂ¡ en tu pestaÃƒÂ±a PLAYERS." };
     }
 
   } catch (e) {
@@ -19282,18 +19284,18 @@ function registerTournamentMatch(matchId) {
 }
 
 /* ==========================================================
-   ⚡ AUTO-RESOLUCIÓN MÁGICA DE PARTIDOS DE TORNEO
+   Ã¢Å¡Â¡ AUTO-RESOLUCIÃƒâ€œN MÃƒÂGICA DE PARTIDOS DE TORNEO
    ========================================================== */
 function autoResolveTournamentMatch(tMatchId, riotId) {
   try {
     riotId = String(riotId).trim();
-    if (!riotId.includes('_')) return { success: false, msg: "Riot ID inválido (Falta la región, ej: EUW1_...)." };
+    if (!riotId.includes('_')) return { success: false, msg: "Riot ID invÃƒÂ¡lido (Falta la regiÃƒÂ³n, ej: EUW1_...)." };
 
     // 1. Escanear y guardar la partida en la base de datos general
     const scanRes = registerTournamentMatch(riotId);
     if (!scanRes.success) return scanRes; 
 
-    // 2. Extraer datos de la caché (registerTournamentMatch la guarda ahí al descargar)
+    // 2. Extraer datos de la cachÃƒÂ© (registerTournamentMatch la guarda ahÃƒÂ­ al descargar)
     let matchData = GLOBAL_MATCH_CACHE[riotId];
     if (!matchData) {
         const cfg = readConfigMap();
@@ -19336,7 +19338,7 @@ function autoResolveTournamentMatch(tMatchId, riotId) {
         }
     }
 
-    // 6. Contar de qué equipo son los ganadores
+    // 6. Contar de quÃƒÂ© equipo son los ganadores
     const participants = matchData.info.participants;
     let matchedA = 0; let matchedB = 0;
 
@@ -19354,14 +19356,14 @@ function autoResolveTournamentMatch(tMatchId, riotId) {
     if (matchedA > matchedB) { pointsA = 1; pointsB = 0; }
     else if (matchedB > matchedA) { pointsA = 0; pointsB = 1; }
     else {
-        return { success: false, msg: "⚠️ Partida escaneada y guardada, pero no pude deducir automáticamente quién ganó porque los jugadores de la partida no coinciden con los nombres que pusiste en los Rosters. Por favor, pon el 1-0 manualmente abajo y dale a GUARDAR." };
+        return { success: false, msg: "Ã¢Å¡Â Ã¯Â¸Â Partida escaneada y guardada, pero no pude deducir automÃƒÂ¡ticamente quiÃƒÂ©n ganÃƒÂ³ porque los jugadores de la partida no coinciden con los nombres que pusiste en los Rosters. Por favor, pon el 1-0 manualmente abajo y dale a GUARDAR." };
     }
 
     // 7. Aplicar Resultado Oficial
     const updateRes = updateMatchResult(tMatchId, pointsA, pointsB, riotId);
     
     if (updateRes.success) {
-        return { success: true, msg: `✨ ¡MAGIA PURA! La partida se ha descargado, se ha detectado al ganador automáticamente y las stats están listas para verse en el Acta.` };
+        return { success: true, msg: `Ã¢Å“Â¨ Ã‚Â¡MAGIA PURA! La partida se ha descargado, se ha detectado al ganador automÃƒÂ¡ticamente y las stats estÃƒÂ¡n listas para verse en el Acta.` };
     } else {
         return { success: false, msg: "Fallo al guardar el resultado final en el cuadro." };
     }
@@ -19372,12 +19374,12 @@ function autoResolveTournamentMatch(tMatchId, riotId) {
 }
 
 // ==========================================================
-// 📺 ANUNCIAR STREAM EN DISCORD
+// Ã°Å¸â€œÂº ANUNCIAR STREAM EN DISCORD
 // ==========================================================
 function announceStreamBackend(streamUrl, matchInfo) {
-  const mensaje = "🔴 **¡ESTAMOS EN DIRECTO!** 🔴\n\n🎙️ Arranca el casteo oficial del partido:\n⚔️ **" + matchInfo + "**\n\n👉 **ENTRA AL STREAM AQUÍ:** " + streamUrl;
+  const mensaje = "Ã°Å¸â€Â´ **Ã‚Â¡ESTAMOS EN DIRECTO!** Ã°Å¸â€Â´\n\nÃ°Å¸Å½â„¢Ã¯Â¸Â Arranca el casteo oficial del partido:\nÃ¢Å¡â€Ã¯Â¸Â **" + matchInfo + "**\n\nÃ°Å¸â€˜â€° **ENTRA AL STREAM AQUÃƒÂ:** " + streamUrl;
   sendDiscordAlert(mensaje); // Usa el webhook que ya configuramos antes
-  return "¡Alerta de Stream enviada a Discord!";
+  return "Ã‚Â¡Alerta de Stream enviada a Discord!";
 }
 
 
@@ -19389,7 +19391,7 @@ function setStreamDate(dateStr) {
 }
 
 /* ==========================================================
-   🧬 META SNAPSHOT (ESTADÍSTICAS DE CAMPEONES)
+   Ã°Å¸Â§Â¬ META SNAPSHOT (ESTADÃƒÂSTICAS DE CAMPEONES)
    ========================================================== */
 function getMetaStats() {
   const ss = SpreadsheetApp.getActive();
@@ -19434,19 +19436,19 @@ function getMetaStats() {
       });
   }
   
-  // Ordenamos por los más elegidos, y en caso de empate por Winrate
+  // Ordenamos por los mÃƒÂ¡s elegidos, y en caso de empate por Winrate
   return resultArr.sort((a, b) => b.picks - a.picks || b.winrate - a.winrate);
 }
 
 
 /* ==========================================================
-   🏆 SISTEMA DE PLAYOFFS (BOTÓN MÁGICO)
+   Ã°Å¸Ââ€  SISTEMA DE PLAYOFFS (BOTÃƒâ€œN MÃƒÂGICO)
    ========================================================== */
 function getPlayoffsStatus() {
   const ss = SpreadsheetApp.getActive();
   let infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
   if (!infoSheet) return false;
-  // Usamos la celda B6 de TOURNAMENT_INFO para guardar si está activo o no
+  // Usamos la celda B6 de TOURNAMENT_INFO para guardar si estÃƒÂ¡ activo o no
   const status = infoSheet.getRange('B6').getValue();
   return status === 'ACTIVE';
 }
@@ -19457,11 +19459,11 @@ function togglePlayoffsBackend(isActive) {
   if (!infoSheet) infoSheet = ss.insertSheet('TOURNAMENT_INFO'); // Por si acaso no existe
   
   infoSheet.getRange('B6').setValue(isActive ? 'ACTIVE' : 'INACTIVE');
-  return { msg: isActive ? "🏆 Árbol de Playoffs DESBLOQUEADO para todos los usuarios." : "🔒 Fase de Playoffs OCULTA de nuevo." };
+  return { msg: isActive ? "Ã°Å¸Ââ€  ÃƒÂrbol de Playoffs DESBLOQUEADO para todos los usuarios." : "Ã°Å¸â€â€™ Fase de Playoffs OCULTA de nuevo." };
 }
 
 function checkAdminPassword(inputPass) {
-  const REAL_PASSWORD = "admin"; // Pon aquí la contraseña que quieras
+  const REAL_PASSWORD = "admin"; // Pon aquÃƒÂ­ la contraseÃƒÂ±a que quieras
   
   if (inputPass === REAL_PASSWORD) {
     return true;
@@ -19473,17 +19475,17 @@ function checkAdminPassword(inputPass) {
 function getPublicPlayerProfile(playerName) {
   try {
     if (!playerName || playerName === "") {
-      return { error: "No se ha recibido ningún nombre en la URL" };
+      return { error: "No se ha recibido ningÃƒÂºn nombre en la URL" };
     }
 
     var data = getTournamentStatsForWeb("ALL"); 
     
     if (!data) {
-      return { error: "La base de datos (data) no responde o está vacía" };
+      return { error: "La base de datos (data) no responde o estÃƒÂ¡ vacÃƒÂ­a" };
     }
     
     if (!data.stats || data.stats.length === 0) {
-      return { error: "La pestaña de estadísticas (data.stats) está vacía" };
+      return { error: "La pestaÃƒÂ±a de estadÃƒÂ­sticas (data.stats) estÃƒÂ¡ vacÃƒÂ­a" };
     }
     
     var searchName = String(playerName).toLowerCase().trim();
@@ -19506,14 +19508,14 @@ function getPublicPlayerProfile(playerName) {
 
 function getPublicPlayerUrl(playerName) {
   var url = ScriptApp.getService().getUrl();
-  // encodeURIComponent asegura que los espacios y símbolos raros viajen bien por la URL
+  // encodeURIComponent asegura que los espacios y sÃƒÂ­mbolos raros viajen bien por la URL
   return url + "?player=" + encodeURIComponent(playerName);
 }
 
 
 
 // =========================================================================
-// 🌟 MÓDULO FANTASY PREMIER - BACKEND UNIFICADO V4.1 (PRECIOS DINÁMICOS)
+// Ã°Å¸Å’Å¸ MÃƒâ€œDULO FANTASY PREMIER - BACKEND UNIFICADO V4.1 (PRECIOS DINÃƒÂMICOS)
 // =========================================================================
 
 function setupFantasySheets() {
@@ -19535,7 +19537,7 @@ function setupFantasySheets() {
       sheet.getRange(1, 1, 1, sheetsConfig[name].length).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
     }
   }
-  SpreadsheetApp.getUi().alert("✅ Fantasy Premier configurado correctamente.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Fantasy Premier configurado correctamente.");
   return "OK";
 }
 
@@ -19543,14 +19545,14 @@ function loginManager(managerId, pin) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Fantasy_Managers");
-    if (!sheet) return { success: false, error: "Falta la pestaña Fantasy_Managers." };
+    if (!sheet) return { success: false, error: "Falta la pestaÃƒÂ±a Fantasy_Managers." };
     var data = sheet.getDataRange().getValues();
     var searchId = String(managerId).trim().toLowerCase();
     for (var i = 1; i < data.length; i++) {
       if (data[i][0] && String(data[i][0]).trim().toLowerCase() === searchId) {
         if (String(data[i][1]).trim() === String(pin).trim()) {
           return { success: true, name: data[i][0], budget: data[i][2], points: data[i][3] };
-        } else return { success: false, error: "❌ PIN incorrecto." };
+        } else return { success: false, error: "Ã¢ÂÅ’ PIN incorrecto." };
       }
     }
     return { success: false, error: "NOT_FOUND" };
@@ -19562,10 +19564,10 @@ function registerManager(managerId, pin) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheetManagers = ss.getSheetByName("Fantasy_Managers");
     var sheetRosters = ss.getSheetByName("Fantasy_Rosters");
-    if (!sheetManagers || !sheetRosters) return { success: false, error: "Faltan las pestañas base." };
+    if (!sheetManagers || !sheetRosters) return { success: false, error: "Faltan las pestaÃƒÂ±as base." };
     
     var existingData = sheetManagers.getDataRange().getValues();
-    if (existingData.length > 15) return { success: false, error: "⛔ Cupo máximo alcanzado." };
+    if (existingData.length > 15) return { success: false, error: "Ã¢â€ºâ€ Cupo mÃƒÂ¡ximo alcanzado." };
 
     var cleanId = String(managerId).trim();
     var rostersData = sheetRosters.getDataRange().getValues();
@@ -19596,7 +19598,7 @@ function registerManager(managerId, pin) {
     }
     if (starter1 && !starter2 && cheapPlayers.length > 1) starter2 = cheapPlayers[1];
     
-    // 🟢 PRESUPUESTO INICIAL AUMENTADO A 15M (Las estrellas ahora cuestan ~10M)
+    // Ã°Å¸Å¸Â¢ PRESUPUESTO INICIAL AUMENTADO A 15M (Las estrellas ahora cuestan ~10M)
     var initialBudget = 15000000; 
     var newRoster = ["", "", "", "", ""]; 
     var roleMap = { "TOP": 0, "JUNGLE": 1, "JGL": 1, "MIDDLE": 2, "MID": 2, "BOTTOM": 3, "ADC": 3, "SUPPORT": 4, "SUP": 4 };
@@ -19646,7 +19648,7 @@ function getFantasyInitData(managerId) {
     var result = {
       success: true, financials: { budget: 0, bids: 0 }, roster: null,
       ranking: [], activity: [], charts: { labels: [], points: [], budget: [] }, inventory: [],
-      allRosters: [] // 🟢 AQUÍ GUARDAMOS TODOS LOS EQUIPOS PARA EL LIVE SCORING
+      allRosters: [] // Ã°Å¸Å¸Â¢ AQUÃƒÂ GUARDAMOS TODOS LOS EQUIPOS PARA EL LIVE SCORING
     };
 
     var statsResponse = getTournamentStatsForWeb('ALL');
@@ -19670,7 +19672,7 @@ function getFantasyInitData(managerId) {
         else if(subName) val += 500000;
         teamValues[mId] = val;
 
-        // 🟢 LLENAMOS EL ARRAY PARA LA WEB
+        // Ã°Å¸Å¸Â¢ LLENAMOS EL ARRAY PARA LA WEB
         result.allRosters.push({
             manager: String(rData[k][0]),
             top: rData[k][1], jgl: rData[k][2], mid: rData[k][3], adc: rData[k][4], sup: rData[k][5], 
@@ -19728,10 +19730,10 @@ function getFantasyInitData(managerId) {
 }
 
 function formatMoneyBack(num) {
-    return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €";
+    return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " Ã¢â€šÂ¬";
 }
 
-// 🟢 NUEVA FÓRMULA DE PRECIOS (JUSTICIA ABSOLUTA BASADA EN PUNTOS)
+// Ã°Å¸Å¸Â¢ NUEVA FÃƒâ€œRMULA DE PRECIOS (JUSTICIA ABSOLUTA BASADA EN PUNTOS)
 function getFantasyPlayerPrice(p) {
     if (!p) return 500000;
     var ovr = calculatePlayerOVRBackend(p);
@@ -19742,11 +19744,11 @@ function getFantasyPlayerPrice(p) {
     var totalPts = Math.round(avgPts * gamesPlayed);
     
     // Base de 500k.
-    // Sumamos +130.000€ por cada punto que haya aportado.
-    // Sumamos +35.000€ por cada punto de estadística global (OVR) por encima de 60.
+    // Sumamos +130.000Ã¢â€šÂ¬ por cada punto que haya aportado.
+    // Sumamos +35.000Ã¢â€šÂ¬ por cada punto de estadÃƒÂ­stica global (OVR) por encima de 60.
     var price = 500000 + (Math.max(0, totalPts) * 130000) + ((ovr - 60) * 35000);
     
-    // Límites del mercado
+    // LÃƒÂ­mites del mercado
     if (price < 500000) price = 500000;
     if (price > 18000000) price = 18000000; // Cap en 18 Millones
     
@@ -19830,7 +19832,7 @@ function generateDailyMarket() {
   var survivorsNames = oldMarketNames.slice(0, 4); 
   var newCandidates = availablePlayers.filter(function(p) { return survivorsNames.indexOf(p.name.toLowerCase()) === -1; });
   
-  // 🟢 FASE DE MERCADO (1 = Baratos, 2 = Equilibrado, 3 = Aleatorio puro)
+  // Ã°Å¸Å¸Â¢ FASE DE MERCADO (1 = Baratos, 2 = Equilibrado, 3 = Aleatorio puro)
   var MARKET_PHASE = 1; 
 
   var weightedCandidates = [];
@@ -19839,7 +19841,7 @@ function generateDailyMarket() {
       var copies = 1;
       
       if (MARKET_PHASE === 1) { // Early Game
-          if (price <= 4000000) copies = 25; // 25x más probabilidades de salir
+          if (price <= 4000000) copies = 25; // 25x mÃƒÂ¡s probabilidades de salir
           else if (price <= 7500000) copies = 5;
           else copies = 1; // Raro que salgan caros
       } else if (MARKET_PHASE === 2) { // Mid Game
@@ -19897,7 +19899,7 @@ function placeBid(managerId, playerName, bidAmount) {
     if (mIndex === -1) return { success: false, error: "Manager no encontrado." };
     
     var numBid = parseFloat(bidAmount);
-    if (isNaN(numBid) || numBid <= 0) return { success: false, error: "Cantidad no válida." };
+    if (isNaN(numBid) || numBid <= 0) return { success: false, error: "Cantidad no vÃƒÂ¡lida." };
 
     var bIndex = -1, previousBid = 0;
     for (var j = 1; j < bData.length; j++) {
@@ -19930,7 +19932,7 @@ function lockFantasyTeam(managerId) {
             return { success: false, error: "Debes tener los 5 huecos titulares ocupados para confirmar." };
         }
         sheet.getRange(i + 1, 10).setValue(true);
-        return { success: true, msg: "Alineación bloqueada para esta jornada." };
+        return { success: true, msg: "AlineaciÃƒÂ³n bloqueada para esta jornada." };
       }
     }
     return { success: false, error: "Roster no encontrado." };
@@ -19952,14 +19954,14 @@ function swapSub(managerId, roleKey) {
         var currentSub = data[i][subIdx - 1] || "";
         sheet.getRange(i + 1, roleIdx).setValue(currentSub);
         sheet.getRange(i + 1, subIdx).setValue(currentStarter);
-        return { success: true, msg: "Sustitución realizada con éxito." };
+        return { success: true, msg: "SustituciÃƒÂ³n realizada con ÃƒÂ©xito." };
       }
     }
-    return { success: false, error: "Mánager no encontrado." };
+    return { success: false, error: "MÃƒÂ¡nager no encontrado." };
   } catch (e) { return { success: false, error: e.message }; }
 }
 
-// 🟢 VENTA INSTANTÁNEA AL SISTEMA (50% DEL VALOR)
+// Ã°Å¸Å¸Â¢ VENTA INSTANTÃƒÂNEA AL SISTEMA (50% DEL VALOR)
 function sellPlayerInstant(managerId, roleKey) {
   try {
     var ss = SpreadsheetApp.getActive();
@@ -19978,7 +19980,7 @@ function sellPlayerInstant(managerId, roleKey) {
         rRow = i + 1; playerName = rData[i][colIndex - 1]; break;
       }
     }
-    if (!playerName) return { success: false, error: "Slot vacío." };
+    if (!playerName) return { success: false, error: "Slot vacÃƒÂ­o." };
 
     // Calculamos el 50% del valor real actual
     var stats = getTournamentStatsForWeb('ALL').stats || [];
@@ -20002,7 +20004,7 @@ function sellPlayerInstant(managerId, roleKey) {
   } catch(e) { return { success: false, error: e.toString() }; }
 }
 
-// 🔵 PONER EN EL MERCADO (VALOR PERSONALIZADO)
+// Ã°Å¸â€Âµ PONER EN EL MERCADO (VALOR PERSONALIZADO)
 function listPlayerOnMarket(managerId, roleKey, customPrice) {
   try {
     var ss = SpreadsheetApp.getActive();
@@ -20025,7 +20027,7 @@ function listPlayerOnMarket(managerId, roleKey, customPrice) {
     var roleLabel = "FLEX";
     for(var key in colMap){ if(colMap[key] === colIndex) roleLabel = key.toUpperCase(); }
 
-    // Añadir al mercado y quitar del roster
+    // AÃƒÂ±adir al mercado y quitar del roster
     marketSheet.appendRow([playerName, roleLabel, customPrice, "Vendedor: " + managerId]);
     rostersSheet.getRange(rRow, colIndex).setValue("");
 
@@ -20041,7 +20043,7 @@ function setManagerCaptain(managerId, roleLabel) {
       if (String(data[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
         if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         sheet.getRange(i + 1, 7).setValue(roleLabel); 
-        return { success: true, msg: "Capitán actualizado a " + roleLabel };
+        return { success: true, msg: "CapitÃƒÂ¡n actualizado a " + roleLabel };
       }
     }
     return { success: false, error: "Tu equipo no existe." };
@@ -20061,7 +20063,7 @@ function payClause(buyerId, targetName) {
     var cBuy = String(buyerId).trim().toLowerCase();
     var cPlay = String(targetName).trim().toLowerCase();
     
-    // 🟢 Extraemos precio real calculado
+    // Ã°Å¸Å¸Â¢ Extraemos precio real calculado
     var statsResponse = getTournamentStatsForWeb('ALL');
     var allPlayers = statsResponse.stats || [];
     var pData = allPlayers.find(function(x) { return x.name.toLowerCase() === cPlay; });
@@ -20086,7 +20088,7 @@ function payClause(buyerId, targetName) {
       }
       if(sellRow !== -1) break;
     }
-    if (sellRow === -1) return { success: false, error: "Cómpralo en el mercado normal." };
+    if (sellRow === -1) return { success: false, error: "CÃƒÂ³mpralo en el mercado normal." };
     
     var buyerRosterRow = -1;
     for(var b=1; b<rData.length; b++) { if(String(rData[b][0]).trim().toLowerCase() === cBuy) { buyerRosterRow = b+1; break; } }
@@ -20095,7 +20097,7 @@ function payClause(buyerId, targetName) {
     rSheet.getRange(buyerRosterRow, sellCol).setValue(targetName);
     mSheet.getRange(buyRow, 3).setValue(buyBud - cost);
     
-    var comp = Math.round(basePrice * 1.2); // La víctima cobra un 120% del valor real (no el 150% para que duela robar)
+    var comp = Math.round(basePrice * 1.2); // La vÃƒÂ­ctima cobra un 120% del valor real (no el 150% para que duela robar)
     for(var m=1; m<mData.length; m++) {
       if(String(mData[m][0]).trim().toLowerCase() === sellName.toLowerCase()) {
         mSheet.getRange(m+1, 3).setValue((parseFloat(mData[m][2])||0) + comp); break;
@@ -20119,26 +20121,26 @@ function buyGachaBox(managerId) {
   for (var i = 1; i < mData.length; i++) {
     if (String(mData[i][0]).toLowerCase() === String(managerId).toLowerCase()) { mRow = i + 1; budget = parseFloat(mData[i][2]); break; }
   }
-  if (budget < cost) return { success: false, error: "No tienes 500.000 € para el sobre." };
+  if (budget < cost) return { success: false, error: "No tienes 500.000 Ã¢â€šÂ¬ para el sobre." };
   
-  // 🃏 LA NUEVA COLECCIÓN DE CARTAS
+  // Ã°Å¸Æ’Â LA NUEVA COLECCIÃƒâ€œN DE CARTAS
   var pool = [
-    // ECONOMÍA
-    { name: "Bolsa de Monedas", desc: "Instantánea: Al activarla recibes 250.000 € directos a tu caja. (No ocupa hueco de carta)", rarity: "Común", weight: 60 },
-    { name: "Cofre de Oro", desc: "Instantánea: Al activarla recibes 750.000 € directos a tu caja. (No ocupa hueco de carta)", rarity: "Rara", weight: 30 },
-    { name: "Maletín de Faker", desc: "Instantánea: Al activarla recibes 2.000.000 € directos a tu caja. (No ocupa hueco de carta)", rarity: "Legendaria", weight: 5 },
-    // BOOSTERS DE LÍNEA
-    { name: "Entrenamiento de TOP", desc: "Equipable: Tu TOP puntúa un +20% adicional esta jornada.", rarity: "Común", weight: 40 },
-    { name: "Entrenamiento de JGL", desc: "Equipable: Tu JUNGLE puntúa un +20% adicional esta jornada.", rarity: "Común", weight: 40 },
-    { name: "Entrenamiento de MID", desc: "Equipable: Tu MIDDLE puntúa un +20% adicional esta jornada.", rarity: "Común", weight: 40 },
-    { name: "Entrenamiento de ADC", desc: "Equipable: Tu BOTTOM puntúa un +20% adicional esta jornada.", rarity: "Común", weight: 40 },
-    { name: "Entrenamiento de SUP", desc: "Equipable: Tu SUPPORT puntúa un +20% adicional esta jornada.", rarity: "Común", weight: 40 },
-    // MISIONES TÁCTICAS
-    { name: "Misión: Muro de Escudos", desc: "Equipable: Si NINGÚN jugador de tu alineación puntúa en negativo, ganas +15 Pts extra.", rarity: "Épica", weight: 20 },
-    { name: "Misión: El Dream Team", desc: "Equipable: Si tu equipo base supera los 80 puntos, ganas +25 Pts extra masivos.", rarity: "Épica", weight: 20 },
+    // ECONOMÃƒÂA
+    { name: "Bolsa de Monedas", desc: "InstantÃƒÂ¡nea: Al activarla recibes 250.000 Ã¢â€šÂ¬ directos a tu caja. (No ocupa hueco de carta)", rarity: "ComÃƒÂºn", weight: 60 },
+    { name: "Cofre de Oro", desc: "InstantÃƒÂ¡nea: Al activarla recibes 750.000 Ã¢â€šÂ¬ directos a tu caja. (No ocupa hueco de carta)", rarity: "Rara", weight: 30 },
+    { name: "MaletÃƒÂ­n de Faker", desc: "InstantÃƒÂ¡nea: Al activarla recibes 2.000.000 Ã¢â€šÂ¬ directos a tu caja. (No ocupa hueco de carta)", rarity: "Legendaria", weight: 5 },
+    // BOOSTERS DE LÃƒÂNEA
+    { name: "Entrenamiento de TOP", desc: "Equipable: Tu TOP puntÃƒÂºa un +20% adicional esta jornada.", rarity: "ComÃƒÂºn", weight: 40 },
+    { name: "Entrenamiento de JGL", desc: "Equipable: Tu JUNGLE puntÃƒÂºa un +20% adicional esta jornada.", rarity: "ComÃƒÂºn", weight: 40 },
+    { name: "Entrenamiento de MID", desc: "Equipable: Tu MIDDLE puntÃƒÂºa un +20% adicional esta jornada.", rarity: "ComÃƒÂºn", weight: 40 },
+    { name: "Entrenamiento de ADC", desc: "Equipable: Tu BOTTOM puntÃƒÂºa un +20% adicional esta jornada.", rarity: "ComÃƒÂºn", weight: 40 },
+    { name: "Entrenamiento de SUP", desc: "Equipable: Tu SUPPORT puntÃƒÂºa un +20% adicional esta jornada.", rarity: "ComÃƒÂºn", weight: 40 },
+    // MISIONES TÃƒÂCTICAS
+    { name: "MisiÃƒÂ³n: Muro de Escudos", desc: "Equipable: Si NINGÃƒÅ¡N jugador de tu alineaciÃƒÂ³n puntÃƒÂºa en negativo, ganas +15 Pts extra.", rarity: "Ãƒâ€°pica", weight: 20 },
+    { name: "MisiÃƒÂ³n: El Dream Team", desc: "Equipable: Si tu equipo base supera los 80 puntos, ganas +25 Pts extra masivos.", rarity: "Ãƒâ€°pica", weight: 20 },
     // LOCURAS LEGENDARIAS
-    { name: "Poción del Gigante", desc: "Equipable: Tu Capitán puntúa x2.5 en lugar de x1.25 esta jornada.", rarity: "Legendaria", weight: 10 },
-    { name: "Contrato Bilateral", desc: "Equipable: Tu jugador con MENOS puntos esta jornada igualará los puntos de tu Capitán.", rarity: "Legendaria", weight: 5 }
+    { name: "PociÃƒÂ³n del Gigante", desc: "Equipable: Tu CapitÃƒÂ¡n puntÃƒÂºa x2.5 en lugar de x1.25 esta jornada.", rarity: "Legendaria", weight: 10 },
+    { name: "Contrato Bilateral", desc: "Equipable: Tu jugador con MENOS puntos esta jornada igualarÃƒÂ¡ los puntos de tu CapitÃƒÂ¡n.", rarity: "Legendaria", weight: 5 }
   ];
   
   var totalWeight = pool.reduce(function(sum, c) { return sum + c.weight; }, 0);
@@ -20168,8 +20170,8 @@ function activateFantasyCard(managerId, cardName) {
     }
     if (iRowNew === -1) return { success: false, error: "Carta no encontrada o ya usada." };
 
-    // 🟢 LÓGICA DE CARTAS INSTANTÁNEAS (DINERO)
-    var isInstant = cardName.includes("Bolsa de Monedas") || cardName.includes("Cofre de Oro") || cardName.includes("Maletín de Faker");
+    // Ã°Å¸Å¸Â¢ LÃƒâ€œGICA DE CARTAS INSTANTÃƒÂNEAS (DINERO)
+    var isInstant = cardName.includes("Bolsa de Monedas") || cardName.includes("Cofre de Oro") || cardName.includes("MaletÃƒÂ­n de Faker");
     
     if (isInstant) {
         var mData = mSheet.getDataRange().getValues();
@@ -20179,30 +20181,30 @@ function activateFantasyCard(managerId, cardName) {
                 var reward = 0;
                 if (cardName === "Bolsa de Monedas") reward = 250000;
                 else if (cardName === "Cofre de Oro") reward = 750000;
-                else if (cardName === "Maletín de Faker") reward = 2000000;
+                else if (cardName === "MaletÃƒÂ­n de Faker") reward = 2000000;
                 
                 mSheet.getRange(m + 1, 3).setValue(bud + reward);
                 iSheet.getRange(iRowNew, 5).setValue("CONSUMED"); // Desaparece del inventario
-                return { success: true, msg: "¡Dinero inyectado! Has recibido " + parseInt(reward).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €." };
+                return { success: true, msg: "Ã‚Â¡Dinero inyectado! Has recibido " + parseInt(reward).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " Ã¢â€šÂ¬." };
             }
         }
     }
 
-    // 🟢 LÓGICA DE CARTAS EQUIPABLES (EL RESTO)
+    // Ã°Å¸Å¸Â¢ LÃƒâ€œGICA DE CARTAS EQUIPABLES (EL RESTO)
     var rData = rSheet.getDataRange().getValues();
     var rRow = -1; var currentActiveCard = "";
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
         rRow = i + 1;
         if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") {
-           return { success: false, error: "El equipo está bloqueado. No puedes cambiar cartas." };
+           return { success: false, error: "El equipo estÃƒÂ¡ bloqueado. No puedes cambiar cartas." };
         }
         currentActiveCard = rData[i][10] || ""; break;
       }
     }
     if (rRow === -1) return { success: false, error: "Roster no encontrado." };
 
-    // Devolver la vieja al inventario si ya tenía una
+    // Devolver la vieja al inventario si ya tenÃƒÂ­a una
     if (currentActiveCard) {
         for (var o = 1; o < iData.length; o++) {
             if (String(iData[o][0]).toLowerCase() === String(managerId).toLowerCase() && String(iData[o][1]) === currentActiveCard && String(iData[o][4]) === "ACTIVE") {
@@ -20217,7 +20219,7 @@ function activateFantasyCard(managerId, cardName) {
   } catch(e) { return { success: false, error: e.message }; }
 }
 
-// 🔙 DESEQUIPAR CARTA (DEVOLVER AL INVENTARIO)
+// Ã°Å¸â€â„¢ DESEQUIPAR CARTA (DEVOLVER AL INVENTARIO)
 function unequipFantasyCard(managerId) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -20229,7 +20231,7 @@ function unequipFantasyCard(managerId) {
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
         rRow = i + 1;
-        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "El equipo está bloqueado." };
+        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "El equipo estÃƒÂ¡ bloqueado." };
         currentActiveCard = rData[i][10] || ""; break;
       }
     }
@@ -20246,7 +20248,7 @@ function unequipFantasyCard(managerId) {
   } catch(e) { return { success: false, error: e.message }; }
 }
 
-// 🚨 CERRAR ALINEACIONES (MARTES 08:00) Y PENALIZAR HUECOS (-15 PTS)
+// Ã°Å¸Å¡Â¨ CERRAR ALINEACIONES (MARTES 08:00) Y PENALIZAR HUECOS (-15 PTS)
 function autoLockTeamsWeekly() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var rostersSheet = ss.getSheetByName("Fantasy_Rosters");
@@ -20267,7 +20269,7 @@ function autoLockTeamsWeekly() {
           if (!rData[i][c] || String(rData[i][c]).trim() === "") emptySlots++;
       }
       
-      var penalty = emptySlots * 15; // 15 puntos por cada hueco vacío
+      var penalty = emptySlots * 15; // 15 puntos por cada hueco vacÃƒÂ­o
       if (penalty > 0) {
           for (var m = 1; m < mData.length; m++) {
               if (String(mData[m][0]).trim().toLowerCase() === managerId.toLowerCase()) {
@@ -20285,7 +20287,7 @@ function autoLockTeamsWeekly() {
   return "Todos los equipos bloqueados. Penalizaciones aplicadas.";
 }
 
-// ⏰ CONFIGURAR RELOJES AUTOMÁTICOS DEL SERVIDOR
+// Ã¢ÂÂ° CONFIGURAR RELOJES AUTOMÃƒÂTICOS DEL SERVIDOR
 function setupFantasyTriggers() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
@@ -20294,7 +20296,7 @@ function setupFantasyTriggers() {
         ScriptApp.deleteTrigger(triggers[i]);
     }
   }
-  // Mercado a medianoche todos los días
+  // Mercado a medianoche todos los dÃƒÂ­as
   ScriptApp.newTrigger('resolveMarketBids').timeBased().everyDays(1).atHour(0).nearMinute(5).create();
   
   // Bloquear equipos el Martes a las 08:00 AM
@@ -20303,7 +20305,7 @@ function setupFantasyTriggers() {
   // Pagar ronda y desbloquear equipos el Domingo a las 23:55 (casi Lunes)
   ScriptApp.newTrigger('payFantasyRound').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(23).nearMinute(55).create();
   
-  SpreadsheetApp.getUi().alert("✅ Temporizadores configurados: Cierre Martes 08:00 / Pagos Domingo 23:55");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Temporizadores configurados: Cierre Martes 08:00 / Pagos Domingo 23:55");
 }
 
 function getManagerInventory(managerId) {
@@ -20357,7 +20359,7 @@ function resolveMarketBids() {
     playerBids.sort(function(a, b) { return b.bid - a.bid; });
     var winner = playerBids[0]; 
     
-    // 🟢 DICCIONARIO BLINDADO CONTRA ERRORES DE ROL
+    // Ã°Å¸Å¸Â¢ DICCIONARIO BLINDADO CONTRA ERRORES DE ROL
     var role = "SUB"; 
     var colMap = { "TOP": 2, "JUNGLE": 3, "JGL": 3, "MIDDLE": 4, "MID": 4, "BOTTOM": 5, "ADC": 5, "SUPPORT": 6, "SUP": 6, "UTILITY": 6 };
     
@@ -20374,7 +20376,7 @@ function resolveMarketBids() {
     }
     
     if (rIndex !== -1) {
-      var targetCol = colMap[role] || 9; // Si el rol es rarísimo, lo manda al banquillo (9)
+      var targetCol = colMap[role] || 9; // Si el rol es rarÃƒÂ­simo, lo manda al banquillo (9)
       var currentStarter = rostersSheet.getRange(rIndex, targetCol).getValue();
       
       if (currentStarter && currentStarter !== "") {
@@ -20428,7 +20430,7 @@ function payFantasyRound() {
   }
 
   var roundResults = [];
-  var moneyPerPoint = 25000; // 💸 Valor del punto en €
+  var moneyPerPoint = 25000; // Ã°Å¸â€™Â¸ Valor del punto en Ã¢â€šÂ¬
 
   for (var i = 1; i < mData.length; i++) {
       var manager = String(mData[i][0]).trim();
@@ -20441,7 +20443,7 @@ function payFantasyRound() {
       for (var j = 1; j < rData.length; j++) {
           if (String(rData[j][0]).trim() === manager) {
               var capRole = String(rData[j][6]).toUpperCase();
-              var activeCard = String(rData[j][10]).trim(); // 🃏 Leemos la carta equipada
+              var activeCard = String(rData[j][10]).trim(); // Ã°Å¸Æ’Â Leemos la carta equipada
               var roleNames = ["", "TOP", "JGL", "MID", "ADC", "SUP"];
               
               var teamPtsArr = [];
@@ -20453,7 +20455,7 @@ function payFantasyRound() {
                   if (pName && playerPts[pName] !== undefined) {
                       var pts = playerPts[pName];
                       
-                      // 🚨 PENALIZACIÓN FUERA DE POSICIÓN (OOP)
+                      // Ã°Å¸Å¡Â¨ PENALIZACIÃƒâ€œN FUERA DE POSICIÃƒâ€œN (OOP)
                       var isOOP = false;
                       var slot = roleNames[r]; 
                       var statsResponse = getTournamentStatsForWeb('ALL');
@@ -20468,16 +20470,16 @@ function payFantasyRound() {
 
                       if (isOOP) pts = pts * 0.20; // Pierde el 80% de sus puntos
 
-                      // 🃏 CARTAS: BOOSTERS DE ROL
+                      // Ã°Å¸Æ’Â CARTAS: BOOSTERS DE ROL
                       if (activeCard === "Entrenamiento de TOP" && slot === "TOP") pts *= 1.20;
                       if (activeCard === "Entrenamiento de JGL" && slot === "JGL") pts *= 1.20;
                       if (activeCard === "Entrenamiento de MID" && slot === "MID") pts *= 1.20;
                       if (activeCard === "Entrenamiento de ADC" && slot === "ADC") pts *= 1.20;
                       if (activeCard === "Entrenamiento de SUP" && slot === "SUP") pts *= 1.20;
 
-                      // 👑 MULTIPLICADOR DE CAPITÁN
+                      // Ã°Å¸â€˜â€˜ MULTIPLICADOR DE CAPITÃƒÂN
                       var capMult = 1.25;
-                      if (activeCard === "Poción del Gigante") capMult = 2.5; // 🃏 CARTA LEGENDARIA
+                      if (activeCard === "PociÃƒÂ³n del Gigante") capMult = 2.5; // Ã°Å¸Æ’Â CARTA LEGENDARIA
 
                       if (slot === capRole) {
                           pts = pts > 0 ? pts * capMult : pts * 2.0; 
@@ -20490,15 +20492,15 @@ function payFantasyRound() {
                   }
               }
 
-              // 🃏 RESOLUCIÓN DE MISIONES Y CARTAS ESPECIALES AL FINALIZAR LA SUMA
-              if (activeCard === "Misión: El Dream Team" && roundPoints >= 80) roundPoints += 25;
-              if (activeCard === "Misión: Muro de Escudos" && noNegatives && teamPtsArr.length === 5) roundPoints += 15;
+              // Ã°Å¸Æ’Â RESOLUCIÃƒâ€œN DE MISIONES Y CARTAS ESPECIALES AL FINALIZAR LA SUMA
+              if (activeCard === "MisiÃƒÂ³n: El Dream Team" && roundPoints >= 80) roundPoints += 25;
+              if (activeCard === "MisiÃƒÂ³n: Muro de Escudos" && noNegatives && teamPtsArr.length === 5) roundPoints += 15;
               
               if (activeCard === "Contrato Bilateral" && teamPtsArr.length > 0 && capPts > 0) {
                   teamPtsArr.sort(function(a,b) { return a.pts - b.pts; });
                   var lowest = teamPtsArr[0];
                   var diff = capPts - lowest.pts;
-                  if (diff > 0) roundPoints += diff; // El peor sube e iguala al capitán
+                  if (diff > 0) roundPoints += diff; // El peor sube e iguala al capitÃƒÂ¡n
               }
               
               // Quemar la carta activa del inventario y del roster
@@ -20560,10 +20562,10 @@ function setupFantasyTriggers() {
   }
   ScriptApp.newTrigger('resolveMarketBids').timeBased().everyDays(1).atHour(0).nearMinute(5).create();
   ScriptApp.newTrigger('weeklyFantasyReset').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(1).create();
-  SpreadsheetApp.getUi().alert("✅ Triggers Fantasy configurados.");
+  SpreadsheetApp.getUi().alert("Ã¢Å“â€¦ Triggers Fantasy configurados.");
 }
 
-// 👁️ OBTENER ROSTER DE UN RIVAL (PARA EL RANKING)
+// Ã°Å¸â€˜ÂÃ¯Â¸Â OBTENER ROSTER DE UN RIVAL (PARA EL RANKING)
 function getManagerRoster(managerName) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -20582,7 +20584,7 @@ function getManagerRoster(managerName) {
   } catch(e) { return { success: false, error: e.toString() }; }
 }
 
-// 🔄 INTERCAMBIAR POSICIONES EN EL ROSTER (Drag & Drop)
+// Ã°Å¸â€â€ž INTERCAMBIAR POSICIONES EN EL ROSTER (Drag & Drop)
 function swapPlayers(managerId, roleA, roleB) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Rosters");
@@ -20601,11 +20603,11 @@ function swapPlayers(managerId, roleA, roleB) {
         return { success: true, msg: "Posiciones intercambiadas." };
       }
     }
-    return { success: false, error: "Mánager no encontrado." };
+    return { success: false, error: "MÃƒÂ¡nager no encontrado." };
   } catch (e) { return { success: false, error: e.message }; }
 }
 
-// 🚨 CERRAR ALINEACIONES EL LUNES A LA NOCHE Y PENALIZAR HUECOS (-15 PTS)
+// Ã°Å¸Å¡Â¨ CERRAR ALINEACIONES EL LUNES A LA NOCHE Y PENALIZAR HUECOS (-15 PTS)
 function autoLockTeamsWeekly() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var rostersSheet = ss.getSheetByName("Fantasy_Rosters");
@@ -20643,12 +20645,12 @@ function autoLockTeamsWeekly() {
       // Bloqueamos el equipo
       rostersSheet.getRange(i+1, 10).setValue(true);
   }
-  return "Todos los equipos bloqueados. Se han restado 15 puntos por cada hueco vacío.";
+  return "Todos los equipos bloqueados. Se han restado 15 puntos por cada hueco vacÃƒÂ­o.";
 }
 
 
 // ==========================================
-// 🎰 CASINO Y APUESTAS DE LA LIGA (WG COINS)
+// Ã°Å¸Å½Â° CASINO Y APUESTAS DE LA LIGA (WG COINS)
 // ==========================================
 
 function getWalletBalance(summonerName) {
@@ -20670,7 +20672,7 @@ function getWalletBalance(summonerName) {
     }
     // Si es un usuario nuevo, le regalamos 1.000 WG Coins de bienvenida
     walletSheet.appendRow([summonerName, 1000]);
-    return { success: true, balance: 1000, msg: "¡Bienvenido! Has recibido 1.000 WG Coins iniciales." };
+    return { success: true, balance: 1000, msg: "Ã‚Â¡Bienvenido! Has recibido 1.000 WG Coins iniciales." };
   } catch(e) { return { success: false, error: e.message }; }
 }
 
@@ -20705,13 +20707,13 @@ function placeLeagueBet(summonerName, matchId, teamIndex, amount, odds) {
     // Registrar apuesta
     betSheet.appendRow([new Date(), summonerName, matchId, teamIndex, amount, odds, "PENDING"]);
     
-    return { success: true, newBalance: balance - amount, msg: "¡Apuesta registrada! Posible ganancia: " + Math.floor(amount * odds) + " 🪙" };
+    return { success: true, newBalance: balance - amount, msg: "Ã‚Â¡Apuesta registrada! Posible ganancia: " + Math.floor(amount * odds) + " Ã°Å¸Âªâ„¢" };
   } catch(e) { return { success: false, error: e.message }; }
 }
 
 
 // ==========================================
-// 🤑 RANKING DEL CASINO (LOS MÁS RICOS)
+// Ã°Å¸Â¤â€˜ RANKING DEL CASINO (LOS MÃƒÂS RICOS)
 // ==========================================
 function getCasinoRanking() {
   try {
@@ -20719,7 +20721,7 @@ function getCasinoRanking() {
     var walletSheet = ss.getSheetByName("Liga_Wallets");
     var betSheet = ss.getSheetByName("Liga_Bets");
     
-    if (!walletSheet) return []; // Si nadie ha entrado aún al casino
+    if (!walletSheet) return []; // Si nadie ha entrado aÃƒÂºn al casino
     
     var wallets = walletSheet.getDataRange().getValues();
     var bets = betSheet ? betSheet.getDataRange().getValues() : [];
@@ -20770,7 +20772,7 @@ function getCasinoRanking() {
 }
 
 // ==========================================
-// 💸 MOTOR DE PAGOS DEL CASINO
+// Ã°Å¸â€™Â¸ MOTOR DE PAGOS DEL CASINO
 // ==========================================
 
 function payoutLeagueBets(matchId, winningTeamIndex) {
@@ -20784,14 +20786,14 @@ function payoutLeagueBets(matchId, winningTeamIndex) {
     var bData = betSheet.getDataRange().getValues();
     var wData = walletSheet.getDataRange().getValues();
     
-    // Crear un mapa de las carteras para actualizar rápido
+    // Crear un mapa de las carteras para actualizar rÃƒÂ¡pido
     var wallets = {};
     for (var i = 1; i < wData.length; i++) {
       wallets[String(wData[i][0]).toLowerCase()] = { row: i + 1, balance: parseFloat(wData[i][1]) };
     }
 
     for (var j = 1; j < bData.length; j++) {
-      // Si la apuesta es de este partido y está pendiente
+      // Si la apuesta es de este partido y estÃƒÂ¡ pendiente
       if (String(bData[j][2]) === String(matchId) && bData[j][6] === "PENDING") {
         var user = String(bData[j][1]).toLowerCase();
         var betTeamIndex = parseInt(bData[j][3]);
@@ -20799,7 +20801,7 @@ function payoutLeagueBets(matchId, winningTeamIndex) {
         var odds = parseFloat(bData[j][5]);
         
         if (betTeamIndex === winningTeamIndex) {
-          // 💰 GANÓ: Calculamos premio y actualizamos cartera
+          // Ã°Å¸â€™Â° GANÃƒâ€œ: Calculamos premio y actualizamos cartera
           var prize = Math.floor(amount * odds);
           if (wallets[user]) {
             wallets[user].balance += prize;
@@ -20807,7 +20809,7 @@ function payoutLeagueBets(matchId, winningTeamIndex) {
           }
           betSheet.getRange(j + 1, 7).setValue("WON");
         } else {
-          // ❌ PERDIÓ
+          // Ã¢ÂÅ’ PERDIÃƒâ€œ
           betSheet.getRange(j + 1, 7).setValue("LOST");
         }
       }
@@ -20818,10 +20820,12 @@ function payoutLeagueBets(matchId, winningTeamIndex) {
 }
 
 // ---------------------------------------------------------
-// 8. HELPERS BÁSICOS HTML
+// 8. HELPERS BÃƒÂSICOS HTML
 // ---------------------------------------------------------
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-// === FIN DEL ARCHIVO === 
+// === FIN DEL ARCHIVO ===
+function getAIPrediction(matchData) { return "IA Predictor cargado."; }
+function getAIChronicle(matchStats) { return "IA Cronista cargada."; }
