@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- OG Tags para vista previa en Twitter/Discord/WhatsApp -->
+  <meta property="og:title" content="<?= playerName ?> · Wargods Premier">
+  <meta property="og:description" content="Perfil completo de estadísticas de la liga.">
+  <meta property="og:image" content="https://images.contentstack.io/...Summoners_Rift_1.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Oswald:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0f172a; --bg-panel: #1e293b; --text-main: #f1f5f9;
+      --gold: #fbbf24; --accent-blue: #38bdf8;
+    }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: var(--bg-dark); 
+      color: var(--text-main); 
+      min-height: 100vh;
+    }
+    .font-oswald { font-family: 'Oswald', sans-serif; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="bg-black/80 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center">
+    <div class="font-oswald text-xl text-yellow-500 tracking-widest">
+      WARGODS<span class="text-white">PREMIER</span>
+    </div>
+    <a href="<?= ScriptApp.getService().getUrl() ?>" 
+       class="text-slate-400 hover:text-white text-sm font-bold transition">
+      ← Volver a la Liga
+    </a>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="loading" class="flex flex-col items-center justify-center min-h-[60vh] text-yellow-500">
+    <div class="text-5xl mb-4 animate-spin">⚙️</div>
+    <p class="font-oswald tracking-widest text-xl">CARGANDO PERFIL...</p>
+  </div>
+
+  <!-- PERFIL (oculto hasta cargar) -->
+  <div id="profile" class="hidden max-w-4xl mx-auto px-6 py-12">
+    
+    <!-- Hero del jugador -->
+    <div class="relative bg-slate-800/80 border border-slate-700 rounded-2xl p-8 mb-8 overflow-hidden">
+      <div id="champ-bg" class="absolute inset-0 bg-cover bg-center opacity-10"></div>
+      <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+        <img id="champ-icon" class="w-28 h-28 rounded-full border-4 border-yellow-500 shadow-xl">
+        <div class="text-center md:text-left">
+          <div id="player-archetype" class="text-xs font-bold tracking-widest uppercase mb-2"></div>
+          <h1 id="player-name" class="font-oswald text-5xl text-white tracking-wider mb-1"></h1>
+          <div id="player-meta" class="text-slate-400 font-bold uppercase tracking-widest text-sm"></div>
+          <div class="flex gap-3 mt-4 justify-center md:justify-start flex-wrap">
+            <span id="badge-mvps" class="bg-yellow-500 text-black font-black text-sm px-3 py-1 rounded-full"></span>
+            <span id="badge-wr" class="bg-emerald-500/20 border border-emerald-500 text-emerald-400 font-black text-sm px-3 py-1 rounded-full"></span>
+            <span id="badge-pts" class="bg-purple-500/20 border border-purple-500 text-purple-400 font-black text-sm px-3 py-1 rounded-full"></span>
+          </div>
+        </div>
+        <!-- Botón compartir -->
+        <div class="md:ml-auto flex flex-col gap-2">
+          <button onclick="copyProfileUrl()" 
+                  class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+            🔗 Copiar enlace
+          </button>
+          <button onclick="downloadCard()" 
+                  class="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-lg text-sm font-bold transition">
+            📸 Descargar carta
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">KDA</div>
+        <div id="stat-kda" class="text-3xl font-oswald text-emerald-400 font-bold"></div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">DPM</div>
+        <div id="stat-dpm" class="text-3xl font-oswald text-red-400 font-bold"></div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">GPM</div>
+        <div id="stat-gpm" class="text-3xl font-oswald text-yellow-400 font-bold"></div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">CS/min</div>
+        <div id="stat-cs" class="text-3xl font-oswald text-blue-400 font-bold"></div>
+      </div>
+    </div>
+
+    <!-- Radar + Campeones -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase">Radar de Rendimiento</h3>
+        <div style="height: 280px;"><canvas id="radarChart"></canvas></div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase">Arsenal Letal</h3>
+        <div id="champs-list" class="flex flex-wrap gap-3"></div>
+        <div class="mt-6 border-t border-slate-700 pt-4 space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Partidas jugadas</span>
+            <span id="info-games" class="font-bold text-white"></span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">KP%</span>
+            <span id="info-kp" class="font-bold text-blue-300"></span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Visión (VSPM)</span>
+            <span id="info-vspm" class="font-bold text-purple-300"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center text-slate-600 text-xs">
+      <p>Wargods Premier · Datos actualizados automáticamente tras cada jornada</p>
+      <a href="<?= ScriptApp.getService().getUrl() ?>" class="text-yellow-600 hover:text-yellow-500 font-bold mt-1 inline-block">
+        Ver la clasificación completa →
+      </a>
+    </div>
+  </div>
+
+  <div id="error-state" class="hidden flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+    <div class="text-6xl mb-4">❌</div>
+    <p class="font-oswald tracking-widest text-xl">JUGADOR NO ENCONTRADO</p>
+    <a href="<?= ScriptApp.getService().getUrl() ?>" class="mt-4 text-yellow-500 hover:underline">← Volver a la liga</a>
+  </div>
+
+<script>
+  // El nombre viene renderizado por el template de Apps Script
+  const PLAYER_NAME = <?= JSON.stringify(playerName) ?>;
+  const RIOT_VERSION = "15.4.1";
+
+  const getChampIcon = (c) => {
+    if (!c) return '';
+    let n = String(c).replace(/[^a-zA-Z0-9]/g, '');
+    if (n.toLowerCase() === 'wukong') n = 'MonkeyKing';
+    return 'https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/champion/' + n + '.png';
+  };
+
+  const getChampSplash = (c) => {
+    if (!c) return '';
+    let n = String(c).replace(/[^a-zA-Z0-9]/g, '');
+    if (n.toLowerCase() === 'wukong') n = 'MonkeyKing';
+    return 'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/' + n + '_0.jpg';
+  };
+
+  // Arquetipos (mismo algoritmo que en LeagueMenu.html)
+  const getArchetype = (p) => {
+    let kp = parseFloat(p.kp) || 0;
+    let vspm = parseFloat(p.vspm) || 0;
+    let cs = parseFloat(p.cs) || 0;
+    let dpm = parseFloat(p.dpm) || 0;
+    let kdaNum = parseFloat(p.kdaNum) || 0;
+    let k = parseFloat((p.kda||'').split('/')[0]) || 0;
+
+    if (k >= 6 && dpm >= 600)   return { name: "EL VERDUGO",   hex: "#ef4444", icon: "🩸" };
+    if (vspm >= 1.5 && kp > 70) return { name: "EL ARQUITECTO", hex: "#a855f7", icon: "👁️" };
+    if (cs >= 7.5 && kp < 55)   return { name: "EL MERCENARIO", hex: "#fbbf24", icon: "🐺" };
+    if (kdaNum <= 3 && kp >= 60) return { name: "EL BASTIÓN",   hex: "#10b981", icon: "🛡️" };
+    return { name: "EL GUERRERO", hex: "#38bdf8", icon: "⚔️" };
+  };
+
+  function renderProfile(p) {
+    document.getElementById('loading').classList.add('hidden');
+    
+    if (p.error) {
+      document.getElementById('error-state').classList.remove('hidden');
+      // Esto sustituirá el texto por el error real del backend
+      document.querySelector('#error-state p').textContent = "ERROR: " + p.error.toUpperCase();
+      return;
+    }
+
+    document.getElementById('profile').classList.remove('hidden');
+
+    const arch = getArchetype(p);
+    const mainChamp = p.champs ? p.champs.split(',')[0].trim() : '';
+
+    // Fondo splash
+    document.getElementById('champ-bg').style.backgroundImage = "url('" + getChampSplash(mainChamp) + "')";
+    document.getElementById('champ-icon').src = getChampIcon(mainChamp);
+
+    // Textos principales
+    document.getElementById('player-name').textContent = p.name;
+    document.getElementById('player-meta').textContent = p.role + ' · ' + p.team;
+    document.getElementById('player-archetype').innerHTML = '<span style="color:' + arch.hex + '">' + arch.icon + ' ' + arch.name + '</span>';
+
+    // Badges
+    document.getElementById('badge-mvps').textContent = '👑 ' + p.mvps + ' MVPs';
+    document.getElementById('badge-wr').textContent = p.winrate + '% WR';
+    document.getElementById('badge-pts').textContent = p.points + ' PTS';
+
+    // Stats
+    document.getElementById('stat-kda').textContent = parseFloat(p.kdaNum).toFixed(2);
+    document.getElementById('stat-dpm').textContent = p.dpm;
+    document.getElementById('stat-gpm').textContent = p.gpm;
+    document.getElementById('stat-cs').textContent = parseFloat(p.cs).toFixed(1);
+
+    // Info lateral
+    document.getElementById('info-games').textContent = p.games + ' partidas';
+    document.getElementById('info-kp').textContent = p.kp + '%';
+    document.getElementById('info-vspm').textContent = parseFloat(p.vspm).toFixed(2);
+
+    // Campeones
+    const champsDiv = document.getElementById('champs-list');
+    (p.champs || '').split(',').forEach(c => {
+      const img = document.createElement('img');
+      img.src = getChampIcon(c.trim());
+      img.title = c.trim();
+      img.className = 'w-14 h-14 rounded-full border-2 border-slate-600 shadow-lg';
+      champsDiv.appendChild(img);
+    });
+
+    // Radar
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Daño', 'KDA', 'Visión', 'Farm', 'Supervivencia'],
+        datasets: [{
+          data: [
+            Math.min(10, p.dpm / 100),
+            Math.min(10, p.kdaNum),
+            Math.min(10, p.vspm * 3),
+            Math.min(10, p.cs),
+            Math.max(0, 10 - (p.avgDeaths || 3))
+          ],
+          backgroundColor: arch.hex + '33',
+          borderColor: arch.hex,
+          pointBackgroundColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: { r: {
+          angleLines: { color: 'rgba(255,255,255,0.1)' },
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          pointLabels: { color: '#94a3b8', font: { family: 'Oswald', size: 13 } },
+          ticks: { display: false, max: 10, min: 0 }
+        }},
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function copyProfileUrl() {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => alert('✅ Enlace copiado al portapapeles'));
+  }
+
+  // Llama al backend para obtener los datos del jugador
+  google.script.run
+    .withSuccessHandler(renderProfile)
+    .withFailureHandler(err => {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error-state').classList.remove('hidden');
+    })
+    .getPublicPlayerProfile(PLAYER_NAME);
+</script>
+</body>
+</html>

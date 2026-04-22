@@ -39,8 +39,8 @@
 
     .hex-input { background: rgba(0,0,0,0.3); border: 1px solid #334155; color: var(--text-main); padding: 12px 15px; border-radius: 6px; width: 100%; outline: none; }
     .hex-input:focus { border-color: var(--gold); }
-    .tab-btn { padding: 15px 30px; font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 1.1em; color: var(--text-muted); border-bottom: 3px solid transparent; cursor: pointer; transition: 0.3s; }
-    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(251,191,36,0.05); }
+    .tab-btn { padding: 15px 20px; font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 1.1em; color: var(--text-muted); border-left: 3px solid transparent; cursor: pointer; transition: 0.3s; text-align: left; display: block; width: 100%; }
+    .tab-btn.active { color: var(--gold); border-left-color: var(--gold); background: rgba(251,191,36,0.05); }
     .content-pane { display: none; animation: fadeIn 0.3s ease; height: 100%; width: 100%; overflow: auto; padding: 30px;}
     .content-pane.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -221,12 +221,40 @@
         
         <div id="top-ticker" class="ticker-wrap hidden"></div>
 
-        <div class="bg-black/60 p-6 flex justify-between items-end border-b border-yellow-500/50 flex-shrink-0">
-            <div>
-                <div class="text-sm text-yellow-500 font-bold tracking-widest uppercase mb-1">STADIUM DASHBOARD</div>
-                <h1 class="text-5xl font-oswald text-white tracking-wider text-shadow">WARGODS PREMIER</h1>
+        <div class="bg-black/80 px-6 py-3 flex justify-between items-center border-b border-yellow-500/50 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-8 bg-yellow-500 rounded-full"></div>
             </div>
             <div class="flex gap-4 items-center">
+                <!-- 🏅 BATTLE PASS MINI BAR -->
+                <div id="bp-mini" class="hidden items-center gap-2 bg-slate-800 border border-purple-500/40 px-3 py-1.5 rounded-full cursor-pointer hover:border-purple-400 transition" onclick="openBattlePass()">
+                    <span class="text-[10px] font-bold text-purple-400 uppercase">LVL</span>
+                    <span id="bp-mini-level" class="text-sm font-black text-white">1</span>
+                    <div class="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden"><div id="bp-mini-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all" style="width:0%"></div></div>
+                </div>
+                <button onclick="openDailyRoulette()" class="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black px-3 py-2 rounded text-sm font-black transition flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+                    🎰 LOGIN DIARIO
+                </button>
+                <button onclick="openProfileModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold transition flex items-center gap-2">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg> PERFIL
+                </button>
+                <!-- 🔔 NOTIFICATION BELL -->
+                <div class="relative">
+                    <button onclick="toggleNotifications()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold transition relative">
+                        🔔
+                        <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                    </button>
+                    <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 max-h-96 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                        <div class="p-3 border-b border-slate-700 flex justify-between items-center">
+                            <h4 class="font-oswald text-white tracking-widest text-sm uppercase">Notificaciones</h4>
+                            <div class="flex gap-2">
+                                <button onclick="clearAllNotifications()" class="text-slate-500 hover:text-red-400 text-[10px] uppercase tracking-widest font-bold transition">Limpiar</button>
+                                <button onclick="toggleNotifications()" class="text-slate-500 hover:text-white text-sm font-bold">✕</button>
+                            </div>
+                        </div>
+                        <div id="notif-list" class="overflow-y-auto max-h-72 p-2 space-y-1"></div>
+                    </div>
+                </div>
                 <button id="btn-toggle-playoffs" onclick="togglePlayoffs()" class="hidden bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded text-sm font-bold transition shadow-[0_0_15px_rgba(251,191,36,0.4)]">
                     🏆 PLAYOFFS
                 </button>
@@ -239,20 +267,23 @@
             </div>
         </div>
 
-        <div class="flex bg-black/40 px-6 flex-shrink-0 overflow-x-auto border-b border-slate-800">
-            <div class="tab-btn active whitespace-nowrap" id="btn-tab-news" onclick="switchTab('news', this)">📺 TV NOTICIAS</div>
-            <div class="tab-btn whitespace-nowrap" id="btn-tab-matches" onclick="switchTab('matches', this)">🗓️ CALENDARIO</div>
-            <div class="tab-btn whitespace-nowrap" id="btn-tab-standings" onclick="switchTab('standings', this)">🏆 CLASIFICACIÓN</div>
-            <div class="tab-btn whitespace-nowrap text-yellow-400 font-black hidden" id="btn-tab-playoffs" onclick="switchTab('playoffs', this)">🏆 ÁRBOL PLAYOFFS</div>
-            <div class="tab-btn whitespace-nowrap text-emerald-400" id="btn-tab-stats" onclick="switchTab('stats', this)">📊 RANKING JUGADORES</div>
-            <div class="tab-btn whitespace-nowrap text-red-500 font-black" id="btn-tab-records" onclick="switchTab('records', this)">🏅 SALÓN DE LA FAMA</div>
-            <div class="tab-btn whitespace-nowrap text-orange-400" id="btn-tab-h2h" onclick="switchTab('h2h', this)">🥊 CARA A CARA</div>
-            <div class="tab-btn whitespace-nowrap text-cyan-400" id="btn-tab-teamh2h" onclick="switchTab('teamh2h', this)">🛡️ TEAM SCOUTING</div>
-            <div class="tab-btn whitespace-nowrap text-blue-400" id="btn-tab-meta" onclick="switchTab('meta', this)">🧬 META SNAPSHOT</div>
-            <div class="tab-btn whitespace-nowrap text-yellow-400 font-black" id="btn-tab-casino-rank" onclick="switchTab('casino-rank', this)">💰 WALL STREET</div>
-        </div>
+        <div class="flex flex-1 overflow-hidden w-full">
+            <div class="flex flex-col bg-black/40 w-64 flex-shrink-0 overflow-y-auto border-r border-slate-800 hidden md:flex pb-20 custom-scrollbar">
+                <div class="tab-btn active whitespace-nowrap" id="btn-tab-news" onclick="switchTab('news', this)">📺 TV NOTICIAS</div>
+                <div class="tab-btn whitespace-nowrap" id="btn-tab-matches" onclick="switchTab('matches', this)">🗓️ CALENDARIO</div>
+                <div class="tab-btn whitespace-nowrap" id="btn-tab-standings" onclick="switchTab('standings', this)">🏆 CLASIFICACIÓN</div>
+                <div class="tab-btn whitespace-nowrap text-yellow-400 font-black hidden" id="btn-tab-playoffs" onclick="switchTab('playoffs', this)">🏆 ÁRBOL PLAYOFFS</div>
+                <div class="tab-btn whitespace-nowrap text-emerald-400" id="btn-tab-stats" onclick="switchTab('stats', this)">📊 RANKING JUGADORES</div>
+                <div class="tab-btn whitespace-nowrap text-red-500 font-black" id="btn-tab-records" onclick="switchTab('records', this)">🏅 SALÓN DE LA FAMA</div>
+                <div class="tab-btn whitespace-nowrap text-orange-400" id="btn-tab-h2h" onclick="switchTab('h2h', this)">🥊 CARA A CARA</div>
+                <div class="tab-btn whitespace-nowrap text-cyan-400" id="btn-tab-teamh2h" onclick="switchTab('teamh2h', this)">🛡️ TEAM SCOUTING</div>
+                <div class="tab-btn whitespace-nowrap text-blue-400" id="btn-tab-meta" onclick="switchTab('meta', this)">🧬 META SNAPSHOT</div>
+                <div class="tab-btn whitespace-nowrap text-yellow-400 font-black" id="btn-tab-casino-rank" onclick="switchTab('casino-rank', this)">💰 WALL STREET</div>
+                <div class="tab-btn whitespace-nowrap text-pink-400" id="btn-tab-pickem" onclick="switchTab('pickem', this)">🎯 PICK'EM</div>
+                <div class="tab-btn whitespace-nowrap text-amber-400" id="btn-tab-vestuario" onclick="switchTab('vestuario', this)">💬 VESTUARIO</div>
+            </div>
 
-        <div class="flex-1 w-full overflow-hidden relative">
+            <div class="flex-1 w-full overflow-hidden relative">
             
             <div id="tab-news" class="content-pane active overflow-auto px-4 md:px-10">
                 <div class="w-full max-w-[1600px] mx-auto">
@@ -261,11 +292,12 @@
                         
                         <div class="lg:col-span-8 space-y-6">
                             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                <div class="countdown-box flex flex-col justify-center">
-                                    <h3 class="font-oswald text-white text-xl tracking-widest mb-2 uppercase">Próximo Directo</h3>
+                                <a href="https://www.twitch.tv/elzorro01" target="_blank" class="countdown-box flex flex-col justify-center hover:scale-[1.02] transition-transform cursor-pointer group">
+                                    <h3 class="font-oswald text-white text-xl tracking-widest mb-2 uppercase group-hover:text-yellow-400 transition-colors">Próximo Directo</h3>
                                     <div id="timer-display" class="text-5xl font-black font-mono text-white mb-2">00d 00h 00m 00s</div>
                                     <p id="stream-info" class="text-purple-200 text-xs font-black uppercase tracking-widest">FECHA NO PROGRAMADA</p>
-                                </div>
+                                    <div class="mt-2 text-[8px] text-white/50 font-bold uppercase tracking-widest">Click para ir al canal</div>
+                                </a>
                                 <div id="home-motw-container"></div>
                             </div>
                             
@@ -524,6 +556,88 @@
                 </div>
             </div>
 
+            <!-- 🎯 PICK'EM TAB -->
+            <div id="tab-pickem" class="content-pane overflow-auto p-4 md:p-10">
+                <div class="w-full max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
+                    <div class="flex-1">
+                        <h2 class="text-4xl font-oswald text-pink-400 tracking-widest uppercase mb-2 text-center lg:text-left">🎯 Pick'em Semanal</h2>
+                        <p class="text-slate-400 text-center lg:text-left mb-8">Predice el ganador de cada partido. ¡Acumula aciertos y gana WG Coins!</p>
+                        <div id="pickem-matches" class="space-y-4 mb-10"></div>
+                    </div>
+                    <div class="w-full lg:w-96 flex-shrink-0">
+                        <div class="bg-slate-800/80 border border-pink-500/30 p-6 rounded-xl sticky top-4 shadow-xl">
+                            <h3 class="font-oswald text-pink-400 text-xl tracking-widest uppercase mb-4 border-b border-slate-700 pb-2">🏆 Mejores Analistas</h3>
+                            <div id="pickem-leaderboard" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 PLAYER COMPARISON TAB (ELIMINADO) -->
+
+            <!-- 💬 VESTUARIO (TRASH TALK) TAB -->
+            <div id="tab-vestuario" class="content-pane overflow-auto p-10">
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="text-4xl font-oswald text-amber-400 tracking-widest uppercase mb-2 text-center">💬 El Vestuario</h2>
+                    <p class="text-slate-400 text-center mb-6">Deja tu mensaje antes del partido. Los mensajes se borran a las 48h. <span class="text-[10px] text-slate-500 uppercase">Máx 140 caracteres</span></p>
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" id="trash-talk-input" maxlength="140" placeholder="Hoy os vamos a barrer 🧹" class="flex-1 hex-input bg-slate-900 border-amber-500/50 text-sm">
+                        <button onclick="sendTrashTalk()" class="bg-amber-600 hover:bg-amber-500 text-black font-black px-5 py-3 rounded-lg transition uppercase text-sm tracking-widest shadow-lg">ENVIAR</button>
+                    </div>
+                    <div id="trash-talk-feed" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- 🎰 ROULETTE MODAL -->
+            <div id="roulette-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center" style="display:none">
+                <div class="bg-slate-900 border-2 border-yellow-500/50 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl relative">
+                    <button onclick="closeModal('roulette-modal')" class="absolute top-3 right-4 text-slate-500 hover:text-white text-xl">✕</button>
+                    <div class="text-6xl mb-4">🎰</div>
+                    <h2 class="font-oswald text-3xl text-yellow-400 tracking-widest uppercase mb-2">Ruleta Diaria</h2>
+                    <p class="text-slate-400 text-sm mb-6">¡Gira la ruleta y gana WG Coins gratis cada día!</p>
+                    <div id="roulette-streak" class="flex justify-center gap-1 mb-4"></div>
+                    <div id="roulette-result" class="hidden mb-4">
+                        <div id="roulette-prize" class="text-5xl font-black text-yellow-400 mb-2 animate-bounce"></div>
+                        <div id="roulette-bonus" class="text-emerald-400 font-bold text-sm"></div>
+                    </div>
+                    <button id="btn-spin" onclick="spinRoulette()" class="w-full bg-gradient-to-r from-yellow-600 to-amber-500 hover:from-yellow-500 hover:to-amber-400 text-black font-black py-4 rounded-xl transition uppercase tracking-widest text-lg shadow-[0_0_25px_rgba(251,191,36,0.4)]">
+                        🎲 ¡GIRAR LA RULETA!
+                    </button>
+                </div>
+            </div>
+
+            <!-- 🗞️ GAZETTE MODAL -->
+            <div id="gazette-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center" style="display:none">
+                <div class="bg-[#fdf6e3] border-4 border-[#8b7355] rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl relative max-h-[80vh] overflow-y-auto">
+                    <button onclick="closeModal('gazette-modal')" class="absolute top-3 right-4 text-[#8b7355] hover:text-black text-xl font-bold">✕</button>
+                    <div class="text-center border-b-4 border-double border-[#8b7355] pb-4 mb-6">
+                        <h2 class="text-4xl font-bold text-[#2c1810] tracking-widest uppercase" style="font-family: 'Georgia', serif;">📰 La Gaceta de Wargods</h2>
+                        <p class="text-[#8b7355] text-xs uppercase tracking-widest mt-1">Periódico Oficial de la Wargods Premier League</p>
+                        <p id="gazette-date" class="text-[#666] text-[10px] mt-1"></p>
+                    </div>
+                    <div id="gazette-content" class="text-[#2c1810] text-sm leading-relaxed whitespace-pre-line" style="font-family: 'Georgia', serif;"></div>
+                </div>
+            </div>
+
+            <!-- 🏅 BATTLE PASS MODAL -->
+            <div id="battlepass-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center" style="display:none">
+                <div class="bg-slate-900 border-2 border-purple-500/50 rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+                    <button onclick="closeModal('battlepass-modal')" class="absolute top-3 right-4 text-slate-500 hover:text-white text-xl">✕</button>
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-oswald text-purple-400 tracking-widest uppercase">🏅 Pase de Temporada</h2>
+                        <p class="text-slate-400 text-sm mt-1">Gana XP con cada acción y desbloquea recompensas épicas</p>
+                    </div>
+                    <div class="bg-slate-800 rounded-xl p-4 mb-6 border border-purple-500/30">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-purple-400 font-bold text-sm">Nivel <span id="bp-level" class="text-white text-2xl font-black">1</span></span>
+                            <span class="text-slate-400 text-xs"><span id="bp-xp">0</span> / 100 XP</span>
+                        </div>
+                        <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden"><div id="bp-bar" class="h-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-400 rounded-full transition-all" style="width:0%"></div></div>
+                    </div>
+                    <div id="bp-rewards" class="space-y-2"></div>
+                </div>
+            </div>
+
             <div id="tab-records" class="content-pane overflow-auto p-4 md:p-10">
                 <div class="max-w-7xl mx-auto w-full">
                     <h2 class="text-5xl md:text-6xl font-oswald text-red-500 tracking-widest uppercase mb-2 text-center drop-shadow-lg">🏆 EL SALÓN DE LA FAMA</h2>
@@ -535,6 +649,7 @@
                 </div>
             </div>
 
+            </div>
         </div> 
       </div>
 
@@ -584,6 +699,32 @@
             <div class="vod-iframe-container">
                 <iframe id="vod-iframe" frameborder="0" allowfullscreen></iframe>
             </div>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="profile-modal" class="modal-overlay" style="display: none;" onclick="closeModal('profile-modal')">
+        <div class="modal-box bg-slate-900 border-2 border-slate-700 relative max-w-lg w-full mx-4 p-8 rounded-xl shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeModal('profile-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
+            <h2 class="text-3xl font-oswald text-white tracking-widest uppercase mb-4 text-center border-b border-slate-700 pb-4">👤 Personalizar Perfil</h2>
+            <div class="space-y-6 mt-6">
+                <div>
+                    <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Título de Invocador</label>
+                    <select id="profile-title" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded shadow-inner outline-none focus:border-blue-500">
+                        <option value="">(Ninguno)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Color del Nombre</label>
+                    <select id="profile-color" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded shadow-inner outline-none focus:border-blue-500">
+                        <option value="">Estándar</option>
+                    </select>
+                </div>
+                <div class="pt-6 text-center">
+                    <button onclick="saveProfileCustomization()" id="btn-save-profile" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded font-black tracking-widest uppercase shadow-lg transition">GUARDAR PERFIL</button>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-6 text-center italic">Desbloquea más títulos y colores subiendo de nivel en el Pase de Temporada.</p>
         </div>
     </div>
 
@@ -686,7 +827,20 @@
                 
                 <div id="neg-action-propose" class="hidden">
                     <label class="text-[10px] text-accent-blue font-bold uppercase tracking-widest mb-2 block">Propón una fecha y hora:</label>
-                    <input type="datetime-local" id="neg-date-input" class="w-full bg-black border border-slate-600 rounded-lg px-4 py-3 text-white outline-none focus:border-accent-blue transition mb-4">
+                    <div class="flex gap-2 mb-2">
+                        <input type="datetime-local" id="neg-date-input" class="flex-1 bg-black border border-slate-600 rounded-lg px-4 py-3 text-white outline-none focus:border-accent-blue transition">
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
+                        <button onclick="setNegQuickTime('22:00')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-[10px] px-3 py-1.5 rounded-full border border-slate-700 text-slate-400">22:00 🌙</button>
+                        <button onclick="setNegQuickTime('22:30')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-[10px] px-3 py-1.5 rounded-full border border-slate-700 text-slate-400">22:30 🌙</button>
+                        <button onclick="setNegQuickTime('23:00')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-[10px] px-3 py-1.5 rounded-full border border-slate-700 text-slate-400">23:00 🌙</button>
+                        <button onclick="setNegQuickTime('18:00')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-[10px] px-3 py-1.5 rounded-full border border-slate-700 text-slate-400">18:00 ☀️</button>
+                    </div>
+                    
+                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 block">Notas / Otros Horarios (Sugerencia):</label>
+                    <textarea id="neg-notes-input" placeholder="Ej: Podemos lunes tarde o martes noche..." class="w-full bg-black border border-slate-600 rounded-lg px-4 py-3 text-white text-xs outline-none focus:border-accent-blue transition mb-4 h-20 resize-none"></textarea>
+                    
                     <button onclick="submitNegotiation('PROPOSE', event)" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-lg transition shadow-[0_0_15px_rgba(202,138,4,0.4)] uppercase tracking-widest text-sm">ENVIAR PROPUESTA</button>
                 </div>
                 
@@ -793,24 +947,24 @@
     };
 
     function generarHistorialForma(resultados, rachaActualObj) {
-        let html = '<div class="historial-forma flex items-center gap-1">'; 
+        let html = '<div class="historial-forma flex items-center gap-1.5">'; 
         resultados.forEach(res => { 
             if (res === 'V') {
-                html += '<span class="w-5 h-5 rounded bg-emerald-500 flex items-center justify-center text-[9px] font-black text-white shadow-[0_0_6px_rgba(16,185,129,0.5)]" title="Victoria">V</span>';
+                html += '<span class="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)] border border-emerald-400/20" title="Victoria"></span>';
             } else {
-                html += '<span class="w-5 h-5 rounded bg-red-500/80 flex items-center justify-center text-[9px] font-black text-white shadow-[0_0_6px_rgba(239,68,68,0.4)]" title="Derrota">D</span>';
+                html += '<span class="w-4 h-4 rounded-full bg-red-500/80 shadow-[0_0_6px_rgba(239,68,68,0.2)] border border-red-400/10" title="Derrota"></span>';
             }
         });
         for (let i = resultados.length; i < 5; i++) { 
-            html += '<span class="w-5 h-5 rounded bg-slate-700/50 flex items-center justify-center text-[8px] text-slate-600">-</span>'; 
+            html += '<span class="w-4 h-4 rounded-full bg-slate-700/20 border border-slate-600/10"></span>'; 
         }
         if (rachaActualObj > 0) { 
-            if (rachaActualObj >= 3) { html += '<span class="ml-1 text-sm drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]' + (rachaActualObj >= 5 ? ' animate-pulse' : '') + '" title="' + rachaActualObj + 'V seguidas">🔥</span>'; }
-            else { html += '<span class="ml-1 text-sm" title="' + rachaActualObj + 'V">✅</span>'; }
+            if (rachaActualObj >= 5) { html += '<span class="ml-2 text-xl drop-shadow-[0_0_12px_rgba(251,191,36,0.9)] animate-bounce" title="' + rachaActualObj + 'V seguidas - IMPARABLE">🚀</span>'; }
+            else if (rachaActualObj >= 3) { html += '<span class="ml-2 text-xl drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse" title="' + rachaActualObj + 'V seguidas">🔥</span>'; }
         } else if (rachaActualObj < 0) { 
             let p = Math.abs(rachaActualObj); 
-            if (p >= 3) { html += '<span class="ml-1 text-sm drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]' + (p >= 5 ? ' animate-pulse' : '') + '" title="' + p + 'D seguidas">❄️</span>'; }
-            else { html += '<span class="ml-1 text-sm" title="' + p + 'D">❌</span>'; }
+            if (p >= 5) { html += '<span class="ml-2 text-xl drop-shadow-[0_0_12px_rgba(56,189,248,0.9)] animate-pulse" title="' + p + 'D seguidas - CRÍTICO">💀</span>'; }
+            else if (p >= 3) { html += '<span class="ml-2 text-xl drop-shadow-[0_0_10px_rgba(56,189,248,0.6)]" title="' + p + 'D seguidas">🧊</span>'; }
         }
         return html + '</div>';
     }
@@ -1055,7 +1209,7 @@
         const topBans = [...metaData].sort((a, b) => (b.bans || 0) - (a.bans || 0)).slice(0, 5);
         topBans.forEach((c, idx) => {
             let champIcon = getChampIcon(c.champ);
-            let bans = c.bans !== undefined ? c.bans : Math.floor((c.picks || 0) * 0.8) + (c.champ.length % 5);
+            let bans = c.bans || 0;
             htmlBans += '<div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700 shadow hover:border-red-500 transition">';
             htmlBans += '<div class="flex items-center gap-4"><span class="font-oswald text-2xl text-slate-500 w-6">#' + (idx+1) + '</span><img src="' + champIcon + '" class="w-10 h-10 rounded-full border-2 border-slate-600 grayscale"><div class="font-bold text-white text-lg">' + escHtml(c.champ) + '</div></div>';
             htmlBans += '<div class="text-right"><div class="text-red-500 font-black text-xl">' + bans + ' Bans</div></div></div>';
@@ -1138,8 +1292,8 @@
         if (newsTimer) clearInterval(newsTimer); 
         const streamDate = new Date(data.streamDate);
         if (!data.streamDate || isNaN(streamDate.getTime())) { 
-            document.getElementById('stream-info').innerText = "FECHA NO PROGRAMADA"; 
-            document.getElementById('timer-display').innerText = "00d 00h 00m 00s"; 
+            document.getElementById('stream-info').innerText = "A FILAR LAS HACHAS"; 
+            document.getElementById('timer-display').innerText = "RECARGANDO PILAS 🔋"; 
             document.getElementById('top-countdown').classList.add('hidden'); 
         } else { 
             document.getElementById('stream-info').innerText = "STREAM: " + streamDate.toLocaleString(); 
@@ -1147,6 +1301,13 @@
                 const now = new Date().getTime(); 
                 const dist = streamDate.getTime() - now; 
                 if (dist < 0) { 
+                    // Si han pasado más de 6 horas desde el inicio, asumimos que acabó
+                    if (dist < -21600000) { 
+                        document.getElementById('stream-info').innerText = "A FILAR LAS HACHAS"; 
+                        document.getElementById('timer-display').innerText = "RECARGANDO PILAS 🔋";
+                        document.getElementById('top-countdown').classList.add('hidden');
+                        return;
+                    }
                     document.getElementById('timer-display').innerText = "🔴 EN DIRECTO"; 
                     document.getElementById('timer-compact').innerText = "🔴 EN DIRECTO"; 
                     document.getElementById('top-countdown').classList.remove('hidden'); 
@@ -1162,26 +1323,26 @@
         }
 
         const feed = document.getElementById('news-feed'); 
-        feed.innerHTML = `
-            <a href="https://x.com/WargodsPremier" target="_blank" class="block news-card hover:bg-slate-800 transition border-l-4 cursor-pointer" style="border-color: #e2e8f0; text-decoration: none;">
-                <div class="flex items-start gap-2">
-                    <span class="news-tag bg-black text-white flex items-center gap-1 mt-0.5">
-                        <svg width="10" height="10" fill="white" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> OFICIAL
-                    </span>
-                    <span class="text-sm text-slate-200">No te pierdas los comunicados, resultados y salseos de la liga en nuestro X (Twitter). <span class="text-blue-400 font-bold hover:underline">¡Síguenos!</span></span>
-                </div>
-            </a>
-        `;
+        feed.innerHTML = '';
         if(data.headlines){ 
             data.headlines.forEach(h => { 
-                let color = 'bg-slate-500'; 
-                if(h.type.includes('ALERTA')) color = 'bg-red-500'; 
-                else if(h.type.includes('HOT')) color = 'bg-orange-500'; 
-                else if(h.type.includes('IA')) color = 'bg-indigo-500'; 
-                else if(h.type.includes('REPORTE')) color = 'bg-blue-500'; 
-                else if(h.type.includes('TENDENCIA')) color = 'bg-yellow-500'; 
-                let formattedText = h.text.replace(/\*\*(.*?)\*\*/g, '<b class="text-white">$1</b>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline">$1</a>'); 
-                feed.innerHTML += `<div class="news-card"><span class="news-tag ${color}">${h.type}</span><span class="text-sm text-slate-200">${formattedText}</span></div>`; 
+                let isGazette = h.type.includes('GACETA');
+                let clickAction = isGazette ? 'onclick="openGazette()"' : '';
+                let cursor = isGazette ? 'cursor-pointer hover:scale-[1.01]' : '';
+                let typeColor = '#fbbf24'; // default gold
+                if(h.type.includes('ALERTA')) typeColor = '#ef4444'; // red
+                else if(h.type.includes('IA')) typeColor = '#818cf8'; // indigo
+                
+                let formattedText = h.text.replace(/\*\*(.*?)\*\*/g, `<strong style="color:${typeColor}">$1</strong>`).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-400 hover:underline">$1</a>'); 
+                feed.innerHTML += `
+                    <div ${clickAction} class="bg-slate-800/80 border border-slate-700 transition-all border-l-4 shadow-md rounded-r-xl p-4 md:p-5 mb-4 ${cursor}" 
+                         style="border-left-color: ${typeColor};">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded bg-slate-900" style="color: ${typeColor};">${h.type}</span>
+                        </div>
+                        <p class="text-slate-200 text-base md:text-lg leading-relaxed">${formattedText}</p>
+                    </div>
+                `;
             }); 
         }
     }
@@ -1469,7 +1630,7 @@
                 }
 
                 if (!isPlayed && currentUserRole !== 'admin') {
-                    dateBadge += ` <button onclick="event.stopPropagation(); openNegotiationModal('${m.id}')" class="ml-2 bg-slate-700 hover:bg-slate-600 text-[8px] px-2 py-0.5 rounded border border-slate-600 uppercase">Fitar Fecha</button>`;
+                    dateBadge += ` <button onclick="event.stopPropagation(); openNegotiationModal('${m.id}')" class="ml-2 bg-slate-700 hover:bg-slate-600 text-[8px] px-2 py-0.5 rounded border border-slate-600 uppercase">Gestionar</button>`;
                 }
 
                 let tA = data.teams.find(t => t.name === names[0].trim()); 
@@ -1956,14 +2117,29 @@
         }
     }
 
+    function setNegQuickTime(timeStr) {
+        let input = document.getElementById('neg-date-input');
+        if(!input.value) {
+            let now = new Date();
+            let day = ("0" + now.getDate()).slice(-2);
+            let month = ("0" + (now.getMonth() + 1)).slice(-2);
+            input.value = `${now.getFullYear()}-${month}-${day}T${timeStr}`;
+        } else {
+            let currentVal = input.value;
+            input.value = currentVal.split('T')[0] + 'T' + timeStr;
+        }
+    }
+
     function submitNegotiation(action, evt) {
         let matchId = document.getElementById('neg-match-id').value;
         let teamId = document.getElementById('neg-selected-team-id').value;
         let pin = document.getElementById('neg-pin').value.trim();
         let dateStr = "";
+        let notesStr = "";
         
         if(action === 'PROPOSE') {
             dateStr = document.getElementById('neg-date-input').value;
+            notesStr = document.getElementById('neg-notes-input').value.trim();
             if(!dateStr) return alert("Selecciona una fecha y hora.");
         }
         
@@ -1983,12 +2159,67 @@
             alert("❌ Error de comunicación con el Servidor: " + err.message);
             evt.target.innerText = originalText; evt.target.disabled = false;
         })
-        .handleMatchNegotiation(action, matchId, teamId, pin, dateStr);
+        .handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr);
     }
 
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
+    function openProfileModal() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert("Inicia sesión primero para personalizar tu perfil."); return; }
+        
+        document.getElementById('profile-modal').style.display = 'flex';
+        let titleSelect = document.getElementById('profile-title');
+        let colorSelect = document.getElementById('profile-color');
+        titleSelect.innerHTML = '<option value="">(Ninguno)</option>';
+        colorSelect.innerHTML = '<option value="">Estándar</option>';
+
+        google.script.run.withSuccessHandler(function(data) {
+            if (data && data.rewards) {
+                let unlockedTitles = [];
+                let unlockedColors = [];
+                data.rewards.forEach(r => {
+                    if (r.unlocked) {
+                        if (r.desc.includes('Título')) {
+                            let match = r.desc.match(/"(.*?)"/);
+                            if(match) unlockedTitles.push(match[1]);
+                        }
+                        if (r.desc.includes('Nombre Dorado')) unlockedColors.push({label: 'Dorado', val: '#fbbf24'});
+                        if (r.desc.includes('Nombre Rojo') || r.desc.includes('Infernal')) unlockedColors.push({label: 'Infernal', val: '#ef4444'});
+                    }
+                });
+                
+                unlockedTitles.forEach(t => {
+                    let opt = document.createElement('option');
+                    opt.value = t; opt.innerText = t;
+                    if(data.activeTitle === t) opt.selected = true;
+                    titleSelect.appendChild(opt);
+                });
+                
+                unlockedColors.forEach(c => {
+                    let opt = document.createElement('option');
+                    opt.value = c.val; opt.innerText = c.label;
+                    if(data.activeColor === c.val) opt.selected = true;
+                    colorSelect.appendChild(opt);
+                });
+            }
+        }).getBattlePassData(summoner);
+    }
+    
+    function saveProfileCustomization() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        let title = document.getElementById('profile-title').value;
+        let color = document.getElementById('profile-color').value;
+        let btn = document.getElementById('btn-save-profile');
+        btn.innerText = "GUARDANDO..."; btn.disabled = true;
+        google.script.run.withSuccessHandler(function(res) {
+            alert(res.msg);
+            btn.innerText = "GUARDAR PERFIL"; btn.disabled = false;
+            if(res.success) { closeModal('profile-modal'); refreshData(); }
+        }).updateProfileCustomization(summoner, title, color);
+    }
+
     function goHome() { google.script.run.withSuccessHandler(url => window.open(url, "_top")).getScriptUrl(); }
 
     function setupDragToScroll() {
@@ -3617,6 +3848,54 @@
 
     
 
+    function askAIPrediction(matchId) {
+        const btn = document.getElementById('btn-ai-predict');
+        const box = document.getElementById('ai-prediction-box');
+        const text = document.getElementById('ai-prediction-text');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin text-2xl">🌀</span> ANALIZANDO...';
+        
+        const match = tournamentDataCache.matches.find(m => m.id === matchId);
+        const names = match.names.split(' vs ');
+        const teamA = tournamentDataCache.teams.find(t => t.name === names[0].trim());
+        const teamB = tournamentDataCache.teams.find(t => t.name === names[1].trim());
+        
+        const matchData = {
+            match: match,
+            teamA: teamA,
+            teamB: teamB,
+            statsA: globalStatsData.filter(p => p.team === teamA.name),
+            statsB: globalStatsData.filter(p => p.team === teamB.name)
+        };
+
+        google.script.run.withSuccessHandler(function(res) {
+            text.innerHTML = res.replace(/\n/g, '<br>');
+            box.classList.remove('hidden');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="text-2xl">🤖</span> PREDICCIÓN REGENERADA';
+            
+            // Scroll suave hacia el resultado
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }).getAIPrediction(matchData);
+    }
+
+    function copyToDiscord(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = text;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        try {
+            document.execCommand('copy');
+            alert("✅ ¡Copiado al portapapeles! Ya puedes pegarlo en Discord.");
+        } catch (err) {
+            console.error('Error al copiar: ', err);
+            alert("❌ No se pudo copiar automáticamente.");
+        }
+        document.body.removeChild(tempTextArea);
+    }
+
     function openMatchScouting(matchId) {
         document.getElementById('scout-match-modal').style.display = 'flex';
         const content = document.getElementById('previa-content');
@@ -4083,10 +4362,13 @@
             let rowBg = isMe ? 'bg-yellow-500/10 border-l-4 border-yellow-500' : 'hover:bg-slate-800 transition border-l-4 border-transparent';
             let meTag = isMe ? '<span class="bg-yellow-500 text-black text-[9px] px-2 py-0.5 rounded font-black ml-2 uppercase">Tú</span>' : '';
 
+            let titleStr = u.title ? ` <span class="text-[10px] text-slate-400 font-normal uppercase tracking-widest">[${escHtml(u.title)}]</span>` : '';
+            let colorStyle = u.color ? `style="color: ${u.color};"` : '';
+            
             html += `
                 <tr class="border-b border-slate-700/50 ${rowBg}">
                     <td class="p-4 text-center font-oswald text-lg text-slate-500">${medal}</td>
-                    <td class="p-4 font-bold text-white text-base">${escHtml(u.name)}${meTag}</td>
+                    <td class="p-4 font-bold text-base whitespace-nowrap" ${colorStyle}>${escHtml(u.name)}${titleStr}${meTag}</td>
                     <td class="p-4 text-right font-mono text-yellow-400 font-bold text-lg">${parseInt(u.balance).toLocaleString()} WG</td>
                     <td class="p-4 text-center font-mono text-emerald-400">${parseInt(u.totalWon).toLocaleString()} 🪙</td>
                     <td class="p-4 text-center font-oswald text-blue-400 text-xl">${u.winRate.toFixed(1)}% <span class="text-[10px] text-slate-500 font-inter font-normal ml-1">(${u.betsWon}/${u.betsResolved})</span></td>
@@ -4111,6 +4393,476 @@
         notify(id) { console.log('Logro: ' + id); },
         showGallery() { alert('Abriendo galería de trofeos...'); }
     };
+
+    // ============================================================
+    // 🔔 CENTRO DE NOTIFICACIONES
+    // ============================================================
+    function toggleNotifications() {
+        let panel = document.getElementById('notif-panel');
+        if (panel.style.display === 'none' || panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            panel.style.display = 'block';
+            loadNotifications();
+        } else {
+            panel.classList.add('hidden');
+            panel.style.display = 'none';
+        }
+    }
+
+    let cachedNotifications = [];
+
+    function loadNotifications() {
+        // Cargar notificaciones descartadas del localStorage
+        let dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]');
+        let read = JSON.parse(localStorage.getItem('read_notifs') || '[]');
+
+        google.script.run.withSuccessHandler(function(notifs) {
+            let container = document.getElementById('notif-list');
+            let badge = document.getElementById('notif-badge');
+            if (!notifs || notifs.length === 0) {
+                container.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">Todo tranquilo por aquí 😴</div>';
+                badge.classList.add('hidden');
+                cachedNotifications = [];
+                return;
+            }
+
+            // Filtrar las descartadas
+            notifs = notifs.filter(n => !dismissed.includes(n.text));
+            cachedNotifications = notifs;
+
+            let unread = notifs.filter(n => !read.includes(n.text)).length;
+            if (unread > 0) {
+                badge.innerText = unread;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            let html = '';
+            notifs.forEach((n, idx) => {
+                let isRead = read.includes(n.text);
+                let bgClass = n.type === 'match' ? 'border-l-2 border-yellow-500' : (n.type === 'result' ? 'border-l-2 border-emerald-500' : 'border-l-2 border-slate-600');
+                let opacity = isRead ? 'opacity-50' : '';
+                html += `<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-800/50 transition ${bgClass} ${opacity} group" onclick="markNotifRead(${idx})">
+                    <span class="text-lg flex-shrink-0">${n.icon}</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-white text-xs font-medium leading-tight">${escHtml(n.text)}</p>
+                        ${n.time ? '<p class="text-slate-500 text-[9px] mt-0.5">' + n.time + '</p>' : ''}
+                    </div>
+                    <button onclick="event.stopPropagation(); dismissNotif(${idx})" class="text-slate-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition flex-shrink-0" title="Descartar">✕</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }).getNotificationsData();
+    }
+
+    function markNotifRead(idx) {
+        if (!cachedNotifications[idx]) return;
+        let read = JSON.parse(localStorage.getItem('read_notifs') || '[]');
+        let key = cachedNotifications[idx].text;
+        if (!read.includes(key)) {
+            read.push(key);
+            localStorage.setItem('read_notifs', JSON.stringify(read.slice(-50))); // Mantener solo los últimos 50
+        }
+        loadNotifications(); // Refrescar UI
+    }
+
+    function dismissNotif(idx) {
+        if (!cachedNotifications[idx]) return;
+        let dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]');
+        dismissed.push(cachedNotifications[idx].text);
+        localStorage.setItem('dismissed_notifs', JSON.stringify(dismissed.slice(-50)));
+        cachedNotifications.splice(idx, 1);
+        loadNotifications();
+    }
+
+    function clearAllNotifications() {
+        let dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]');
+        cachedNotifications.forEach(n => dismissed.push(n.text));
+        localStorage.setItem('dismissed_notifs', JSON.stringify(dismissed.slice(-100)));
+        cachedNotifications = [];
+        document.getElementById('notif-list').innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">Todo tranquilo por aquí 😴</div>';
+        document.getElementById('notif-badge').classList.add('hidden');
+    }
+
+    // Auto-load notifications on page load
+    setTimeout(() => { try { loadNotifications(); } catch(e){} }, 3000);
+
+    // ============================================================
+    // 🎰 RULETA DIARIA
+    // ============================================================
+    let rouletteChecked = false;
+
+    function autoOpenRoulette() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner || rouletteChecked) return;
+        rouletteChecked = true;
+        
+        let lastSpin = localStorage.getItem('last_spin_date');
+        let today = new Date().toISOString().split('T')[0];
+        if (lastSpin === today) return; 
+        
+        openDailyRoulette();
+    }
+
+    function openDailyRoulette() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert("Inicia sesión primero para acceder al login diario."); return; }
+        
+        let modal = document.getElementById('roulette-modal');
+        let streakDiv = document.getElementById('roulette-streak');
+        let btn = document.getElementById('btn-spin');
+        
+        modal.style.display = 'flex';
+        streakDiv.innerHTML = '<span class="text-xs text-slate-500 animate-pulse">Cargando racha...</span>';
+        
+        google.script.run.withSuccessHandler(function(data) {
+            if(!data) return;
+            let streakHtml = '';
+            for (let i = 1; i <= 7; i++) {
+                let filled = i <= data.streak;
+                streakHtml += `<div class="w-6 h-6 rounded-full border-2 ${filled ? 'bg-yellow-500 border-yellow-400' : 'bg-slate-800 border-slate-600'} flex items-center justify-center text-[8px] font-bold ${filled ? 'text-black' : 'text-slate-500'}">${i}</div>`;
+            }
+            streakDiv.innerHTML = streakHtml;
+            
+            let today = new Date().toISOString().split('T')[0];
+            if (data.lastLogin && data.lastLogin.includes(today)) {
+                btn.innerHTML = '✅ Ya has girado hoy';
+                btn.disabled = true;
+            } else {
+                btn.innerHTML = '🎲 ¡GIRAR LA RULETA!';
+                btn.disabled = false;
+                document.getElementById('roulette-result').classList.add('hidden');
+            }
+        }).getDailyLoginData(summoner);
+    }
+
+    function spinRoulette() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión primero.'); return; }
+        
+        let btn = document.getElementById('btn-spin');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin inline-block">🌀</span> GIRANDO...';
+
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.alreadySpun) {
+                btn.innerHTML = '✅ Ya has girado hoy';
+                localStorage.setItem('last_spin_date', new Date().toISOString().split('T')[0]);
+                return;
+            }
+            if (!res.success) {
+                alert(res.msg);
+                btn.disabled = false;
+                btn.innerHTML = '🎲 ¡GIRAR LA RULETA!';
+                return;
+            }
+
+            localStorage.setItem('last_spin_date', new Date().toISOString().split('T')[0]);
+
+            // Mostrar resultado con animación
+            document.getElementById('roulette-result').classList.remove('hidden');
+            document.getElementById('roulette-prize').innerText = '+' + res.totalPrize + ' WG 🪙';
+            
+            let bonusText = 'Racha: ' + res.streak + ' días seguidos';
+            if (res.streakBonus > 0) bonusText += ' | 🎉 ¡BONUS RACHA x7: +' + res.streakBonus + ' WG!';
+            if (res.firstTime) bonusText = '🎉 ¡Bonus de bienvenida!';
+            document.getElementById('roulette-bonus').innerText = bonusText;
+
+            // Streak dots
+            let streakHtml = '';
+            for (let i = 1; i <= 7; i++) {
+                let filled = i <= (res.streak % 7 || (res.streak >= 7 ? 7 : 0));
+                streakHtml += `<div class="w-6 h-6 rounded-full border-2 ${filled ? 'bg-yellow-500 border-yellow-400' : 'bg-slate-800 border-slate-600'} flex items-center justify-center text-[8px] font-bold ${filled ? 'text-black' : 'text-slate-500'}">${i}</div>`;
+            }
+            document.getElementById('roulette-streak').innerHTML = streakHtml;
+
+            btn.innerHTML = '🎉 ¡PREMIO RECLAMADO!';
+
+            // XP para Battle Pass
+            try { google.script.run.addBattlePassXP(summoner, 25, 'login_diario'); } catch(e) {}
+        }).spinDailyRoulette(summoner);
+    }
+
+    // Auto-check roulette 2 seconds after loading
+    setTimeout(() => { try { autoOpenRoulette(); } catch(e){} }, 2000);
+
+    // ============================================================
+    // 🗞️ LA GACETA DE WARGODS
+    // ============================================================
+    function openGazette() {
+        document.getElementById('gazette-modal').style.display = 'flex';
+        document.getElementById('gazette-content').innerHTML = '<div class="text-center py-8 text-[#8b7355]">📰 Cargando la última edición...</div>';
+        
+        google.script.run.withSuccessHandler(function(data) {
+            if (!data) {
+                document.getElementById('gazette-content').innerHTML = '<div class="text-center py-8 text-[#8b7355]">No hay ediciones publicadas aún. El admin puede generar una.</div>';
+                return;
+            }
+            document.getElementById('gazette-date').innerText = data.date ? new Date(data.date).toLocaleDateString() : '';
+            document.getElementById('gazette-content').innerHTML = String(data.content)
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }).getLatestGazette();
+    }
+
+    function generateGazette() {
+        if (!confirm('¿Generar una nueva edición de La Gaceta con IA?')) return;
+        document.getElementById('gazette-content').innerHTML = '<div class="text-center py-8 text-[#8b7355] animate-pulse">🤖 La IA está redactando el periódico...</div>';
+        
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) {
+                document.getElementById('gazette-content').innerHTML = String(res.content)
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                document.getElementById('gazette-date').innerText = new Date().toLocaleDateString();
+            } else {
+                alert(res.msg || 'Error generando la gaceta.');
+            }
+        }).generateWeeklyGazette();
+    }
+
+    // ============================================================
+    // 🎯 PICK'EM SEMANAL
+    // ============================================================
+    function loadPickemData() {
+        let summoner = localStorage.getItem('my_summoner_name') || '';
+        google.script.run.withSuccessHandler(function(data) {
+            renderPickemMatches(data.matches);
+            renderPickemLeaderboard(data.leaderboard);
+        }).getWeeklyPickemData(summoner);
+    }
+
+    function renderPickemMatches(matches) {
+        let container = document.getElementById('pickem-matches');
+        if (!matches || matches.length === 0) {
+            container.innerHTML = '<div class="text-center py-8 text-slate-500">No hay partidos pendientes para predecir.</div>';
+            return;
+        }
+        let html = '';
+        matches.forEach(m => {
+            let names = m.names ? m.names.split(' vs ') : ['?', '?'];
+            let tA = names[0] ? names[0].trim() : '?';
+            let tB = names[1] ? names[1].trim() : '?';
+            let pickA = m.userPick === 0 ? 'ring-2 ring-pink-500 bg-pink-500/20' : 'hover:bg-slate-700';
+            let pickB = m.userPick === 1 ? 'ring-2 ring-pink-500 bg-pink-500/20' : 'hover:bg-slate-700';
+            
+            html += `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div class="text-[10px] text-slate-500 uppercase font-bold w-20">${m.round || ''}</div>
+                <button onclick="submitPickem('${m.id}', 0)" class="flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer ${pickA}">
+                    <div class="font-bold text-white text-sm">${escHtml(tA)}</div>
+                    ${m.userPick === 0 ? '<div class="text-pink-400 text-[10px] mt-1">✓ Tu pick</div>' : ''}
+                </button>
+                <span class="text-slate-500 font-oswald text-sm">VS</span>
+                <button onclick="submitPickem('${m.id}', 1)" class="flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer ${pickB}">
+                    <div class="font-bold text-white text-sm">${escHtml(tB)}</div>
+                    ${m.userPick === 1 ? '<div class="text-pink-400 text-[10px] mt-1">✓ Tu pick</div>' : ''}
+                </button>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function renderPickemLeaderboard(lb) {
+        let container = document.getElementById('pickem-leaderboard');
+        if (!lb || lb.length === 0) {
+            container.innerHTML = '<div class="text-slate-500 text-center py-4 text-sm">Aún no hay datos suficientes.</div>';
+            return;
+        }
+        let html = '';
+        lb.forEach((u, idx) => {
+            let medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+            let titleStr = u.title ? `<span class="text-[10px] text-slate-400 font-normal uppercase tracking-widest block leading-none mt-1">${escHtml(u.title)}</span>` : '';
+            let colorStyle = u.color ? `style="color: ${u.color};"` : '';
+
+            html += `<div class="flex items-center justify-between bg-slate-900 p-3 rounded-lg border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <span class="font-oswald text-lg w-8 text-center">${medal}</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm text-white leading-none" ${colorStyle}>${escHtml(u.name)}</span>
+                        ${titleStr}
+                    </div>
+                </div>
+                <div class="flex gap-4 text-xs">
+                    <span class="text-emerald-400 font-bold">${u.correct} ✓</span>
+                    <span class="text-slate-400">${u.accuracy}%</span>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function submitPickem(matchId, teamIdx) {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión para participar en los Pick\'em.'); return; }
+
+        // UI Optimista: actualizar visualmente de inmediato sin esperar al servidor
+        let allBtns = document.querySelectorAll('#pickem-matches button[onclick*="submitPickem"]');
+        allBtns.forEach(btn => {
+            let onc = btn.getAttribute('onclick') || '';
+            if (onc.includes("'" + matchId + "'")) {
+                // Es un botón de este partido
+                let isThisTeam = onc.includes(', ' + teamIdx + ')');
+                btn.classList.remove('ring-2', 'ring-pink-500', 'bg-pink-500/20');
+                if (isThisTeam) {
+                    btn.classList.add('ring-2', 'ring-pink-500', 'bg-pink-500/20');
+                    // Añadir checkmark si no existe
+                    if (!btn.querySelector('.pick-check')) {
+                        let check = document.createElement('div');
+                        check.className = 'text-pink-400 text-[10px] mt-1 pick-check';
+                        check.innerText = '✓ Tu pick';
+                        btn.appendChild(check);
+                    }
+                } else {
+                    // Quitar checkmark del otro equipo
+                    let check = btn.querySelector('.pick-check');
+                    if (check) check.remove();
+                }
+            }
+        });
+
+        // Enviar al servidor en segundo plano (sin recargar todo)
+        google.script.run.withSuccessHandler(function(res) {
+            if (!res.success) alert(res.msg);
+        }).submitWeeklyPickem(summoner, matchId, teamIdx);
+
+        // XP para Battle Pass (en background)
+        try { google.script.run.addBattlePassXP(summoner, 50, 'pickem'); } catch(e) {}
+    }
+
+    // (1v1 Stats eliminado)
+
+    // ============================================================
+    // 💬 EL VESTUARIO (TRASH TALK)
+    // ============================================================
+    function loadTrashTalk() {
+        google.script.run.withSuccessHandler(function(messages) {
+            let container = document.getElementById('trash-talk-feed');
+            if (!messages || messages.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">El vestuario está vacío. ¡Sé el primero en hablar! 🎤</div>';
+                return;
+            }
+            let html = '';
+            messages.forEach(m => {
+                html += `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-amber-500/30 transition">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-amber-400 font-bold text-sm">${escHtml(m.author)}</span>
+                        <span class="text-slate-500 text-[10px]">${m.time}</span>
+                    </div>
+                    <p class="text-white text-sm">${escHtml(m.text)}</p>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }).getTrashTalkMessages();
+    }
+
+    function sendTrashTalk() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión para escribir en El Vestuario.'); return; }
+        let input = document.getElementById('trash-talk-input');
+        let msg = input.value.trim();
+        if (!msg) return;
+
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) { input.value = ''; loadTrashTalk(); }
+            else alert(res.msg);
+        }).postTrashTalkMessage(summoner, msg);
+
+        // XP para Battle Pass
+        try { google.script.run.addBattlePassXP(summoner, 10, 'trash_talk'); } catch(e) {}
+    }
+
+    // ============================================================
+    // 🏅 BATTLE PASS
+    // ============================================================
+    function openBattlePass() {
+        document.getElementById('battlepass-modal').style.display = 'flex';
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+
+        google.script.run.withSuccessHandler(function(data) {
+            if (!data) return;
+            document.getElementById('bp-level').innerText = data.level;
+            document.getElementById('bp-xp').innerText = data.progress;
+            document.getElementById('bp-bar').style.width = data.progress + '%';
+            document.getElementById('bp-mini-level').innerText = data.level;
+            document.getElementById('bp-mini-bar').style.width = data.progress + '%';
+
+            let html = '';
+            if (data.rewards) {
+                data.rewards.forEach(r => {
+                    let borderClass = r.unlocked ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-700';
+                    let lockIcon = r.unlocked ? '✅' : '🔒';
+                    html += `<div class="flex items-center justify-between p-3 rounded-lg border ${borderClass} transition">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg">${lockIcon}</span>
+                            <div>
+                                <div class="text-white font-bold text-sm">${r.name}</div>
+                                <div class="text-slate-400 text-[10px]">Nivel ${r.level}</div>
+                            </div>
+                        </div>
+                        <div class="text-right text-xs ${r.unlocked ? 'text-emerald-400' : 'text-slate-500'}">${r.desc}</div>
+                    </div>`;
+                });
+            }
+            document.getElementById('bp-rewards').innerHTML = html;
+        }).getBattlePassData(summoner);
+    }
+
+    function loadBattlePassMini() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+        document.getElementById('bp-mini').classList.remove('hidden');
+        document.getElementById('bp-mini').style.display = 'flex';
+
+        google.script.run.withSuccessHandler(function(data) {
+            if (!data) return;
+            document.getElementById('bp-mini-level').innerText = data.level;
+            document.getElementById('bp-mini-bar').style.width = data.progress + '%';
+        }).getBattlePassData(summoner);
+    }
+
+    // Load battle pass mini on startup
+    setTimeout(() => { try { loadBattlePassMini(); } catch(e){} }, 4000);
+
+    // ============================================================
+    // TAB SWITCHING HOOKS (load data when tabs are opened)
+    // ============================================================
+    let _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
+    
+    // Override switchTab to hook into new tabs
+    let _tabHooksSetup = false;
+    function setupTabHooks() {
+        if (_tabHooksSetup) return;
+        _tabHooksSetup = true;
+        
+        let origFn = window.switchTab;
+        window.switchTab = function(tabName, btn) {
+            origFn(tabName, btn);
+            // Load data for new tabs
+            if (tabName === 'pickem') loadPickemData();
+            if (tabName === 'vestuario') loadTrashTalk();
+        };
+    }
+    setTimeout(setupTabHooks, 1000);
+
+    // ============================================================
+    // 🗞️ GAZETTE BUTTON IN NEWS SIDEBAR
+    // ============================================================
+    // Add gazette + highlights buttons to the home sidebar after load
+    setTimeout(function() {
+        let sidebar = document.querySelector('#tab-news .lg\\:col-span-4');
+        if (sidebar) {
+            let gazetteCard = document.createElement('div');
+            gazetteCard.className = 'bg-gradient-to-br from-[#fdf6e3] to-[#f5e6d0] border-2 border-[#8b7355] p-5 rounded-xl cursor-pointer hover:scale-[1.02] transition-transform shadow-lg';
+            gazetteCard.onclick = openGazette;
+            gazetteCard.innerHTML = `
+                <h3 class="text-[#2c1810] font-bold text-lg mb-1" style="font-family: 'Georgia', serif;">📰 La Gaceta de Wargods</h3>
+                <p class="text-[#8b7355] text-xs">Lee el último periódico generado por IA</p>
+            `;
+            sidebar.insertBefore(gazetteCard, sidebar.firstChild);
+        }
+    }, 2000);
 </script>
 </body>
 </html>
