@@ -8192,30 +8192,58 @@ function processNotesForBreakdown(notesString) {
 function doGet(e) {
   const params = e.parameter;
   
-  // Si llega ?player=NombreJugador, servir vista p    blica
+  // Si llega ?player=NombreJugador, servir vista publica
   if (params && params.player) {
     const playerName = decodeURIComponent(params.player);
     const template = HtmlService.createTemplateFromFile('PlayerProfile');
     template.playerName = playerName;
     return template.evaluate()
-      .setTitle('Perfil    ' + playerName + '    Wargods Premier')
+      .setTitle('Perfil - ' + playerName + ' - Wargods Premier')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   
-  // Si llega ?team=NombreEquipo, servir vista p    blica de equipo
+  // Si llega ?team=NombreEquipo, servir vista publica de equipo
   if (params && params.team) {
     const teamName = decodeURIComponent(params.team);
     const template = HtmlService.createTemplateFromFile('TeamProfile');
     template.teamName = teamName;
     return template.evaluate()
-      .setTitle(teamName + '    Wargods Premier')
+      .setTitle(teamName + ' - Wargods Premier')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  // Si llega ?p=ruta, enrutar a la herramienta del Centro de Datos correspondiente
+  if (params && params.p) {
+    var route = params.p;
+    var routeMap = {
+      'analytics':     'analytics',
+      'dashboard':     'dashboard',
+      'synergy':       'SynergyDashboard',
+      'behavior':      'BehaviorDashboard',
+      'inspector':     'Match_Inspector',
+      'global':        'GlobalDashboard',
+      'general':       'Grafico_General',
+      'match_details': 'MatchDetails',
+      'ranking':       'EpicRanking',
+      'graphics_menu': 'GraphicsMenu',
+      'history_global':'GlobalHistory',
+      'votar':         'VotingBooth',
+      'tournaments':   'LeagueMenu'
+    };
+    var templateName = routeMap[route] || 'LeagueMenu';
+    var template = HtmlService.createTemplateFromFile(templateName);
+    template.page = route;
+    template.seasonFilter = params.season || 'CURRENT';
+    return template.evaluate()
+      .setTitle('Wargods Premier - Centro de Datos')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   
-  // Sin par    metros: tu app normal (LeagueMenu.html)
+  // Sin parametros: tu app normal (LeagueMenu.html)
   return HtmlService.createTemplateFromFile('LeagueMenu')
-      .evaluate() // ESTA ES LA PALABRA M    GICA
+      .evaluate()
       .setTitle('Wargods Premier')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
