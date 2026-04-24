@@ -1,17 +1,17 @@
 <script>
         // ==========================================
-        // 🚀 MOTOR DE CONEXIÓN NATIVO (SIN API URL)
+        //  MOTOR DE CONEXION NATIVO (SIN API URL)
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', loadData);
 
-        // Función mágica para llamar al Backend de Google como si fuera una API moderna
+        // Funcion magica para llamar al Backend de Google como si fuera una API moderna
         function runServerFunction(functionName) {
             return new Promise((resolve, reject) => {
                 google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(reject)
-                    [functionName](); // Llama a la función por su nombre
+                    [functionName](); // Llama a la funcion por su nombre
             });
         }
 
@@ -24,7 +24,7 @@
                 const [rankData, histData, statData, evoData] = await Promise.all([
                     runServerFunction('getEpicRankingData'),
                     runServerFunction('getMatchesForWeb'),
-                    runServerFunction('getGlobalChallengeStats'), // Ojo: nombre exacto de tu función backend
+                    runServerFunction('getGlobalChallengeStats'), // Ojo: nombre exacto de tu funcion backend
                     runServerFunction('getEvolutionDataForWeb')
                 ]);
 
@@ -40,10 +40,10 @@
                 document.getElementById('loader').classList.add('hidden');
 
             } catch (error) {
-                console.error("Error crítico:", error);
+                console.error("Error critico:", error);
                 document.getElementById('loader').innerHTML = 
                     `<div style="text-align:center">
-                        <p style="color:#D94444; font-size:1.2rem;">Error de conexión con el servidor.</p>
+                        <p style="color:#D94444; font-size:1.2rem;">Error de conexion con el servidor.</p>
                         <p style="color:#888; font-size:0.9rem;">${error.message}</p>
                     </div>`;
             }
@@ -71,10 +71,10 @@
                 // Formato de Racha
                 let streakHtml = '<span style="color:#666">-</span>';
                 if (p.streak > 0) {
-                    const icon = p.streak >= 3 ? '🔥' : '▲';
+                    const icon = p.streak >= 3 ? '' : '';
                     streakHtml = `<span style="color:#0AC8B9; font-weight:bold;">${icon} ${p.streak}</span>`;
                 } else if (p.streak < 0) {
-                    const icon = p.streak <= -3 ? '❄️' : '▼';
+                    const icon = p.streak <= -3 ? '' : '';
                     streakHtml = `<span style="color:#D94444; font-weight:bold;">${icon} ${Math.abs(p.streak)}</span>`;
                 }
 
@@ -152,7 +152,7 @@
             const ctx = document.getElementById('evolutionChart').getContext('2d');
             const colors = ['#C8AA6E', '#0AC8B9', '#D94444', '#FFFFFF', '#463714'];
             
-            // Validación de datos
+            // Validacion de datos
             if (!data || !data.series) return;
 
             const datasets = data.players.map((player, index) => ({

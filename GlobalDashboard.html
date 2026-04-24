@@ -336,7 +336,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // --- Configuración Global Chart.js para Modo Oscuro ---
+  // --- Configuracion Global Chart.js para Modo Oscuro ---
   Chart.defaults.color = '#94a3b8';
   Chart.defaults.borderColor = '#334155';
   Chart.defaults.font.family = "'Inter', sans-serif";
@@ -357,14 +357,14 @@
     document.getElementById('spinner-container').style.display = 'none';
     const box = document.getElementById('error-box');
     box.style.display = 'block';
-    box.innerHTML = `<strong>Error Crítico:</strong> ${err.message}`;
+    box.innerHTML = `<strong>Error Critico:</strong> ${err.message}`;
   }
 
 function onDataLoaded(data) {
     console.log("RECIBIDO:", data); // Para depurar
 
     if (!data || !data.globalStats) {
-        showFatalError({message: "El servidor devolvió datos vacíos."});
+        showFatalError({message: "El servidor devolvio datos vacios."});
         return;
     }
 
@@ -372,51 +372,51 @@ function onDataLoaded(data) {
         const gs = data.globalStats;
         const players = data.statsByPlayer || {};
         
-        // 1. Asignación de Valores a las Tarjetas (KPIs)
+        // 1. Asignacion de Valores a las Tarjetas (KPIs)
         setText('s-total-games', gs.totalGames || 0);
         setText('s-total-kills', (gs.totalKills || 0).toLocaleString());
         
-        // Máximo Puntos (Tarjeta Dorada)
+        // Maximo Puntos (Tarjeta Dorada)
         if (gs.maxPoints) {
             setText('s-max-points', parseFloat(gs.maxPoints.value).toFixed(1));
-            setText('p-max-points', `👑 ${gs.maxPoints.player || 'N/A'} (${gs.maxPoints.champ})`);
+            setText('p-max-points', ` ${gs.maxPoints.player || 'N/A'} (${gs.maxPoints.champ})`);
         }
         
-        // Mínimo Puntos (Tarjeta Roja)
+        // Minimo Puntos (Tarjeta Roja)
         if (gs.minPoints) {
             setText('s-min-points', parseFloat(gs.minPoints.value).toFixed(1));
-            setText('p-min-points', `💀 ${gs.minPoints.player || 'N/A'} (${gs.minPoints.champ})`);
+            setText('p-min-points', ` ${gs.minPoints.player || 'N/A'} (${gs.minPoints.champ})`);
         }
 
-        // Récord de Daño
+        // Record de Dano
         if (gs.recordDamage) {
             setText('s-record-damage', ((gs.recordDamage.value || 0)/1000).toFixed(1) + 'k');
-            setText('p-record-damage', `⚔️ ${gs.recordDamage.player || 'N/A'} (${gs.recordDamage.champ})`);
+            setText('p-record-damage', ` ${gs.recordDamage.player || 'N/A'} (${gs.recordDamage.champ})`);
         }
 
-        // Récord de Kills en una partida
+        // Record de Kills en una partida
         if (gs.recordKills) {
              setText('s-record-kills', gs.recordKills.value || 0);
-             setText('p-record-kills', `🗡️ ${gs.recordKills.player || 'N/A'} (${gs.recordKills.champ})`);
+             setText('p-record-kills', ` ${gs.recordKills.player || 'N/A'} (${gs.recordKills.champ})`);
         }
 
         // Mejor KDA Global
         if (gs.bestKDA) {
             setText('s-best-kda', parseFloat(gs.bestKDA.value).toFixed(2));
-            setText('p-best-kda', `🛡️ ${gs.bestKDA.player || 'N/A'}`);
+            setText('p-best-kda', ` ${gs.bestKDA.player || 'N/A'}`);
         }
         
-        // Partida más Larga
+        // Partida mas Larga
         if (gs.longestGame) {
             setText('s-longest-game', (gs.longestGame.value || 0) + "'");
-            setText('p-longest-game', `⏳ ${gs.longestGame.player || 'N/A'}`);
+            setText('p-longest-game', ` ${gs.longestGame.player || 'N/A'}`);
         }
 
         // 2. Preparar Lista Jugadores
         const pList = Object.keys(players).map(k => ({name:k, ...players[k]})).sort((a,b) => b.winRate - a.winRate);
         const pNames = pList.map(p => p.name);
 
-        // 3. Renderizar Gráficos con Try-Catch individual
+        // 3. Renderizar Graficos con Try-Catch individual
         safeRender(() => {
             const scatterData = pList.map(p => ({x: p.games, y: p.winRate, r: 8, player: p.name}));
             createBubble('chartScatter', scatterData);
@@ -435,13 +435,13 @@ function onDataLoaded(data) {
         }, "Roles");
 
         safeRender(() => createBar('chartMaxKills', 'Max Kills', pNames, pList.map(p=>p.maxKills), COLORS[5]), "MaxKills");
-        safeRender(() => createBar('chartMaxDamage', 'Max Daño', pNames, pList.map(p=>p.maxDamage), COLORS[4]), "MaxDmg");
+        safeRender(() => createBar('chartMaxDamage', 'Max Dano', pNames, pList.map(p=>p.maxDamage), COLORS[4]), "MaxDmg");
 
         // 4. Tablas
         renderPlayerTable(pList);
         renderChampTable(data.championStats || []);
 
-        // 5. ETIQUETAS (TAGS) - SECCIÓN NUEVA
+        // 5. ETIQUETAS (TAGS) - SECCION NUEVA
         safeRender(() => {
             const tagsWin = (data.tagStats || [])
                 .sort((a,b) => b.wins - a.wins) // Ordenar por victorias
@@ -466,7 +466,7 @@ function onDataLoaded(data) {
 
   // --- Funciones de Renderizado Seguro ---
   function safeRender(fn, name) {
-      try { fn(); } catch(e) { console.warn(`Error pintando gráfico ${name}:`, e); }
+      try { fn(); } catch(e) { console.warn(`Error pintando grafico ${name}:`, e); }
   }
 
   function renderPlayerTable(list) {
@@ -474,9 +474,9 @@ function onDataLoaded(data) {
       tbody.innerHTML = '';
       
       list.forEach((s, i) => {
-          const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `#${i + 1}`));
+          const medal = i === 0 ? '' : (i === 1 ? '' : (i === 2 ? '' : `#${i + 1}`));
           
-          // --- LÓGICA DE COLORES KDA (ESCALA) ---
+          // --- LOGICA DE COLORES KDA (ESCALA) ---
           const kdaVal = parseFloat(s.avgKDA);
           let kdaColor = '#38bdf8'; // Por defecto Azul (>= 4.5)
 
@@ -517,17 +517,17 @@ function onDataLoaded(data) {
       list.slice(0, 50).forEach((c, i) => {
           const rowId = `sub-${i}`;
           
-          // 1. Convertimos a número para poder redondear
+          // 1. Convertimos a numero para poder redondear
           const cKdaVal = parseFloat(c.kda || 0);
           const cPtsVal = parseFloat(c.avgPoints || 0);
 
-          // --- LÓGICA DE COLOR KDA ---
+          // --- LOGICA DE COLOR KDA ---
           let cColor = '#38bdf8';
           if (cKdaVal < 1.8) cColor = '#f87171';
           else if (cKdaVal < 3.0) cColor = '#fbbf24';
           else if (cKdaVal < 4.5) cColor = '#34d399';
 
-          // --- LÓGICA DE COLOR PUNTOS ---
+          // --- LOGICA DE COLOR PUNTOS ---
           let ptsColor = '#34d399'; 
           if (cPtsVal < 0) ptsColor = '#f87171'; 
           if (cPtsVal >= 4.0) ptsColor = '#fbbf24'; 

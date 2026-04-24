@@ -117,21 +117,21 @@
         const container = document.getElementById('coinflip-list');
         
         // Calculamos rango para hacer las barras relativas
-        // Asumimos un mínimo de 5 para que la barra no sea enorme si todos tienen 6
+        // Asumimos un minimo de 5 para que la barra no sea enorme si todos tienen 6
         const maxVal = Math.max(...list.map(p => p.volatility), 12); 
 
         list.forEach(p => {
-          // LÓGICA DE CLASIFICACIÓN VISUAL (Sobreescribe al backend si es necesario)
+          // LOGICA DE CLASIFICACION VISUAL (Sobreescribe al backend si es necesario)
           // < 9: Roca (Estable)
           // 9 - 11.5: Coinflip (Variable)
-          // > 11.5: Psiquiátrico (Caos)
+          // > 11.5: Psiquiatrico (Caos)
           let tierConfig = { label: "Estable", color: "#10b981" }; // Default Green
           const v = parseFloat(p.volatility);
 
           if (v >= 12.0 && v < 19.0) {
              tierConfig = { label: "Coinflip", color: "#f59e0b" }; // Orange
           } else if (v >= 19.0) {
-             tierConfig = { label: "Psiquiátrico", color: "#8b5cf6" }; // Purple
+             tierConfig = { label: "Psiquiatrico", color: "#8b5cf6" }; // Purple
           }
 
           const width = (v / maxVal) * 100;
@@ -158,18 +158,18 @@
       function renderChrono(list) {
         const container = document.getElementById('chrono-list');
         
-        // Mapa de iconos para hacerlo más visual
+        // Mapa de iconos para hacerlo mas visual
         const icons = {
-            'Mañana': '🌅',
-            'Tarde': '🌇',
-            'Noche': '🌙',
-            'Madrugada': '🧛'
+            'Manana': '',
+            'Tarde': '',
+            'Noche': '',
+            'Madrugada': ''
         };
 
         list.forEach(p => {
           // Limpiamos strings para obtener iconos
-          const primeIcon = icons[p.primeTime.split(' ')[0]] || '✨';
-          const kryptoIcon = icons[p.kryptonite.split(' ')[0]] || '💀';
+          const primeIcon = icons[p.primeTime.split(' ')[0]] || '';
+          const kryptoIcon = icons[p.kryptonite.split(' ')[0]] || '';
 
           const card = document.createElement('div');
           card.className = 'chrono-card';

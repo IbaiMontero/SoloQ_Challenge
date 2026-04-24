@@ -128,7 +128,7 @@
   <button class="close-btn" onclick="google.script.host.close()">CERRAR</button>
 
 <script>
-  // Esta función se llama automáticamente al cargar el diálogo
+  // Esta funcion se llama automaticamente al cargar el dialogo
   // Recibe los datos enviados desde el script .gs
   function initRoulette(possibleLootStr, winnerItem) {
     const stripElement = document.getElementById('strip');
@@ -139,17 +139,17 @@
     const possibleLoot = possibleLootStr.split(',');
 
     // 1. Construir la tira de la ruleta
-    // Necesitamos una tira muy larga para que la animación dure.
+    // Necesitamos una tira muy larga para que la animacion dure.
     // Repetimos la lista de loot posible muchas veces.
     let rouletteItems = [];
     // Repetimos la lista 50 veces para hacer bulto antes del ganador
     for (let i = 0; i < 50; i++) {
         rouletteItems = rouletteItems.concat(possibleLoot);
     }
-    // Insertamos el item ganador en una posición específica cerca del final (ej. índice 125)
-    const winningIndex = rouletteItems.length - Math.floor(possibleLoot.length / 2); // Aseguramos que esté cerca del final
+    // Insertamos el item ganador en una posicion especifica cerca del final (ej. indice 125)
+    const winningIndex = rouletteItems.length - Math.floor(possibleLoot.length / 2); // Aseguramos que este cerca del final
     rouletteItems[winningIndex] = winnerItem;
-    // Añadimos unos pocos más después para que no se acabe de golpe
+    // Anadimos unos pocos mas despues para que no se acabe de golpe
     rouletteItems = rouletteItems.concat(possibleLoot.slice(0, 5));
 
 
@@ -163,7 +163,7 @@
       // Si el nombre contiene "Legendario" o "Skin", le pone borde dorado.
       if (itemName.includes('Legendario') || itemName.includes('Skin')) {
           itemDiv.classList.add('rarity-legendary');
-      } else if (itemName.includes('Épico') || itemName.includes('Hype')) {
+      } else if (itemName.includes('Epico') || itemName.includes('Hype')) {
           itemDiv.classList.add('rarity-epic');
       } else if (itemName.includes('Raro')) {
            itemDiv.classList.add('rarity-rare');
@@ -179,32 +179,32 @@
       stripElement.appendChild(itemDiv);
     });
 
-    // 3. Calcular la animación
-    // Necesitamos que el navegador renderice primero para saber dónde está el ganador
+    // 3. Calcular la animacion
+    // Necesitamos que el navegador renderice primero para saber donde esta el ganador
     setTimeout(() => {
       const winnerCard = document.getElementById('winner-card');
       const containerWidth = document.querySelector('.roulette-container').offsetWidth;
       const cardWidth = winnerCard.offsetWidth + 10; // Ancho + margen horizontal
       
-      // Cálculo matemático:
+      // Calculo matematico:
       // Queremos que el centro del item ganador quede en el centro del contenedor.
-      // Posición del item = (Índice del ganador * ancho de tarjeta)
+      // Posicion del item = (Indice del ganador * ancho de tarjeta)
       // Offset para centrar = (Ancho contenedor / 2) - (Ancho tarjeta / 2)
       const finalPosition = (winningIndex * cardWidth) - (containerWidth / 2) + (cardWidth / 2);
       
-      // Forzamos un pequeño reflow antes de iniciar la animación
+      // Forzamos un pequeno reflow antes de iniciar la animacion
       stripElement.getBoundingClientRect();
 
-      // APLICAR LA ANIMACIÓN: Movemos la tira hacia la izquierda
+      // APLICAR LA ANIMACION: Movemos la tira hacia la izquierda
       stripElement.style.transform = `translateX(-${finalPosition}px)`;
 
-    }, 500); // Pequeña pausa antes de empezar a girar
+    }, 500); // Pequena pausa antes de empezar a girar
 
-    // 4. Mostrar resultado al terminar (6 segundos después, igual que la transición CSS)
+    // 4. Mostrar resultado al terminar (6 segundos despues, igual que la transicion CSS)
     stripElement.addEventListener('transitionend', () => {
-       resultMsgElement.textContent = `¡Has ganado: ${winnerItem}!`;
+       resultMsgElement.textContent = `!Has ganado: ${winnerItem}!`;
        resultMsgElement.style.opacity = 1;
-       closeBtn.style.display = 'block'; // Mostrar botón cerrar
+       closeBtn.style.display = 'block'; // Mostrar boton cerrar
        
        // Efecto de parpadeo en el ganador
        const winnerCard = document.getElementById('winner-card');

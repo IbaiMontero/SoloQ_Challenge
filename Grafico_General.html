@@ -255,13 +255,13 @@
         };
 
         window.onload = function() {
-            // 1. Cargar Gráficos (Existente)
+            // 1. Cargar Graficos (Existente)
             google.script.run.withSuccessHandler(renderCharts).getDataForDashboardV12();
             
             // 2. Cargar MVPs por Rol (Existente)
             google.script.run.withSuccessHandler(renderHallOfFame).getBestPlayersByRoleV12();
 
-            // 3. Cargar Sección Épica (NUEVO)
+            // 3. Cargar Seccion Epica (NUEVO)
             google.script.run.withSuccessHandler(renderEpicSection).getEpicDashboardData();
         };
 
@@ -289,7 +289,7 @@
                 text: data.winRate.map(x=>(x*100).toFixed(0)+'%'), textposition: 'auto'
             }], { ...layout, yaxis: { ...layout.yaxis, range: [0, 100], title: 'Win Rate %' } }, config);
 
-            // 3. Avg Points (COLORES CAMBIADOS AQUÍ)
+            // 3. Avg Points (COLORES CAMBIADOS AQUI)
             Plotly.newPlot('chartAvgPoints', [{
                 x: data.roles, y: data.avgPoints, type: 'bar',
                 marker: { color: pieColors }, // Ahora usa los colores de rol
@@ -308,7 +308,7 @@
             document.getElementById('main-content').classList.remove('hidden');
         }
 
-        // --- RENDERIZADO DE SECCIÓN ÉPICA (NUEVO) ---
+        // --- RENDERIZADO DE SECCION EPICA (NUEVO) ---
         function renderEpicSection(data) {
             if(!data) return;
 
@@ -324,19 +324,19 @@
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Sin datos aún</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Sin datos aun</td></tr>';
             }
 
-            // 2. Render Títulos
+            // 2. Render Titulos
             const grid = document.getElementById('titles-grid');
             if (data.titles && data.titles.length > 0) {
                 grid.innerHTML = data.titles.map(t => {
-                    let icon = '🏅';
-                    if(t.id==='DEMOLEDOR') icon='🚜';
-                    if(t.id==='VISION') icon='👁️';
-                    if(t.id==='BUTCHER') icon='🩸';
-                    if(t.id==='IMMORTAL') icon='🛡️';
-                    if(t.id==='TYCOON') icon='💰';
+                    let icon = '';
+                    if(t.id==='DEMOLEDOR') icon='';
+                    if(t.id==='VISION') icon='';
+                    if(t.id==='BUTCHER') icon='';
+                    if(t.id==='IMMORTAL') icon='';
+                    if(t.id==='TYCOON') icon='';
 
                     return `
                     <div class="title-badge">
@@ -348,7 +348,7 @@
                     `;
                 }).join('');
             } else {
-                grid.innerHTML = '<div style="grid-column:span 3; text-align:center">Calculando títulos...</div>';
+                grid.innerHTML = '<div style="grid-column:span 3; text-align:center">Calculando titulos...</div>';
             }
         }
 
@@ -359,11 +359,11 @@
             container.innerHTML = '';
 
             const rolesDef = [
-                { id: 'TOP', name: 'Toplaner', icon: '⚔️' },
-                { id: 'JUNGLE', name: 'Jungler', icon: '🌴' },
-                { id: 'MIDDLE', name: 'Midlaner', icon: '🧙‍♂️' },
-                { id: 'BOTTOM', name: 'Carry', icon: '🔫' },
-                { id: 'UTILITY', name: 'Support', icon: '🛡️' }
+                { id: 'TOP', name: 'Toplaner', icon: '' },
+                { id: 'JUNGLE', name: 'Jungler', icon: '' },
+                { id: 'MIDDLE', name: 'Midlaner', icon: '' },
+                { id: 'BOTTOM', name: 'Carry', icon: '' },
+                { id: 'UTILITY', name: 'Support', icon: '' }
             ];
 
             rolesDef.forEach(r => {
@@ -375,8 +375,8 @@
                 if (p && p.summoner) {
                      // Badges
                     let badgesHtml = '<div class="hof-badges">';
-                    if (p.streak && p.streak >= 3) badgesHtml += `<div class="hof-streak">🔥 ${p.streak}</div>`;
-                    if (p.mvpTotal && p.mvpTotal > 0) badgesHtml += `<div class="hof-mvp">🏆 ${p.mvpTotal}</div>`;
+                    if (p.streak && p.streak >= 3) badgesHtml += `<div class="hof-streak"> ${p.streak}</div>`;
+                    if (p.mvpTotal && p.mvpTotal > 0) badgesHtml += `<div class="hof-mvp"> ${p.mvpTotal}</div>`;
                     badgesHtml += '</div>';
 
                     content = `
@@ -388,10 +388,10 @@
                             ${badgesHtml}
                             <div class="hof-summoner">${p.summoner}</div>
                             <div class="hof-stats">
-                                📊 Media: <strong>${p.avgPoints}</strong> pts
+                                 Media: <strong>${p.avgPoints}</strong> pts
                             </div>
                             <div class="hof-feat">
-                                ⚡ Poder: <strong>${p.superpower || 'Consistente'}</strong>
+                                 Poder: <strong>${p.superpower || 'Consistente'}</strong>
                             </div>
                         </div>`;
                 } else {
@@ -401,7 +401,7 @@
                                 <span class="hof-role-icon" style="filter:grayscale(1)">${r.icon}</span>
                             </div>
                             <div class="hof-role-name" style="text-align:center">${r.name}</div>
-                            <div style="margin-top: 15px; color: var(--text-secondary);">— Vacante —</div>
+                            <div style="margin-top: 15px; color: var(--text-secondary);">- Vacante -</div>
                         </div>
                     `;
                 }

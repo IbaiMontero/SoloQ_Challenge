@@ -1,0 +1,7 @@
+**/*.py
+**/node_modules/**
+**/README.md
+**/.git/**
+**/combined.html
+**/test_*.js
+**/purge_*.js

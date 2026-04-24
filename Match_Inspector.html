@@ -158,11 +158,11 @@
   <div id="matchContainer" class="match-list"></div>
 
   <script>
-    // Configuración de Iconos
+    // Configuracion de Iconos
     const roleIcons = {
-      'TOP': '🛡️', 'JUNGLE': '🌲', 'MID': '🔮', 'MIDDLE': '🔮',
-      'ADC': '🏹', 'BOTTOM': '🏹', 'BOT': '🏹',
-      'SUPPORT': '❤️', 'UTILITY': '❤️'
+      'TOP': '', 'JUNGLE': '', 'MID': '', 'MIDDLE': '',
+      'ADC': '', 'BOTTOM': '', 'BOT': '',
+      'SUPPORT': '', 'UTILITY': ''
     };
 
     function getChampUrl(name) {
@@ -174,7 +174,7 @@
       return `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${clean}.png`;
     }
 
-    // --- INICIALIZACIÓN ---
+    // --- INICIALIZACION ---
     document.addEventListener('DOMContentLoaded', () => {
       google.script.run
         .withSuccessHandler(populateList)
@@ -184,7 +184,7 @@
 
     function populateList(players) {
       const sel = document.getElementById('playerSelect');
-      sel.innerHTML = '<option value="" disabled selected>✨ Selecciona un Invocador...</option>';
+      sel.innerHTML = '<option value="" disabled selected> Selecciona un Invocador...</option>';
       if(!players || players.length === 0) return;
       
       players.forEach(p => {
@@ -225,7 +225,7 @@
         const pts = parseFloat(m.points);
         const ptsClass = pts >= 0 ? 'pts-pos' : 'pts-neg';
         const ptsSign = pts > 0 ? '+' : '';
-        const roleIcon = roleIcons[(m.lane || 'MID').toUpperCase()] || '⚔️';
+        const roleIcon = roleIcons[(m.lane || 'MID').toUpperCase()] || '';
 
         // Barras KDA
         const parts = m.kda.split('/');
@@ -271,7 +271,7 @@
                 <span class="result-badge ${isWin?'badge-win':'badge-loss'}">${isWin?'VICTORIA':'DERROTA'}</span>
               </div>
               <div class="meta">
-                📅 ${m.date.split(' ')[0]} &nbsp; • &nbsp; ⏱️ ${m.duration} min
+                 ${m.date.split(' ')[0]} &nbsp;  &nbsp;  ${m.duration} min
               </div>
             </div>
 
@@ -297,7 +297,7 @@
                 <div class="stat-val">${m.cs}</div>
               </div>
               <div class="stat-item">
-                <div class="stat-lbl">VISIÓN</div>
+                <div class="stat-lbl">VISION</div>
                 <div class="stat-val">${m.vision}</div>
               </div>
               <div class="stat-item">

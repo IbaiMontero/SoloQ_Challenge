@@ -859,7 +859,7 @@
     fetch('https://ddragon.leagueoflegends.com/api/versions.json')
         .then(res => res.json())
         .then(data => { if(data && data[0]) RIOT_VERSION = data[0]; })
-        .catch(e => console.log("Error cargando versión", e));
+        .catch(e => console.log("Error cargando version", e));
 
     function formatChampName(c) {
         if (!c || c === 'undefined') return ''; 
@@ -960,7 +960,7 @@
             // Mostramos el dashboard de la LIGA NORMAL
             document.getElementById('dashboard-state').style.display = 'flex';
             
-            // Aseguramos que el panel del fantasy esté oculto
+            // Aseguramos que el panel del fantasy este oculto
             if(document.getElementById('fantasy-dashboard')) {
                 document.getElementById('fantasy-dashboard').classList.add('hidden');
                 document.getElementById('fantasy-dashboard').classList.remove('flex');
@@ -972,7 +972,7 @@
     function refreshData() {
         document.getElementById('loading-state').style.display = 'flex';
         google.script.run.withSuccessHandler(function(data) {
-            //  PRE-CALCULAMOS EL POWER SCORE AQUÍ PARA LAS CUOTAS DEL CASINO
+            //  PRE-CALCULAMOS EL POWER SCORE AQUI PARA LAS CUOTAS DEL CASINO
             let teamWR = {};
             data.teams.forEach(t => { let total = Math.max(1, t.w + t.l); teamWR[t.id] = t.w / total; });
 
@@ -1277,7 +1277,7 @@
                     <span class="news-tag bg-black text-white flex items-center gap-1 mt-0.5">
                         <svg width="10" height="10" fill="white" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> OFICIAL
                     </span>
-                    <span class="text-sm text-slate-200">No te pierdas los comunicados, resultados y salseos de la liga en nuestro X (Twitter). <span class="text-blue-400 font-bold hover:underline">¡Síguenos!</span></span>
+                    <span class="text-sm text-slate-200">No te pierdas los comunicados, resultados y salseos de la liga en nuestro X (Twitter). <span class="text-blue-400 font-bold hover:underline">!Siguenos!</span></span>
                 </div>
             </a>
         `;
@@ -1302,7 +1302,7 @@
         
         let powerTeams = [...tournamentDataCache.teams];
         
-        //  YA ESTÁ CALCULADO, SOLO ORDENAMOS
+        //  YA ESTA CALCULADO, SOLO ORDENAMOS
         powerTeams.sort((a, b) => b.powerScore - a.powerScore);
 
         const getBarColor = (t) => {
@@ -1318,7 +1318,7 @@
                 datasets: [{ label: 'Power Score', data: powerTeams.map(t => t.powerScore), backgroundColor: powerTeams.map(t => getBarColor(t).bg), borderColor: powerTeams.map(t => getBarColor(t).border), borderWidth: 2, borderRadius: 6 }] 
             }, 
             options: { 
-                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(` Power Score: ${t.powerScore.toFixed(1)} pts`); let rachaIcon = t.streak >= 2 ? '' : (t.streak <= -2 ? '' : ''); lines.push(`${rachaIcon} Racha actual: ${t.streak > 0 ? '+'+t.streak : t.streak}`); lines.push(` Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(` Penalización Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(` Momentum Mlt.: x${t.breakdown.mom.toFixed(2)}`); return lines; } } } }, 
+                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(` Power Score: ${t.powerScore.toFixed(1)} pts`); let rachaIcon = t.streak >= 2 ? '' : (t.streak <= -2 ? '' : ''); lines.push(`${rachaIcon} Racha actual: ${t.streak > 0 ? '+'+t.streak : t.streak}`); lines.push(` Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(` Penalizacion Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(` Momentum Mlt.: x${t.breakdown.mom.toFixed(2)}`); return lines; } } } }, 
                 scales: { x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { family: 'Oswald' } } }, y: { grid: { display: false }, ticks: { color: '#f1f5f9', font: { family: 'Inter', size: 13, weight: '600' }, callback: function(value, index, values) { return `#${index + 1}  ${this.getLabelForValue(value).toUpperCase()}`; } } } }, animation: { duration: 2000, easing: 'easeOutQuart' } 
             } 
         });
@@ -1347,7 +1347,7 @@
                 else if (tA.pos <= 4 && tB.pos <= 4) { hype += 45; tag = " LUCHA POR EL TOP 4"; } 
                 else if (tA.streak >= 2 && tB.streak >= 2) { hype += 40; tag = " CHOQUE DE RACHAS"; } 
                 else if (diffPos <= 2 && Math.max(tA.pos, tB.pos) <= 10 && Math.max(tA.pos, tB.pos) >= 8) { hype += 35; tag = " AL BORDE DEL ABISMO"; } 
-                else if (tA.pos === 1 || tB.pos === 1) { hype += 20; tag = " CAZANDO AL LÍDER"; } 
+                else if (tA.pos === 1 || tB.pos === 1) { hype += 20; tag = " CAZANDO AL LIDER"; } 
                 else if (diffPos === 1) { tag = " DUELO DIRECTO"; }
             }
             return { match: m, score: hype, tag: tag, tA: tA, tB: tB };
@@ -1367,7 +1367,7 @@
             globalMotwTag = analyzedMatches[0].tag;
         } else if (data.matches.length > 0) {
             globalMotw = data.matches[data.matches.length - 1]; 
-            globalMotwTag = " ÚLTIMO PARTIDO";
+            globalMotwTag = " ULTIMO PARTIDO";
         }
 
         const tickerContainer = document.getElementById('top-ticker'); 
@@ -1406,7 +1406,7 @@
             else if (pos <= 10) rowColor = 'bg-yellow-900/10 hover:bg-yellow-900/30 border-l-4 border-l-yellow-500'; 
             else rowColor = 'bg-red-900/10 hover:bg-red-900/30 border-l-4 border-l-red-500';
             
-            //  EMOJIS DE POSICIÓN PREMIUM
+            //  EMOJIS DE POSICION PREMIUM
             let posEmoji = '';
             if (pos === 1) posEmoji = '';
             else if (pos === 2) posEmoji = '';
@@ -1428,7 +1428,7 @@
         }); 
         tbody.innerHTML = htmlStandings;
 
-        //  CÓDIGO DE LA MATRIZ DE RESULTADOS ELIMINADO PARA MEJORAR RENDIMIENTO
+        //  CODIGO DE LA MATRIZ DE RESULTADOS ELIMINADO PARA MEJORAR RENDIMIENTO
 
         const homeMotwContainer = document.getElementById('home-motw-container');
         const motwContainer = document.getElementById('motw-container');
@@ -1500,7 +1500,7 @@
             mMotw += `<div class="relative z-10 p-6 md:p-10 flex flex-col items-center mt-4"><div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-sm md:text-base font-black px-6 py-1.5 rounded-full mb-4 tracking-widest uppercase shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">${globalMotwTag}</div>`;
             mMotw += `<div class="text-sm md:text-lg text-slate-400 font-oswald tracking-widest mb-6 uppercase bg-black/40 px-4 py-1 rounded-full border border-slate-700">${globalMotw.round}</div>`;
             
-            //  TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
+            //  TIPOGRAFIA NITIDA: font-black (Inter) en vez de font-oswald
             mMotw += `<div class="flex w-full justify-between items-center mt-2"><div class="flex flex-col items-center flex-1 w-0"><img src="${logoA}" class="w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-4"><div class="text-center font-black tracking-wide text-xl md:text-3xl text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] px-2 leading-tight break-words">${escHtml(names[0])}</div></div>`;
             mMotw += `<div class="flex-shrink-0 flex justify-center items-center px-2">${centerUI}</div>`;
             mMotw += `<div class="flex flex-col items-center flex-1 w-0"><img src="${logoB}" class="w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-4"><div class="text-center font-black tracking-wide text-xl md:text-3xl text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] px-2 leading-tight break-words">${escHtml(names[1])}</div></div></div></div></div>`;
@@ -1509,7 +1509,7 @@
             if(homeMotwContainer) {
                 let hMotw = `<div class="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 p-6 rounded-xl shadow-lg relative overflow-hidden cursor-pointer hover:border-accent-blue transition" onclick="switchTab('matches', document.getElementById('btn-tab-matches'))">`;
                 hMotw += `<div class="absolute top-0 right-0 bg-accent-blue text-black font-black text-[10px] px-3 py-1 rounded-bl-lg uppercase tracking-widest">${globalMotwTag}</div>`;
-                hMotw += `<div class="text-center font-oswald text-slate-400 mb-4 tracking-widest text-sm uppercase">Próximo Enfrentamiento</div>`;
+                hMotw += `<div class="text-center font-oswald text-slate-400 mb-4 tracking-widest text-sm uppercase">Proximo Enfrentamiento</div>`;
                 hMotw += `<div class="flex justify-center items-center gap-6"><img src="${logoA}" class="w-16 h-16 object-contain"><div class="text-2xl font-black text-white font-oswald text-shadow">VS</div><img src="${logoB}" class="w-16 h-16 object-contain"></div>`;
                 hMotw += `<div class="text-center mt-4 text-white font-bold text-lg">${escHtml(names[0])} <span class="text-slate-500 font-normal text-sm mx-2">vs</span> ${escHtml(names[1])}</div></div>`;
                 homeMotwContainer.innerHTML = hMotw;
@@ -1525,7 +1525,7 @@
         const completedMatches = data.matches.filter(m => m.status === 'COMPLETED').reverse().slice(0, 6);
         
         if (completedMatches.length > 0) {
-            let rrHtml = '<h3 class="font-oswald text-white text-xl tracking-widest mb-4 uppercase"> Últimos Resultados</h3><div class="space-y-3">';
+            let rrHtml = '<h3 class="font-oswald text-white text-xl tracking-widest mb-4 uppercase"> Ultimos Resultados</h3><div class="space-y-3">';
             completedMatches.forEach(m => { 
                 let names = m.names.split(' vs '); 
                 rrHtml += `<div class="bg-slate-900 border border-slate-700 p-3 rounded flex justify-between items-center cursor-pointer hover:border-accent-blue transition" onclick="openPostGame('${m.id}', '${(m.riotId||m.id)}')">`;
@@ -1541,7 +1541,7 @@
         const mContainer = document.getElementById('matches-list'); 
         mContainer.innerHTML = ''; 
 
-        //  NUEVA LÓGICA DE ORDENACIÓN (Idea mejorada)
+        //  NUEVA LOGICA DE ORDENACION (Idea mejorada)
         const sortedMatches = [...data.matches].sort((a, b) => {
             const isPlayedA = a.status === 'COMPLETED';
             const isPlayedB = b.status === 'COMPLETED';
@@ -1552,16 +1552,16 @@
             if (isPlayedA && !isPlayedB) return 1;
             if (!isPlayedA && isPlayedB) return -1;
 
-            // 2. Si ambos están jugados, ordenar por fecha descendente (más reciente primero)
+            // 2. Si ambos estan jugados, ordenar por fecha descendente (mas reciente primero)
             if (isPlayedA && isPlayedB) {
                 return new Date(b.date || 0) - new Date(a.date || 0);
             }
 
-            // 3. Si no están jugados, priorizar los que tienen fecha fijada (Próximos)
+            // 3. Si no estan jugados, priorizar los que tienen fecha fijada (Proximos)
             if (hasDateA && !hasDateB) return -1;
             if (!hasDateA && hasDateB) return 1;
 
-            // 4. Si ambos tienen fecha, el más cercano primero (ascendente)
+            // 4. Si ambos tienen fecha, el mas cercano primero (ascendente)
             if (hasDateA && hasDateB) {
                 return new Date(a.date) - new Date(b.date);
             }
@@ -1581,17 +1581,17 @@
             const hasDate = m.date && String(m.date).trim() !== "" && String(m.date) !== "undefined";
 
             if (isPlayed) mSection = 'HISTORIAL DE PARTIDOS';
-            else if (hasDate) mSection = 'PRÓXIMOS ENFRENTAMIENTOS';
+            else if (hasDate) mSection = 'PROXIMOS ENFRENTAMIENTOS';
             else mSection = 'PARTIDOS PENDIENTES (TBD)';
 
             if (mSection !== currentSection) { 
                 const sectionIcons = {
-                    'PRÓXIMOS ENFRENTAMIENTOS': '',
+                    'PROXIMOS ENFRENTAMIENTOS': '',
                     'PARTIDOS PENDIENTES (TBD)': '',
                     'HISTORIAL DE PARTIDOS': ''
                 };
                 const sectionColors = {
-                    'PRÓXIMOS ENFRENTAMIENTOS': 'text-accent-blue border-accent-blue/30',
+                    'PROXIMOS ENFRENTAMIENTOS': 'text-accent-blue border-accent-blue/30',
                     'PARTIDOS PENDIENTES (TBD)': 'text-yellow-500 border-yellow-500/30',
                     'HISTORIAL DE PARTIDOS': 'text-slate-500 border-slate-700'
                 };
@@ -1606,7 +1606,7 @@
                 currentRoundInSection = '';
             }
 
-            // Sub-header por jornada dentro de cada sección
+            // Sub-header por jornada dentro de cada seccion
             if (m.round && m.round !== currentRoundInSection) {
                 let roundBtn = currentUserRole === 'admin' && isPlayed ? `<button onclick="resolveRoundAwards('${m.round}', this)" class="ml-4 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg transition"> CERRAR</button>` : '';
                 mContainer.innerHTML += `<div class="mt-4 mb-2 pl-2 flex items-center gap-2"><span class="text-slate-500 text-xs font-bold uppercase tracking-widest"> ${m.round}</span>${roundBtn}</div>`;
@@ -1618,7 +1618,7 @@
             
             let vodBtn = m.vod && m.vod.trim() !== '' && m.vod !== 'undefined' ? `<button onclick="event.stopPropagation(); openVod('${m.vod}')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-1 rounded text-xs ml-4 uppercase shadow"> VOD</button>` : '';
 
-            //  LÓGICA DE FECHAS CON BOTÓN DE NEGOCIACIÓN
+            //  LOGICA DE FECHAS CON BOTON DE NEGOCIACION
             let dateBadge = '<span class="text-slate-500"> TBD (Por fijar)</span>';
             if (isPlayed) {
                 dateBadge = `<span class="text-emerald-400 font-bold"> PARTIDO FINALIZADO</span>`;
@@ -1630,7 +1630,7 @@
                 dateBadge = `<span class="text-yellow-400 font-bold animate-pulse"> ${escHtml(pName)} propone: ${formatNiceDate(m.proposedDate)}</span>`;
             }
 
-            // Añadimos el botón de Gestionar si no se ha jugado
+            // Anadimos el boton de Gestionar si no se ha jugado
             if (!isPlayed && currentUserRole !== 'admin') {
                 dateBadge += ` <button onclick="event.stopPropagation(); openNegotiationModal('${m.id}')" class="ml-3 bg-slate-700 hover:bg-slate-600 text-white text-[9px] px-2 py-0.5 rounded shadow transition font-bold tracking-widest border border-slate-600 uppercase">Gestionar</button>`;
             }
@@ -1691,7 +1691,7 @@
             htmlRow += `<div class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-slate-900 border-b border-x border-slate-700 px-6 py-1 rounded-b-lg text-[10px] uppercase tracking-widest z-0 shadow-md">${dateBadge}</div>`;
             htmlRow += `<div class="flex justify-between items-center mt-4 w-full relative z-10">`;
             
-            //  TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
+            //  TIPOGRAFIA NITIDA: font-black (Inter) en vez de font-oswald
             htmlRow += `<div class="w-[35%] flex items-center gap-3 md:gap-4 overflow-hidden">
                             <img src="${logoA}" class="flex-shrink-0 w-10 h-10 md:w-16 md:h-16 object-contain drop-shadow-lg hidden sm:block">
                             <div class="font-black tracking-wide text-white text-base md:text-xl leading-tight break-words w-full" title="${escHtml(names[0])}">${escHtml(names[0])}</div>
@@ -1817,7 +1817,7 @@
                     html += '<div class="text-xs text-emerald-400 font-bold">' + teamInfo.w + 'W - ' + teamInfo.l + 'L (' + stats.wr.toFixed(0) + '% WR)</div></div></div>';
 
                     html += '<div class="mb-5 text-left"><div class="text-[10px] text-slate-400 uppercase tracking-widest mb-1 flex justify-between">';
-                    html += '<span>Share de Daño</span><span style="color: ' + colorHex + '">' + stats.totalDpm.toFixed(0) + ' DPM</span></div>';
+                    html += '<span>Share de Dano</span><span style="color: ' + colorHex + '">' + stats.totalDpm.toFixed(0) + ' DPM</span></div>';
                     html += '<div class="w-full h-3 bg-slate-800 rounded-full flex overflow-hidden shadow-inner">' + dmgBarHtml + '</div></div>';
 
                     html += '<div class="grid grid-cols-2 gap-3 mb-5 border-t border-slate-700 pt-4 text-left">';
@@ -1828,7 +1828,7 @@
                     html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 text-center"><div class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-1"> Ritmo Partida</div>';
                     html += '<div class="text-lg font-black text-white font-oswald">' + stats.avgDur + '<span class="text-[10px] ml-1 text-slate-500">MIN</span></div></div>';
                     
-                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 col-span-2 text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mb-1"> Visión y Pinks Global</div>';
+                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 col-span-2 text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mb-1"> Vision y Pinks Global</div>';
                     html += '<div class="text-base font-bold text-white font-mono">' + stats.avgVis + ' <span class="text-[8px] text-slate-500">PUNTOS / PARTIDA</span></div></div></div>';
 
                     html += '<div class="grid grid-cols-2 gap-4 mb-5 border-t border-slate-700 pt-4 text-left"><div><div class="text-[9px] text-emerald-400 uppercase font-bold tracking-widest mb-2"> Zona de Confort</div>';
@@ -1859,7 +1859,7 @@
                 window.teamRadarInstance = new Chart(ctx, { 
                     type: 'radar', 
                     data: { 
-                        labels: ['Daño', 'Visión + Pinks', 'Cierre', 'Resiliencia', 'Eficacia'], 
+                        labels: ['Dano', 'Vision + Pinks', 'Cierre', 'Resiliencia', 'Eficacia'], 
                         datasets: [ 
                             { label: tA.name, data: getNorm(statsA), backgroundColor: 'rgba(56, 189, 248, 0.3)', borderColor: 'rgba(56, 189, 248, 1)', pointBackgroundColor: '#38bdf8', borderWidth: 2 }, 
                             { label: tB.name, data: getNorm(statsB), backgroundColor: 'rgba(239, 68, 68, 0.3)', borderColor: 'rgba(239, 68, 68, 1)', pointBackgroundColor: '#ef4444', borderWidth: 2 } 
@@ -1880,7 +1880,7 @@
                 });
 
                 // ==========================================
-                // DIBUJAR GRÁFICO DE BARRAS DE OBJETIVOS APILADAS
+                // DIBUJAR GRAFICO DE BARRAS DE OBJETIVOS APILADAS
                 // ==========================================
                 const ctxObj = document.getElementById('teamH2HObjectivesChart').getContext('2d');
                 if(window.teamObjChartInstance) window.teamObjChartInstance.destroy();
@@ -1972,13 +1972,13 @@
         }
         document.getElementById('tm-roster').innerHTML = rosterHtml;
 
-        // Lógica para buscar y pintar el historial de partidos
-        let matchesHtml = '<div class="text-slate-500 text-sm italic py-2 text-center border-2 border-dashed border-slate-700 rounded-lg">No hay partidos jugados todavía.</div>';
+        // Logica para buscar y pintar el historial de partidos
+        let matchesHtml = '<div class="text-slate-500 text-sm italic py-2 text-center border-2 border-dashed border-slate-700 rounded-lg">No hay partidos jugados todavia.</div>';
         
         if (tournamentDataCache && tournamentDataCache.teams && tournamentDataCache.matches) {
             let teamObj = tournamentDataCache.teams.find(t => t.name === teamName);
             if (teamObj) {
-                // Filtramos partidos COMPLETAOS donde juegue el equipo (tA o tB) y cogemos los 5 últimos
+                // Filtramos partidos COMPLETAOS donde juegue el equipo (tA o tB) y cogemos los 5 ultimos
                 let teamMatches = tournamentDataCache.matches.filter(m => m.status === 'COMPLETED' && (m.tA == teamObj.id || m.tB == teamObj.id)).slice(-5).reverse();
                 
                 if (teamMatches.length > 0) {
@@ -2018,17 +2018,17 @@
 
         google.script.run.withSuccessHandler(function(res) {
             if(!res || res.error || res.realGames === 0) { 
-                document.getElementById('tm-stats-container').innerHTML = '<div class="col-span-2 md:col-span-4 text-slate-500 text-sm italic py-4">Este equipo aún no ha debutado.</div>'; 
+                document.getElementById('tm-stats-container').innerHTML = '<div class="col-span-2 md:col-span-4 text-slate-500 text-sm italic py-4">Este equipo aun no ha debutado.</div>'; 
             } else {
                 let h = '';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Winrate</div><div class="text-2xl font-bold text-emerald-400">' + wr + '</div></div>';
-                h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Duración Media</div><div class="text-2xl font-bold text-blue-400">' + res.avgDuration + ' min</div></div>';
+                h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Duracion Media</div><div class="text-2xl font-bold text-blue-400">' + res.avgDuration + ' min</div></div>';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Kills / Partida</div><div class="text-2xl font-bold text-white">' + res.avgKills + '</div></div>';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Muertes / Partida</div><div class="text-2xl font-bold text-red-400">' + res.avgDeaths + '</div></div>';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Asistencias / Partida</div><div class="text-2xl font-bold text-orange-400">' + res.avgAssists + '</div></div>';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">DPM Total Equipo</div><div class="text-2xl font-bold text-white">' + res.avgDpm + '</div></div>';
                 h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">GPM Total Equipo</div><div class="text-2xl font-bold text-yellow-500">' + res.avgGpm + '</div></div>';
-                h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Visión y Pinks / P.</div><div class="text-2xl font-bold text-purple-400">' + res.avgVision + '</div></div>';
+                h += '<div class="bg-slate-900 border border-slate-700 p-3 rounded-2xl"><div class="text-[10px] text-slate-400 uppercase tracking-widest">Vision y Pinks / P.</div><div class="text-2xl font-bold text-purple-400">' + res.avgVision + '</div></div>';
                 
                 document.getElementById('tm-stats-container').innerHTML = h;
             }
@@ -2054,7 +2054,7 @@
     }
 
     // ==========================================
-    //  SISTEMA DE VESTUARIO (NEGOCIACIÓN)
+    //  SISTEMA DE VESTUARIO (NEGOCIACION)
     // ==========================================
     let currentNegMatch = null; let currentNegTeamA = null; let currentNegTeamB = null;
 
@@ -2129,7 +2129,7 @@
 
     function loadNegotiationState() {
         let pin = document.getElementById('neg-pin').value.trim();
-        if(!pin) return alert("Introduce el PIN de capitán.");
+        if(!pin) return alert("Introduce el PIN de capitan.");
         
         let teamId = document.getElementById('neg-selected-team-id').value;
         let m = currentNegMatch;
@@ -2166,9 +2166,9 @@
                 <button onclick="startEditProposal('${m.date}')" class="mt-4 text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded border border-slate-500 transition uppercase tracking-widest font-bold flex items-center justify-center gap-2 mx-auto">
                      Proponer Cambio
                 </button>
-                <div class="text-[10px] text-slate-400 mt-2">El horario ya es oficial. Puedes proponer un cambio si finalmente no podéis.</div>`;
+                <div class="text-[10px] text-slate-400 mt-2">El horario ya es oficial. Puedes proponer un cambio si finalmente no podeis.</div>`;
         } else {
-            statusBox.innerHTML = `<div class="text-slate-400 font-bold text-sm">Ningún equipo ha propuesto horario aún. Tienes el saque.</div>`;
+            statusBox.innerHTML = `<div class="text-slate-400 font-bold text-sm">Ningun equipo ha propuesto horario aun. Tienes el saque.</div>`;
             actionPropose.classList.remove('hidden');
         }
     }
@@ -2184,7 +2184,7 @@
             if(!dateStr) return alert("Selecciona una fecha y hora.");
         }
         
-        if(!confirm(`¿Estás seguro de confirmar esta acción?`)) return;
+        if(!confirm(`?Estas seguro de confirmar esta accion?`)) return;
         
         let originalText = evt.target.innerText;
         evt.target.innerText = "..."; evt.target.disabled = true;
@@ -2197,7 +2197,7 @@
         })
         .withFailureHandler(function(err) {
             //  NUEVO: Atrapador de errores para que no se quede colgado
-            alert(" Error de comunicación con el Servidor: " + err.message);
+            alert(" Error de comunicacion con el Servidor: " + err.message);
             evt.target.innerText = originalText; evt.target.disabled = false;
         })
         .handleMatchNegotiation(action, matchId, teamId, pin, dateStr);
@@ -2253,7 +2253,7 @@
         if (rCont && data.records) {
             let html = ''; 
             const blood = data.records.bloodiest || { player: '-', val: 0, sub: 'Kills' }; 
-            const pac = data.records.pacifist || { player: '-', val: 0, sub: 'Daño' }; 
+            const pac = data.records.pacifist || { player: '-', val: 0, sub: 'Dano' }; 
             const tank = data.records.tank || { player: '-', val: 0, sub: '% Absorbido' }; 
             const farmer = data.records.farmer || { player: '-', val: 0, sub: 'CS/M' };
             const recs = [
@@ -2280,7 +2280,7 @@
         if (pCont && data.oracles) {
             let html = ''; 
             if (data.oracles.length === 0) { 
-                html = '<div class="text-slate-500">Aún no hay predicciones o no han finalizado los partidos.</div>'; 
+                html = '<div class="text-slate-500">Aun no hay predicciones o no han finalizado los partidos.</div>'; 
             } else { 
                 data.oracles.forEach((o, idx) => { 
                     html += `
@@ -2296,7 +2296,7 @@
         }
     }
 
-    //  DIBUJAR CARTAS DEL SALÓN DE LA FAMA (15 RÉCORDS ÉPICOS)
+    //  DIBUJAR CARTAS DEL SALON DE LA FAMA (15 RECORDS EPICOS)
     function renderHallOfFame() {
         const hallCont = document.getElementById('records-hall-container');
         if (!hallCont) return;
@@ -2305,11 +2305,11 @@
         let bStats = [...globalStatsData].filter(p => p.games > 0);
         
         if(bStats.length === 0) {
-            hallCont.innerHTML = '<div class="text-center text-slate-500 col-span-full py-10">Esperando a que acaben los primeros partidos para generar los Récords...</div>';
+            hallCont.innerHTML = '<div class="text-center text-slate-500 col-span-full py-10">Esperando a que acaben los primeros partidos para generar los Records...</div>';
             return;
         }
 
-        //  Extractor Inteligente (Busca múltiples nombres de variables por si el servidor las manda distinto)
+        //  Extractor Inteligente (Busca multiples nombres de variables por si el servidor las manda distinto)
         const getSafeNum = (p, keys, isFloat=true) => {
             for (let k of keys) {
                 if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
@@ -2325,18 +2325,18 @@
         const getAssists = p => (parseFloat(p.kdaText ? p.kdaText.split('/')[2] : 0) || 0) * (p.games || 1);
         const getKDA = p => getDeaths(p) === 0 ? (getKills(p) + getAssists(p)) : ((getKills(p) + getAssists(p)) / getDeaths(p));
 
-        //  Colección de 15 Récords
+        //  Coleccion de 15 Records
         const records = [
             {
                 player: [...bStats].sort((a,b) => getKills(b) - getKills(a))[0],
                 val: p => Math.round(getKills(p)) + ' Kills',
-                title: 'MÁS KILLS TOTALES', sub: 'El Baño de Sangre', icon: '',
+                title: 'MAS KILLS TOTALES', sub: 'El Bano de Sangre', icon: '',
                 border: 'border-red-500', text: 'text-red-500', textL: 'text-red-300', grad: 'from-red-900/80', shadow: 'rgba(239,68,68,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['dpm']) - getSafeNum(a, ['dpm']))[0],
                 val: p => getSafeNum(p, ['dpm']).toFixed(0) + ' DPM',
-                title: 'MÁS DAÑO POR MINUTO', sub: 'Cañón de Cristal', icon: '',
+                title: 'MAS DANO POR MINUTO', sub: 'Canon de Cristal', icon: '',
                 border: 'border-blue-500', text: 'text-blue-500', textL: 'text-blue-300', grad: 'from-blue-900/80', shadow: 'rgba(59,130,246,0.3)'
             },
             {
@@ -2348,25 +2348,25 @@
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['cs']) - getSafeNum(a, ['cs']))[0],
                 val: p => getSafeNum(p, ['cs']).toFixed(1) + ' CS/M',
-                title: 'MÁS CS POR MINUTO', sub: 'Farming Simulator', icon: '',
+                title: 'MAS CS POR MINUTO', sub: 'Farming Simulator', icon: '',
                 border: 'border-yellow-500', text: 'text-yellow-500', textL: 'text-yellow-300', grad: 'from-yellow-900/80', shadow: 'rgba(251,191,36,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['gpm']) - getSafeNum(a, ['gpm']))[0],
                 val: p => getSafeNum(p, ['gpm']).toFixed(0) + ' GPM',
-                title: 'MÁS ORO POR MINUTO', sub: 'El Magnate', icon: '',
+                title: 'MAS ORO POR MINUTO', sub: 'El Magnate', icon: '',
                 border: 'border-amber-500', text: 'text-amber-500', textL: 'text-amber-300', grad: 'from-amber-900/80', shadow: 'rgba(245,158,11,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getAssists(b) - getAssists(a))[0],
                 val: p => Math.round(getAssists(p)) + ' Asists',
-                title: 'MÁS ASISTENCIAS', sub: 'El Titiritero', icon: '',
+                title: 'MAS ASISTENCIAS', sub: 'El Titiritero', icon: '',
                 border: 'border-pink-500', text: 'text-pink-500', textL: 'text-pink-300', grad: 'from-pink-900/80', shadow: 'rgba(236,72,153,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['vspm', 'visionScore']) - getSafeNum(a, ['vspm', 'visionScore']))[0],
                 val: p => getSafeNum(p, ['vspm', 'visionScore']).toFixed(2) + ' VSPM',
-                title: 'PUNTUACIÓN DE VISIÓN', sub: 'El Ojo que todo lo ve', icon: '',
+                title: 'PUNTUACION DE VISION', sub: 'El Ojo que todo lo ve', icon: '',
                 border: 'border-cyan-500', text: 'text-cyan-500', textL: 'text-cyan-300', grad: 'from-cyan-900/80', shadow: 'rgba(6,182,212,0.3)'
             },
             {
@@ -2378,13 +2378,13 @@
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']) - getSafeNum(a, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']))[0],
                 val: p => { let v = getSafeNum(p, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']); return v > 1000 ? (v/1000).toFixed(1)+'k' : v; },
-                title: 'DAÑO TANKED / MITIGADO', sub: 'El Coloso Inamovible', icon: '',
+                title: 'DANO TANKED / MITIGADO', sub: 'El Coloso Inamovible', icon: '',
                 border: 'border-emerald-500', text: 'text-emerald-500', textL: 'text-emerald-300', grad: 'from-emerald-900/80', shadow: 'rgba(16,185,129,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']) - getSafeNum(a, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']))[0],
                 val: p => { let v = getSafeNum(p, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']); return v > 1000 ? (v/1000).toFixed(1)+'k' : v; },
-                title: 'DAÑO A TORRETAS', sub: 'El Demoledor', icon: '',
+                title: 'DANO A TORRETAS', sub: 'El Demoledor', icon: '',
                 border: 'border-orange-500', text: 'text-orange-500', textL: 'text-orange-300', grad: 'from-orange-900/80', shadow: 'rgba(249,115,22,0.3)'
             },
             {
@@ -2396,13 +2396,13 @@
             {
                 player: [...bStats].sort((a,b) => (parseInt(b.mvps)||0) - (parseInt(a.mvps)||0))[0],
                 val: p => (p.mvps || 0) + ' MVPs',
-                title: 'JUGADOR MÁS VALIOSO', sub: 'La Superestrella', icon: '',
+                title: 'JUGADOR MAS VALIOSO', sub: 'La Superestrella', icon: '',
                 border: 'border-orange-400', text: 'text-orange-400', textL: 'text-orange-200', grad: 'from-orange-800/80', shadow: 'rgba(251,146,60,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['epicMonsters', 'epics', 'dragonKills'], false) - getSafeNum(a, ['epicMonsters', 'epics', 'dragonKills'], false))[0],
                 val: p => getSafeNum(p, ['epicMonsters', 'epics', 'dragonKills'], false) + ' Monstruos',
-                title: 'MONSTRUOS ÉPICOS', sub: 'Cazador de Dragones', icon: '',
+                title: 'MONSTRUOS EPICOS', sub: 'Cazador de Dragones', icon: '',
                 border: 'border-teal-500', text: 'text-teal-500', textL: 'text-teal-300', grad: 'from-teal-900/80', shadow: 'rgba(20,184,166,0.3)'
             },
             {
@@ -2414,7 +2414,7 @@
             {
                 player: [...bStats].sort((a,b) => getDeaths(b) - getDeaths(a))[0],
                 val: p => Math.round(getDeaths(p)) + ' Muertes',
-                title: 'MÁS MUERTES TOTALES', sub: 'El Agujero Negro', icon: '',
+                title: 'MAS MUERTES TOTALES', sub: 'El Agujero Negro', icon: '',
                 border: 'border-purple-500', text: 'text-purple-500', textL: 'text-purple-300', grad: 'from-purple-900/80', shadow: 'rgba(168,85,247,0.3)', grayscale: true
             }
         ];
@@ -2452,7 +2452,7 @@
         });
 
         if (visibleRecords === 0) {
-            htmlHall = '<div class="text-center text-slate-500 col-span-full py-10 font-bold uppercase tracking-widest">Aún no hay datos suficientes para generar récords. ¡Juega más partidos!</div>';
+            htmlHall = '<div class="text-center text-slate-500 col-span-full py-10 font-bold uppercase tracking-widest">Aun no hay datos suficientes para generar records. !Juega mas partidos!</div>';
         }
         hallCont.innerHTML = htmlHall;
     }
@@ -2472,7 +2472,7 @@
                 let trendIcon = ''; 
                 
                 if (topPlayer.trend === 'ON_FIRE') {
-                    trendIcon = '<span title="¡Racha de Victorias!" class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>'; 
+                    trendIcon = '<span title="!Racha de Victorias!" class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>'; 
                 } else if (topPlayer.trend === 'COLD') {
                     trendIcon = '<span title="Mala racha" class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>';
                 }
@@ -2553,7 +2553,7 @@
         
         applyFilters();
 
-        //  LLAMAMOS AL SALÓN DE LA FAMA UNA VEZ TENEMOS TODOS LOS DATOS
+        //  LLAMAMOS AL SALON DE LA FAMA UNA VEZ TENEMOS TODOS LOS DATOS
         renderHallOfFame();
     }
 
@@ -2571,7 +2571,7 @@
             
             let trendIcon = ''; 
             if (p.trend === 'ON_FIRE') {
-                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] text-lg" title="¡ON FIRE! (Racha de Victorias)"></span>'; 
+                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] text-lg" title="!ON FIRE! (Racha de Victorias)"></span>'; 
             } else if (p.trend === 'COLD') {
                 trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] text-lg" title="En mala racha"></span>';
             }
@@ -2670,7 +2670,7 @@
     }
 
     function resolveMatchAwards(matchId) {
-        if(!confirm("¿Seguro que quieres CERRAR LAS VOTACIONES? Los votos manuales dejarán de contar y se registrará oficialmente.")) return;
+        if(!confirm("?Seguro que quieres CERRAR LAS VOTACIONES? Los votos manuales dejaran de contar y se registrara oficialmente.")) return;
         document.getElementById('postgame-modal').style.cursor = 'wait';
         
         google.script.run.withSuccessHandler(function(res) { 
@@ -2709,7 +2709,7 @@
             }
             
             let matchInDb = tournamentDataCache.matches.find(m => m.riotId === searchId || m.id === matchId);
-            let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition"> VER REPETICIÓN</button>' : '';
+            let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition"> VER REPETICION</button>' : '';
 
             header.innerHTML = '<div class="flex items-center gap-4"><h2 class="text-3xl font-oswald text-white tracking-widest">ACTA OFICIAL <span class="text-yellow-500">' + matchId + '</span></h2></div><div class="flex gap-3 items-center">' + vodBtn + adminResolveBtn + '<button onclick="generateMatchSummaryImage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition"> MATCH</button><button onclick="generateMVPImage()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg transition"> MVP</button><button onclick="copyDiscordSummary()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold px-4 py-2 rounded shadow-lg transition"> COPIAR</button><button onclick="closeModal(\'postgame-modal\')" class="text-slate-400 hover:text-white text-4xl font-bold ml-4">&times;</button></div>';
 
@@ -2729,7 +2729,7 @@
 
                 const teamTitle = isWinner ? nameW : nameL; //  Usamos el nombre real comprobado
 
-                let html = '<div class="mt-4 rounded-lg overflow-hidden border border-slate-700 bg-[#1c1c1f]"><div class="flex justify-between items-center px-4 py-2 ' + bgHeader + ' border-b border-slate-700/50"><div class="flex items-center gap-4"><div class="font-bold ' + textColor + ' text-sm uppercase tracking-wider">' + escHtml(teamTitle) + ' - ' + tag + '</div><div class="hidden md:flex items-center gap-4 text-[11px] text-slate-300 font-bold ml-2"><span class="flex items-center gap-1" title="Kills Totales"><span class="text-lg leading-none"></span> ' + teamKills + '</span><span class="flex items-center gap-1" title="Torres"><span class="text-lg leading-none"></span> ' + (teamStats.towers || 0) + '</span><span class="flex items-center gap-1" title="Dragones"><span class="text-lg leading-none"></span> ' + (teamStats.dragons || 0) + '</span><span class="flex items-center gap-1" title="Barones"><span class="text-lg leading-none"></span> ' + (teamStats.barons || 0) + '</span><span class="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-yellow-500" title="Oro Total"> ' + (teamStats.gold || 0) + 'k</span></div></div><div class="hidden md:flex text-[10px] text-slate-400 font-bold uppercase tracking-widest justify-end items-center pr-2"><div class="w-[80px] text-center">KDA</div><div class="w-[60px] text-center">Daño</div><div class="w-[50px] text-center">CS</div><div class="w-[50px] text-center">Visión</div><div class="w-[60px]"></div></div></div><div class="flex flex-col">';
+                let html = '<div class="mt-4 rounded-lg overflow-hidden border border-slate-700 bg-[#1c1c1f]"><div class="flex justify-between items-center px-4 py-2 ' + bgHeader + ' border-b border-slate-700/50"><div class="flex items-center gap-4"><div class="font-bold ' + textColor + ' text-sm uppercase tracking-wider">' + escHtml(teamTitle) + ' - ' + tag + '</div><div class="hidden md:flex items-center gap-4 text-[11px] text-slate-300 font-bold ml-2"><span class="flex items-center gap-1" title="Kills Totales"><span class="text-lg leading-none"></span> ' + teamKills + '</span><span class="flex items-center gap-1" title="Torres"><span class="text-lg leading-none"></span> ' + (teamStats.towers || 0) + '</span><span class="flex items-center gap-1" title="Dragones"><span class="text-lg leading-none"></span> ' + (teamStats.dragons || 0) + '</span><span class="flex items-center gap-1" title="Barones"><span class="text-lg leading-none"></span> ' + (teamStats.barons || 0) + '</span><span class="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-yellow-500" title="Oro Total"> ' + (teamStats.gold || 0) + 'k</span></div></div><div class="hidden md:flex text-[10px] text-slate-400 font-bold uppercase tracking-widest justify-end items-center pr-2"><div class="w-[80px] text-center">KDA</div><div class="w-[60px] text-center">Dano</div><div class="w-[50px] text-center">CS</div><div class="w-[50px] text-center">Vision</div><div class="w-[60px]"></div></div></div><div class="flex flex-col">';
                 
                 players.forEach((p, idx) => {
                     const cIcon = getChampIcon(p.champ); 
@@ -2765,7 +2765,7 @@
 
             let names = matchInDb ? matchInDb.names.split(' vs ') : ['Equipo Azul', 'Equipo Rojo'];
 
-            //  LÓGICA INFALIBLE PARA DETERMINAR EL NOMBRE DE LOS EQUIPOS (SIN DUPLICADOS)
+            //  LOGICA INFALIBLE PARA DETERMINAR EL NOMBRE DE LOS EQUIPOS (SIN DUPLICADOS)
             let nameW = "Ganadores";
             let nameL = "Perdedores";
 
@@ -2774,7 +2774,7 @@
                 let winPlayer = res.winners[0] ? res.winners[0].name.toLowerCase().trim() : "";
                 let losPlayer = res.losers[0] ? res.losers[0].name.toLowerCase().trim() : "";
                 
-                // Buscamos en qué equipo están inscritos esos jugadores
+                // Buscamos en que equipo estan inscritos esos jugadores
                 let tW = tournamentDataCache.teams.find(t => t.roster.toLowerCase().includes(winPlayer));
                 let tL = tournamentDataCache.teams.find(t => t.roster.toLowerCase().includes(losPlayer));
                 
@@ -2783,7 +2783,7 @@
             }
 
             // ==========================================
-            // 2. PREPARACIÓN DEL TIMELINE (CORREGIDO)
+            // 2. PREPARACION DEL TIMELINE (CORREGIDO)
             // ==========================================
             let realGoldDiff = res.timeline; 
             if (!realGoldDiff || realGoldDiff.length === 0) realGoldDiff = Array(30).fill(0); 
@@ -2792,7 +2792,7 @@
             
             let events = res.events || []; 
 
-            //  FUNCIÓN DE RESCATE PARA PARTIDAS ANTIGUAS SIN OBJETIVOS
+            //  FUNCION DE RESCATE PARA PARTIDAS ANTIGUAS SIN OBJETIVOS
             if (!events || events.length === 0) {
                 events = [];
                 const addEvt = (min, type) => {
@@ -2924,12 +2924,12 @@
 
             let advancedStatsHtml = '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm"><div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div><div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50"><div class="w-1/3"></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' + escHtml(names[0]) + '</div></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' + escHtml(names[1]) + '</div></div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-purple-400 text-lg leading-none"></span> Voidgrubs</div><div class="w-1/3 text-white font-mono">' + plW.GRUBS + '</div><div class="w-1/3 text-white font-mono">' + plL.GRUBS + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-indigo-400 text-lg leading-none"></span> Heraldo</div><div class="w-1/3 text-white font-mono">' + plW.HERALD + '</div><div class="w-1/3 text-white font-mono">' + plL.HERALD + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg leading-none"></span> Plates</div><div class="w-1/3 text-white font-mono">' + ptStr(plW.TOTAL) + '</div><div class="w-1/3 text-white font-mono">' + ptStr(plL.TOTAL) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.TOP) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.TOP) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.MID) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.MID) + '</div></div><div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.BOT) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.BOT) + '</div></div></div></div>';
 
-            advancedStatsHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2"><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3">Distribución de Oro</h3><div class="flex items-center w-full h-full gap-2"><div style="position: relative; height: 160px; width: 50%;"><canvas id="matchGoldRadar"></canvas></div><div class="w-[50%] flex flex-col justify-center">' + goldTableHtml + '</div></div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><div class="flex justify-between bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3"><h3>Distribución de Daño</h3><div class="flex gap-4 text-[9px] font-black"><span class="text-blue-200">WIN</span><span class="text-red-200">LOSE</span></div></div><div class="flex flex-col justify-center flex-1">' + dmgBars + '</div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-4">Control de Visión (VSPM)</h3><div class="flex flex-col gap-4"><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-blue-400">Ganadores</span><span class="text-slate-300 font-mono">' + totW.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visW_pct + '%; background: #3b82f6; height: 100%;"></div></div></div><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-red-400">Perdedores</span><span class="text-slate-300 font-mono">' + totL.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visL_pct + '%; background: #ef4444; height: 100%;"></div></div></div></div></div><div class="bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-3">JUNGLE SHARE</h3><div class="text-[9px] text-slate-400 italic mb-5">CS killed in team jungle + CS killed in enemy jungle</div><div class="flex flex-col gap-5"><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">At 15 min</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm"><div style="width: ' + jglW_pct15 + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs15) + '</div><div style="width: ' + jglL_pct15 + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs15) + '</div></div></div><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">End game</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm relative"><div style="width: ' + jglW_pct + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs) + '</div><div style="width: ' + jglL_pct + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs) + '</div></div></div><div class="flex justify-between text-[9px] text-slate-500 font-mono ml-[76px] mt-1 border-t border-slate-700 pt-1"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div></div></div></div>';
+            advancedStatsHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2"><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3">Distribucion de Oro</h3><div class="flex items-center w-full h-full gap-2"><div style="position: relative; height: 160px; width: 50%;"><canvas id="matchGoldRadar"></canvas></div><div class="w-[50%] flex flex-col justify-center">' + goldTableHtml + '</div></div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><div class="flex justify-between bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3"><h3>Distribucion de Dano</h3><div class="flex gap-4 text-[9px] font-black"><span class="text-blue-200">WIN</span><span class="text-red-200">LOSE</span></div></div><div class="flex flex-col justify-center flex-1">' + dmgBars + '</div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-4">Control de Vision (VSPM)</h3><div class="flex flex-col gap-4"><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-blue-400">Ganadores</span><span class="text-slate-300 font-mono">' + totW.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visW_pct + '%; background: #3b82f6; height: 100%;"></div></div></div><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-red-400">Perdedores</span><span class="text-slate-300 font-mono">' + totL.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visL_pct + '%; background: #ef4444; height: 100%;"></div></div></div></div></div><div class="bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-3">JUNGLE SHARE</h3><div class="text-[9px] text-slate-400 italic mb-5">CS killed in team jungle + CS killed in enemy jungle</div><div class="flex flex-col gap-5"><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">At 15 min</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm"><div style="width: ' + jglW_pct15 + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs15) + '</div><div style="width: ' + jglL_pct15 + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs15) + '</div></div></div><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">End game</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm relative"><div style="width: ' + jglW_pct + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs) + '</div><div style="width: ' + jglL_pct + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs) + '</div></div></div><div class="flex justify-between text-[9px] text-slate-500 font-mono ml-[76px] mt-1 border-t border-slate-700 pt-1"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div></div></div></div>';
             
-            // INYECTAMOS EL NUEVO GRÁFICO DE OBJETIVOS
-            advancedStatsHtml += '<div class="col-span-1 lg:col-span-2 bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center mt-4"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-4">Daño a Objetivos vs Torretas</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="postGameObjectivesChart"></canvas></div></div>';
+            // INYECTAMOS EL NUEVO GRAFICO DE OBJETIVOS
+            advancedStatsHtml += '<div class="col-span-1 lg:col-span-2 bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center mt-4"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-4">Dano a Objetivos vs Torretas</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="postGameObjectivesChart"></canvas></div></div>';
 
-            let advTableHtml = '<button onclick="document.getElementById(\'adv-stats-table\').classList.toggle(\'hidden\')" class="w-full mt-6 bg-[#1c1c1f] hover:bg-[#27272a] border border-slate-600 text-white py-3 rounded-xl font-oswald tracking-widest transition flex justify-center items-center gap-2 shadow-lg"><span> VER / OCULTAR ESTADÍSTICAS AVANZADAS COMPLETAS</span></button><div id="adv-stats-table" class="hidden mt-4 bg-[#1c1c1f] border border-slate-700 rounded-xl overflow-x-auto shadow-inner"><table class="w-full text-left text-xs text-slate-300"><thead class="text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-700 bg-[#27272a]"><tr><th class="p-3">Pos</th><th class="p-3">Jugador</th><th class="p-3">K/D/A</th><th class="p-3 text-red-400">Daño (DPM)</th><th class="p-3 text-blue-400">Mitigado</th><th class="p-3 text-yellow-400">Oro (GPM)</th><th class="p-3 text-emerald-400">CS (CS/M)</th><th class="p-3 text-purple-400">Visión (VSPM)</th></tr></thead><tbody>';
+            let advTableHtml = '<button onclick="document.getElementById(\'adv-stats-table\').classList.toggle(\'hidden\')" class="w-full mt-6 bg-[#1c1c1f] hover:bg-[#27272a] border border-slate-600 text-white py-3 rounded-xl font-oswald tracking-widest transition flex justify-center items-center gap-2 shadow-lg"><span> VER / OCULTAR ESTADISTICAS AVANZADAS COMPLETAS</span></button><div id="adv-stats-table" class="hidden mt-4 bg-[#1c1c1f] border border-slate-700 rounded-xl overflow-x-auto shadow-inner"><table class="w-full text-left text-xs text-slate-300"><thead class="text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-700 bg-[#27272a]"><tr><th class="p-3">Pos</th><th class="p-3">Jugador</th><th class="p-3">K/D/A</th><th class="p-3 text-red-400">Dano (DPM)</th><th class="p-3 text-blue-400">Mitigado</th><th class="p-3 text-yellow-400">Oro (GPM)</th><th class="p-3 text-emerald-400">CS (CS/M)</th><th class="p-3 text-purple-400">Vision (VSPM)</th></tr></thead><tbody>';
 
             let simulatedMins = totalMins; 
             
@@ -2952,7 +2952,7 @@
             
             advTableHtml += winRowsHtml + losRowsHtml + '</tbody></table></div>';
 
-            // 5. INSERCIÓN EN EL DOM Y RENDERIZADO FINAL
+            // 5. INSERCION EN EL DOM Y RENDERIZADO FINAL
             
             let winMapHtml = res.winners.map(p => '<div class="flex items-center justify-end gap-3 opacity-50 hover:opacity-100 cursor-pointer transition"><div class="text-right"><div class="text-xs font-bold text-white">' + escHtml(p.name) + '</div><div class="text-[10px] text-slate-400">' + p.k + '/' + p.d + '/' + p.a + '</div></div><img src="' + getChampIcon(p.champ) + '" class="w-8 h-8 rounded border border-slate-700" onerror="this.style.display=\'none\'"></div>').join('');
             
@@ -2960,19 +2960,19 @@
 
             content.innerHTML = '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
 
-            // Renderizar gráficos (Chart.js)
+            // Renderizar graficos (Chart.js)
             renderGoldChart(realGoldDiff);
 
             const objIcons = {
                 'FB': { icon: '', bg: 'bg-red-900/80 border-red-500', label: 'First Blood' },
                 'FT': { icon: '', bg: 'bg-yellow-900/80 border-yellow-500', label: 'Primera Torre' },
-                'DRAGON': { icon: '', bg: 'bg-orange-900/80 border-orange-500', label: 'Dragón' },
-                'BARON': { icon: '', bg: 'bg-purple-900/80 border-purple-500', label: 'Barón Nashor' },
+                'DRAGON': { icon: '', bg: 'bg-orange-900/80 border-orange-500', label: 'Dragon' },
+                'BARON': { icon: '', bg: 'bg-purple-900/80 border-purple-500', label: 'Baron Nashor' },
                 'HERALD': { icon: '', bg: 'bg-indigo-900/80 border-indigo-500', label: 'Heraldo' },
-                'GRUB': { icon: '', bg: 'bg-emerald-900/80 border-emerald-500', label: 'Larvas del Vacío' }
+                'GRUB': { icon: '', bg: 'bg-emerald-900/80 border-emerald-500', label: 'Larvas del Vacio' }
             };
 
-            // TIMELINE GRÁFICO (DIBUJANDO ICONOS)
+            // TIMELINE GRAFICO (DIBUJANDO ICONOS)
             let tHtml = '<div class="relative w-full h-12 mt-1 select-none">';
             //  AHORA PONE EL NOMBRE DEL GANADOR ARRIBA (VERDE) Y PERDEDOR ABAJO (ROJO)
             tHtml += '<div class="absolute left-0 top-0 text-emerald-400 font-bold text-[10px] tracking-widest uppercase w-[60px] truncate" title="' + escHtml(nameW) + '">' + escHtml(tA_acro) + '</div>';
@@ -2989,7 +2989,7 @@
                 let pct = (e.minute / totalMins) * 100 + offset;
                 if (pct > 99) pct = 99; if (pct < 0) pct = 0; 
                 
-                // Si el evento lo hizo el equipo que ganó, va arriba. Si no, va abajo.
+                // Si el evento lo hizo el equipo que gano, va arriba. Si no, va abajo.
                 let isWinTeam = e.team === 'WIN';
                 let posClass = isWinTeam ? 'top-[-2px]' : 'bottom-[-2px]';
                 let obj = objIcons[e.type] || { icon: '', bg: 'bg-slate-700 border-slate-500', label: 'Desconocido' };
@@ -3013,7 +3013,7 @@
             let containerClass = maxSwing > 15 ? 'tug-of-war-container inflection-alert' : 'tug-of-war-container';
 
             let tugHtml = '<div class="flex justify-between items-end mb-2"><div class="text-xs text-slate-400 font-bold uppercase tracking-widest">Inercia de la partida (Momentum)</div>';
-            if(inflectionMin > -1) { tugHtml += '<div class="text-xs text-red-400 font-black animate-pulse"> PUNTO DE INFLEXIÓN: MINUTO ' + inflectionMin + ' (' + maxSwing + '% SWING)</div>'; }
+            if(inflectionMin > -1) { tugHtml += '<div class="text-xs text-red-400 font-black animate-pulse"> PUNTO DE INFLEXION: MINUTO ' + inflectionMin + ' (' + maxSwing + '% SWING)</div>'; }
             tugHtml += '</div><div class="' + containerClass + '"><div class="tug-of-war-blue" style="width: ' + finalProbA + '%">' + finalProbA + '%</div><div class="absolute right-4 top-1 text-white font-black text-xl">' + finalProbB + '%</div><div class="absolute left-1/2 top-0 bottom-0 w-1 bg-white/20 transform -translate-x-1/2"></div></div>';
             document.getElementById('momentum-tracker-container').innerHTML = tugHtml;
 
@@ -3192,7 +3192,7 @@
     function voteMvpAce(matchId, searchId, nameEnc, type) {
         let voter = localStorage.getItem('my_summoner_name');
         if (!voter) { 
-            voter = prompt(' VOTACIÓN ' + type + ': Introduce tu Nombre de Invocador:'); 
+            voter = prompt(' VOTACION ' + type + ': Introduce tu Nombre de Invocador:'); 
             if(!voter || voter.trim() === "") return; 
             localStorage.setItem('my_summoner_name', voter.trim()); 
         }
@@ -3223,7 +3223,7 @@
                     <div style="font-size: 30px; color: #38bdf8; margin-bottom: 30px;">${escHtml(mvp.name)}</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
                         <div><div style="color: #94a3b8; font-size: 14px;">KDA</div><div style="font-size: 35px; color: #10b981;">${mvp.k}/${mvp.d}/${mvp.a}</div></div>
-                        <div><div style="color: #94a3b8; font-size: 14px;">DAÑO</div><div style="font-size: 35px; color: #ef4444;">${(mvp.dmg/1000).toFixed(1)}k</div></div>
+                        <div><div style="color: #94a3b8; font-size: 14px;">DANO</div><div style="font-size: 35px; color: #ef4444;">${(mvp.dmg/1000).toFixed(1)}k</div></div>
                         <div><div style="color: #94a3b8; font-size: 14px;">TANK</div><div style="font-size: 35px; color: #3b82f6;">${mvp.tank}</div></div>
                         <div><div style="color: #94a3b8; font-size: 14px;">CS/M</div><div style="font-size: 35px; color: #cbd5e1;">${mvp.cs||0}</div></div>
                         <div><div style="color: #94a3b8; font-size: 14px;">GPM</div><div style="font-size: 35px; color: #fbbf24;">${mvp.gpm||0}</div></div>
@@ -3254,7 +3254,7 @@
         if (!p) return;
         window.currentScoutPlayer = p; 
 
-        //  LÓGICA DE MATRIZ DE ARQUETIPOS DE ADN
+        //  LOGICA DE MATRIZ DE ARQUETIPOS DE ADN
         let k = parseFloat(p.kdaText ? p.kdaText.split('/')[0] : 0) || 0;
         let d = parseFloat(p.kdaText ? p.kdaText.split('/')[1] : 0) || 0;
         let a = parseFloat(p.kdaText ? p.kdaText.split('/')[2] : 0) || 0;
@@ -3264,19 +3264,19 @@
         let dpm = parseFloat(p.dpm) || 0;
 
         let arch = { name: "EL GUERRERO", color: "text-blue-400", border: "border-blue-500", hex: "#38bdf8", icon: "", desc: "Equilibrado y letal. El soldado perfecto." };
-        if (k >= 6 && dpm >= 600) arch = { name: "EL VERDUGO", color: "text-red-500", border: "border-red-600", hex: "#ef4444", icon: "", desc: "Agresión Pura. Busca combate y arriesga por la kill." };
-        else if (vspm >= 1.5 && a >= 8) arch = { name: "EL ARQUITECTO", color: "text-purple-400", border: "border-purple-500", hex: "#a855f7", icon: "", desc: "Genio del macro. Control del mapa y visión asfixiante." };
-        else if (cs >= 7.5 && kp < 55) arch = { name: "EL MERCENARIO SOLITARIO", color: "text-yellow-500", border: "border-yellow-600", hex: "#fbbf24", icon: "", desc: "Ignora las teamfights. Split push y egoísmo táctico." };
-        else if (d <= 3 && kp >= 60) arch = { name: "EL BASTIÓN", color: "text-emerald-400", border: "border-emerald-500", hex: "#10b981", icon: "", desc: "La roca inamovible del equipo. Prácticamente inmortal." };
+        if (k >= 6 && dpm >= 600) arch = { name: "EL VERDUGO", color: "text-red-500", border: "border-red-600", hex: "#ef4444", icon: "", desc: "Agresion Pura. Busca combate y arriesga por la kill." };
+        else if (vspm >= 1.5 && a >= 8) arch = { name: "EL ARQUITECTO", color: "text-purple-400", border: "border-purple-500", hex: "#a855f7", icon: "", desc: "Genio del macro. Control del mapa y vision asfixiante." };
+        else if (cs >= 7.5 && kp < 55) arch = { name: "EL MERCENARIO SOLITARIO", color: "text-yellow-500", border: "border-yellow-600", hex: "#fbbf24", icon: "", desc: "Ignora las teamfights. Split push y egoismo tactico." };
+        else if (d <= 3 && kp >= 60) arch = { name: "EL BASTION", color: "text-emerald-400", border: "border-emerald-500", hex: "#10b981", icon: "", desc: "La roca inamovible del equipo. Practicamente inmortal." };
         
         window.currentArchetype = arch; // Guardado para el cromo
 
-        //  LÓGICA DE CLUTCH (SISMÓGRAFO)
+        //  LOGICA DE CLUTCH (SISMOGRAFO)
         let isClutch = (p.winrate >= 55 && (k >= 5 || a >= 10)); 
         
         let clutchTag = isClutch ? '<span class="ml-2 px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-full ice-veins uppercase tracking-widest relative shadow-[0_0_10px_#3b82f6]"> Ice in the Veins</span>' : '';
 
-        // Construcción de la UI
+        // Construccion de la UI
         let champsHtml = '';
         if (p.champs) { p.champs.split(',').forEach(function(c) { const cIcon = getChampIcon(c.trim()); if(cIcon) champsHtml += '<img src="' + cIcon + '" class="w-12 h-12 rounded-full border-2 border-slate-600 shadow-lg">'; }); }
 
@@ -3288,8 +3288,8 @@
         sHtml += '<div class="mt-8 flex flex-col items-center relative">';
         sHtml += '<h2 class="font-oswald text-white font-bold text-5xl tracking-widest uppercase text-shadow">' + escHtml(p.name) + '</h2>';
         
-        //  BOTÓN DE COMPARTIR PERFIL
-        sHtml += '<a id="share-profile-btn" href="#" target="_blank" class="hidden mt-2 mb-6 bg-slate-700/50 hover:bg-slate-600 border border-slate-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-2 shadow-lg"> Ver perfil público</a>';
+        //  BOTON DE COMPARTIR PERFIL
+        sHtml += '<a id="share-profile-btn" href="#" target="_blank" class="hidden mt-2 mb-6 bg-slate-700/50 hover:bg-slate-600 border border-slate-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-2 shadow-lg"> Ver perfil publico</a>';
 
         sHtml += '<div class="archetype-badge border-2 ' + arch.border + ' px-6 py-2 rounded-full flex items-center gap-3 shadow-[0_0_20px_' + arch.hex + '40] mb-6">';
         sHtml += '<span class="text-3xl">' + arch.icon + '</span>';
@@ -3298,7 +3298,7 @@
         sHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full relative">';
         sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col items-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-4">Radar de Rendimiento</h3><div style="position: relative; height: 320px; width: 100%;"><canvas id="scoutRadar"></canvas></div></div>';
         
-        sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-1 text-center flex items-center justify-center"> Sismógrafo Clutch ' + clutchTag + '</h3><p class="text-[9px] text-slate-500 text-center mb-4 uppercase">Impacto del jugador en Late Game (Bajo Presión)</p><div style="position: relative; height: 300px; width: 100%;"><canvas id="clutchSeismograph"></canvas></div></div>';
+        sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-1 text-center flex items-center justify-center"> Sismografo Clutch ' + clutchTag + '</h3><p class="text-[9px] text-slate-500 text-center mb-4 uppercase">Impacto del jugador en Late Game (Bajo Presion)</p><div style="position: relative; height: 300px; width: 100%;"><canvas id="clutchSeismograph"></canvas></div></div>';
         sHtml += '</div>';
 
         sHtml += '<div class="text-left text-sm text-slate-400 mb-2 font-bold uppercase tracking-widest mt-8">Arsenal Letal (Campeones):</div>';
@@ -3307,7 +3307,7 @@
         // Insertamos el HTML
         document.querySelector('.scout-card').innerHTML = sHtml;
 
-        //  LÓGICA PARA OBTENER LA URL DEL PERFIL (Justo tras insertar el HTML)
+        //  LOGICA PARA OBTENER LA URL DEL PERFIL (Justo tras insertar el HTML)
         google.script.run.withSuccessHandler(function(url) {
             const shareBtn = document.getElementById('share-profile-btn');
             if (shareBtn && url) {
@@ -3316,17 +3316,17 @@
             }
         }).getPublicPlayerUrl(playerName);
 
-        // Render Radar Clásico
+        // Render Radar Clasico
         const ctxR = document.getElementById('scoutRadar').getContext('2d');
         if (window.radarChartInstance) window.radarChartInstance.destroy(); 
         let normKDA = Math.min(10, (p.kdaNum || 0)); let normDPM = Math.min(10, (p.dpm || 0) / 100); let normFarm = Math.min(10, (p.cs || 0)); let normVis = Math.min(10, (p.vspm || 0) * 3); let normSurv = Math.max(0, 10 - (p.avgDeaths || 0)); 
         window.radarChartInstance = new Chart(ctxR, { 
             type: 'radar', 
-            data: { labels: ['Daño', 'KDA', 'Visión', 'Farm', 'Superv'], datasets: [{ label: p.name, data: [normDPM, normKDA, normVis, normFarm, normSurv], backgroundColor: arch.hex + '33', borderColor: arch.hex, pointBackgroundColor: '#fff', borderWidth: 2 }] }, 
+            data: { labels: ['Dano', 'KDA', 'Vision', 'Farm', 'Superv'], datasets: [{ label: p.name, data: [normDPM, normKDA, normVis, normFarm, normSurv], backgroundColor: arch.hex + '33', borderColor: arch.hex, pointBackgroundColor: '#fff', borderWidth: 2 }] }, 
             options: { maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255, 255, 255, 0.1)' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, pointLabels: { color: '#94a3b8', font: { family: 'Oswald', size: 14 } }, ticks: { display: false, max: 10, min: 0 } } }, plugins: { legend: { display: false } } } 
         });
 
-        // Configuración del Sismógrafo
+        // Configuracion del Sismografo
         const ctxS = document.getElementById('clutchSeismograph').getContext('2d');
         if (window.seismographChart) window.seismographChart.destroy();
         
@@ -3345,7 +3345,7 @@
             data: { 
                 labels: seisLabels, 
                 datasets: [{ 
-                    label: 'Impacto Táctico',
+                    label: 'Impacto Tactico',
                     data: seisData, 
                     borderColor: isClutch ? '#3b82f6' : '#ef4444', 
                     backgroundColor: isClutch ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
@@ -3383,26 +3383,26 @@
         let gpm = safeFloat(p.gpm);
         let pts = safeFloat(p.points);
 
-        // CURVA EXPONENCIAL: El ratio elevado a 1.3 hace que cueste MUCHÍSIMO pasar de 85-90 a 99.
-        // Base mínima estricta de 60.
+        // CURVA EXPONENCIAL: El ratio elevado a 1.3 hace que cueste MUCHISIMO pasar de 85-90 a 99.
+        // Base minima estricta de 60.
         const calcStat = (val, max) => {
             let ratio = Math.min(1, Math.max(0, val / max));
             return 60 + (Math.pow(ratio, 1.3) * 39); 
         };
 
-        // Umbrales nivel "PRO" (Absurdamente difíciles de alcanzar)
+        // Umbrales nivel "PRO" (Absurdamente dificiles de alcanzar)
         let sKDA = calcStat(kdaNum, 11.0); // 11 KDA = 99
         let sDPM = calcStat(dpm, 1050);    // 1050 DPM = 99
         let sCS  = calcStat(cs, 9.5);      // 9.5 CS/m = 99
         let sKP  = calcStat(kpReal, 85);   // 85% KP = 99
-        let sVIS = calcStat(vspm, 3.5);    // 3.5 Visión/m = 99
+        let sVIS = calcStat(vspm, 3.5);    // 3.5 Vision/m = 99
         let sGPM = calcStat(gpm, 520);     // 520 Oro/m = 99
         let sPTS = calcStat(pts, 350);     // 350 Puntos = 99
 
         let shortRole = p.role ? p.role.toUpperCase() : 'FILL';
         let ovr = 60;
 
-        // Fórmulas de peso por Rol (Evaluación Realista)
+        // Formulas de peso por Rol (Evaluacion Realista)
         switch(shortRole) {
             case 'TOP':
                 ovr = (sDPM * 0.25) + (sCS * 0.25) + (sKDA * 0.20) + (sKP * 0.15) + (sPTS * 0.15); break;
@@ -3420,7 +3420,7 @@
 
         ovr = Math.floor(ovr);
         
-        // Penalización de Inconsistencia: Si tu winrate es < 50%, no puedes ser un Dios de +90 OVR
+        // Penalizacion de Inconsistencia: Si tu winrate es < 50%, no puedes ser un Dios de +90 OVR
         let wr = safeFloat(p.winrate);
         if (wr < 50 && ovr > 85) ovr -= 4; 
 
@@ -3454,7 +3454,7 @@
                          : ['text-red-500 opacity-70', 'text-emerald-400 font-black'];
         };
 
-        // Extracción segura de números
+        // Extraccion segura de numeros
         let numKdaA = parseFloat(pA.kdaNum) || 0;
         let numKdaB = parseFloat(pB.kdaNum) || 0;
         let dpmA = parseFloat(pA.dpm) || 0;
@@ -3507,7 +3507,7 @@
         htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">DPM</span><span class="text-2xl ' + dpmColA + '">' + dpmA + '</span></div>';
         htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GPM</span><span class="text-2xl ' + gpmColA + '">' + gpmA + '</span></div>';
         htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">CS/M</span><span class="text-2xl ' + csColA + '">' + csA.toFixed(1) + '</span></div>';
-        htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">VISIÓN</span><span class="text-2xl ' + visColA + '">' + visA.toFixed(2) + '</span></div>';
+        htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">VISION</span><span class="text-2xl ' + visColA + '">' + visA.toFixed(2) + '</span></div>';
         htmlA += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">PTS</span><span class="text-2xl ' + ptsColA + '">' + ptsA.toFixed(1) + '</span></div>';
         htmlA += '</div>';
 
@@ -3526,7 +3526,7 @@
         htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">DPM</span><span class="text-2xl ' + dpmColB + '">' + dpmB + '</span></div>';
         htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">GPM</span><span class="text-2xl ' + gpmColB + '">' + gpmB + '</span></div>';
         htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">CS/M</span><span class="text-2xl ' + csColB + '">' + csB.toFixed(1) + '</span></div>';
-        htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">VISIÓN</span><span class="text-2xl ' + visColB + '">' + visB.toFixed(2) + '</span></div>';
+        htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">VISION</span><span class="text-2xl ' + visColB + '">' + visB.toFixed(2) + '</span></div>';
         htmlB += '<div class="bg-[#0f172a] border border-slate-700/50 p-3 rounded-xl flex flex-col items-center justify-center shadow-inner"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">PTS</span><span class="text-2xl ' + ptsColB + '">' + ptsB.toFixed(1) + '</span></div>';
         htmlB += '</div>';
 
@@ -3535,7 +3535,7 @@
         cA.innerHTML = htmlA;
         cB.innerHTML = htmlB;
         
-        // --- PREPARAR CONTENEDOR DE GRÁFICOS ---
+        // --- PREPARAR CONTENEDOR DE GRAFICOS ---
         radarC.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div style="position: relative; height: 350px; width: 100%;"><canvas id="h2hCompareRadar"></canvas></div><div style="position: relative; height: 350px; width: 100%;"><canvas id="h2hCompareBars"></canvas></div></div>';
         
         cA.classList.remove('hidden'); 
@@ -3543,7 +3543,7 @@
         radarC.classList.remove('hidden');
 
         // =====================================
-        //  GRÁFICO 1: RADAR (El clásico)
+        //  GRAFICO 1: RADAR (El clasico)
         // =====================================
         const ctxR = document.getElementById('h2hCompareRadar').getContext('2d');
         
@@ -3559,7 +3559,7 @@
         window.h2hRadarInstance = new Chart(ctxR, { 
             type: 'radar', 
             data: { 
-                labels: ['Daño', 'KDA', 'Visión', 'Farm', 'Supervivencia'], 
+                labels: ['Dano', 'KDA', 'Vision', 'Farm', 'Supervivencia'], 
                 datasets: [ 
                     { label: pA.name, data: getNorm(pA), backgroundColor: 'rgba(56, 189, 248, 0.4)', borderColor: 'rgba(56, 189, 248, 1)', pointBackgroundColor: '#38bdf8', borderWidth: 2 }, 
                     { label: pB.name, data: getNorm(pB), backgroundColor: 'rgba(239, 68, 68, 0.4)', borderColor: 'rgba(239, 68, 68, 1)', pointBackgroundColor: '#ef4444', borderWidth: 2 } 
@@ -3580,7 +3580,7 @@
         });
 
         // =====================================
-        //  GRÁFICO 2: BARRAS HORIZONTALES (Estilo de Juego)
+        //  GRAFICO 2: BARRAS HORIZONTALES (Estilo de Juego)
         // =====================================
         const ctxB = document.getElementById('h2hCompareBars').getContext('2d');
         if(window.h2hBarInstance) window.h2hBarInstance.destroy();
@@ -3588,7 +3588,7 @@
         window.h2hBarInstance = new Chart(ctxB, {
             type: 'bar',
             data: {
-                labels: ['Winrate %', 'Participación (KP%)', 'Oro (GPM / 10)'],
+                labels: ['Winrate %', 'Participacion (KP%)', 'Oro (GPM / 10)'],
                 datasets: [
                     { label: pA.name, data: [wrA, kpA, gpmA / 10], backgroundColor: '#38bdf8', borderRadius: 4 },
                     { label: pB.name, data: [wrB, kpB, gpmB / 10], backgroundColor: '#ef4444', borderRadius: 4 }
@@ -3762,7 +3762,7 @@
         let allPlayers = [...data.winners, ...data.losers];
         let mvp = allPlayers.sort((a,b) => b.votes !== a.votes ? b.votes - a.votes : ((b.k + b.a) / Math.max(1, b.d)) - ((a.k + a.a) / Math.max(1, a.d)))[0];
 
-        // Recolectar datos para la crónica IA
+        // Recolectar datos para la cronica IA
         const stats = {
             winner: match.sA > match.sB ? names[0] : names[1],
             loser: match.sA > match.sB ? names[1] : names[0],
@@ -3774,7 +3774,7 @@
         google.script.run.withSuccessHandler(function(chronicle) {
             let text = ' **[WARGODS PREMIER] ' + match.round + '**\n';
             text += ' **' + names[0] + ' (' + match.sA + ')** vs  **' + names[1] + ' (' + match.sB + ')**\n\n';
-            text += ' **CRÓNICA IA:**\n' + chronicle + '\n\n';
+            text += ' **CRONICA IA:**\n' + chronicle + '\n\n';
             if(mvp) text += ' **ESTRELLA DEL PARTIDO:** ' + mvp.name + ' (' + mvp.k + '/' + mvp.d + '/' + mvp.a + ')\n';
             if(match.vod) text += ' **VOD:** ' + match.vod + '\n';
             text += '\n *Acta generada por Gemini IA en Wargods App*';
@@ -3787,7 +3787,7 @@
 
     function copyToClipboardManual(text) {
         if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => alert("Copiado al portapapeles con éxito"));
+            navigator.clipboard.writeText(text).then(() => alert("Copiado al portapapeles con exito"));
         } else { 
             let textArea = document.createElement("textarea"); 
             textArea.value = text; 
@@ -3804,18 +3804,18 @@
         list: [
             { id: 'FIRST_SESSION', name: 'Bienvenido a la Liga', desc: 'Entrar por primera vez', icon: '[W]' },
             { id: 'MATCH_SCOUT', name: 'Analista Pro', desc: 'Ver una previa de partido', icon: '[S]' },
-            { id: 'AI_PREDICTION', name: 'Visión del Oráculo', desc: 'Usar el Predictor IA', icon: '[AI]' },
-            { id: 'COPY_CHRONICLE', name: 'Periodista Deportivo', desc: 'Copiar crónica a Discord', icon: '[P]' },
-            { id: 'FANTASY_FAN', name: 'Dueño del Club', desc: 'Entrar al Fantasy', icon: '[F]' },
+            { id: 'AI_PREDICTION', name: 'Vision del Oraculo', desc: 'Usar el Predictor IA', icon: '[AI]' },
+            { id: 'COPY_CHRONICLE', name: 'Periodista Deportivo', desc: 'Copiar cronica a Discord', icon: '[P]' },
+            { id: 'FANTASY_FAN', name: 'Dueno del Club', desc: 'Entrar al Fantasy', icon: '[F]' },
             { id: 'RELOADER', name: 'Ansia Viva', desc: 'Recargar datos 10 veces', icon: '[R]', goal: 10 },
             { id: 'VOTE_MVP', name: 'Jurado Popular', desc: 'Votar en un Pick\'em', icon: '[V]' },
             { id: 'MILLIONAIRE', name: 'Ahorrador', desc: 'Acumular 1.000 WG Coins', icon: '[$]' },
             { id: 'TYCOON', name: 'Lobo de Wall Street', desc: 'Acumular 10.000 WG Coins', icon: '[$$]' },
             { id: 'SESSIONS_5', name: 'Fiel Seguider', desc: 'Entrar a 5 sesiones distintas', icon: '[5]', goal: 5 },
-            { id: 'VIEW_VOD', name: 'Espectador', desc: 'Ver un VOD del Salón de la Fama', icon: '[>]' },
+            { id: 'VIEW_VOD', name: 'Espectador', desc: 'Ver un VOD del Salon de la Fama', icon: '[>]' },
             { id: 'BATTLE_PROMO', name: 'Hype Builder', desc: 'Generar imagen Battle Promo (H2H)', icon: '[H]' },
             { id: 'CROMO_EXPERT', name: 'Coleccionista', desc: 'Generar cromo de jugador', icon: '[C]' },
-            { id: 'ROLE_EXPLORER', name: 'Versátil', desc: 'Explorar todos los roles en Ranking', icon: '[X]' },
+            { id: 'ROLE_EXPLORER', name: 'Versatil', desc: 'Explorar todos los roles en Ranking', icon: '[X]' },
             { id: 'ALL_IN_WINNER', name: 'All-In Master', desc: 'Ganar una apuesta arriesgada', icon: '[!]', secret: true }
         ],
 
@@ -3852,7 +3852,7 @@
             toast.innerHTML = `
                 <div class="achievement-icon-bg">${config.icon}</div>
                 <div>
-                    <div class="text-[10px] text-yellow-500 font-black uppercase tracking-widest">¡Logro Desbloqueado!</div>
+                    <div class="text-[10px] text-yellow-500 font-black uppercase tracking-widest">!Logro Desbloqueado!</div>
                     <div class="text-sm font-bold text-white">${config.name}</div>
                 </div>
             `;
@@ -3922,7 +3922,7 @@
         
         let voterName = localStorage.getItem('my_summoner_name');
         if (!voterName) {
-            voterName = prompt(" PICK'EMS: ¿Cuál es tu Invocador?");
+            voterName = prompt(" PICK'EMS: ?Cual es tu Invocador?");
             if (!voterName || voterName.trim() === "") return; 
             localStorage.setItem('my_summoner_name', voterName.trim());
         }
@@ -3942,7 +3942,7 @@
 
     function scanRiotMatch() {
         const matchId = document.getElementById('riot-match-id').value.trim();
-        if (!matchId) return alert("ID inválido.");
+        if (!matchId) return alert("ID invalido.");
         const btn = document.getElementById('btn-scan-match'); 
         btn.innerText = ""; 
         btn.disabled = true;
@@ -4061,7 +4061,7 @@
     }
 
     /**
-    * Llama a la IA para obtener una predicción del partido
+    * Llama a la IA para obtener una prediccion del partido
     */
     function askAIPrediction(matchId) {
         const btn = document.getElementById('btn-ai-predict');
@@ -4086,16 +4086,16 @@
         google.script.run.withSuccessHandler(function(prediction) {
             text.innerHTML = prediction.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p}</p>`).join('');
             box.classList.remove('hidden');
-            btn.innerHTML = ' PREDICCIÓN IA';
+            btn.innerHTML = ' PREDICCION IA';
             btn.disabled = false;
         }).getAIPrediction(data);
     }
 
     
 
-    //  NUEVA FUNCIÓN PARA CERRAR ACTAS EN BUCLE
+    //  NUEVA FUNCION PARA CERRAR ACTAS EN BUCLE
     function resolveRoundAwards(roundName, btnElement) {
-        if(!confirm("¿Seguro que quieres CERRAR TODAS LAS ACTAS de la " + roundName + "? Los votos manuales dejarán de contar para todos los partidos completados.")) return;
+        if(!confirm("?Seguro que quieres CERRAR TODAS LAS ACTAS de la " + roundName + "? Los votos manuales dejaran de contar para todos los partidos completados.")) return;
         
         let matchesToResolve = tournamentDataCache.matches.filter(m => m.round === roundName && m.status === 'COMPLETED');
         if(matchesToResolve.length === 0) {
@@ -4122,17 +4122,17 @@
                 resolveNext();
             }).withFailureHandler(function(err) {
                 completedCount++;
-                resolveNext(); // Continúa aunque uno falle temporalmente
+                resolveNext(); // Continua aunque uno falle temporalmente
             }).resolveMatchAwardsBackend(mId);
         }
 
         resolveNext();
     }
 
-    // Variables globales para la sesión
+    // Variables globales para la sesion
     let currentManager = null;
 
-    // Animaciones del menú inicial
+    // Animaciones del menu inicial
     function showFantasyLogin() {
         document.getElementById('login-menu-doors').classList.add('hidden');
         document.getElementById('login-fantasy-form').classList.remove('hidden');
@@ -4151,7 +4151,7 @@
 
         google.script.run
             .withFailureHandler(function(err) { 
-                alert("Error de conexión con el servidor: " + err.message);
+                alert("Error de conexion con el servidor: " + err.message);
             })
             .withSuccessHandler(function(res) {
                 if (!res.success) {
@@ -4168,7 +4168,7 @@
                 renderFantasyRanking(res.ranking);
                 renderFantasyActivity(res.activity);
                 
-                //  QUITAMOS EL IF PARA QUE DIBUJE SIEMPRE EL GRÁFICO (AUNQUE SEA TEXTO GIGANTE)
+                //  QUITAMOS EL IF PARA QUE DIBUJE SIEMPRE EL GRAFICO (AUNQUE SEA TEXTO GIGANTE)
                 renderFantasyCharts(res.charts);
                 
                 if (!res.roster) {
@@ -4199,14 +4199,14 @@
         
         if (!ptsContainer || !budContainer) return;
 
-        //  SI AÚN NO HAY JORNADAS, PONE LOS NÚMEROS EN GIGANTE
+        //  SI AUN NO HAY JORNADAS, PONE LOS NUMEROS EN GIGANTE
         if (!data || !data.labels || data.labels.length === 0) {
             let currentPts = document.getElementById('ui-points').innerText;
             let currentBud = document.getElementById('ui-budget').innerText.replace(' Disp.', '');
             
-            ptsContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-6xl font-black text-purple-400 font-oswald drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">${currentPts}</div><div class="text-xs text-slate-400 uppercase tracking-widest font-bold mt-2">Puntos Actuales</div><div class="text-[9px] text-slate-500 mt-2 bg-slate-800 px-2 py-1 rounded-full border border-slate-700">El gráfico aparecerá en la Jornada 1</div></div>`;
+            ptsContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-6xl font-black text-purple-400 font-oswald drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">${currentPts}</div><div class="text-xs text-slate-400 uppercase tracking-widest font-bold mt-2">Puntos Actuales</div><div class="text-[9px] text-slate-500 mt-2 bg-slate-800 px-2 py-1 rounded-full border border-slate-700">El grafico aparecera en la Jornada 1</div></div>`;
             
-            budContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-5xl font-black text-emerald-400 font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">${currentBud}</div><div class="text-xs text-slate-400 uppercase tracking-widest font-bold mt-2">Presupuesto Actual</div><div class="text-[9px] text-slate-500 mt-2 bg-slate-800 px-2 py-1 rounded-full border border-slate-700">El gráfico aparecerá en la Jornada 1</div></div>`;
+            budContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-5xl font-black text-emerald-400 font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">${currentBud}</div><div class="text-xs text-slate-400 uppercase tracking-widest font-bold mt-2">Presupuesto Actual</div><div class="text-[9px] text-slate-500 mt-2 bg-slate-800 px-2 py-1 rounded-full border border-slate-700">El grafico aparecera en la Jornada 1</div></div>`;
             return;
         }
 
@@ -4268,14 +4268,14 @@
                 if(document.getElementById('fantasy-dashboard')) {
                     document.getElementById('fantasy-dashboard').classList.remove('hidden');
                     document.getElementById('fantasy-dashboard').classList.add('flex');
-                    loadDashboard(); // Tu función de la Fase 1 del Fantasy
+                    loadDashboard(); // Tu funcion de la Fase 1 del Fantasy
                 } else {
-                    alert("Aviso: El código del dashboard del Fantasy no se encuentra en este archivo.");
+                    alert("Aviso: El codigo del dashboard del Fantasy no se encuentra en este archivo.");
                 }
                 
             } 
             else if (res.error === "NOT_FOUND") {
-                let wantRegister = confirm("El club '" + user + "' no existe. ¿Fundar club ahora con este PIN y recibir 10.000.000 de presupuesto inicial?");
+                let wantRegister = confirm("El club '" + user + "' no existe. ?Fundar club ahora con este PIN y recibir 10.000.000 de presupuesto inicial?");
                 if(wantRegister) {
                     btn.innerText = " FUNDANDO CLUB...";
                     google.script.run.withSuccessHandler(function(regRes) {
@@ -4337,7 +4337,7 @@
         
         //  NUEVO BLOQUEO INTELIGENTE POR FECHA/HORA DEL PARTIDO
         if (match) {
-            // Si el partido ya está terminado, bloqueamos
+            // Si el partido ya esta terminado, bloqueamos
             if (match.status === 'COMPLETED') {
                 return alert(" APUESTAS CERRADAS.\n\nEste partido ya ha finalizado.");
             }
@@ -4348,7 +4348,7 @@
                 let now = new Date();
                 
                 if (now >= matchDate && currentUserRole !== 'admin') {
-                    return alert(" APUESTAS CERRADAS.\n\nLa hora límite para este partido ha pasado. ¡Las espadas ya están en alto, disfruta del encuentro!");
+                    return alert(" APUESTAS CERRADAS.\n\nLa hora limite para este partido ha pasado. !Las espadas ya estan en alto, disfruta del encuentro!");
                 }
             }
         }
@@ -4395,7 +4395,7 @@
         let odds = parseFloat(document.getElementById('casino-odds').value);
         let amount = parseInt(document.getElementById('casino-bet-amount').value);
         
-        if (isNaN(amount) || amount <= 0) return alert("Introduce una cantidad válida a apostar.");
+        if (isNaN(amount) || amount <= 0) return alert("Introduce una cantidad valida a apostar.");
         if (amount > window.myLigaWalletBalance) return alert("No tienes suficientes WG Coins.");
         
         let summoner = localStorage.getItem('my_summoner_name');
@@ -4420,7 +4420,7 @@
         if (rCont && data.records) {
             let html = ''; 
             const blood = data.records.bloodiest || { player: '-', val: 0, sub: 'Kills' }; 
-            const pac = data.records.pacifist || { player: '-', val: 0, sub: 'Daño' }; 
+            const pac = data.records.pacifist || { player: '-', val: 0, sub: 'Dano' }; 
             const tank = data.records.tank || { player: '-', val: 0, sub: '% Absorbido' }; 
             const farmer = data.records.farmer || { player: '-', val: 0, sub: 'CS/M' };
             const recs = [
@@ -4436,7 +4436,7 @@
         const pCont = document.getElementById('pickems-container');
         if (pCont && data.oracles) {
             let html = ''; 
-            if (data.oracles.length === 0) { html = '<div class="text-slate-500">Aún no hay predicciones.</div>'; } 
+            if (data.oracles.length === 0) { html = '<div class="text-slate-500">Aun no hay predicciones.</div>'; } 
             else { data.oracles.forEach((o, idx) => { html += `<div class="flex justify-between items-center bg-slate-900 border border-slate-700 p-4 rounded mb-2 shadow"><div class="font-oswald text-2xl text-slate-500 w-10">#${idx+1}</div><div class="font-bold text-white text-xl flex-1 text-left pl-4">${escHtml(o.name)}</div><div class="font-bold text-purple-400 text-lg">${o.correct} Aciertos</div></div>`; }); } 
             pCont.innerHTML = html;
         }
@@ -4445,7 +4445,7 @@
     
 
     // ==========================================
-    //  LÓGICA DEL RANKING DE MAGNATES
+    //  LOGICA DEL RANKING DE MAGNATES
     // ==========================================
     window.casinoRankingData = [];
 
@@ -4457,7 +4457,7 @@
         document.getElementById('btn-sort-winrate').className = "bg-slate-700 text-white hover:bg-slate-600 font-bold px-4 py-2 rounded uppercase tracking-widest text-xs transition border border-slate-600";
         document.getElementById('btn-sort-totalWon').className = "bg-slate-700 text-white hover:bg-slate-600 font-bold px-4 py-2 rounded uppercase tracking-widest text-xs transition border border-slate-600";
 
-        // Ordenar y resaltar el botón activo
+        // Ordenar y resaltar el boton activo
         if (criteria === 'balance') {
             window.casinoRankingData.sort((a, b) => b.balance - a.balance);
             document.getElementById('btn-sort-balance').className = "bg-yellow-600 text-black font-bold px-4 py-2 rounded uppercase tracking-widest text-xs transition shadow-[0_0_10px_rgba(251,191,36,0.4)]";
@@ -4480,10 +4480,10 @@
         window.casinoRankingData.forEach((u, idx) => {
             let medal = idx === 0 ? '1st' : (idx === 1 ? '2nd' : (idx === 2 ? '3rd' : idx + 1));
             
-            // Resaltar al usuario si es él mismo
+            // Resaltar al usuario si es el mismo
             let isMe = localStorage.getItem('my_summoner_name') && u.name.toLowerCase() === localStorage.getItem('my_summoner_name').toLowerCase();
             let rowBg = isMe ? 'bg-yellow-500/10 border-l-4 border-yellow-500' : 'hover:bg-slate-800 transition border-l-4 border-transparent';
-            let meTag = isMe ? '<span class="bg-yellow-500 text-black text-[9px] px-2 py-0.5 rounded font-black ml-2 uppercase">Tú</span>' : '';
+            let meTag = isMe ? '<span class="bg-yellow-500 text-black text-[9px] px-2 py-0.5 rounded font-black ml-2 uppercase">Tu</span>' : '';
 
             html += `
                 <tr class="border-b border-slate-700/50 ${rowBg}">

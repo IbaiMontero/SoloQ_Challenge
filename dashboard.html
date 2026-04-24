@@ -217,19 +217,19 @@
          // 2. Inicializar la vista en 'ALL' (Global)
          updateAllStatsUI('ALL');
 
-         // 3. Pintar el gráfico de Roles (Este no cambia al filtrar)
+         // 3. Pintar el grafico de Roles (Este no cambia al filtrar)
          renderDoughnutChart(data.roleChartData);
          
          // 4. Tablas 
          google.script.run.withSuccessHandler(renderTables).getPlayerData(document.getElementById('player-select').value);
       }
 
-      // 🟢 LA MAGIA OCURRE AQUÍ: Esta función actualiza TODA la pantalla
+      //  LA MAGIA OCURRE AQUI: Esta funcion actualiza TODA la pantalla
       function updateAllStatsUI(roleKey) {
          const s = globalStatsMap[roleKey] || globalStatsMap['ALL'];
          if (!s) return;
 
-         // Fila 1: Stats Básicas
+         // Fila 1: Stats Basicas
          document.getElementById('summ-points').innerText = s.points;
          document.getElementById('summ-points').style.color = Number(s.points) >= 0 ? '#4ade80' : '#f87171';
          document.getElementById('summ-tier').innerText = s.tier;
@@ -247,10 +247,10 @@
          // Racha
          const streakEl = document.getElementById('summ-streak');
          if (s.streak > 0) {
-            streakEl.innerHTML = `🔥 ${s.streak}V`;
+            streakEl.innerHTML = ` ${s.streak}V`;
             streakEl.className = "text-3xl font-bold mt-1 text-orange-500";
          } else if (s.streak < 0) {
-            streakEl.innerHTML = `❄️ ${Math.abs(s.streak)}D`;
+            streakEl.innerHTML = ` ${Math.abs(s.streak)}D`;
             streakEl.className = "text-3xl font-bold mt-1 text-blue-400";
          } else {
             streakEl.innerText = "-";
@@ -274,7 +274,7 @@
              filterBadge.className = "text-xs font-bold px-3 py-1 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-500 transition-colors duration-200 shadow-lg ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900";
          }
 
-         // Redibujar el gráfico de evolución con los datos SOLO de este rol
+         // Redibujar el grafico de evolucion con los datos SOLO de este rol
          renderLineChart(s.chartData);
       }
 
@@ -360,7 +360,7 @@
             options: {
                responsive: true, maintainAspectRatio: false,
                plugins: { legend: { position: 'right', labels: { color: '#9ca3af', font: {size: 11} } } },
-               // 🟢 AL HACER CLIC EN EL ROSCO, LLAMAMOS AL FILTRO
+               //  AL HACER CLIC EN EL ROSCO, LLAMAMOS AL FILTRO
                onClick: function(event, elements) {
                    if (elements.length > 0) {
                        const index = elements[0].index;

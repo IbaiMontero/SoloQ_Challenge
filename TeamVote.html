@@ -75,12 +75,12 @@
       window.onload = function() {
         const mode = document.getElementById('mode').value;
         
-        // Cambiar título y botón según modo
+        // Cambiar titulo y boton segun modo
         if (mode === 'TOURNAMENT') {
-            document.getElementById('pageTitle').innerText = "📜 CONTRATO DE EQUIPO";
+            document.getElementById('pageTitle').innerText = " CONTRATO DE EQUIPO";
             document.getElementById('btnVote').innerText = "FIRMAR CONTRATO (50 G)";
         } else {
-            document.getElementById('pageTitle').innerText = "🗳️ URNA ELECTORAL";
+            document.getElementById('pageTitle').innerText = " URNA ELECTORAL";
             document.getElementById('btnVote').innerText = "CONFIRMAR VOTO (1 G)";
         }
 
@@ -104,18 +104,18 @@
         const mode = document.getElementById('mode').value;
         const res = document.getElementById('result');
         
-        res.textContent = "🔄 Verificando estado...";
+        res.textContent = " Verificando estado...";
         document.getElementById('btnVote').disabled = true;
 
         if (mode === 'TOURNAMENT') {
-            // Lógica para Torneo
+            // Logica para Torneo
             document.getElementById('tournamentSection').style.display = 'block';
             document.getElementById('factionSection').style.display = 'none';
             
             // Mostrar equipo del torneo
             google.script.run.withSuccessHandler(function(data) {
                 if (data.error) { 
-                    res.style.color = "#e74c3c"; res.textContent = "❌ " + data.error; return; 
+                    res.style.color = "#e74c3c"; res.textContent = " " + data.error; return; 
                 }
                 document.getElementById('teamDisplay').innerHTML = `<span class="team-badge tournament">EQUIPO ${data.teamID}</span>`;
                 document.getElementById('btnVote').disabled = false;
@@ -123,15 +123,15 @@
             }).getTeamTeammates(voter);
         } 
         else {
-            // Lógica para Facciones (Por defecto)
+            // Logica para Facciones (Por defecto)
             document.getElementById('tournamentSection').style.display = 'none';
             document.getElementById('factionSection').style.display = 'block';
             
             google.script.run.withSuccessHandler(function(data) {
-                if (data.error) { res.textContent = "❌ " + data.error; return; }
+                if (data.error) { res.textContent = " " + data.error; return; }
                 
                 let badgeClass = data.team === 'HEXTECH' ? 'hex' : 'chem';
-                document.getElementById('teamDisplay').innerHTML = `<span class="team-badge ${badgeClass}">FACCIÓN ${data.team}</span>`;
+                document.getElementById('teamDisplay').innerHTML = `<span class="team-badge ${badgeClass}">FACCION ${data.team}</span>`;
                 
                 const candSel = document.getElementById('candidateFaction');
                 candSel.innerHTML = '';
@@ -157,14 +157,14 @@
 
         if (mode === 'TOURNAMENT') {
             const role = document.getElementById('roleTournament').value;
-            if (!role) { res.textContent = "⚠️ Elige una posición."; return; }
+            if (!role) { res.textContent = " Elige una posicion."; return; }
             
             itemID = 'TEAM_ROLE_VOTE';
             extraData = role; // "TOP", "JUNGLE"...
         } else {
             const candidate = document.getElementById('candidateFaction').value;
             const roleVoted = document.getElementById('roleFaction').value;
-            if (!candidate) { res.textContent = "⚠️ Elige un candidato."; return; }
+            if (!candidate) { res.textContent = " Elige un candidato."; return; }
             
             itemID = 'VOTE_BALLOT';
             extraData = roleVoted + "|" + candidate; // "GENERAL|Elzorro1"
@@ -175,16 +175,16 @@
         res.textContent = "Enviando solicitud...";
         res.style.color = "#f0e6d2";
         
-        // Llamada a la función unificada de compra
+        // Llamada a la funcion unificada de compra
         google.script.run.withSuccessHandler(function(response) {
           if (response.success) {
              res.style.color = "#2ecc71";
-             res.textContent = "✅ " + response.msg;
-             btn.textContent = "¡HECHO!";
+             res.textContent = " " + response.msg;
+             btn.textContent = "!HECHO!";
              setTimeout(() => google.script.host.close(), 2500);
           } else {
              res.style.color = "#e74c3c";
-             res.textContent = "❌ " + response.msg;
+             res.textContent = " " + response.msg;
              btn.disabled = false;
              btn.textContent = "REINTENTAR";
           }

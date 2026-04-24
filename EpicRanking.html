@@ -229,14 +229,14 @@
 
             globalData = data; // Guardamos datos recibidos
             
-            // Cargar División 1 por defecto
+            // Cargar Division 1 por defecto
             switchDivision(1);
 
             loader.classList.add('hidden');
             app.classList.remove('hidden');
         }
 
-        // CAMBIAR DE PESTAÑA
+        // CAMBIAR DE PESTANA
         function switchDivision(divNum) {
             // 1. Gestionar botones
             document.getElementById('btn-div1').classList.remove('active');
@@ -248,7 +248,7 @@
 
             // 3. Renderizar
             if(players.length === 0) {
-                document.getElementById('podium').innerHTML = `<div style="text-align:center; width:100%; color:#888;">No hay jugadores en esta división.</div>`;
+                document.getElementById('podium').innerHTML = `<div style="text-align:center; width:100%; color:#888;">No hay jugadores en esta division.</div>`;
                 document.getElementById('ranking-body').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">Sin participantes</td></tr>`;
             } else {
               
@@ -263,19 +263,19 @@
 
         function renderPodium(players) {
         const container = document.getElementById('podium');
-        const order = [1, 0, 2]; // Orden visual: 2º, 1º, 3º
+        const order = [1, 0, 2]; // Orden visual: 2, 1, 3
         let html = '';
 
         order.forEach(idx => {
             if (players[idx]) {
                 const p = players[idx];
                 const pos = idx + 1;
-                const crown = pos === 1 ? '<div class="crown">👑</div>' : '';
+                const crown = pos === 1 ? '<div class="crown"></div>' : '';
                 const avatar = getAvatar(p.name);
                 const eloClass = getEloClass(p.rank);
                 const customTag = getCustomTag(p.name);
                 
-                // Usamos la misma función de formato que hicimos para la tabla
+                // Usamos la misma funcion de formato que hicimos para la tabla
                 const streakHtml = formatStreak(p.streak); 
 
                 html += `
@@ -313,7 +313,7 @@
     }
         function renderTable(players, startRank, totalPlayers) {
             const tbody = document.getElementById('ranking-body');
-            // Actualizamos la cabecera dinámicamente o asegúrate de cambiarla en el HTML fijo
+            // Actualizamos la cabecera dinamicamente o asegurate de cambiarla en el HTML fijo
             const thead = document.querySelector('.table-wrap table thead tr');
             if(thead) {
                 thead.innerHTML = `
@@ -333,9 +333,9 @@
                 const avatar = getAvatar(p.name);
                 const eloClass = getEloClass(p.rank);
                 const customTag = getCustomTag(p.name);
-                const opggLink = p.opgg ? `<a href="${p.opgg}" target="_blank" style="color:inherit;text-decoration:none">🔗</a>` : '';
+                const opggLink = p.opgg ? `<a href="${p.opgg}" target="_blank" style="color:inherit;text-decoration:none"></a>` : '';
 
-                // Lógica de colores de zona (Champions/Descenso)
+                // Logica de colores de zona (Champions/Descenso)
                 let rowClass = '';
                 if (rank > (totalPlayers - 3)) rowClass = 'zone-relegation';
                 else if (rank <= 8) rowClass = 'zone-champions';
@@ -368,12 +368,12 @@
             tbody.innerHTML = html;
         }
 
-        // --- AÑADE ESTA FUNCIÓN NUEVA AL FINAL DEL SCRIPT ---
+        // --- ANADE ESTA FUNCION NUEVA AL FINAL DEL SCRIPT ---
         function formatStreak(val) {
             const s = parseInt(val) || 0;
-            if (s >= 3) return `<span style="color:#FF4444; font-weight:bold;">🔥 +${s}</span>`; // On Fire
+            if (s >= 3) return `<span style="color:#FF4444; font-weight:bold;"> +${s}</span>`; // On Fire
             if (s >= 1) return `<span style="color:#00E676; font-weight:bold;">+${s}</span>`;   // Ganando
-            if (s <= -3) return `<span style="color:#00BFFF; font-weight:bold;">❄️ ${s}</span>`; // Congelado
+            if (s <= -3) return `<span style="color:#00BFFF; font-weight:bold;"> ${s}</span>`; // Congelado
             if (s <= -1) return `<span style="color:#888;">${s}</span>`;                         // Perdiendo
             return `<span style="color:#444;">-</span>`;
         }
@@ -400,24 +400,24 @@
             const tags = {
                 'elzorro1': { text: 'MAKE IT RAIN', style: '' },
                 'zakil potolo': { text: 'GREEN MOCO', style: 'tag-blue' },
-                'elsámuel': { text: 'El ESPANTAPÁJAROS', style: '' },
+                'elsamuel': { text: 'El ESPANTAPAJAROS', style: '' },
                 'atomic': { text: 'G.LAMBON', style: '' },
                 'mel petarda': { text: 'META SLAVE', style: '' },
                 'let me eyp': { text: 'DELETED ACCOUNT', style: 'tag-blue' },
-                'cabrðrnn': { text: 'KICK-O', style: '' },
+                'cabrrnn': { text: 'KICK-O', style: '' },
                 'mrezok': { text: 'HATER DE PINKS', style: '' },
                 'pitilin moreno': { text: 'TERABOX', style: 'tag-blue' },
-                'senı': { text: 'MULTITALENTED', style: 'tag-gold' },
+                'sen': { text: 'MULTITALENTED', style: 'tag-gold' },
                 'magaashryver': { text: 'BLOODTHIRSTY', style: '' },
                 'xfera': { text: 'BAUS SPECIAL', style: '' },
-                'aaron parké': { text: '1v9 MACHINE', style: 'tag-blue' },
+                'aaron parke': { text: '1v9 MACHINE', style: 'tag-blue' },
                 'thelastone011': { text: 'THE RAT', style: '' },
                 'diecisiete': { text: 'MARKSMAN', style: 'tag-blue' },
                 'chromosome z': { text: 'UNDERAGE LOVER', style: 'tag-gold' },
                 'chromosome w': { text: 'UNKILLABLE', style: '' },
                 'bluedraki': { text: 'FILL KING', style: 'tag-gold' },
-                'hımı': { text: 'NAVE', style: 'tag-blue' },
-                'ryû zacker': { text: 'FREESTYLE', style: 'tag-gold' },
+                'hm': { text: 'NAVE', style: 'tag-blue' },
+                'ry zacker': { text: 'FREESTYLE', style: 'tag-gold' },
                 '3uskwarrior': { text: 'SUPPORT ENJOYER', style: '' },
                 'akallabeth': { text: 'SOLO LANER', style: '' }
             };

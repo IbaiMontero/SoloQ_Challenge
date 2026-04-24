@@ -169,11 +169,11 @@
     let kdaNum = parseFloat(p.kdaNum) || 0;
     let k = parseFloat((p.kda||'').split('/')[0]) || 0;
 
-    if (k >= 6 && dpm >= 600)   return { name: "EL VERDUGO",   hex: "#ef4444", icon: "🩸" };
-    if (vspm >= 1.5 && kp > 70) return { name: "EL ARQUITECTO", hex: "#a855f7", icon: "👁️" };
-    if (cs >= 7.5 && kp < 55)   return { name: "EL MERCENARIO", hex: "#fbbf24", icon: "🐺" };
-    if (kdaNum <= 3 && kp >= 60) return { name: "EL BASTIÓN",   hex: "#10b981", icon: "🛡️" };
-    return { name: "EL GUERRERO", hex: "#38bdf8", icon: "⚔️" };
+    if (k >= 6 && dpm >= 600)   return { name: "EL VERDUGO",   hex: "#ef4444", icon: "" };
+    if (vspm >= 1.5 && kp > 70) return { name: "EL ARQUITECTO", hex: "#a855f7", icon: "" };
+    if (cs >= 7.5 && kp < 55)   return { name: "EL MERCENARIO", hex: "#fbbf24", icon: "" };
+    if (kdaNum <= 3 && kp >= 60) return { name: "EL BASTION",   hex: "#10b981", icon: "" };
+    return { name: "EL GUERRERO", hex: "#38bdf8", icon: "" };
   };
 
   function renderProfile(p) {
@@ -181,7 +181,7 @@
     
     if (p.error) {
       document.getElementById('error-state').classList.remove('hidden');
-      // Esto sustituirá el texto por el error real del backend
+      // Esto sustituira el texto por el error real del backend
       document.querySelector('#error-state p').textContent = "ERROR: " + p.error.toUpperCase();
       return;
     }
@@ -197,11 +197,11 @@
 
     // Textos principales
     document.getElementById('player-name').textContent = p.name;
-    document.getElementById('player-meta').textContent = p.role + ' · ' + p.team;
+    document.getElementById('player-meta').textContent = p.role + '  ' + p.team;
     document.getElementById('player-archetype').innerHTML = '<span style="color:' + arch.hex + '">' + arch.icon + ' ' + arch.name + '</span>';
 
     // Badges
-    document.getElementById('badge-mvps').textContent = '👑 ' + p.mvps + ' MVPs';
+    document.getElementById('badge-mvps').textContent = ' ' + p.mvps + ' MVPs';
     document.getElementById('badge-wr').textContent = p.winrate + '% WR';
     document.getElementById('badge-pts').textContent = p.points + ' PTS';
 
@@ -231,7 +231,7 @@
     new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: ['Daño', 'KDA', 'Visión', 'Farm', 'Supervivencia'],
+        labels: ['Dano', 'KDA', 'Vision', 'Farm', 'Supervivencia'],
         datasets: [{
           data: [
             Math.min(10, p.dpm / 100),
@@ -261,7 +261,7 @@
 
   function copyProfileUrl() {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => alert('✅ Enlace copiado al portapapeles'));
+      .then(() => alert(' Enlace copiado al portapapeles'));
   }
 
   // Llama al backend para obtener los datos del jugador

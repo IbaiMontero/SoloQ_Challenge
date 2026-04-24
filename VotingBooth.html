@@ -84,10 +84,10 @@
         const btn = document.getElementById('btnVote');
 
         if (mode === 'TOURNAMENT') {
-            title.innerText = "📜 CONTRATO DE EQUIPO";
+            title.innerText = " CONTRATO DE EQUIPO";
             btn.innerText = "FIRMAR CONTRATO (1 G)";
         } else {
-            title.innerText = "🗳️ URNA ELECTORAL";
+            title.innerText = " URNA ELECTORAL";
             btn.innerText = "EMITIR VOTO (1 G)";
         }
 
@@ -116,18 +116,18 @@
       }
 
       function showError(err) {
-          document.getElementById('loading').innerText = "❌ Error de conexión: " + err.message;
+          document.getElementById('loading').innerText = " Error de conexion: " + err.message;
           document.getElementById('loading').style.color = "#ef4444";
       }
 
-      // 2. LÓGICA CONTEXTUAL (Al elegir nombre)
+      // 2. LOGICA CONTEXTUAL (Al elegir nombre)
       function checkContext() {
         const voter = document.getElementById('voter').value;
         const mode = document.getElementById('mode').value;
         const res = document.getElementById('result');
         const teamDisp = document.getElementById('teamDisplay');
         
-        res.innerText = "🔄 Cargando datos...";
+        res.innerText = " Cargando datos...";
         res.style.color = "#aaa";
         document.getElementById('btnVote').disabled = true;
         teamDisp.innerHTML = '';
@@ -139,25 +139,25 @@
             
             google.script.run.withSuccessHandler(function(data) {
                 if (data.error) { 
-                    res.innerText = "❌ " + data.error; 
+                    res.innerText = " " + data.error; 
                     res.style.color = "#ef4444";
                     return; 
                 }
                 teamDisp.innerHTML = `<span class="team-badge tournament">EQUIPO ${data.teamID}</span>`;
                 res.innerText = "";
-                // Habilitamos selección de rol visualmente (pero el botón sigue disabled hasta elegir rol)
+                // Habilitamos seleccion de rol visualmente (pero el boton sigue disabled hasta elegir rol)
             }).getTeamTeammates(voter); // Reutilizamos esta fn para obtener el ID del equipo
         } 
         else {
-            // MODO FACCION: Buscamos bando y compañeros
+            // MODO FACCION: Buscamos bando y companeros
             document.getElementById('tournamentSection').style.display = 'none';
             document.getElementById('factionSection').style.display = 'block';
             
             google.script.run.withSuccessHandler(function(data) {
-                if (data.error) { res.innerText = "❌ " + data.error; return; }
+                if (data.error) { res.innerText = " " + data.error; return; }
                 
                 let badgeClass = data.team === 'HEXTECH' ? 'hex' : 'chem';
-                teamDisp.innerHTML = `<span class="team-badge ${badgeClass}">FACCIÓN ${data.team}</span>`;
+                teamDisp.innerHTML = `<span class="team-badge ${badgeClass}">FACCION ${data.team}</span>`;
                 
                 const candSel = document.getElementById('candidateFaction');
                 candSel.innerHTML = '';
@@ -172,7 +172,7 @@
         }
       }
 
-      // 3. SELECCIÓN DE ROL (Visual)
+      // 3. SELECCION DE ROL (Visual)
       function selectRole(role, btn) {
           document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
@@ -192,7 +192,7 @@
 
         if (mode === 'TOURNAMENT') {
             const role = document.getElementById('selectedRoleTournament').value;
-            if (!role) { res.innerText = "⚠️ Selecciona una posición."; return; }
+            if (!role) { res.innerText = " Selecciona una posicion."; return; }
             
             // IMPORTANTE: Este ID debe coincidir con SHOP_ITEMS
             itemID = 'TEAM_ROLE_VOTE'; 
@@ -201,7 +201,7 @@
         } else {
             const candidate = document.getElementById('candidateFaction').value;
             const roleVoted = document.getElementById('roleFaction').value;
-            if (!candidate) { res.innerText = "⚠️ Elige un candidato."; return; }
+            if (!candidate) { res.innerText = " Elige un candidato."; return; }
             
             itemID = 'VOTE_BALLOT';
             // Enviamos "ROL|CANDIDATO"
@@ -215,12 +215,12 @@
         google.script.run.withSuccessHandler(function(response) {
           if (response.success) {
              res.style.color = "#10b981";
-             res.innerText = "✅ " + response.msg;
-             btn.innerText = "¡HECHO!";
+             res.innerText = " " + response.msg;
+             btn.innerText = "!HECHO!";
              setTimeout(() => google.script.host.close(), 2500);
           } else {
              res.style.color = "#ef4444";
-             res.innerText = "❌ " + response.msg;
+             res.innerText = " " + response.msg;
              btn.disabled = false;
              btn.innerText = "REINTENTAR";
           }

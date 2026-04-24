@@ -164,7 +164,7 @@
         }).join("");
         document.getElementById('newsTicker').innerHTML = html;
       } else {
-        document.getElementById('newsTicker').innerText = "El mercado está abierto. ¡Invierte con sabiduría!";
+        document.getElementById('newsTicker').innerText = "El mercado esta abierto. !Invierte con sabiduria!";
       }
 
       // 3. Rankings
@@ -202,7 +202,7 @@
         const isUp = stock.lastChange >= 0;
         const colorClass = isUp ? 'up' : 'down';
         const textColor = isUp ? 'up-text' : 'down-text';
-        const arrow = isUp ? '▲' : '▼';
+        const arrow = isUp ? '' : '';
         const chartId = `chart-${idx}`;
 
         // Card HTML
@@ -231,7 +231,7 @@
         `;
         container.appendChild(card);
         
-        // Dibujar Gráfico
+        // Dibujar Grafico
         app.drawChart(chartId, stock.history, isUp ? '#10b981' : '#ef4444');
 
         // Llenar Portfolio Lateral
@@ -254,10 +254,10 @@
       const fDiv = document.getElementById('forbesList');
       fDiv.innerHTML = "";
       if(forbes) forbes.forEach((p, i) => {
-         let icon = i===0 ? "👑" : `#${i+1}`;
+         let icon = i===0 ? "" : `#${i+1}`;
          let badges = "";
-         if(p.netWorth > 2000) badges = "🦈";
-         else if(p.netWorth > 1500) badges = "🐋";
+         if(p.netWorth > 2000) badges = "";
+         else if(p.netWorth > 1500) badges = "";
          
          fDiv.innerHTML += `
            <div class="list-row">
@@ -272,7 +272,7 @@
       const sDiv = document.getElementById('shameList');
       sDiv.innerHTML = "";
       if(shame) shame.forEach((p) => {
-         let icon = p.netWorth < 500 ? "💀" : "📉";
+         let icon = p.netWorth < 500 ? "" : "";
          sDiv.innerHTML += `
            <div class="list-row" style="border-color:#7f1d1d">
              <div class="rank-icon">${icon}</div>
@@ -309,7 +309,7 @@
     },
 
     trade: function(type, target) {
-      let qty = prompt(`¿Cuántas acciones quieres ${type}?`, "1");
+      let qty = prompt(`?Cuantas acciones quieres ${type}?`, "1");
       if (!qty || isNaN(qty) || qty <= 0) return;
       
       document.body.style.cursor = 'wait';
@@ -319,7 +319,7 @@
            // Recargar datos
            google.script.run.withSuccessHandler(this.onDataLoaded).getMarketData();
         } else {
-           alert("❌ " + res.msg);
+           alert(" " + res.msg);
         }
       }).executeTrade(type, app.user, target, parseInt(qty));
     }
