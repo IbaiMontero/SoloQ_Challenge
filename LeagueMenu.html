@@ -252,8 +252,8 @@
             <div class="tab-btn whitespace-nowrap text-orange-400" id="btn-tab-h2h" onclick="switchTab('h2h', this)">🥊 CARA A CARA</div>
             <div class="tab-btn whitespace-nowrap text-cyan-400" id="btn-tab-teamh2h" onclick="switchTab('teamh2h', this)">🛡️ TEAM SCOUTING</div>
             <div class="tab-btn whitespace-nowrap text-blue-400" id="btn-tab-meta" onclick="switchTab('meta', this)">🧬 META SNAPSHOT</div>
-            <div class="tab-btn whitespace-nowrap text-yellow-400 font-black" id="btn-tab-casino-rank" onclick="switchTab('casino-rank', this)">💰 WALL STREET</div>
-            <div class="tab-btn whitespace-nowrap text-cyan-400 font-black" id="btn-tab-datacenter" onclick="switchTab('datacenter', this)">📊 CENTRO DE DATOS</div>
+            <div class="tab-btn whitespace-nowrap text-yellow-400 font-black" id="btn-tab-casino-rank" onclick="switchTab('casino-rank', this)">$ WALL STREET</div>
+            <div class="tab-btn whitespace-nowrap text-cyan-400 font-black" id="btn-tab-datacenter" onclick="switchTab('datacenter', this)">[D] CENTRO DE DATOS</div>
         </div>
 
         <div class="flex-1 w-full overflow-hidden relative">
@@ -556,52 +556,52 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <!-- Card 1 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-cyan-400 backdrop-blur-sm shadow-xl group" onclick="navigateTool('analytics')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">📊</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-cyan-400">#</div>
                             <div>
-                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">CENTRO ANALÍTICO</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Métricas individuales detalladas</p>
+                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">CENTRO ANALITICO</h3>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Metricas individuales</p>
                             </div>
                         </div>
 
                         <!-- Card 2 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-yellow-500 backdrop-blur-sm shadow-xl group" onclick="navigateTool('dashboard')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">💫</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-yellow-400">*</div>
                             <div>
                                 <h3 class="font-oswald text-xl text-white leading-tight uppercase">STATS PERSONALES</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">KDA, WR y Puntos Pro</p>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">KDA, WR y Puntos</p>
                             </div>
                         </div>
 
                         <!-- Card 3 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-pink-500 backdrop-blur-sm shadow-xl group" onclick="navigateTool('synergy')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">💕</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-pink-400">&</div>
                             <div>
                                 <h3 class="font-oswald text-xl text-white leading-tight uppercase">SINERGIAS</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Compatibilidad entre dúos</p>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Compatibilidad de duos</p>
                             </div>
                         </div>
 
                         <!-- Card 4 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-purple-500 backdrop-blur-sm shadow-xl group" onclick="navigateTool('behavior')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">🧠</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-purple-400">@</div>
                             <div>
-                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">PSICOLOGÍA & TILT</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Análisis de comportamiento</p>
+                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">PSICOLOGIA</h3>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Analisis de comportamiento</p>
                             </div>
                         </div>
 
                         <!-- Card 5 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-emerald-400 backdrop-blur-sm shadow-xl group" onclick="navigateTool('inspector')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">🔎</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-emerald-400">?</div>
                             <div>
                                 <h3 class="font-oswald text-xl text-white leading-tight uppercase">INSPECTOR</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Lupa sobre cada partida</p>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Detalle de cada partida</p>
                             </div>
                         </div>
 
                         <!-- Card 6 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-blue-400 backdrop-blur-sm shadow-xl group" onclick="navigateTool('global')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">🌍</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-blue-400">+</div>
                             <div>
                                 <h3 class="font-oswald text-xl text-white leading-tight uppercase">DASHBOARD GLOBAL</h3>
                                 <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Estado general de la liga</p>
@@ -610,19 +610,19 @@
 
                         <!-- Card 7 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-orange-500 backdrop-blur-sm shadow-xl group" onclick="navigateTool('general')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">🏆</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-orange-500">!</div>
                             <div>
-                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">SALÓN DE FAMA</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Evolución histórica total</p>
+                                <h3 class="font-oswald text-xl text-white leading-tight uppercase">SALON DE FAMA</h3>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Evolucion historica</p>
                             </div>
                         </div>
 
                         <!-- Card 8 -->
                         <div class="bg-slate-800/60 border border-white/10 rounded-xl p-6 flex items-center gap-5 cursor-pointer transition all duration-300 hover:-translate-y-2 hover:bg-slate-800/90 hover:border-red-500 backdrop-blur-sm shadow-xl group" onclick="navigateTool('match_details')">
-                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300">🔬</div>
+                            <div class="text-4xl group-hover:scale-110 transition-transform duration-300 text-red-500">%</div>
                             <div>
                                 <h3 class="font-oswald text-xl text-white leading-tight uppercase">INSPECTOR PRO</h3>
-                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Estadísticas de élite</p>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold">Estadisticas de elite</p>
                             </div>
                         </div>
                     </div>
@@ -1972,7 +1972,7 @@
         }
         document.getElementById('tm-roster').innerHTML = rosterHtml;
 
-        // 🟢 NUEVO: LÓGICA PARA BUSCAR Y PINTAR EL HISTORIAL DE PARTIDOS
+        // Lógica para buscar y pintar el historial de partidos
         let matchesHtml = '<div class="text-slate-500 text-sm italic py-2 text-center border-2 border-dashed border-slate-700 rounded-lg">No hay partidos jugados todavía.</div>';
         
         if (tournamentDataCache && tournamentDataCache.teams && tournamentDataCache.matches) {
