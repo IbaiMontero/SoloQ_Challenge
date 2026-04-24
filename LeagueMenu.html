@@ -948,7 +948,7 @@
                     document.getElementById('dashboard-state').style.display = 'flex';
                     refreshData();
                 } else {
-                    alert("❌ Acceso Denegado");
+                    alert(" Acceso Denegado");
                 }
             }).checkAdminPassword(pass);
             
@@ -972,7 +972,7 @@
     function refreshData() {
         document.getElementById('loading-state').style.display = 'flex';
         google.script.run.withSuccessHandler(function(data) {
-            // 🟢 PRE-CALCULAMOS EL POWER SCORE AQUÍ PARA LAS CUOTAS DEL CASINO
+            //  PRE-CALCULAMOS EL POWER SCORE AQUÍ PARA LAS CUOTAS DEL CASINO
             let teamWR = {};
             data.teams.forEach(t => { let total = Math.max(1, t.w + t.l); teamWR[t.id] = t.w / total; });
 
@@ -1010,7 +1010,7 @@
                 document.getElementById('btn-tab-playoffs').classList.remove('hidden');
                 if (currentUserRole === 'admin') {
                     let btnTgl = document.getElementById('btn-toggle-playoffs');
-                    btnTgl.innerText = isActive ? "🔒 OCULTAR PLAYOFFS" : "🏆 ACTIVAR PLAYOFFS";
+                    btnTgl.innerText = isActive ? " OCULTAR PLAYOFFS" : " ACTIVAR PLAYOFFS";
                     btnTgl.classList.remove('bg-yellow-600', 'bg-slate-600');
                     btnTgl.classList.add(isActive ? 'bg-slate-600' : 'bg-yellow-600');
                     btnTgl.classList.remove('hidden');
@@ -1022,7 +1022,7 @@
 
     function togglePlayoffs() {
         let newState = !window.playoffsActive;
-        document.getElementById('btn-toggle-playoffs').innerText = "⏳...";
+        document.getElementById('btn-toggle-playoffs').innerText = "...";
         google.script.run.withSuccessHandler(function(res) { 
             alert(res.msg); 
             refreshData(); 
@@ -1224,7 +1224,7 @@
         google.script.run.withSuccessHandler(renderStatsAndAwards).getTournamentStatsForWeb(roundFilter); 
         google.script.run.withSuccessHandler(renderRecordsAndPickems).getLeagueRecordsAndPickems(roundFilter);
         
-        // 🟢 NUEVA LLAMADA PARA EL RANKING DEL CASINO
+        //  NUEVA LLAMADA PARA EL RANKING DEL CASINO
         google.script.run.withSuccessHandler(data => {
             window.casinoRankingData = data;
             sortCasinoRanking('balance'); // Ordena por dinero por defecto
@@ -1235,9 +1235,9 @@
         const dateStr = prompt("Introduce la fecha del stream (Formato: AAAA-MM-DDTHH:MM):", "2026-03-15T21:00");
         if(dateStr) { 
             let safeDateStr = dateStr.replace(" ", "T"); 
-            const btn = document.getElementById('btn-set-stream'); btn.innerText = "⏳"; btn.disabled = true; 
+            const btn = document.getElementById('btn-set-stream'); btn.innerText = ""; btn.disabled = true; 
             google.script.run.withSuccessHandler(function(res) { 
-                alert(res); btn.innerText = "🗓️ PROGRAMAR STREAM"; btn.disabled = false; refreshData(); 
+                alert(res); btn.innerText = " PROGRAMAR STREAM"; btn.disabled = false; refreshData(); 
             }).setStreamDate(safeDateStr); 
         }
     }
@@ -1256,8 +1256,8 @@
                 const now = new Date().getTime(); 
                 const dist = streamDate.getTime() - now; 
                 if (dist < 0) { 
-                    document.getElementById('timer-display').innerText = "🔴 EN DIRECTO"; 
-                    document.getElementById('timer-compact').innerText = "🔴 EN DIRECTO"; 
+                    document.getElementById('timer-display').innerText = " EN DIRECTO"; 
+                    document.getElementById('timer-compact').innerText = " EN DIRECTO"; 
                     document.getElementById('top-countdown').classList.remove('hidden'); 
                     return; 
                 } 
@@ -1302,7 +1302,7 @@
         
         let powerTeams = [...tournamentDataCache.teams];
         
-        // 🟢 YA ESTÁ CALCULADO, SOLO ORDENAMOS
+        //  YA ESTÁ CALCULADO, SOLO ORDENAMOS
         powerTeams.sort((a, b) => b.powerScore - a.powerScore);
 
         const getBarColor = (t) => {
@@ -1318,7 +1318,7 @@
                 datasets: [{ label: 'Power Score', data: powerTeams.map(t => t.powerScore), backgroundColor: powerTeams.map(t => getBarColor(t).bg), borderColor: powerTeams.map(t => getBarColor(t).border), borderWidth: 2, borderRadius: 6 }] 
             }, 
             options: { 
-                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(`⚡ Power Score: ${t.powerScore.toFixed(1)} pts`); let rachaIcon = t.streak >= 2 ? '🔥' : (t.streak <= -2 ? '🧊' : '➖'); lines.push(`${rachaIcon} Racha actual: ${t.streak > 0 ? '+'+t.streak : t.streak}`); lines.push(`⚔️ Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(`🛡️ Penalización Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(`📈 Momentum Mlt.: x${t.breakdown.mom.toFixed(2)}`); return lines; } } } }, 
+                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(` Power Score: ${t.powerScore.toFixed(1)} pts`); let rachaIcon = t.streak >= 2 ? '' : (t.streak <= -2 ? '' : ''); lines.push(`${rachaIcon} Racha actual: ${t.streak > 0 ? '+'+t.streak : t.streak}`); lines.push(` Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(` Penalización Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(` Momentum Mlt.: x${t.breakdown.mom.toFixed(2)}`); return lines; } } } }, 
                 scales: { x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { family: 'Oswald' } } }, y: { grid: { display: false }, ticks: { color: '#f1f5f9', font: { family: 'Inter', size: 13, weight: '600' }, callback: function(value, index, values) { return `#${index + 1}  ${this.getLabelForValue(value).toUpperCase()}`; } } } }, animation: { duration: 2000, easing: 'easeOutQuart' } 
             } 
         });
@@ -1332,7 +1332,7 @@
             let tA = data.teams.find(t => t.name === names[0].trim());
             let tB = data.teams.find(t => t.name === names[1].trim());
             let hype = ((m.votesA || 0) + (m.votesB || 0)) * 5; 
-            let tag = "🔥 EL PARTIDAZO";
+            let tag = " EL PARTIDAZO";
 
             if (tA && tB) {
                 let wrA = tA.w / Math.max(1, tA.w + tA.l);
@@ -1343,19 +1343,19 @@
                 
                 hype += (tA.w + tB.w) * 5; 
 
-                if (tA.pos <= 2 && tB.pos <= 2) { hype += 60; tag = "👑 DUELO DE REYES"; } 
-                else if (tA.pos <= 4 && tB.pos <= 4) { hype += 45; tag = "⚔️ LUCHA POR EL TOP 4"; } 
-                else if (tA.streak >= 2 && tB.streak >= 2) { hype += 40; tag = "🔥 CHOQUE DE RACHAS"; } 
-                else if (diffPos <= 2 && Math.max(tA.pos, tB.pos) <= 10 && Math.max(tA.pos, tB.pos) >= 8) { hype += 35; tag = "⚠️ AL BORDE DEL ABISMO"; } 
-                else if (tA.pos === 1 || tB.pos === 1) { hype += 20; tag = "🛡️ CAZANDO AL LÍDER"; } 
-                else if (diffPos === 1) { tag = "🧮 DUELO DIRECTO"; }
+                if (tA.pos <= 2 && tB.pos <= 2) { hype += 60; tag = " DUELO DE REYES"; } 
+                else if (tA.pos <= 4 && tB.pos <= 4) { hype += 45; tag = " LUCHA POR EL TOP 4"; } 
+                else if (tA.streak >= 2 && tB.streak >= 2) { hype += 40; tag = " CHOQUE DE RACHAS"; } 
+                else if (diffPos <= 2 && Math.max(tA.pos, tB.pos) <= 10 && Math.max(tA.pos, tB.pos) >= 8) { hype += 35; tag = " AL BORDE DEL ABISMO"; } 
+                else if (tA.pos === 1 || tB.pos === 1) { hype += 20; tag = " CAZANDO AL LÍDER"; } 
+                else if (diffPos === 1) { tag = " DUELO DIRECTO"; }
             }
             return { match: m, score: hype, tag: tag, tA: tA, tB: tB };
         };
 
         let pendingMatches = data.matches.filter(m => m.status !== 'COMPLETED');
         let globalMotw = null;
-        let globalMotwTag = "🔥 PARTIDO DESTACADO";
+        let globalMotwTag = " PARTIDO DESTACADO";
         
         if (pendingMatches.length > 0) {
             let nextActiveRound = pendingMatches[0].round;
@@ -1367,7 +1367,7 @@
             globalMotwTag = analyzedMatches[0].tag;
         } else if (data.matches.length > 0) {
             globalMotw = data.matches[data.matches.length - 1]; 
-            globalMotwTag = "🏆 ÚLTIMO PARTIDO";
+            globalMotwTag = " ÚLTIMO PARTIDO";
         }
 
         const tickerContainer = document.getElementById('top-ticker'); 
@@ -1406,14 +1406,14 @@
             else if (pos <= 10) rowColor = 'bg-yellow-900/10 hover:bg-yellow-900/30 border-l-4 border-l-yellow-500'; 
             else rowColor = 'bg-red-900/10 hover:bg-red-900/30 border-l-4 border-l-red-500';
             
-            // 🏆 EMOJIS DE POSICIÓN PREMIUM
+            //  EMOJIS DE POSICIÓN PREMIUM
             let posEmoji = '';
-            if (pos === 1) posEmoji = '🥇';
-            else if (pos === 2) posEmoji = '🥈';
-            else if (pos === 3) posEmoji = '🥉';
-            else if (pos <= 4) posEmoji = '⭐';
-            else if (pos <= 10) posEmoji = '⚔️';
-            else posEmoji = '⚠️';
+            if (pos === 1) posEmoji = '';
+            else if (pos === 2) posEmoji = '';
+            else if (pos === 3) posEmoji = '';
+            else if (pos <= 4) posEmoji = '';
+            else if (pos <= 10) posEmoji = '';
+            else posEmoji = '';
 
             let totalGames = t.w + t.l;
             let winrate = totalGames > 0 ? ((t.w / totalGames) * 100).toFixed(0) : '0';
@@ -1428,7 +1428,7 @@
         }); 
         tbody.innerHTML = htmlStandings;
 
-        // 🟢 CÓDIGO DE LA MATRIZ DE RESULTADOS ELIMINADO PARA MEJORAR RENDIMIENTO
+        //  CÓDIGO DE LA MATRIZ DE RESULTADOS ELIMINADO PARA MEJORAR RENDIMIENTO
 
         const homeMotwContainer = document.getElementById('home-motw-container');
         const motwContainer = document.getElementById('motw-container');
@@ -1436,18 +1436,18 @@
         if (globalMotw) {
             let names = String(globalMotw.names || "").split(' vs '); let tA = data.teams.find(t => t.name === names[0].trim()); let tB = data.teams.find(t => t.name === names[1].trim()); let logoA = tA ? getLogo(tA.logo) : getLogo(''); let logoB = tB ? getLogo(tB.logo) : getLogo(''); let isPlayed = globalMotw.status === 'COMPLETED'; 
             
-            let motwDateBadge = '<span class="text-slate-400 font-bold">🗓️ TBD (Por fijar)</span>';
+            let motwDateBadge = '<span class="text-slate-400 font-bold"> TBD (Por fijar)</span>';
             if (isPlayed) {
-                motwDateBadge = '<span class="text-emerald-400 font-bold">✅ PARTIDO FINALIZADO</span>';
+                motwDateBadge = '<span class="text-emerald-400 font-bold"> PARTIDO FINALIZADO</span>';
             } else if (globalMotw.date && String(globalMotw.date).trim() !== "" && String(globalMotw.date) !== "undefined") {
                 let rawStr = String(globalMotw.date).trim();
                 let dObj = new Date(rawStr); 
                 if (isNaN(dObj.getTime()) && rawStr.includes(" ")) dObj = new Date(rawStr.replace(" ", "T"));
                 if (!isNaN(dObj.getTime())) {
                     let dStr = dObj.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'}) + ' a las ' + dObj.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-                    motwDateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]">🗓️ ${dStr}</span>`;
+                    motwDateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]"> ${dStr}</span>`;
                 } else {
-                    motwDateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]">🗓️ ${rawStr}</span>`;
+                    motwDateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]"> ${rawStr}</span>`;
                 }
             }
 
@@ -1500,7 +1500,7 @@
             mMotw += `<div class="relative z-10 p-6 md:p-10 flex flex-col items-center mt-4"><div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-sm md:text-base font-black px-6 py-1.5 rounded-full mb-4 tracking-widest uppercase shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">${globalMotwTag}</div>`;
             mMotw += `<div class="text-sm md:text-lg text-slate-400 font-oswald tracking-widest mb-6 uppercase bg-black/40 px-4 py-1 rounded-full border border-slate-700">${globalMotw.round}</div>`;
             
-            // 🟢 TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
+            //  TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
             mMotw += `<div class="flex w-full justify-between items-center mt-2"><div class="flex flex-col items-center flex-1 w-0"><img src="${logoA}" class="w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-4"><div class="text-center font-black tracking-wide text-xl md:text-3xl text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] px-2 leading-tight break-words">${escHtml(names[0])}</div></div>`;
             mMotw += `<div class="flex-shrink-0 flex justify-center items-center px-2">${centerUI}</div>`;
             mMotw += `<div class="flex flex-col items-center flex-1 w-0"><img src="${logoB}" class="w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-4"><div class="text-center font-black tracking-wide text-xl md:text-3xl text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] px-2 leading-tight break-words">${escHtml(names[1])}</div></div></div></div></div>`;
@@ -1525,7 +1525,7 @@
         const completedMatches = data.matches.filter(m => m.status === 'COMPLETED').reverse().slice(0, 6);
         
         if (completedMatches.length > 0) {
-            let rrHtml = '<h3 class="font-oswald text-white text-xl tracking-widest mb-4 uppercase">⏱️ Últimos Resultados</h3><div class="space-y-3">';
+            let rrHtml = '<h3 class="font-oswald text-white text-xl tracking-widest mb-4 uppercase"> Últimos Resultados</h3><div class="space-y-3">';
             completedMatches.forEach(m => { 
                 let names = m.names.split(' vs '); 
                 rrHtml += `<div class="bg-slate-900 border border-slate-700 p-3 rounded flex justify-between items-center cursor-pointer hover:border-accent-blue transition" onclick="openPostGame('${m.id}', '${(m.riotId||m.id)}')">`;
@@ -1541,7 +1541,7 @@
         const mContainer = document.getElementById('matches-list'); 
         mContainer.innerHTML = ''; 
 
-        // 🟢 NUEVA LÓGICA DE ORDENACIÓN (Idea mejorada)
+        //  NUEVA LÓGICA DE ORDENACIÓN (Idea mejorada)
         const sortedMatches = [...data.matches].sort((a, b) => {
             const isPlayedA = a.status === 'COMPLETED';
             const isPlayedB = b.status === 'COMPLETED';
@@ -1586,9 +1586,9 @@
 
             if (mSection !== currentSection) { 
                 const sectionIcons = {
-                    'PRÓXIMOS ENFRENTAMIENTOS': '📅',
-                    'PARTIDOS PENDIENTES (TBD)': '⏳',
-                    'HISTORIAL DE PARTIDOS': '✅'
+                    'PRÓXIMOS ENFRENTAMIENTOS': '',
+                    'PARTIDOS PENDIENTES (TBD)': '',
+                    'HISTORIAL DE PARTIDOS': ''
                 };
                 const sectionColors = {
                     'PRÓXIMOS ENFRENTAMIENTOS': 'text-accent-blue border-accent-blue/30',
@@ -1608,26 +1608,26 @@
 
             // Sub-header por jornada dentro de cada sección
             if (m.round && m.round !== currentRoundInSection) {
-                let roundBtn = currentUserRole === 'admin' && isPlayed ? `<button onclick="resolveRoundAwards('${m.round}', this)" class="ml-4 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg transition">🔒 CERRAR</button>` : '';
-                mContainer.innerHTML += `<div class="mt-4 mb-2 pl-2 flex items-center gap-2"><span class="text-slate-500 text-xs font-bold uppercase tracking-widest">• ${m.round}</span>${roundBtn}</div>`;
+                let roundBtn = currentUserRole === 'admin' && isPlayed ? `<button onclick="resolveRoundAwards('${m.round}', this)" class="ml-4 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg transition"> CERRAR</button>` : '';
+                mContainer.innerHTML += `<div class="mt-4 mb-2 pl-2 flex items-center gap-2"><span class="text-slate-500 text-xs font-bold uppercase tracking-widest"> ${m.round}</span>${roundBtn}</div>`;
                 currentRoundInSection = m.round;
             }
             
             const names = String(m.names || "").split(' vs '); 
             let btnUI = ''; let clickEvt = ''; let hoverC = '';
             
-            let vodBtn = m.vod && m.vod.trim() !== '' && m.vod !== 'undefined' ? `<button onclick="event.stopPropagation(); openVod('${m.vod}')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-1 rounded text-xs ml-4 uppercase shadow">🎬 VOD</button>` : '';
+            let vodBtn = m.vod && m.vod.trim() !== '' && m.vod !== 'undefined' ? `<button onclick="event.stopPropagation(); openVod('${m.vod}')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-1 rounded text-xs ml-4 uppercase shadow"> VOD</button>` : '';
 
-            // 🟢 LÓGICA DE FECHAS CON BOTÓN DE NEGOCIACIÓN
-            let dateBadge = '<span class="text-slate-500">🗓️ TBD (Por fijar)</span>';
+            //  LÓGICA DE FECHAS CON BOTÓN DE NEGOCIACIÓN
+            let dateBadge = '<span class="text-slate-500"> TBD (Por fijar)</span>';
             if (isPlayed) {
-                dateBadge = `<span class="text-emerald-400 font-bold">✅ PARTIDO FINALIZADO</span>`;
+                dateBadge = `<span class="text-emerald-400 font-bold"> PARTIDO FINALIZADO</span>`;
             } else if (m.date && String(m.date).trim() !== "" && String(m.date) !== "undefined") {
-                dateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]">🗓️ ${formatNiceDate(m.date)}</span>`;
+                dateBadge = `<span class="text-accent-blue font-bold drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]"> ${formatNiceDate(m.date)}</span>`;
             } else if (m.proposedDate && String(m.proposedDate).trim() !== "") {
                 let propTeam = data.teams.find(t => t.id === m.proposedBy);
                 let pName = propTeam ? propTeam.name : 'Rival';
-                dateBadge = `<span class="text-yellow-400 font-bold animate-pulse">⏳ ${escHtml(pName)} propone: ${formatNiceDate(m.proposedDate)}</span>`;
+                dateBadge = `<span class="text-yellow-400 font-bold animate-pulse"> ${escHtml(pName)} propone: ${formatNiceDate(m.proposedDate)}</span>`;
             }
 
             // Añadimos el botón de Gestionar si no se ha jugado
@@ -1691,7 +1691,7 @@
             htmlRow += `<div class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-slate-900 border-b border-x border-slate-700 px-6 py-1 rounded-b-lg text-[10px] uppercase tracking-widest z-0 shadow-md">${dateBadge}</div>`;
             htmlRow += `<div class="flex justify-between items-center mt-4 w-full relative z-10">`;
             
-            // 🟢 TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
+            //  TIPOGRAFÍA NÍTIDA: font-black (Inter) en vez de font-oswald
             htmlRow += `<div class="w-[35%] flex items-center gap-3 md:gap-4 overflow-hidden">
                             <img src="${logoA}" class="flex-shrink-0 w-10 h-10 md:w-16 md:h-16 object-contain drop-shadow-lg hidden sm:block">
                             <div class="font-black tracking-wide text-white text-base md:text-xl leading-tight break-words w-full" title="${escHtml(names[0])}">${escHtml(names[0])}</div>
@@ -1743,8 +1743,8 @@
         const tB = tournamentDataCache.teams.find(x => x.name === nameB); 
         if(!tA || !tB) return;
 
-        cA.innerHTML = '<div class="text-center py-10 text-cyan-400 animate-pulse font-bold tracking-widest uppercase">📡 EXTRAYENDO ADN DE ' + escHtml(tA.name) + '...</div>';
-        cB.innerHTML = '<div class="text-center py-10 text-red-400 animate-pulse font-bold tracking-widest uppercase">📡 EXTRAYENDO ADN DE ' + escHtml(tB.name) + '...</div>';
+        cA.innerHTML = '<div class="text-center py-10 text-cyan-400 animate-pulse font-bold tracking-widest uppercase"> EXTRAYENDO ADN DE ' + escHtml(tA.name) + '...</div>';
+        cB.innerHTML = '<div class="text-center py-10 text-red-400 animate-pulse font-bold tracking-widest uppercase"> EXTRAYENDO ADN DE ' + escHtml(tB.name) + '...</div>';
         cA.classList.remove('hidden'); 
         cB.classList.remove('hidden'); 
         radarC.classList.add('hidden');
@@ -1821,19 +1821,19 @@
                     html += '<div class="w-full h-3 bg-slate-800 rounded-full flex overflow-hidden shadow-inner">' + dmgBarHtml + '</div></div>';
 
                     html += '<div class="grid grid-cols-2 gap-3 mb-5 border-t border-slate-700 pt-4 text-left">';
-                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700"><div class="text-[9px] text-yellow-500 font-bold uppercase tracking-widest mb-1">👑 Win Condition</div>';
+                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700"><div class="text-[9px] text-yellow-500 font-bold uppercase tracking-widest mb-1"> Win Condition</div>';
                     html += '<div class="flex items-center gap-2"><img src="' + getChampIcon(stats.starPlayer.champ) + '" class="w-6 h-6 rounded-full border border-yellow-500 bg-slate-900" onerror="this.style.display=\'none\'">';
                     html += '<div class="text-[11px] font-bold text-white truncate">' + escHtml(stats.starPlayer.name) + '</div></div></div>';
                     
-                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 text-center"><div class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-1">⏱️ Ritmo Partida</div>';
+                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 text-center"><div class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-1"> Ritmo Partida</div>';
                     html += '<div class="text-lg font-black text-white font-oswald">' + stats.avgDur + '<span class="text-[10px] ml-1 text-slate-500">MIN</span></div></div>';
                     
-                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 col-span-2 text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mb-1">🔦 Visión y Pinks Global</div>';
+                    html += '<div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700 col-span-2 text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mb-1"> Visión y Pinks Global</div>';
                     html += '<div class="text-base font-bold text-white font-mono">' + stats.avgVis + ' <span class="text-[8px] text-slate-500">PUNTOS / PARTIDA</span></div></div></div>';
 
-                    html += '<div class="grid grid-cols-2 gap-4 mb-5 border-t border-slate-700 pt-4 text-left"><div><div class="text-[9px] text-emerald-400 uppercase font-bold tracking-widest mb-2">✅ Zona de Confort</div>';
+                    html += '<div class="grid grid-cols-2 gap-4 mb-5 border-t border-slate-700 pt-4 text-left"><div><div class="text-[9px] text-emerald-400 uppercase font-bold tracking-widest mb-2"> Zona de Confort</div>';
                     html += '<div class="flex gap-2">' + (comfortHtml || '<span class="text-xs text-slate-500">Sin datos</span>') + '</div></div>';
-                    html += '<div><div class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-2">🎯 Capacidad Cierre</div>';
+                    html += '<div><div class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-2"> Capacidad Cierre</div>';
                     html += '<div class="text-xl font-black text-emerald-400 font-oswald">' + stats.throwRate.toFixed(0) + '%</div></div></div>';
 
                     return html;
@@ -2010,7 +2010,7 @@
         document.getElementById('tm-recent-matches').innerHTML = matchesHtml;
         // -----------------------------------------------------
         
-        document.getElementById('tm-stats-container').innerHTML = '<div class="col-span-2 md:col-span-4 text-yellow-500 font-bold tracking-widest text-sm py-4 animate-pulse">📡 Extrayendo ADN del equipo...</div>';
+        document.getElementById('tm-stats-container').innerHTML = '<div class="col-span-2 md:col-span-4 text-yellow-500 font-bold tracking-widest text-sm py-4 animate-pulse"> Extrayendo ADN del equipo...</div>';
         document.getElementById('team-modal').style.display = 'flex';
 
         const totalGames = Number(wins) + Number(losses);
@@ -2054,7 +2054,7 @@
     }
 
     // ==========================================
-    // 🤝 SISTEMA DE VESTUARIO (NEGOCIACIÓN)
+    //  SISTEMA DE VESTUARIO (NEGOCIACIÓN)
     // ==========================================
     let currentNegMatch = null; let currentNegTeamA = null; let currentNegTeamB = null;
 
@@ -2147,24 +2147,24 @@
         if (m.proposedDate && String(m.proposedDate).trim() !== "") {
             if (m.proposedBy === teamId) {
                 statusBox.innerHTML = `
-                    <div class="text-yellow-400 font-bold text-lg mb-1">⏳ ESPERANDO RIVAL</div>
+                    <div class="text-yellow-400 font-bold text-lg mb-1"> ESPERANDO RIVAL</div>
                     <div class="text-sm text-white">Has propuesto: ${formatNiceDate(m.proposedDate)}</div>
                     <button onclick="startEditProposal('${m.proposedDate}')" class="mt-4 text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded border border-slate-500 transition uppercase tracking-widest font-bold flex items-center justify-center gap-2 mx-auto">
-                        ✏️ Editar mi Propuesta
+                         Editar mi Propuesta
                     </button>
                     <div class="text-[10px] text-slate-400 mt-2">El otro equipo debe aceptar o proponer una alternativa.</div>`;
             } else {
                 let propTeam = tournamentDataCache.teams.find(t => t.id === m.proposedBy);
                 let pName = propTeam ? propTeam.name : 'El rival';
-                statusBox.innerHTML = `<div class="text-accent-blue font-bold text-lg mb-1">⚠️ NUEVA PROPUESTA</div><div class="text-sm text-white">${pName} propone: <span class="font-bold text-yellow-400">${formatNiceDate(m.proposedDate)}</span></div>`;
+                statusBox.innerHTML = `<div class="text-accent-blue font-bold text-lg mb-1"> NUEVA PROPUESTA</div><div class="text-sm text-white">${pName} propone: <span class="font-bold text-yellow-400">${formatNiceDate(m.proposedDate)}</span></div>`;
                 actionRespond.classList.remove('hidden');
             }
         } else if (m.date && String(m.date).trim() !== "") {
             statusBox.innerHTML = `
-                <div class="text-emerald-400 font-bold text-lg mb-1">✅ FECHA CERRADA</div>
+                <div class="text-emerald-400 font-bold text-lg mb-1"> FECHA CERRADA</div>
                 <div class="text-sm text-white">${formatNiceDate(m.date)}</div>
                 <button onclick="startEditProposal('${m.date}')" class="mt-4 text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded border border-slate-500 transition uppercase tracking-widest font-bold flex items-center justify-center gap-2 mx-auto">
-                    ✏️ Proponer Cambio
+                     Proponer Cambio
                 </button>
                 <div class="text-[10px] text-slate-400 mt-2">El horario ya es oficial. Puedes proponer un cambio si finalmente no podéis.</div>`;
         } else {
@@ -2187,7 +2187,7 @@
         if(!confirm(`¿Estás seguro de confirmar esta acción?`)) return;
         
         let originalText = evt.target.innerText;
-        evt.target.innerText = "⏳..."; evt.target.disabled = true;
+        evt.target.innerText = "..."; evt.target.disabled = true;
         
         google.script.run
         .withSuccessHandler(function(res) {
@@ -2196,8 +2196,8 @@
             else { evt.target.innerText = originalText; evt.target.disabled = false; }
         })
         .withFailureHandler(function(err) {
-            // 🛡️ NUEVO: Atrapador de errores para que no se quede colgado
-            alert("❌ Error de comunicación con el Servidor: " + err.message);
+            //  NUEVO: Atrapador de errores para que no se quede colgado
+            alert(" Error de comunicación con el Servidor: " + err.message);
             evt.target.innerText = originalText; evt.target.disabled = false;
         })
         .handleMatchNegotiation(action, matchId, teamId, pin, dateStr);
@@ -2257,10 +2257,10 @@
             const tank = data.records.tank || { player: '-', val: 0, sub: '% Absorbido' }; 
             const farmer = data.records.farmer || { player: '-', val: 0, sub: 'CS/M' };
             const recs = [
-                { i: '🩸', label: 'Sangriento', p: blood.player, v: blood.val + ' ' + blood.sub, c: 'border-red-500 text-red-400' },
-                { i: '🕊️', label: 'Pacifista', p: pac.player, v: pac.val + ' ' + pac.sub, c: 'border-emerald-500 text-emerald-400' },
-                { i: '🛡️', label: 'Coloso', p: tank.player, v: tank.val + ' ' + tank.sub, c: 'border-blue-500 text-blue-400' },
-                { i: '🚜', label: 'Granjero', p: farmer.player, v: farmer.val + ' ' + farmer.sub, c: 'border-yellow-500 text-yellow-400' }
+                { i: '', label: 'Sangriento', p: blood.player, v: blood.val + ' ' + blood.sub, c: 'border-red-500 text-red-400' },
+                { i: '', label: 'Pacifista', p: pac.player, v: pac.val + ' ' + pac.sub, c: 'border-emerald-500 text-emerald-400' },
+                { i: '', label: 'Coloso', p: tank.player, v: tank.val + ' ' + tank.sub, c: 'border-blue-500 text-blue-400' },
+                { i: '', label: 'Granjero', p: farmer.player, v: farmer.val + ' ' + farmer.sub, c: 'border-yellow-500 text-yellow-400' }
             ];
             
             recs.forEach(r => { 
@@ -2296,7 +2296,7 @@
         }
     }
 
-    // 🏅 DIBUJAR CARTAS DEL SALÓN DE LA FAMA (15 RÉCORDS ÉPICOS)
+    //  DIBUJAR CARTAS DEL SALÓN DE LA FAMA (15 RÉCORDS ÉPICOS)
     function renderHallOfFame() {
         const hallCont = document.getElementById('records-hall-container');
         if (!hallCont) return;
@@ -2309,7 +2309,7 @@
             return;
         }
 
-        // 🟢 Extractor Inteligente (Busca múltiples nombres de variables por si el servidor las manda distinto)
+        //  Extractor Inteligente (Busca múltiples nombres de variables por si el servidor las manda distinto)
         const getSafeNum = (p, keys, isFloat=true) => {
             for (let k of keys) {
                 if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
@@ -2325,96 +2325,96 @@
         const getAssists = p => (parseFloat(p.kdaText ? p.kdaText.split('/')[2] : 0) || 0) * (p.games || 1);
         const getKDA = p => getDeaths(p) === 0 ? (getKills(p) + getAssists(p)) : ((getKills(p) + getAssists(p)) / getDeaths(p));
 
-        // 🟢 Colección de 15 Récords
+        //  Colección de 15 Récords
         const records = [
             {
                 player: [...bStats].sort((a,b) => getKills(b) - getKills(a))[0],
                 val: p => Math.round(getKills(p)) + ' Kills',
-                title: 'MÁS KILLS TOTALES', sub: 'El Baño de Sangre', icon: '🩸',
+                title: 'MÁS KILLS TOTALES', sub: 'El Baño de Sangre', icon: '',
                 border: 'border-red-500', text: 'text-red-500', textL: 'text-red-300', grad: 'from-red-900/80', shadow: 'rgba(239,68,68,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['dpm']) - getSafeNum(a, ['dpm']))[0],
                 val: p => getSafeNum(p, ['dpm']).toFixed(0) + ' DPM',
-                title: 'MÁS DAÑO POR MINUTO', sub: 'Cañón de Cristal', icon: '🎯',
+                title: 'MÁS DAÑO POR MINUTO', sub: 'Cañón de Cristal', icon: '',
                 border: 'border-blue-500', text: 'text-blue-500', textL: 'text-blue-300', grad: 'from-blue-900/80', shadow: 'rgba(59,130,246,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getKDA(b) - getKDA(a))[0],
                 val: p => getKDA(p).toFixed(2) + ' KDA',
-                title: 'MEJOR RATIO KDA', sub: 'El Intocable', icon: '✨',
+                title: 'MEJOR RATIO KDA', sub: 'El Intocable', icon: '',
                 border: 'border-yellow-300', text: 'text-yellow-300', textL: 'text-yellow-100', grad: 'from-yellow-700/80', shadow: 'rgba(253,224,71,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['cs']) - getSafeNum(a, ['cs']))[0],
                 val: p => getSafeNum(p, ['cs']).toFixed(1) + ' CS/M',
-                title: 'MÁS CS POR MINUTO', sub: 'Farming Simulator', icon: '🚜',
+                title: 'MÁS CS POR MINUTO', sub: 'Farming Simulator', icon: '',
                 border: 'border-yellow-500', text: 'text-yellow-500', textL: 'text-yellow-300', grad: 'from-yellow-900/80', shadow: 'rgba(251,191,36,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['gpm']) - getSafeNum(a, ['gpm']))[0],
                 val: p => getSafeNum(p, ['gpm']).toFixed(0) + ' GPM',
-                title: 'MÁS ORO POR MINUTO', sub: 'El Magnate', icon: '💰',
+                title: 'MÁS ORO POR MINUTO', sub: 'El Magnate', icon: '',
                 border: 'border-amber-500', text: 'text-amber-500', textL: 'text-amber-300', grad: 'from-amber-900/80', shadow: 'rgba(245,158,11,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getAssists(b) - getAssists(a))[0],
                 val: p => Math.round(getAssists(p)) + ' Asists',
-                title: 'MÁS ASISTENCIAS', sub: 'El Titiritero', icon: '🤝',
+                title: 'MÁS ASISTENCIAS', sub: 'El Titiritero', icon: '',
                 border: 'border-pink-500', text: 'text-pink-500', textL: 'text-pink-300', grad: 'from-pink-900/80', shadow: 'rgba(236,72,153,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['vspm', 'visionScore']) - getSafeNum(a, ['vspm', 'visionScore']))[0],
                 val: p => getSafeNum(p, ['vspm', 'visionScore']).toFixed(2) + ' VSPM',
-                title: 'PUNTUACIÓN DE VISIÓN', sub: 'El Ojo que todo lo ve', icon: '👁️',
+                title: 'PUNTUACIÓN DE VISIÓN', sub: 'El Ojo que todo lo ve', icon: '',
                 border: 'border-cyan-500', text: 'text-cyan-500', textL: 'text-cyan-300', grad: 'from-cyan-900/80', shadow: 'rgba(6,182,212,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['pinks', 'controlWards', 'visionWardsBoughtInGame'], false) - getSafeNum(a, ['pinks', 'controlWards', 'visionWardsBoughtInGame'], false))[0],
                 val: p => getSafeNum(p, ['pinks', 'controlWards', 'visionWardsBoughtInGame'], false) + ' Pinks',
-                title: 'PINKS COMPRADOS', sub: 'Iluminando la Grieta', icon: '💡',
+                title: 'PINKS COMPRADOS', sub: 'Iluminando la Grieta', icon: '',
                 border: 'border-rose-500', text: 'text-rose-500', textL: 'text-rose-300', grad: 'from-rose-900/80', shadow: 'rgba(244,63,94,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']) - getSafeNum(a, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']))[0],
                 val: p => { let v = getSafeNum(p, ['tank', 'dmgTaken', 'damageTaken', 'totalDamageTaken']); return v > 1000 ? (v/1000).toFixed(1)+'k' : v; },
-                title: 'DAÑO TANKED / MITIGADO', sub: 'El Coloso Inamovible', icon: '🛡️',
+                title: 'DAÑO TANKED / MITIGADO', sub: 'El Coloso Inamovible', icon: '',
                 border: 'border-emerald-500', text: 'text-emerald-500', textL: 'text-emerald-300', grad: 'from-emerald-900/80', shadow: 'rgba(16,185,129,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']) - getSafeNum(a, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']))[0],
                 val: p => { let v = getSafeNum(p, ['dmgTurrets', 'turretDmg', 'damageToBuildings', 'dmgObj']); return v > 1000 ? (v/1000).toFixed(1)+'k' : v; },
-                title: 'DAÑO A TORRETAS', sub: 'El Demoledor', icon: '🏯',
+                title: 'DAÑO A TORRETAS', sub: 'El Demoledor', icon: '',
                 border: 'border-orange-500', text: 'text-orange-500', textL: 'text-orange-300', grad: 'from-orange-900/80', shadow: 'rgba(249,115,22,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['kp']) - getSafeNum(a, ['kp']))[0],
                 val: p => getSafeNum(p, ['kp']).toFixed(0) + '% KP',
-                title: 'KILL PARTICIPATION (KP)', sub: 'Omnipresente', icon: '⚡',
+                title: 'KILL PARTICIPATION (KP)', sub: 'Omnipresente', icon: '',
                 border: 'border-indigo-500', text: 'text-indigo-500', textL: 'text-indigo-300', grad: 'from-indigo-900/80', shadow: 'rgba(99,102,241,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => (parseInt(b.mvps)||0) - (parseInt(a.mvps)||0))[0],
                 val: p => (p.mvps || 0) + ' MVPs',
-                title: 'JUGADOR MÁS VALIOSO', sub: 'La Superestrella', icon: '👑',
+                title: 'JUGADOR MÁS VALIOSO', sub: 'La Superestrella', icon: '',
                 border: 'border-orange-400', text: 'text-orange-400', textL: 'text-orange-200', grad: 'from-orange-800/80', shadow: 'rgba(251,146,60,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['epicMonsters', 'epics', 'dragonKills'], false) - getSafeNum(a, ['epicMonsters', 'epics', 'dragonKills'], false))[0],
                 val: p => getSafeNum(p, ['epicMonsters', 'epics', 'dragonKills'], false) + ' Monstruos',
-                title: 'MONSTRUOS ÉPICOS', sub: 'Cazador de Dragones', icon: '🐉',
+                title: 'MONSTRUOS ÉPICOS', sub: 'Cazador de Dragones', icon: '',
                 border: 'border-teal-500', text: 'text-teal-500', textL: 'text-teal-300', grad: 'from-teal-900/80', shadow: 'rgba(20,184,166,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getSafeNum(b, ['pentas', 'pentaKills', 'pentakills'], false) - getSafeNum(a, ['pentas', 'pentaKills', 'pentakills'], false))[0],
                 val: p => getSafeNum(p, ['pentas', 'pentaKills', 'pentakills'], false) + ' Pentas',
-                title: 'PENTAKILLS', sub: 'Uno contra Cinco', icon: '🌟',
+                title: 'PENTAKILLS', sub: 'Uno contra Cinco', icon: '',
                 border: 'border-fuchsia-500', text: 'text-fuchsia-500', textL: 'text-fuchsia-300', grad: 'from-fuchsia-900/80', shadow: 'rgba(217,70,239,0.3)'
             },
             {
                 player: [...bStats].sort((a,b) => getDeaths(b) - getDeaths(a))[0],
                 val: p => Math.round(getDeaths(p)) + ' Muertes',
-                title: 'MÁS MUERTES TOTALES', sub: 'El Agujero Negro', icon: '💀',
+                title: 'MÁS MUERTES TOTALES', sub: 'El Agujero Negro', icon: '',
                 border: 'border-purple-500', text: 'text-purple-500', textL: 'text-purple-300', grad: 'from-purple-900/80', shadow: 'rgba(168,85,247,0.3)', grayscale: true
             }
         ];
@@ -2426,7 +2426,7 @@
             if(!p) return;
             
             let valText = r.val(p);
-            // 🛑 FILTRAR: No mostrar tarjetas con valor 0 o sin datos
+            //  FILTRAR: No mostrar tarjetas con valor 0 o sin datos
             let rawVal = String(valText).replace(/[^\d.]/g, '');
             if (parseFloat(rawVal) === 0 || rawVal === '' || rawVal === 'NaN') return;
             
@@ -2472,14 +2472,14 @@
                 let trendIcon = ''; 
                 
                 if (topPlayer.trend === 'ON_FIRE') {
-                    trendIcon = '<span title="¡Racha de Victorias!" class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">🔥</span>'; 
+                    trendIcon = '<span title="¡Racha de Victorias!" class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>'; 
                 } else if (topPlayer.trend === 'COLD') {
-                    trendIcon = '<span title="Mala racha" class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">❄️</span>';
+                    trendIcon = '<span title="Mala racha" class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>';
                 }
                 
                 mvpCard.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
-                        <h3 class="font-oswald text-yellow-500 text-lg tracking-widest uppercase">⭐ Jugador Destacado</h3>
+                        <h3 class="font-oswald text-yellow-500 text-lg tracking-widest uppercase"> Jugador Destacado</h3>
                         <span class="bg-yellow-500 text-black font-black text-xs px-2 py-1 rounded">TOP 1</span>
                     </div>
                     <div class="flex items-center gap-4 cursor-pointer hover:scale-105 transition" onclick="openScouting('${enc(topPlayer.name)}')">
@@ -2520,7 +2520,7 @@
         
         const getBest = role => globalStatsData.filter(p => p.role && p.role.toUpperCase() === role).sort((a,b) => (b.points || 0) - (a.points || 0))[0];
         const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']; 
-        const roleIcons = {'TOP':'🛡️','JUNGLE':'🌲','MIDDLE':'🔥','BOTTOM':'🏹','SUPPORT':'💖'}; 
+        const roleIcons = {'TOP':'','JUNGLE':'','MIDDLE':'','BOTTOM':'','SUPPORT':''}; 
         const roleColors = {'TOP':'#10b981','JUNGLE':'#ef4444','MIDDLE':'#8b5cf6','BOTTOM':'#f59e0b','SUPPORT':'#3b82f6'};
         
         let qHtml = '<div class="grid grid-cols-5 gap-3 w-full">';
@@ -2528,7 +2528,7 @@
             let best = getBest(r); 
             let color = roleColors[r];
             if(best) { 
-                let tIcon = best.trend === 'ON_FIRE' ? '🔥' : (best.trend === 'COLD' ? '❄️' : ''); 
+                let tIcon = best.trend === 'ON_FIRE' ? '' : (best.trend === 'COLD' ? '' : ''); 
                 qHtml += `
                     <div class="bg-slate-900 border-t-4 p-3 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 transition shadow-lg" style="border-color: ${color}" onclick="openScouting('${enc(best.name)}')">
                         <div class="text-3xl mb-2">${roleIcons[r]}</div>
@@ -2553,7 +2553,7 @@
         
         applyFilters();
 
-        // 🟢 LLAMAMOS AL SALÓN DE LA FAMA UNA VEZ TENEMOS TODOS LOS DATOS
+        //  LLAMAMOS AL SALÓN DE LA FAMA UNA VEZ TENEMOS TODOS LOS DATOS
         renderHallOfFame();
     }
 
@@ -2571,9 +2571,9 @@
             
             let trendIcon = ''; 
             if (p.trend === 'ON_FIRE') {
-                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] text-lg" title="¡ON FIRE! (Racha de Victorias)">🔥</span>'; 
+                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] text-lg" title="¡ON FIRE! (Racha de Victorias)"></span>'; 
             } else if (p.trend === 'COLD') {
-                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] text-lg" title="En mala racha">❄️</span>';
+                trendIcon = '<span class="ml-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)] text-lg" title="En mala racha"></span>';
             }
             
             html += `
@@ -2586,9 +2586,9 @@
                     <td class="text-center font-bold text-slate-300">${p.games}</td>
                     <td class="text-center font-bold whitespace-nowrap">
                         <div class="flex items-center justify-center gap-2">
-                            <span class="text-yellow-500" title="MVP Ganador">👑 ${p.mvps || 0}</span>
+                            <span class="text-yellow-500" title="MVP Ganador"> ${p.mvps || 0}</span>
                             <span class="text-slate-600 font-light">|</span>
-                            <span class="text-blue-400" title="ACE Perdedor">🛡️ ${p.aces || 0}</span>
+                            <span class="text-blue-400" title="ACE Perdedor"> ${p.aces || 0}</span>
                         </div>
                     </td>
                     <td class="text-center font-mono text-emerald-300">${p.kdaText || '0.00'}</td>
@@ -2657,7 +2657,7 @@
                         padding: 12, 
                         cornerRadius: 8, 
                         displayColors: false, 
-                        callbacks: { label: function(context) { let val = context.raw; let pref = val >= 0 ? '🟢 +' : '🔴 '; return pref + val + ' Oro'; } } 
+                        callbacks: { label: function(context) { let val = context.raw; let pref = val >= 0 ? ' +' : ' '; return pref + val + ' Oro'; } } 
                     } 
                 }, 
                 scales: { 
@@ -2693,8 +2693,8 @@
         const header = document.getElementById('postgame-header'); 
         const content = document.getElementById('pg-content');
         
-        header.innerHTML = '<h2 class="text-3xl font-oswald text-white tracking-widest">📊 OBTENIENDO DATOS...</h2>'; 
-        content.innerHTML = '<div class="col-span-2 text-center text-yellow-500 py-20 animate-pulse font-bold tracking-widest text-xl">📡 CONECTANDO...</div>';
+        header.innerHTML = '<h2 class="text-3xl font-oswald text-white tracking-widest"> OBTENIENDO DATOS...</h2>'; 
+        content.innerHTML = '<div class="col-span-2 text-center text-yellow-500 py-20 animate-pulse font-bold tracking-widest text-xl"> CONECTANDO...</div>';
 
         google.script.run.withSuccessHandler(function(res) {
             if(res.error) { 
@@ -2705,13 +2705,13 @@
             window.lastPostGameData = res;
             let adminResolveBtn = ''; 
             if (currentUserRole === 'admin' && !res.isResolved) { 
-                adminResolveBtn = '<button onclick="resolveMatchAwards(\'' + matchId + '\')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg transition flex items-center gap-2">🔒 CERRAR ACTA</button>'; 
+                adminResolveBtn = '<button onclick="resolveMatchAwards(\'' + matchId + '\')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg transition flex items-center gap-2"> CERRAR ACTA</button>'; 
             }
             
             let matchInDb = tournamentDataCache.matches.find(m => m.riotId === searchId || m.id === matchId);
-            let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">🎬 VER REPETICIÓN</button>' : '';
+            let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition"> VER REPETICIÓN</button>' : '';
 
-            header.innerHTML = '<div class="flex items-center gap-4"><h2 class="text-3xl font-oswald text-white tracking-widest">ACTA OFICIAL <span class="text-yellow-500">' + matchId + '</span></h2></div><div class="flex gap-3 items-center">' + vodBtn + adminResolveBtn + '<button onclick="generateMatchSummaryImage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MATCH</button><button onclick="generateMVPImage()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MVP</button><button onclick="copyDiscordSummary()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold px-4 py-2 rounded shadow-lg transition">📋 COPIAR</button><button onclick="closeModal(\'postgame-modal\')" class="text-slate-400 hover:text-white text-4xl font-bold ml-4">&times;</button></div>';
+            header.innerHTML = '<div class="flex items-center gap-4"><h2 class="text-3xl font-oswald text-white tracking-widest">ACTA OFICIAL <span class="text-yellow-500">' + matchId + '</span></h2></div><div class="flex gap-3 items-center">' + vodBtn + adminResolveBtn + '<button onclick="generateMatchSummaryImage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition"> MATCH</button><button onclick="generateMVPImage()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg transition"> MVP</button><button onclick="copyDiscordSummary()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold px-4 py-2 rounded shadow-lg transition"> COPIAR</button><button onclick="closeModal(\'postgame-modal\')" class="text-slate-400 hover:text-white text-4xl font-bold ml-4">&times;</button></div>';
 
             const renderTeam = function(players, isWinner) {
                 const borderColor = isWinner ? 'border-blue-500' : 'border-red-500';
@@ -2727,9 +2727,9 @@
                 let teamKills = players.reduce((acc, p) => acc + (p.k || 0), 0);
                 let teamStats = isWinner ? (res.winStats || {}) : (res.losStats || {});
 
-                const teamTitle = isWinner ? nameW : nameL; // 🟢 Usamos el nombre real comprobado
+                const teamTitle = isWinner ? nameW : nameL; //  Usamos el nombre real comprobado
 
-                let html = '<div class="mt-4 rounded-lg overflow-hidden border border-slate-700 bg-[#1c1c1f]"><div class="flex justify-between items-center px-4 py-2 ' + bgHeader + ' border-b border-slate-700/50"><div class="flex items-center gap-4"><div class="font-bold ' + textColor + ' text-sm uppercase tracking-wider">' + escHtml(teamTitle) + ' - ' + tag + '</div><div class="hidden md:flex items-center gap-4 text-[11px] text-slate-300 font-bold ml-2"><span class="flex items-center gap-1" title="Kills Totales"><span class="text-lg leading-none">💀</span> ' + teamKills + '</span><span class="flex items-center gap-1" title="Torres"><span class="text-lg leading-none">🏯</span> ' + (teamStats.towers || 0) + '</span><span class="flex items-center gap-1" title="Dragones"><span class="text-lg leading-none">🐉</span> ' + (teamStats.dragons || 0) + '</span><span class="flex items-center gap-1" title="Barones"><span class="text-lg leading-none">👾</span> ' + (teamStats.barons || 0) + '</span><span class="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-yellow-500" title="Oro Total">💰 ' + (teamStats.gold || 0) + 'k</span></div></div><div class="hidden md:flex text-[10px] text-slate-400 font-bold uppercase tracking-widest justify-end items-center pr-2"><div class="w-[80px] text-center">KDA</div><div class="w-[60px] text-center">Daño</div><div class="w-[50px] text-center">CS</div><div class="w-[50px] text-center">Visión</div><div class="w-[60px]"></div></div></div><div class="flex flex-col">';
+                let html = '<div class="mt-4 rounded-lg overflow-hidden border border-slate-700 bg-[#1c1c1f]"><div class="flex justify-between items-center px-4 py-2 ' + bgHeader + ' border-b border-slate-700/50"><div class="flex items-center gap-4"><div class="font-bold ' + textColor + ' text-sm uppercase tracking-wider">' + escHtml(teamTitle) + ' - ' + tag + '</div><div class="hidden md:flex items-center gap-4 text-[11px] text-slate-300 font-bold ml-2"><span class="flex items-center gap-1" title="Kills Totales"><span class="text-lg leading-none"></span> ' + teamKills + '</span><span class="flex items-center gap-1" title="Torres"><span class="text-lg leading-none"></span> ' + (teamStats.towers || 0) + '</span><span class="flex items-center gap-1" title="Dragones"><span class="text-lg leading-none"></span> ' + (teamStats.dragons || 0) + '</span><span class="flex items-center gap-1" title="Barones"><span class="text-lg leading-none"></span> ' + (teamStats.barons || 0) + '</span><span class="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-yellow-500" title="Oro Total"> ' + (teamStats.gold || 0) + 'k</span></div></div><div class="hidden md:flex text-[10px] text-slate-400 font-bold uppercase tracking-widest justify-end items-center pr-2"><div class="w-[80px] text-center">KDA</div><div class="w-[60px] text-center">Daño</div><div class="w-[50px] text-center">CS</div><div class="w-[50px] text-center">Visión</div><div class="w-[60px]"></div></div></div><div class="flex flex-col">';
                 
                 players.forEach((p, idx) => {
                     const cIcon = getChampIcon(p.champ); 
@@ -2765,7 +2765,7 @@
 
             let names = matchInDb ? matchInDb.names.split(' vs ') : ['Equipo Azul', 'Equipo Rojo'];
 
-            // 🟢 LÓGICA INFALIBLE PARA DETERMINAR EL NOMBRE DE LOS EQUIPOS (SIN DUPLICADOS)
+            //  LÓGICA INFALIBLE PARA DETERMINAR EL NOMBRE DE LOS EQUIPOS (SIN DUPLICADOS)
             let nameW = "Ganadores";
             let nameL = "Perdedores";
 
@@ -2792,7 +2792,7 @@
             
             let events = res.events || []; 
 
-            // 🟢 FUNCIÓN DE RESCATE PARA PARTIDAS ANTIGUAS SIN OBJETIVOS
+            //  FUNCIÓN DE RESCATE PARA PARTIDAS ANTIGUAS SIN OBJETIVOS
             if (!events || events.length === 0) {
                 events = [];
                 const addEvt = (min, type) => {
@@ -2922,14 +2922,14 @@
 
             let goldTableHtml = '<table class="w-full text-right text-[9px] border-collapse"><thead><tr><th class="text-left border border-slate-600 p-1.5 bg-[#1c1c1f]"></th><th class="bg-blue-500 text-white font-bold text-center border border-slate-600 p-1.5 w-10" title="' + escHtml(names[0]) + '">' + tA_acro + '</th><th class="bg-red-500 text-white font-bold text-center border border-slate-600 p-1.5 w-10" title="' + escHtml(names[1]) + '">' + tB_acro + '</th></tr></thead><tbody>' + tableRowsHtml + '</tbody></table>';
 
-            let advancedStatsHtml = '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm"><div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div><div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50"><div class="w-1/3"></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' + escHtml(names[0]) + '</div></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' + escHtml(names[1]) + '</div></div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-purple-400 text-lg leading-none">🐛</span> Voidgrubs</div><div class="w-1/3 text-white font-mono">' + plW.GRUBS + '</div><div class="w-1/3 text-white font-mono">' + plL.GRUBS + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-indigo-400 text-lg leading-none">🪳</span> Heraldo</div><div class="w-1/3 text-white font-mono">' + plW.HERALD + '</div><div class="w-1/3 text-white font-mono">' + plL.HERALD + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg leading-none">🛡️</span> Plates</div><div class="w-1/3 text-white font-mono">' + ptStr(plW.TOTAL) + '</div><div class="w-1/3 text-white font-mono">' + ptStr(plL.TOTAL) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.TOP) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.TOP) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.MID) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.MID) + '</div></div><div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.BOT) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.BOT) + '</div></div></div></div>';
+            let advancedStatsHtml = '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm"><div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div><div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50"><div class="w-1/3"></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' + escHtml(names[0]) + '</div></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' + escHtml(names[1]) + '</div></div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-purple-400 text-lg leading-none"></span> Voidgrubs</div><div class="w-1/3 text-white font-mono">' + plW.GRUBS + '</div><div class="w-1/3 text-white font-mono">' + plL.GRUBS + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-indigo-400 text-lg leading-none"></span> Heraldo</div><div class="w-1/3 text-white font-mono">' + plW.HERALD + '</div><div class="w-1/3 text-white font-mono">' + plL.HERALD + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg leading-none"></span> Plates</div><div class="w-1/3 text-white font-mono">' + ptStr(plW.TOTAL) + '</div><div class="w-1/3 text-white font-mono">' + ptStr(plL.TOTAL) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.TOP) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.TOP) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.MID) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.MID) + '</div></div><div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.BOT) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.BOT) + '</div></div></div></div>';
 
             advancedStatsHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2"><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3">Distribución de Oro</h3><div class="flex items-center w-full h-full gap-2"><div style="position: relative; height: 160px; width: 50%;"><canvas id="matchGoldRadar"></canvas></div><div class="w-[50%] flex flex-col justify-center">' + goldTableHtml + '</div></div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><div class="flex justify-between bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3"><h3>Distribución de Daño</h3><div class="flex gap-4 text-[9px] font-black"><span class="text-blue-200">WIN</span><span class="text-red-200">LOSE</span></div></div><div class="flex flex-col justify-center flex-1">' + dmgBars + '</div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-4">Control de Visión (VSPM)</h3><div class="flex flex-col gap-4"><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-blue-400">Ganadores</span><span class="text-slate-300 font-mono">' + totW.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visW_pct + '%; background: #3b82f6; height: 100%;"></div></div></div><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-red-400">Perdedores</span><span class="text-slate-300 font-mono">' + totL.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visL_pct + '%; background: #ef4444; height: 100%;"></div></div></div></div></div><div class="bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-3">JUNGLE SHARE</h3><div class="text-[9px] text-slate-400 italic mb-5">CS killed in team jungle + CS killed in enemy jungle</div><div class="flex flex-col gap-5"><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">At 15 min</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm"><div style="width: ' + jglW_pct15 + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs15) + '</div><div style="width: ' + jglL_pct15 + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs15) + '</div></div></div><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">End game</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm relative"><div style="width: ' + jglW_pct + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs) + '</div><div style="width: ' + jglL_pct + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs) + '</div></div></div><div class="flex justify-between text-[9px] text-slate-500 font-mono ml-[76px] mt-1 border-t border-slate-700 pt-1"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div></div></div></div>';
             
             // INYECTAMOS EL NUEVO GRÁFICO DE OBJETIVOS
             advancedStatsHtml += '<div class="col-span-1 lg:col-span-2 bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center mt-4"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-4">Daño a Objetivos vs Torretas</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="postGameObjectivesChart"></canvas></div></div>';
 
-            let advTableHtml = '<button onclick="document.getElementById(\'adv-stats-table\').classList.toggle(\'hidden\')" class="w-full mt-6 bg-[#1c1c1f] hover:bg-[#27272a] border border-slate-600 text-white py-3 rounded-xl font-oswald tracking-widest transition flex justify-center items-center gap-2 shadow-lg"><span>📊 VER / OCULTAR ESTADÍSTICAS AVANZADAS COMPLETAS</span></button><div id="adv-stats-table" class="hidden mt-4 bg-[#1c1c1f] border border-slate-700 rounded-xl overflow-x-auto shadow-inner"><table class="w-full text-left text-xs text-slate-300"><thead class="text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-700 bg-[#27272a]"><tr><th class="p-3">Pos</th><th class="p-3">Jugador</th><th class="p-3">K/D/A</th><th class="p-3 text-red-400">Daño (DPM)</th><th class="p-3 text-blue-400">Mitigado</th><th class="p-3 text-yellow-400">Oro (GPM)</th><th class="p-3 text-emerald-400">CS (CS/M)</th><th class="p-3 text-purple-400">Visión (VSPM)</th></tr></thead><tbody>';
+            let advTableHtml = '<button onclick="document.getElementById(\'adv-stats-table\').classList.toggle(\'hidden\')" class="w-full mt-6 bg-[#1c1c1f] hover:bg-[#27272a] border border-slate-600 text-white py-3 rounded-xl font-oswald tracking-widest transition flex justify-center items-center gap-2 shadow-lg"><span> VER / OCULTAR ESTADÍSTICAS AVANZADAS COMPLETAS</span></button><div id="adv-stats-table" class="hidden mt-4 bg-[#1c1c1f] border border-slate-700 rounded-xl overflow-x-auto shadow-inner"><table class="w-full text-left text-xs text-slate-300"><thead class="text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-700 bg-[#27272a]"><tr><th class="p-3">Pos</th><th class="p-3">Jugador</th><th class="p-3">K/D/A</th><th class="p-3 text-red-400">Daño (DPM)</th><th class="p-3 text-blue-400">Mitigado</th><th class="p-3 text-yellow-400">Oro (GPM)</th><th class="p-3 text-emerald-400">CS (CS/M)</th><th class="p-3 text-purple-400">Visión (VSPM)</th></tr></thead><tbody>';
 
             let simulatedMins = totalMins; 
             
@@ -2964,17 +2964,17 @@
             renderGoldChart(realGoldDiff);
 
             const objIcons = {
-                'FB': { icon: '🩸', bg: 'bg-red-900/80 border-red-500', label: 'First Blood' },
-                'FT': { icon: '🏯', bg: 'bg-yellow-900/80 border-yellow-500', label: 'Primera Torre' },
-                'DRAGON': { icon: '🐉', bg: 'bg-orange-900/80 border-orange-500', label: 'Dragón' },
-                'BARON': { icon: '👾', bg: 'bg-purple-900/80 border-purple-500', label: 'Barón Nashor' },
-                'HERALD': { icon: '🪳', bg: 'bg-indigo-900/80 border-indigo-500', label: 'Heraldo' },
-                'GRUB': { icon: '🐛', bg: 'bg-emerald-900/80 border-emerald-500', label: 'Larvas del Vacío' }
+                'FB': { icon: '', bg: 'bg-red-900/80 border-red-500', label: 'First Blood' },
+                'FT': { icon: '', bg: 'bg-yellow-900/80 border-yellow-500', label: 'Primera Torre' },
+                'DRAGON': { icon: '', bg: 'bg-orange-900/80 border-orange-500', label: 'Dragón' },
+                'BARON': { icon: '', bg: 'bg-purple-900/80 border-purple-500', label: 'Barón Nashor' },
+                'HERALD': { icon: '', bg: 'bg-indigo-900/80 border-indigo-500', label: 'Heraldo' },
+                'GRUB': { icon: '', bg: 'bg-emerald-900/80 border-emerald-500', label: 'Larvas del Vacío' }
             };
 
             // TIMELINE GRÁFICO (DIBUJANDO ICONOS)
             let tHtml = '<div class="relative w-full h-12 mt-1 select-none">';
-            // 🟢 AHORA PONE EL NOMBRE DEL GANADOR ARRIBA (VERDE) Y PERDEDOR ABAJO (ROJO)
+            //  AHORA PONE EL NOMBRE DEL GANADOR ARRIBA (VERDE) Y PERDEDOR ABAJO (ROJO)
             tHtml += '<div class="absolute left-0 top-0 text-emerald-400 font-bold text-[10px] tracking-widest uppercase w-[60px] truncate" title="' + escHtml(nameW) + '">' + escHtml(tA_acro) + '</div>';
             tHtml += '<div class="absolute left-0 bottom-0 text-red-500 font-bold text-[10px] tracking-widest uppercase w-[60px] truncate" title="' + escHtml(nameL) + '">' + escHtml(tB_acro) + '</div>';
             tHtml += '<div class="absolute left-[65px] right-[10px] top-0 bottom-0"><div class="absolute left-0 right-0 top-1/2 h-px bg-slate-600 transform -translate-y-1/2"></div>';
@@ -2992,7 +2992,7 @@
                 // Si el evento lo hizo el equipo que ganó, va arriba. Si no, va abajo.
                 let isWinTeam = e.team === 'WIN';
                 let posClass = isWinTeam ? 'top-[-2px]' : 'bottom-[-2px]';
-                let obj = objIcons[e.type] || { icon: '❓', bg: 'bg-slate-700 border-slate-500', label: 'Desconocido' };
+                let obj = objIcons[e.type] || { icon: '', bg: 'bg-slate-700 border-slate-500', label: 'Desconocido' };
 
                 tHtml += '<div class="absolute ' + posClass + ' transform -translate-x-1/2 flex flex-col items-center group z-10 hover:z-20 cursor-pointer" style="left: ' + pct + '%">';
                 tHtml += '<div class="text-[10px] shadow-lg group-hover:scale-125 transition-transform rounded-full w-5 h-5 flex items-center justify-center border ' + obj.bg + '">' + obj.icon + '</div>';
@@ -3013,7 +3013,7 @@
             let containerClass = maxSwing > 15 ? 'tug-of-war-container inflection-alert' : 'tug-of-war-container';
 
             let tugHtml = '<div class="flex justify-between items-end mb-2"><div class="text-xs text-slate-400 font-bold uppercase tracking-widest">Inercia de la partida (Momentum)</div>';
-            if(inflectionMin > -1) { tugHtml += '<div class="text-xs text-red-400 font-black animate-pulse">⚠️ PUNTO DE INFLEXIÓN: MINUTO ' + inflectionMin + ' (' + maxSwing + '% SWING)</div>'; }
+            if(inflectionMin > -1) { tugHtml += '<div class="text-xs text-red-400 font-black animate-pulse"> PUNTO DE INFLEXIÓN: MINUTO ' + inflectionMin + ' (' + maxSwing + '% SWING)</div>'; }
             tugHtml += '</div><div class="' + containerClass + '"><div class="tug-of-war-blue" style="width: ' + finalProbA + '%">' + finalProbA + '%</div><div class="absolute right-4 top-1 text-white font-black text-xl">' + finalProbB + '%</div><div class="absolute left-1/2 top-0 bottom-0 w-1 bg-white/20 transform -translate-x-1/2"></div></div>';
             document.getElementById('momentum-tracker-container').innerHTML = tugHtml;
 
@@ -3133,11 +3133,11 @@
                             <span style="font-size: 24px; font-weight: bold; color: #94a3b8; letter-spacing: 2px; margin-left: 10px; vertical-align: middle;">KILLS</span>
                         </div>
                         <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.4); padding: 12px 10px; border-radius: 12px; border-bottom: 3px solid #10b981;">
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.gold}k</div><div style="color: #fbbf24; font-size: 10px; font-weight: 900; margin-top: 4px;">💰 ORO</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.towers}</div><div style="color: #38bdf8; font-size: 10px; font-weight: 900; margin-top: 4px;">🏯 TORRES</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.inhibs}</div><div style="color: #a855f7; font-size: 10px; font-weight: 900; margin-top: 4px;">🔮 INHIBS</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.dragons}</div><div style="color: #ef4444; font-size: 10px; font-weight: 900; margin-top: 4px;">🐉 DRAKES</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.barons}</div><div style="color: #c084fc; font-size: 10px; font-weight: 900; margin-top: 4px;">👾 BARON</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.gold}k</div><div style="color: #fbbf24; font-size: 10px; font-weight: 900; margin-top: 4px;"> ORO</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.towers}</div><div style="color: #38bdf8; font-size: 10px; font-weight: 900; margin-top: 4px;"> TORRES</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.inhibs}</div><div style="color: #a855f7; font-size: 10px; font-weight: 900; margin-top: 4px;"> INHIBS</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.dragons}</div><div style="color: #ef4444; font-size: 10px; font-weight: 900; margin-top: 4px;"> DRAKES</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${winObj.barons}</div><div style="color: #c084fc; font-size: 10px; font-weight: 900; margin-top: 4px;"> BARON</div></div>
                         </div>
                     </div>
                     <div style="width: 140px; display: flex; align-items: center; justify-content: center;">
@@ -3150,11 +3150,11 @@
                             <span style="font-size: 24px; font-weight: bold; color: #94a3b8; letter-spacing: 2px; margin-left: 10px; vertical-align: middle;">KILLS</span>
                         </div>
                         <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.4); padding: 12px 10px; border-radius: 12px; border-bottom: 3px solid #ef4444;">
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.gold}k</div><div style="color: #fbbf24; font-size: 10px; font-weight: 900; margin-top: 4px;">💰 ORO</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.towers}</div><div style="color: #38bdf8; font-size: 10px; font-weight: 900; margin-top: 4px;">🏯 TORRES</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.inhibs}</div><div style="color: #a855f7; font-size: 10px; font-weight: 900; margin-top: 4px;">🔮 INHIBS</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.dragons}</div><div style="color: #ef4444; font-size: 10px; font-weight: 900; margin-top: 4px;">🐉 DRAKES</div></div>
-                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.barons}</div><div style="color: #c084fc; font-size: 10px; font-weight: 900; margin-top: 4px;">👾 BARON</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.gold}k</div><div style="color: #fbbf24; font-size: 10px; font-weight: 900; margin-top: 4px;"> ORO</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.towers}</div><div style="color: #38bdf8; font-size: 10px; font-weight: 900; margin-top: 4px;"> TORRES</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.inhibs}</div><div style="color: #a855f7; font-size: 10px; font-weight: 900; margin-top: 4px;"> INHIBS</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.dragons}</div><div style="color: #ef4444; font-size: 10px; font-weight: 900; margin-top: 4px;"> DRAKES</div></div>
+                            <div style="text-align: center; width: 60px;"><div style="font-size: 22px; font-weight: 900; color: white;">${losObj.barons}</div><div style="color: #c084fc; font-size: 10px; font-weight: 900; margin-top: 4px;"> BARON</div></div>
                         </div>
                     </div>
                 </div>
@@ -3162,7 +3162,7 @@
                     <div style="flex: 1; background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); border-radius: 15px; display: flex; align-items: center; padding: 20px; border: 2px solid #334155; border-left: 10px solid #fbbf24; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
                         <img crossorigin="anonymous" src="${safeWChamp}" style="width: 110px; height: 110px; border-radius: 50%; border: 4px solid #fbbf24; margin-right: 25px; object-fit: cover;">
                         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden;">
-                            <div style="color: #fbbf24; font-size: 14px; font-weight: 900; letter-spacing: 3px; margin-bottom: 5px;">👑 MVP DEL EQUIPO</div>
+                            <div style="color: #fbbf24; font-size: 14px; font-weight: 900; letter-spacing: 3px; margin-bottom: 5px;"> MVP DEL EQUIPO</div>
                             <div style="font-size: 34px; color: white; line-height: 1.1; padding-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${escHtml(topWinner.name)}</div>
                             <div style="color: #10b981; font-size: 22px; font-weight: bold; font-family: monospace;">${topWinner.k} / ${topWinner.d} / ${topWinner.a} KDA</div>
                         </div>
@@ -3170,7 +3170,7 @@
                     <div style="flex: 1; background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); border-radius: 15px; display: flex; align-items: center; padding: 20px; border: 2px solid #334155; border-left: 10px solid #ef4444; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
                         <img crossorigin="anonymous" src="${safeLChamp}" style="width: 110px; height: 110px; border-radius: 50%; border: 4px solid #ef4444; margin-right: 25px; object-fit: cover;">
                         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden;">
-                            <div style="color: #ef4444; font-size: 14px; font-weight: 900; letter-spacing: 3px; margin-bottom: 5px;">🛡️ ACE DEL EQUIPO</div>
+                            <div style="color: #ef4444; font-size: 14px; font-weight: 900; letter-spacing: 3px; margin-bottom: 5px;"> ACE DEL EQUIPO</div>
                             <div style="font-size: 34px; color: white; line-height: 1.1; padding-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${escHtml(topLoser.name)}</div>
                             <div style="color: #38bdf8; font-size: 22px; font-weight: bold; font-family: monospace;">${topLoser.k} / ${topLoser.d} / ${topLoser.a} KDA</div>
                         </div>
@@ -3192,7 +3192,7 @@
     function voteMvpAce(matchId, searchId, nameEnc, type) {
         let voter = localStorage.getItem('my_summoner_name');
         if (!voter) { 
-            voter = prompt('⭐ VOTACIÓN ' + type + ': Introduce tu Nombre de Invocador:'); 
+            voter = prompt(' VOTACIÓN ' + type + ': Introduce tu Nombre de Invocador:'); 
             if(!voter || voter.trim() === "") return; 
             localStorage.setItem('my_summoner_name', voter.trim()); 
         }
@@ -3254,7 +3254,7 @@
         if (!p) return;
         window.currentScoutPlayer = p; 
 
-        // ⚔️ LÓGICA DE MATRIZ DE ARQUETIPOS DE ADN
+        //  LÓGICA DE MATRIZ DE ARQUETIPOS DE ADN
         let k = parseFloat(p.kdaText ? p.kdaText.split('/')[0] : 0) || 0;
         let d = parseFloat(p.kdaText ? p.kdaText.split('/')[1] : 0) || 0;
         let a = parseFloat(p.kdaText ? p.kdaText.split('/')[2] : 0) || 0;
@@ -3263,18 +3263,18 @@
         let cs = parseFloat(p.cs) || 0;
         let dpm = parseFloat(p.dpm) || 0;
 
-        let arch = { name: "EL GUERRERO", color: "text-blue-400", border: "border-blue-500", hex: "#38bdf8", icon: "⚔️", desc: "Equilibrado y letal. El soldado perfecto." };
-        if (k >= 6 && dpm >= 600) arch = { name: "EL VERDUGO", color: "text-red-500", border: "border-red-600", hex: "#ef4444", icon: "🩸", desc: "Agresión Pura. Busca combate y arriesga por la kill." };
-        else if (vspm >= 1.5 && a >= 8) arch = { name: "EL ARQUITECTO", color: "text-purple-400", border: "border-purple-500", hex: "#a855f7", icon: "👁️", desc: "Genio del macro. Control del mapa y visión asfixiante." };
-        else if (cs >= 7.5 && kp < 55) arch = { name: "EL MERCENARIO SOLITARIO", color: "text-yellow-500", border: "border-yellow-600", hex: "#fbbf24", icon: "🐺", desc: "Ignora las teamfights. Split push y egoísmo táctico." };
-        else if (d <= 3 && kp >= 60) arch = { name: "EL BASTIÓN", color: "text-emerald-400", border: "border-emerald-500", hex: "#10b981", icon: "🛡️", desc: "La roca inamovible del equipo. Prácticamente inmortal." };
+        let arch = { name: "EL GUERRERO", color: "text-blue-400", border: "border-blue-500", hex: "#38bdf8", icon: "", desc: "Equilibrado y letal. El soldado perfecto." };
+        if (k >= 6 && dpm >= 600) arch = { name: "EL VERDUGO", color: "text-red-500", border: "border-red-600", hex: "#ef4444", icon: "", desc: "Agresión Pura. Busca combate y arriesga por la kill." };
+        else if (vspm >= 1.5 && a >= 8) arch = { name: "EL ARQUITECTO", color: "text-purple-400", border: "border-purple-500", hex: "#a855f7", icon: "", desc: "Genio del macro. Control del mapa y visión asfixiante." };
+        else if (cs >= 7.5 && kp < 55) arch = { name: "EL MERCENARIO SOLITARIO", color: "text-yellow-500", border: "border-yellow-600", hex: "#fbbf24", icon: "", desc: "Ignora las teamfights. Split push y egoísmo táctico." };
+        else if (d <= 3 && kp >= 60) arch = { name: "EL BASTIÓN", color: "text-emerald-400", border: "border-emerald-500", hex: "#10b981", icon: "", desc: "La roca inamovible del equipo. Prácticamente inmortal." };
         
         window.currentArchetype = arch; // Guardado para el cromo
 
-        // 📈 LÓGICA DE CLUTCH (SISMÓGRAFO)
+        //  LÓGICA DE CLUTCH (SISMÓGRAFO)
         let isClutch = (p.winrate >= 55 && (k >= 5 || a >= 10)); 
         
-        let clutchTag = isClutch ? '<span class="ml-2 px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-full ice-veins uppercase tracking-widest relative shadow-[0_0_10px_#3b82f6]">❄️ Ice in the Veins</span>' : '';
+        let clutchTag = isClutch ? '<span class="ml-2 px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-full ice-veins uppercase tracking-widest relative shadow-[0_0_10px_#3b82f6]"> Ice in the Veins</span>' : '';
 
         // Construcción de la UI
         let champsHtml = '';
@@ -3282,14 +3282,14 @@
 
         let sHtml = '<div class="absolute top-3 left-4 flex gap-3 z-50">';
         sHtml += '<div class="text-slate-400 hover:text-white text-3xl font-bold cursor-pointer" onclick="closeModal(\'scouting-modal\')">&times;</div>';
-        sHtml += '<button onclick="generateCromoImage()" class="bg-gradient-to-r from-yellow-600 to-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg hover:scale-105 transition uppercase tracking-widest mt-1">📸 EXPORTAR CROMO</button></div>';
+        sHtml += '<button onclick="generateCromoImage()" class="bg-gradient-to-r from-yellow-600 to-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg hover:scale-105 transition uppercase tracking-widest mt-1"> EXPORTAR CROMO</button></div>';
         sHtml += '<div class="absolute top-0 right-0 bg-emerald-500 text-black font-black px-6 py-2 rounded-bl-xl tracking-widest text-sm shadow-lg">' + (p.mvps||0) + ' MVPs</div>';
         
         sHtml += '<div class="mt-8 flex flex-col items-center relative">';
         sHtml += '<h2 class="font-oswald text-white font-bold text-5xl tracking-widest uppercase text-shadow">' + escHtml(p.name) + '</h2>';
         
-        // 🔗 BOTÓN DE COMPARTIR PERFIL
-        sHtml += '<a id="share-profile-btn" href="#" target="_blank" class="hidden mt-2 mb-6 bg-slate-700/50 hover:bg-slate-600 border border-slate-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-2 shadow-lg">🔗 Ver perfil público</a>';
+        //  BOTÓN DE COMPARTIR PERFIL
+        sHtml += '<a id="share-profile-btn" href="#" target="_blank" class="hidden mt-2 mb-6 bg-slate-700/50 hover:bg-slate-600 border border-slate-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-2 shadow-lg"> Ver perfil público</a>';
 
         sHtml += '<div class="archetype-badge border-2 ' + arch.border + ' px-6 py-2 rounded-full flex items-center gap-3 shadow-[0_0_20px_' + arch.hex + '40] mb-6">';
         sHtml += '<span class="text-3xl">' + arch.icon + '</span>';
@@ -3298,7 +3298,7 @@
         sHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full relative">';
         sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col items-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-4">Radar de Rendimiento</h3><div style="position: relative; height: 320px; width: 100%;"><canvas id="scoutRadar"></canvas></div></div>';
         
-        sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-1 text-center flex items-center justify-center">📈 Sismógrafo Clutch ' + clutchTag + '</h3><p class="text-[9px] text-slate-500 text-center mb-4 uppercase">Impacto del jugador en Late Game (Bajo Presión)</p><div style="position: relative; height: 300px; width: 100%;"><canvas id="clutchSeismograph"></canvas></div></div>';
+        sHtml += '<div class="bg-slate-900/80 rounded-xl p-6 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-1 text-center flex items-center justify-center"> Sismógrafo Clutch ' + clutchTag + '</h3><p class="text-[9px] text-slate-500 text-center mb-4 uppercase">Impacto del jugador en Late Game (Bajo Presión)</p><div style="position: relative; height: 300px; width: 100%;"><canvas id="clutchSeismograph"></canvas></div></div>';
         sHtml += '</div>';
 
         sHtml += '<div class="text-left text-sm text-slate-400 mb-2 font-bold uppercase tracking-widest mt-8">Arsenal Letal (Campeones):</div>';
@@ -3307,7 +3307,7 @@
         // Insertamos el HTML
         document.querySelector('.scout-card').innerHTML = sHtml;
 
-        // 🔗 LÓGICA PARA OBTENER LA URL DEL PERFIL (Justo tras insertar el HTML)
+        //  LÓGICA PARA OBTENER LA URL DEL PERFIL (Justo tras insertar el HTML)
         google.script.run.withSuccessHandler(function(url) {
             const shareBtn = document.getElementById('share-profile-btn');
             if (shareBtn && url) {
@@ -3370,7 +3370,7 @@
         document.getElementById('scouting-modal').style.display = 'flex';
     }
 
-    // 🧮 NUEVO ALGORITMO EXPERTO DE OVR (Global)
+    //  NUEVO ALGORITMO EXPERTO DE OVR (Global)
     function calculatePlayerOVR(p) {
         if (!p) return 60;
         
@@ -3543,7 +3543,7 @@
         radarC.classList.remove('hidden');
 
         // =====================================
-        // 📊 GRÁFICO 1: RADAR (El clásico)
+        //  GRÁFICO 1: RADAR (El clásico)
         // =====================================
         const ctxR = document.getElementById('h2hCompareRadar').getContext('2d');
         
@@ -3580,7 +3580,7 @@
         });
 
         // =====================================
-        // 📊 GRÁFICO 2: BARRAS HORIZONTALES (Estilo de Juego)
+        //  GRÁFICO 2: BARRAS HORIZONTALES (Estilo de Juego)
         // =====================================
         const ctxB = document.getElementById('h2hCompareBars').getContext('2d');
         if(window.h2hBarInstance) window.h2hBarInstance.destroy();
@@ -3626,7 +3626,7 @@
         const shortRole = roleIcons[p.role ? p.role.toUpperCase() : 'FILL'] || 'FILL';
         
         let cIcon = getChampSplash(p.champs ? p.champs.split(',')[0].trim() : ''); 
-        let arch = window.currentArchetype || { name: "JUGADOR", color: "text-white", hex: "#fff", icon: "⭐" };
+        let arch = window.currentArchetype || { name: "JUGADOR", color: "text-white", hex: "#fff", icon: "" };
 
         let parts = (p.kdaText || "0/0/0").split('/');
         let k = parseFloat(parts[0]) || 0;
@@ -3719,12 +3719,12 @@
         if(!riotId) return alert("Debes poner la ID de Riot.");
         
         const btn = document.getElementById('btn-auto-resolve'); 
-        btn.innerText = "⏳ PROCESANDO..."; 
+        btn.innerText = " PROCESANDO..."; 
         btn.disabled = true;
         
         google.script.run.withSuccessHandler(function(res) { 
             alert(res.msg); 
-            btn.innerText = "⚡ RESOLVER"; 
+            btn.innerText = " RESOLVER"; 
             btn.disabled = false; 
             if(res.success) { closeModal('score-modal'); refreshData(); } 
         }).autoResolveTournamentMatch(id, riotId);
@@ -3750,9 +3750,9 @@
 
     function copyDiscordSummary() {
         const btn = event ? event.currentTarget : null;
-        const originalText = btn ? btn.innerText : '📋 COPIAR';
+        const originalText = btn ? btn.innerText : ' COPIAR';
         
-        if(btn) { btn.innerText = "⏳ GENERANDO..."; btn.disabled = true; }
+        if(btn) { btn.innerText = " GENERANDO..."; btn.disabled = true; }
 
         const match = tournamentDataCache.matches.find(m => m.id === window.lastPostGameMatchId); 
         const data = window.lastPostGameData;
@@ -3772,12 +3772,12 @@
         };
 
         google.script.run.withSuccessHandler(function(chronicle) {
-            let text = '🏆 **[WARGODS PREMIER] ' + match.round + '**\n';
-            text += '🔵 **' + names[0] + ' (' + match.sA + ')** vs 🔴 **' + names[1] + ' (' + match.sB + ')**\n\n';
-            text += '📰 **CRÓNICA IA:**\n' + chronicle + '\n\n';
-            if(mvp) text += '🌟 **ESTRELLA DEL PARTIDO:** ' + mvp.name + ' (' + mvp.k + '/' + mvp.d + '/' + mvp.a + ')\n';
-            if(match.vod) text += '🎬 **VOD:** ' + match.vod + '\n';
-            text += '\n📊 *Acta generada por Gemini IA en Wargods App*';
+            let text = ' **[WARGODS PREMIER] ' + match.round + '**\n';
+            text += ' **' + names[0] + ' (' + match.sA + ')** vs  **' + names[1] + ' (' + match.sB + ')**\n\n';
+            text += ' **CRÓNICA IA:**\n' + chronicle + '\n\n';
+            if(mvp) text += ' **ESTRELLA DEL PARTIDO:** ' + mvp.name + ' (' + mvp.k + '/' + mvp.d + '/' + mvp.a + ')\n';
+            if(match.vod) text += ' **VOD:** ' + match.vod + '\n';
+            text += '\n *Acta generada por Gemini IA en Wargods App*';
 
             copyToClipboardManual(text);
             if(btn) { btn.innerText = originalText; btn.disabled = false; }
@@ -3802,21 +3802,21 @@
 
     const AchievementManager = {
         list: [
-            { id: 'FIRST_SESSION', name: 'Bienvenido a la Liga', desc: 'Entrar por primera vez', icon: '🎬' },
-            { id: 'MATCH_SCOUT', name: 'Analista Pro', desc: 'Ver una previa de partido', icon: '🔍' },
-            { id: 'AI_PREDICTION', name: 'Visión del Oráculo', desc: 'Usar el Predictor IA', icon: '🤖' },
-            { id: 'COPY_CHRONICLE', name: 'Periodista Deportivo', desc: 'Copiar crónica a Discord', icon: '📰' },
-            { id: 'FANTASY_FAN', name: 'Dueño del Club', desc: 'Entrar al Fantasy', icon: '🌟' },
-            { id: 'RELOADER', name: 'Ansia Viva', desc: 'Recargar datos 10 veces', icon: '↻', goal: 10 },
-            { id: 'VOTE_MVP', name: 'Jurado Popular', desc: 'Votar en un Pick\'em', icon: '🗳️' },
-            { id: 'MILLIONAIRE', name: 'Ahorrador', desc: 'Acumular 1.000 WG Coins', icon: '🪙' },
-            { id: 'TYCOON', name: 'Lobo de Wall Street', desc: 'Acumular 10.000 WG Coins', icon: '💎' },
-            { id: 'SESSIONS_5', name: 'Fiel Seguider', desc: 'Entrar a 5 sesiones distintas', icon: '📅', goal: 5 },
-            { id: 'VIEW_VOD', name: 'Espectador', desc: 'Ver un VOD del Salón de la Fama', icon: '🎬' },
-            { id: 'BATTLE_PROMO', name: 'Hype Builder', desc: 'Generar imagen Battle Promo (H2H)', icon: '📸' },
-            { id: 'CROMO_EXPERT', name: 'Coleccionista', desc: 'Generar cromo de jugador', icon: '🎭' },
-            { id: 'ROLE_EXPLORER', name: 'Versátil', desc: 'Explorar todos los roles en Ranking', icon: '🧬' },
-            { id: 'ALL_IN_WINNER', name: 'All-In Master', desc: 'Ganar una apuesta arriesgada', icon: '🎰', secret: true }
+            { id: 'FIRST_SESSION', name: 'Bienvenido a la Liga', desc: 'Entrar por primera vez', icon: '[W]' },
+            { id: 'MATCH_SCOUT', name: 'Analista Pro', desc: 'Ver una previa de partido', icon: '[S]' },
+            { id: 'AI_PREDICTION', name: 'Visión del Oráculo', desc: 'Usar el Predictor IA', icon: '[AI]' },
+            { id: 'COPY_CHRONICLE', name: 'Periodista Deportivo', desc: 'Copiar crónica a Discord', icon: '[P]' },
+            { id: 'FANTASY_FAN', name: 'Dueño del Club', desc: 'Entrar al Fantasy', icon: '[F]' },
+            { id: 'RELOADER', name: 'Ansia Viva', desc: 'Recargar datos 10 veces', icon: '[R]', goal: 10 },
+            { id: 'VOTE_MVP', name: 'Jurado Popular', desc: 'Votar en un Pick\'em', icon: '[V]' },
+            { id: 'MILLIONAIRE', name: 'Ahorrador', desc: 'Acumular 1.000 WG Coins', icon: '[$]' },
+            { id: 'TYCOON', name: 'Lobo de Wall Street', desc: 'Acumular 10.000 WG Coins', icon: '[$$]' },
+            { id: 'SESSIONS_5', name: 'Fiel Seguider', desc: 'Entrar a 5 sesiones distintas', icon: '[5]', goal: 5 },
+            { id: 'VIEW_VOD', name: 'Espectador', desc: 'Ver un VOD del Salón de la Fama', icon: '[>]' },
+            { id: 'BATTLE_PROMO', name: 'Hype Builder', desc: 'Generar imagen Battle Promo (H2H)', icon: '[H]' },
+            { id: 'CROMO_EXPERT', name: 'Coleccionista', desc: 'Generar cromo de jugador', icon: '[C]' },
+            { id: 'ROLE_EXPLORER', name: 'Versátil', desc: 'Explorar todos los roles en Ranking', icon: '[X]' },
+            { id: 'ALL_IN_WINNER', name: 'All-In Master', desc: 'Ganar una apuesta arriesgada', icon: '[!]', secret: true }
         ],
 
         getUnlocked() {
@@ -3879,7 +3879,7 @@
 
             html += `
                 <div class="achievement-card ${isUnlocked ? 'unlocked' : ''} bg-slate-800 border border-slate-700 p-4 rounded-xl flex flex-col items-center text-center">
-                    <div class="text-4xl mb-3">${isSecret ? '❓' : a.icon}</div>
+                    <div class="text-4xl mb-3">${isSecret ? '' : a.icon}</div>
                     <div class="text-xs font-black text-white uppercase tracking-wider mb-1">${isSecret ? 'SECRETO' : a.name}</div>
                     <div class="text-[9px] text-slate-500 font-bold leading-tight">${isSecret ? 'Sigue jugando para descubrirlo' : a.desc}</div>
                     ${a.goal > 1 && !isUnlocked ? `<div class="mt-2 w-full bg-black/50 h-1 rounded-full overflow-hidden"><div class="bg-yellow-500 h-full" style="width: ${(progress/goal)*100}%"></div></div><div class="text-[8px] text-slate-600 mt-1">${progress}/${goal}</div>` : ''}
@@ -3922,13 +3922,13 @@
         
         let voterName = localStorage.getItem('my_summoner_name');
         if (!voterName) {
-            voterName = prompt("🔮 PICK'EMS: ¿Cuál es tu Invocador?");
+            voterName = prompt(" PICK'EMS: ¿Cuál es tu Invocador?");
             if (!voterName || voterName.trim() === "") return; 
             localStorage.setItem('my_summoner_name', voterName.trim());
         }
         let btn = e.currentTarget;
         let originalText = btn.innerText;
-        btn.innerText = "⏳";
+        btn.innerText = "";
         btn.disabled = true;
 
         google.script.run.withSuccessHandler(function(res) {
@@ -3944,7 +3944,7 @@
         const matchId = document.getElementById('riot-match-id').value.trim();
         if (!matchId) return alert("ID inválido.");
         const btn = document.getElementById('btn-scan-match'); 
-        btn.innerText = "⏳"; 
+        btn.innerText = ""; 
         btn.disabled = true;
         
         google.script.run.withSuccessHandler(function(res) {
@@ -3991,12 +3991,12 @@
                     <div class="text-emerald-400 font-bold">${tB.w}W - ${tB.l}L</div>
                 </div>
             </div>
-            <h3 class="text-center font-oswald text-accent-blue tracking-widest mb-4 text-xl uppercase">🥊 Cara a Cara (Rosters)</h3>
+            <h3 class="text-center font-oswald text-accent-blue tracking-widest mb-4 text-xl uppercase"> Cara a Cara (Rosters)</h3>
             <div class="flex flex-col gap-3 p-4 bg-slate-800/30 rounded-xl">
         `;
 
         const rolesOrder = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
-        const roleIcons = {'TOP':'🛡️','JUNGLE':'🌲','MIDDLE':'🔥','BOTTOM':'🏹','SUPPORT':'💖'};
+        const roleIcons = {'TOP':'[T]','JUNGLE':'[J]','MIDDLE':'[M]','BOTTOM':'[B]','SUPPORT':'[S]'};
         
         let pA_list = globalStatsData.filter(p => p.team === tA.name);
         let pB_list = globalStatsData.filter(p => p.team === tB.name);
@@ -4023,7 +4023,7 @@
                             <div class="text-xs ${colorDpmA} font-bold">${pA.dpm} DPM | KDA: ${pA.kdaText}</div>
                         </div>
                     </div>
-                    <div class="w-1/5 text-center text-2xl" title="${role}">${roleIcons[role]||'❓'}</div>
+                    <div class="w-1/5 text-center text-2xl" title="${role}">${roleIcons[role]||''}</div>
                     <div class="flex items-center justify-end gap-3 w-2/5 text-right">
                         <div class="w-full truncate">
                             <div class="font-bold text-white text-sm truncate">${escHtml(pB.name)}</div>
@@ -4068,7 +4068,7 @@
         const box = document.getElementById('ai-prediction-box');
         const text = document.getElementById('ai-prediction-text');
         
-        btn.innerHTML = '<span class="animate-spin text-2xl">⚙️</span> CALCULANDO...';
+        btn.innerHTML = '<span class="animate-spin text-2xl"></span> CALCULANDO...';
         btn.disabled = true;
         
         const match = tournamentDataCache.matches.find(m => m.id === matchId);
@@ -4086,14 +4086,14 @@
         google.script.run.withSuccessHandler(function(prediction) {
             text.innerHTML = prediction.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p}</p>`).join('');
             box.classList.remove('hidden');
-            btn.innerHTML = '🤖 PREDICCIÓN IA';
+            btn.innerHTML = ' PREDICCIÓN IA';
             btn.disabled = false;
         }).getAIPrediction(data);
     }
 
     
 
-    // 💡 NUEVA FUNCIÓN PARA CERRAR ACTAS EN BUCLE
+    //  NUEVA FUNCIÓN PARA CERRAR ACTAS EN BUCLE
     function resolveRoundAwards(roundName, btnElement) {
         if(!confirm("¿Seguro que quieres CERRAR TODAS LAS ACTAS de la " + roundName + "? Los votos manuales dejarán de contar para todos los partidos completados.")) return;
         
@@ -4103,15 +4103,15 @@
             return;
         }
 
-        btnElement.innerText = "⏳ CERRANDO...";
+        btnElement.innerText = " CERRANDO...";
         btnElement.disabled = true;
 
         let completedCount = 0;
         
         function resolveNext() {
             if (completedCount >= matchesToResolve.length) {
-                alert("✅ Se han cerrado " + completedCount + " actas de la jornada: " + roundName);
-                btnElement.innerText = "🔒 JORNADA CERRADA";
+                alert(" Se han cerrado " + completedCount + " actas de la jornada: " + roundName);
+                btnElement.innerText = " JORNADA CERRADA";
                 refreshData();
                 return;
             }
@@ -4168,7 +4168,7 @@
                 renderFantasyRanking(res.ranking);
                 renderFantasyActivity(res.activity);
                 
-                // 🟢 QUITAMOS EL IF PARA QUE DIBUJE SIEMPRE EL GRÁFICO (AUNQUE SEA TEXTO GIGANTE)
+                //  QUITAMOS EL IF PARA QUE DIBUJE SIEMPRE EL GRÁFICO (AUNQUE SEA TEXTO GIGANTE)
                 renderFantasyCharts(res.charts);
                 
                 if (!res.roster) {
@@ -4199,7 +4199,7 @@
         
         if (!ptsContainer || !budContainer) return;
 
-        // 🟢 SI AÚN NO HAY JORNADAS, PONE LOS NÚMEROS EN GIGANTE
+        //  SI AÚN NO HAY JORNADAS, PONE LOS NÚMEROS EN GIGANTE
         if (!data || !data.labels || data.labels.length === 0) {
             let currentPts = document.getElementById('ui-points').innerText;
             let currentBud = document.getElementById('ui-budget').innerText.replace(' Disp.', '');
@@ -4230,7 +4230,7 @@
             type: 'line',
             data: {
                 labels: data.labels,
-                datasets: [{ label: 'Patrimonio (€)', data: data.budget, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3 }]
+                datasets: [{ label: 'Patrimonio ()', data: data.budget, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3 }]
             },
             options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#94a3b8', callback: function(v){ return (v/1000000).toFixed(1) + 'M'; } } } } }
         });
@@ -4249,7 +4249,7 @@
             return;
         }
 
-        btn.innerText = "⏳ CONECTANDO...";
+        btn.innerText = " CONECTANDO...";
         btn.disabled = true;
         errDiv.classList.add('hidden');
 
@@ -4275,9 +4275,9 @@
                 
             } 
             else if (res.error === "NOT_FOUND") {
-                let wantRegister = confirm("El club '" + user + "' no existe. ¿Fundar club ahora con este PIN y recibir 10.000.000€ de presupuesto inicial?");
+                let wantRegister = confirm("El club '" + user + "' no existe. ¿Fundar club ahora con este PIN y recibir 10.000.000 de presupuesto inicial?");
                 if(wantRegister) {
-                    btn.innerText = "⏳ FUNDANDO CLUB...";
+                    btn.innerText = " FUNDANDO CLUB...";
                     google.script.run.withSuccessHandler(function(regRes) {
                         if(regRes.success) {
                             currentManager = regRes;
@@ -4308,7 +4308,7 @@
     }
 
     // ==========================================
-    // 💰 CARTERA Y APUESTAS DE LA LIGA (CASINO)
+    //  CARTERA Y APUESTAS DE LA LIGA (CASINO)
     // ==========================================
     window.myLigaWalletBalance = 0;
 
@@ -4332,14 +4332,14 @@
     }
 
     function openCasinoModal(matchId, encTeamName, odds, teamIndex) {
-        // 🟢 BUSCAMOS EL PARTIDO EXACTO EN LA BASE DE DATOS
+        //  BUSCAMOS EL PARTIDO EXACTO EN LA BASE DE DATOS
         const match = tournamentDataCache.matches.find(m => m.id === matchId);
         
-        // 🟢 NUEVO BLOQUEO INTELIGENTE POR FECHA/HORA DEL PARTIDO
+        //  NUEVO BLOQUEO INTELIGENTE POR FECHA/HORA DEL PARTIDO
         if (match) {
             // Si el partido ya está terminado, bloqueamos
             if (match.status === 'COMPLETED') {
-                return alert("⛔ APUESTAS CERRADAS.\n\nEste partido ya ha finalizado.");
+                return alert(" APUESTAS CERRADAS.\n\nEste partido ya ha finalizado.");
             }
             
             // Si el partido tiene una fecha programada, comprobamos si ya ha pasado
@@ -4348,14 +4348,14 @@
                 let now = new Date();
                 
                 if (now >= matchDate && currentUserRole !== 'admin') {
-                    return alert("⛔ APUESTAS CERRADAS.\n\nLa hora límite para este partido ha pasado. ¡Las espadas ya están en alto, disfruta del encuentro!");
+                    return alert(" APUESTAS CERRADAS.\n\nLa hora límite para este partido ha pasado. ¡Las espadas ya están en alto, disfruta del encuentro!");
                 }
             }
         }
 
         let summoner = localStorage.getItem('my_summoner_name');
         if (!summoner) { 
-            summoner = prompt("🎫 CASINO: Introduce tu Nombre de Invocador (El mismo que usas en los Pick'ems) para crear tu Cartera Virtual:");
+            summoner = prompt(" CASINO: Introduce tu Nombre de Invocador (El mismo que usas en los Pick'ems) para crear tu Cartera Virtual:");
             if(!summoner || summoner.trim() === "") return; 
             localStorage.setItem('my_summoner_name', summoner.trim());
             loadWalletBalance();
@@ -4370,7 +4370,7 @@
         
         document.getElementById('casino-wallet-display').innerText = window.myLigaWalletBalance + " WG";
         document.getElementById('casino-bet-amount').value = '';
-        document.getElementById('casino-potential-return').innerText = "0 🪙";
+        document.getElementById('casino-potential-return').innerText = "0 ";
         
         document.getElementById('casino-modal').style.display = 'flex';
     }
@@ -4386,7 +4386,7 @@
         let amount = parseInt(document.getElementById('casino-bet-amount').value) || 0;
         let odds = parseFloat(document.getElementById('casino-odds').value) || 0;
         let pot = Math.floor(amount * odds);
-        document.getElementById('casino-potential-return').innerText = pot.toLocaleString() + " 🪙";
+        document.getElementById('casino-potential-return').innerText = pot.toLocaleString() + " ";
     }
 
     function submitCasinoBet() {
@@ -4400,16 +4400,16 @@
         
         let summoner = localStorage.getItem('my_summoner_name');
         let btn = document.getElementById('btn-place-bet');
-        btn.innerText = "⏳ PROCESANDO..."; btn.disabled = true;
+        btn.innerText = " PROCESANDO..."; btn.disabled = true;
         
         google.script.run.withSuccessHandler(function(res) {
             btn.innerText = "Confirmar Apuesta"; btn.disabled = false;
             if (res.success) {
-                alert("✅ " + res.msg);
+                alert(" " + res.msg);
                 window.myLigaWalletBalance = res.newBalance;
                 document.getElementById('header-wallet-balance').innerText = parseInt(res.newBalance).toLocaleString() + " WG";
                 closeModal('casino-modal');
-            } else { alert("❌ Error: " + res.error); }
+            } else { alert(" Error: " + res.error); }
         }).placeLeagueBet(summoner, matchId, teamIndex, amount, odds);
     }
 
@@ -4424,10 +4424,10 @@
             const tank = data.records.tank || { player: '-', val: 0, sub: '% Absorbido' }; 
             const farmer = data.records.farmer || { player: '-', val: 0, sub: 'CS/M' };
             const recs = [
-                { i: '🩸', label: 'Sangriento', p: blood.player, v: blood.val + ' ' + blood.sub, c: 'border-red-500 text-red-400' },
-                { i: '🕊️', label: 'Pacifista', p: pac.player, v: pac.val + ' ' + pac.sub, c: 'border-emerald-500 text-emerald-400' },
-                { i: '🛡️', label: 'Coloso', p: tank.player, v: tank.val + ' ' + tank.sub, c: 'border-blue-500 text-blue-400' },
-                { i: '🚜', label: 'Granjero', p: farmer.player, v: farmer.val + ' ' + farmer.sub, c: 'border-yellow-500 text-yellow-400' }
+                { i: 'X', label: 'Sangriento', p: blood.player, v: blood.val + ' ' + blood.sub, c: 'border-red-500 text-red-400' },
+                { i: '+', label: 'Pacifista', p: pac.player, v: pac.val + ' ' + pac.sub, c: 'border-emerald-500 text-emerald-400' },
+                { i: '#', label: 'Coloso', p: tank.player, v: tank.val + ' ' + tank.sub, c: 'border-blue-500 text-blue-400' },
+                { i: '$', label: 'Granjero', p: farmer.player, v: farmer.val + ' ' + farmer.sub, c: 'border-yellow-500 text-yellow-400' }
             ];
             recs.forEach(r => { html += `<div class="bg-slate-800 border-t-4 ${r.c} rounded-xl p-4 text-center shadow-lg"><div class="text-3xl mb-2">${r.i}</div><div class="text-xs text-slate-400 font-bold uppercase tracking-widest">${r.label}</div><div class="font-oswald text-xl text-white my-1 truncate" title="${r.p}">${r.p}</div><div class="font-bold">${r.v}</div></div>`; }); 
             rCont.innerHTML = html;
@@ -4445,7 +4445,7 @@
     
 
     // ==========================================
-    // 🤑 LÓGICA DEL RANKING DE MAGNATES
+    //  LÓGICA DEL RANKING DE MAGNATES
     // ==========================================
     window.casinoRankingData = [];
 
@@ -4478,7 +4478,7 @@
 
         let html = '';
         window.casinoRankingData.forEach((u, idx) => {
-            let medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1));
+            let medal = idx === 0 ? '1st' : (idx === 1 ? '2nd' : (idx === 2 ? '3rd' : idx + 1));
             
             // Resaltar al usuario si es él mismo
             let isMe = localStorage.getItem('my_summoner_name') && u.name.toLowerCase() === localStorage.getItem('my_summoner_name').toLowerCase();
@@ -4490,7 +4490,7 @@
                     <td class="p-4 text-center font-oswald text-lg text-slate-500">${medal}</td>
                     <td class="p-4 font-bold text-white text-base">${escHtml(u.name)}${meTag}</td>
                     <td class="p-4 text-right font-mono text-yellow-400 font-bold text-lg">${parseInt(u.balance).toLocaleString()} WG</td>
-                    <td class="p-4 text-center font-mono text-emerald-400">${parseInt(u.totalWon).toLocaleString()} 🪙</td>
+                    <td class="p-4 text-center font-mono text-emerald-400">${parseInt(u.totalWon).toLocaleString()} </td>
                     <td class="p-4 text-center font-oswald text-blue-400 text-xl">${u.winRate.toFixed(1)}% <span class="text-[10px] text-slate-500 font-inter font-normal ml-1">(${u.betsWon}/${u.betsResolved})</span></td>
                 </tr>
             `;
