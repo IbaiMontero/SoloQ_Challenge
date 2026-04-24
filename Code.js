@@ -7105,7 +7105,8 @@ if (!p.win && durationMin >= 15) {
         losStats: cachedMatch.customLosStats || null,
         goldTimeline: cachedMatch.customGoldTimeline || null,
         eventsList: cachedMatch.customEventsList || null,
-        bans: cachedMatch.customBans || [] // <--- AÑADIDO: Incluir bans en el payload JSON
+        bans: cachedMatch.customBans || [], // <--- AÑADIDO: Incluir bans en el payload JSON
+        positions: cachedMatch.customPositions || null // <--- NUEVO: Para el Replay Map
     };
 
     return { total, notes, statsPayload };
@@ -18260,11 +18261,11 @@ function getPostGameLobbyData(matchId) {
   let officialAce = null;
   let isResolved = false;
 
-  //          A     ADIDO: Variables para guardar los datos globales del partido
   let matchWinStats = null;
   let matchLosStats = null;
   let matchTimeline = null;
-  let matchEvents = null; // <--- VITAL para el Timeline de Objetivos (OP.GG)
+  let matchEvents = null; 
+  let matchPositions = null; // <--- NUEVO
 
   if (mvpSheet && mvpSheet.getLastRow() > 1) {
       const vData = mvpSheet.getDataRange().getValues();
@@ -18292,19 +18293,17 @@ function getPostGameLobbyData(matchId) {
       
       let cs = "0.0";
       let csTotal = 0;
-      let cs15 = 0;      //          NUEVO
-      let plates = 0;    //          NUEVO
+      let cs15 = 0;
+      let plates = 0;
       let gpm = "0";
       let gold = 0;
       let tank = "-";
       let vspm = "0.00";
       let visionScore = 0;
-
       let items = [];
       let spells = [];
-
-      let dmgObj = 0;      //          A     ADIDO
-      let dmgTurrets = 0;  //          A     ADIDO
+      let dmgObj = 0;
+      let dmgTurrets = 0;
 
       const rawJson = data[i][15]; 
       if (rawJson) {
@@ -18313,28 +18312,23 @@ function getPostGameLobbyData(matchId) {
               
               if (adv.csMin) cs = Number(adv.csMin).toFixed(1);
               if (adv.cs) csTotal = Number(adv.cs);
-              
               if (adv.cs15 !== undefined) cs15 = Number(adv.cs15);    
               if (adv.plates !== undefined) plates = Number(adv.plates); 
-              
               if (adv.gpm) gpm = Number(adv.gpm).toFixed(0);
               if (adv.gold) gold = Number(adv.gold);
               if (adv.vspm) vspm = Number(adv.vspm).toFixed(2);
               if (adv.visionScore) visionScore = Number(adv.visionScore);
-              
               if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + "%";
-              if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + "k";
-
               if (adv.items) items = adv.items;
               if (adv.spells) spells = adv.spells;
-              
-              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         //          A     ADIDO
-              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); //          A     ADIDO
+              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);
+              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets);
               
               if (adv.goldTimeline && matchTimeline === null) {
                   matchTimeline = adv.goldTimeline;
                   matchWinStats = adv.winStats;
                   matchLosStats = adv.losStats;
+                  matchPositions = adv.positions || null; // <--- EXTRAER POSICIONES
               }
               if (adv.eventsList && matchEvents === null) {
                   matchEvents = adv.eventsList;
@@ -18348,26 +18342,28 @@ function getPostGameLobbyData(matchId) {
         name: pName,
         champ: data[i][3],
         role: data[i][4],
-        k: Number(data[i][6] || 0),
-        d: Number(data[i][7] || 0),
-        a: Number(data[i][8] || 0),
-        dmg: Number(data[i][9] || 0),
-        kp: Number(data[i][10] || 0),
-        points: Number(data[i][12] || 0).toFixed(1),
+        k: data[i][6],
+        d: data[i][7],
+        a: data[i][8],
+        dmg: data[i][9],
+        kp: data[i][10],
+        points: data[i][12],
+        notes: data[i][13],
         votes: currentMatchVotes[pName] || 0,
         cs: cs,
         csTotal: csTotal,
-        cs15: cs15,       //          NUEVO
-        plates: plates,   //          NUEVO
+        cs15: cs15,
+        plates: plates,
         gpm: gpm,
         gold: gold,
         tank: tank,
         vspm: vspm,
         visionScore: visionScore,
-        items: items,   //          NUEVO
-        spells: spells,  //          NUEVO
-        dmgObj: dmgObj,        //          A     ADIDO
-        dmgTurrets: dmgTurrets //          A     ADIDO
+        items: items,
+        spells: spells,
+        dmgObj: dmgObj,
+        dmgTurrets: dmgTurrets,
+        participantId: (JSON.parse(rawJson || '{}')).participantId || 0
       };
 
       if (data[i][5] === 'Win') winners.push(pData);
@@ -18389,7 +18385,8 @@ function getPostGameLobbyData(matchId) {
       winStats: matchWinStats, 
       losStats: matchLosStats, 
       timeline: matchTimeline,  
-      events: matchEvents //            ESTO ES LO QUE LE FALTABA A LA WEB PARA PINTAR EL TIMELINE DE OBJETIVOS!
+      events: matchEvents,
+      positions: matchPositions
   };
 }
 
@@ -19100,6 +19097,7 @@ function registerTournamentMatch(matchId) {
     let eventsList = []; 
     let csAt15 = {}; // <--- NUEVO: Para guardar el farmeo exacto al min 15
     let matchBans = [];
+    let playerPositions = {}; // <--- NUEVO: Para el Replay Map
 
     // EXTRAER BANS REALES DE LA PARTIDA (Independiente del Timeline)
     if (matchData && matchData.info && matchData.info.teams) {
@@ -19159,6 +19157,11 @@ function registerTournamentMatch(matchId) {
                 let wGold = 0, lGold = 0;
                 for (let pId in frame.participantFrames) {
                     let pf = frame.participantFrames[pId];
+                    
+                    // GUARDAR POSICIONES PARA EL REPLAY MAP
+                    if (!playerPositions[pf.participantId]) playerPositions[pf.participantId] = [];
+                    playerPositions[pf.participantId].push({ x: pf.position.x, y: pf.position.y });
+
                     let pData = matchData.info.participants.find(p => p.participantId == pf.participantId);
                     if (pData) {
                         if (pData.teamId === winTeamId) wGold += pf.totalGold;
@@ -19215,6 +19218,7 @@ function registerTournamentMatch(matchId) {
     matchData.customEventsList = eventsList; 
     matchData.customCsAt15 = csAt15;
     matchData.customBans = matchBans; // <--- AÑADIDO: Guardar bans reales en cache
+    matchData.customPositions = playerPositions; // <--- NUEVO: Guardar coordenadas
     // =====================================================
 
     // 2. Guardarla en la Memoria Global
@@ -19688,7 +19692,7 @@ function getFantasyInitData(managerId) {
         result.allRosters.push({
             manager: String(rData[k][0]),
             top: rData[k][1], jgl: rData[k][2], mid: rData[k][3], adc: rData[k][4], sup: rData[k][5], 
-            captain: rData[k][6], sub: rData[k][8], activeCard: rData[k][10]
+            captain: rData[k][6], sub: rData[k][8], sub2: rData[k][7], activeCard: rData[k][10]
         });
     }
 
@@ -19712,8 +19716,12 @@ function getFantasyInitData(managerId) {
       if (String(rData[r][0]).trim().toLowerCase() === searchId) {
         result.roster = {
           top: rData[r][1] || "", jgl: rData[r][2] || "", mid: rData[r][3] || "", adc: rData[r][4] || "",
-          sup: rData[r][5] || "", captain: rData[r][6] || "NONE", sub: rData[r][8] || "", 
-          isLocked: rData[r][9] === true || String(rData[r][9]).toUpperCase() === "TRUE", activeCard: rData[r][10] || ""
+          sup: rData[r][5] || "", captain: rData[r][6] || "NONE", sub: rData[r][8] || "", sub2: rData[r][7] || "",
+          isLocked: rData[r][9] === true || String(rData[r][9]).toUpperCase() === "TRUE", activeCard: rData[r][10] || "",
+          snap: {
+            top: rData[r][11] || "", jgl: rData[r][12] || "", mid: rData[r][13] || "", 
+            adc: rData[r][14] || "", sup: rData[r][15] || "", captain: rData[r][16] || "NONE"
+          }
         };
         break;
       }
@@ -19944,7 +19952,9 @@ function lockFantasyTeam(managerId) {
             return { success: false, error: "Debes tener los 5 huecos titulares ocupados para confirmar." };
         }
         sheet.getRange(i + 1, 10).setValue(true);
-        return { success: true, msg: "Alineaci    n bloqueada para esta jornada." };
+        // Guardar snapshot para puntuación (Columnas 12-17)
+        sheet.getRange(i + 1, 12, 1, 6).setValues([[ data[i][1], data[i][2], data[i][3], data[i][4], data[i][5], data[i][6] ]]);
+        return { success: true, msg: "Alineación fijada para la jornada. ¡Suerte! (Ahora puedes seguir operando en el mercado)" };
       }
     }
     return { success: false, error: "Roster no encontrado." };
@@ -19955,13 +19965,13 @@ function swapSub(managerId, roleKey) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Rosters");
     var data = sheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
     var roleIdx = colMap[roleKey.toLowerCase()];
     var subIdx = 9; 
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim().toLowerCase() === String(managerId).trim().toLowerCase()) {
-        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
+        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
         var currentStarter = data[i][roleIdx - 1] || "";
         var currentSub = data[i][subIdx - 1] || "";
         sheet.getRange(i + 1, roleIdx).setValue(currentSub);
@@ -19982,13 +19992,13 @@ function sellPlayerInstant(managerId, roleKey) {
     var txSheet = ss.getSheetByName("Fantasy_Transactions");
 
     var rData = rostersSheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
     var colIndex = colMap[roleKey.toLowerCase()];
     
     var rRow = -1; var playerName = "";
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
+        // Permitir venta incluso si el equipo está bloqueado para puntuación
         rRow = i + 1; playerName = rData[i][colIndex - 1]; break;
       }
     }
@@ -20024,13 +20034,13 @@ function listPlayerOnMarket(managerId, roleKey, customPrice) {
     var rostersSheet = ss.getSheetByName("Fantasy_Rosters");
     
     var rData = rostersSheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
     var colIndex = colMap[roleKey.toLowerCase()];
     
     var rRow = -1; var playerName = "";
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
+        // Permitir venta incluso si el equipo está bloqueado para puntuación
         rRow = i + 1; playerName = rData[i][colIndex - 1]; break;
       }
     }
@@ -20053,7 +20063,7 @@ function setManagerCaptain(managerId, roleLabel) {
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
+        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
         sheet.getRange(i + 1, 7).setValue(roleLabel); 
         return { success: true, msg: "Capit    n actualizado a " + roleLabel };
       }
@@ -20295,6 +20305,8 @@ function autoLockTeamsWeekly() {
           }
       }
       rostersSheet.getRange(i+1, 10).setValue(true); // Bloqueamos el equipo
+      // Snapshot automático
+      rostersSheet.getRange(i + 1, 12, 1, 6).setValues([[ rData[i][1], rData[i][2], rData[i][3], rData[i][4], rData[i][5], rData[i][6] ]]);
   }
   return "Todos los equipos bloqueados. Penalizaciones aplicadas.";
 }
@@ -20601,13 +20613,13 @@ function swapPlayers(managerId, roleA, roleB) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Rosters");
     var data = sheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
     var colA = colMap[roleA.toLowerCase()];
     var colB = colMap[roleB.toLowerCase()];
     
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim().toLowerCase() === String(managerId).trim().toLowerCase()) {
-        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
+        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
         var valA = data[i][colA - 1] || "";
         var valB = data[i][colB - 1] || "";
         sheet.getRange(i + 1, colA).setValue(valB);
@@ -21261,9 +21273,24 @@ function buildPickemLeaderboard() {
     }
   }
 
+  // Cargar personalización
+  let bpSheet = ss.getSheetByName("BATTLE_PASS");
+  let bpMap = {};
+  if (bpSheet) {
+      let bpData = bpSheet.getDataRange().getValues();
+      for(let k = 1; k < bpData.length; k++) {
+          let n = String(bpData[k][0]).trim();
+          if(n) bpMap[n] = { title: bpData[k][4] || '', color: bpData[k][5] || '' };
+      }
+  }
+
   let arr = Object.values(userStats);
   arr.forEach(u => {
     u.accuracy = u.total > 0 ? Math.round((u.correct / u.total) * 100) : 0;
+    if (bpMap[u.name]) {
+        u.title = bpMap[u.name].title;
+        u.color = bpMap[u.name].color;
+    }
   });
   arr.sort((a, b) => b.correct - a.correct || b.accuracy - a.accuracy);
   return arr.slice(0, 10);
@@ -21521,15 +21548,15 @@ function getBattlePassRewards(currentLevel) {
     let unlocked = currentLevel >= lvl;
     let reward = { level: lvl, unlocked: unlocked };
     if (lvl === 5) { reward.name = '🥉 Bronce'; reward.desc = '250 WG Coins'; }
-    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
+    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; reward.title = 'Veterano'; }
     else if (lvl === 15) { reward.name = '🥇 Oro'; reward.desc = '750 WG Coins'; }
     else if (lvl === 20) { reward.name = '💎 Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
-    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
+    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; reward.title = 'Leyenda'; }
     else if (lvl === 30) { reward.name = '⚡ Ascendido'; reward.desc = '2000 WG Coins'; }
-    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
-    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins'; }
-    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
-    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
+    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Color Dorado'; reward.color = '#fbbf24'; reward.colorLabel = 'Dorado'; }
+    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins + Color Carmesí'; reward.color = '#ef4444'; reward.colorLabel = 'Infernal'; }
+    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; reward.title = 'Dios'; }
+    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Mítico'; reward.color = '#c084fc'; reward.colorLabel = 'Mítico (Violeta)'; reward.title = 'WARGOD'; }
     rewards.push(reward);
   }
   return rewards;

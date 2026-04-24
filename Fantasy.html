@@ -454,17 +454,23 @@
         let total = 0; let noNegs = true; let capPts = 0; let arr = [];
         let roles = ['top','jgl','mid','adc','sup'];
         
+        // 🟢 REGLA DE ORO: Si está bloqueado, puntuamos con el SNAPSHOT del jueves
+        let useSnap = rosterObj.isLocked && rosterObj.snap && rosterObj.snap.top && rosterObj.snap.top !== "";
+        let source = useSnap ? rosterObj.snap : rosterObj;
+        
         roles.forEach(r => {
-            let pName = rosterObj[r];
+            let pName = source[r];
             if (pName && pName !== "") {
-                let pts = getLivePlayerPoints(pName, r, rosterObj.activeCard, rosterObj.captain);
+                let pts = getLivePlayerPoints(pName, r, rosterObj.activeCard, source.captain);
                 total += pts;
                 if (pts < 0) noNegs = false;
                 arr.push(pts);
                 
-                let sk = r.toUpperCase(); let cR = String(rosterObj.captain || "").toUpperCase();
+                let sk = r.toUpperCase(); let cR = String(source.captain || "NONE").toUpperCase();
                 let isCap = (cR === sk) || (cR === 'JUNGLE' && sk === 'JGL') || (cR === 'MIDDLE' && sk === 'MID') || (cR === 'BOTTOM' && sk === 'ADC') || (cR === 'SUPPORT' && sk === 'SUP');
                 if (isCap) capPts = pts;
+            } else {
+                total -= 15; // Penalización por hueco vacío en la alineación titular
             }
         });
 
@@ -487,23 +493,49 @@
 
         let dayOfWeek = now.getDay(); let hour = now.getHours();
         let jEl = document.getElementById('fantasy-jornada-timer'); let jTitle = document.getElementById('fantasy-jornada-title');
-        let isLockedPhase = (dayOfWeek === 2 && hour >= 8) || (dayOfWeek > 2) || (dayOfWeek === 0); 
+        
+        // NUEVA LÓGICA DE JORNADA:
+        // Bloqueo: Jueves (4) 07:00 - Domingo (0) 23:59
+        // Apertura (Cambios): Lunes a Miércoles y Jueves hasta las 07:00
+        
+        let isLockedPhase = (dayOfWeek === 4 && hour >= 7) || (dayOfWeek > 4) || (dayOfWeek === 0); 
         
         if (isLockedPhase) {
-            let nextSunday = new Date(now); nextSunday.setDate(now.getDate() + (7 - dayOfWeek) % 7);
-            if (dayOfWeek === 0) nextSunday = now; nextSunday.setHours(23, 59, 59, 999);
+            // Jornada en curso, termina el domingo a las 23:59
+            let nextSunday = new Date(now); 
+            nextSunday.setDate(now.getDate() + (7 - dayOfWeek) % 7);
+            if (dayOfWeek === 0) nextSunday = now; 
+            nextSunday.setHours(23, 59, 59, 999);
+            
             let diffLock = nextSunday - now;
-            let dL = Math.floor(diffLock / 86400000); let hL = Math.floor((diffLock % 86400000) / 3600000); let mL = Math.floor((diffLock % 3600000) / 60000);
-            if (jTitle) jTitle.innerText = "⏳ JORNADA EN CURSO (TERMINA EL DOMINGO)";
-            if (jEl) { jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}`; jEl.classList.add('text-emerald-400'); jEl.classList.remove('text-white'); }
+            let dL = Math.floor(diffLock / 86400000); 
+            let hL = Math.floor((diffLock % 86400000) / 3600000); 
+            let mL = Math.floor((diffLock % 3600000) / 60000);
+            
+            if (jTitle) jTitle.innerText = "⏳ JORNADA EN CURSO (CIERRA DOMINGO 23:59)";
+            if (jEl) { 
+                jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}`; 
+                jEl.classList.add('text-emerald-400'); 
+                jEl.classList.remove('text-white'); 
+            }
         } else {
-            let nextTuesday = new Date(now); let daysUntilTuesday = (2 + 7 - dayOfWeek) % 7;
-            if (daysUntilTuesday === 0 && hour >= 8) daysUntilTuesday = 7;
-            nextTuesday.setDate(now.getDate() + daysUntilTuesday); nextTuesday.setHours(8, 0, 0, 0);
-            let diffLock = nextTuesday - now;
-            let dL = Math.floor(diffLock / 86400000); let hL = Math.floor((diffLock % 86400000) / 3600000); let mL = Math.floor((diffLock % 3600000) / 60000); let sL = Math.floor((diffLock % 60000) / 1000);
-            if (jTitle) jTitle.innerText = "⏳ TIEMPO PARA ALINEAR (CIERRE MARTES 08:00)";
-            if (jEl) { jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}:${String(sL).padStart(2, '0')}`; jEl.classList.remove('text-emerald-400'); jEl.classList.add('text-white'); }
+            // Tiempo para alinear, termina el jueves a las 07:00
+            let nextThursday = new Date(now); 
+            let daysUntilThursday = (4 + 7 - dayOfWeek) % 7;
+            nextThursday.setDate(now.getDate() + daysUntilThursday); 
+            nextThursday.setHours(7, 0, 0, 0);
+            let diffLock = nextThursday - now;
+            let dL = Math.floor(diffLock / 86400000); 
+            let hL = Math.floor((diffLock % 86400000) / 3600000); 
+            let mL = Math.floor((diffLock % 3600000) / 60000); 
+            let sL = Math.floor((diffLock % 60000) / 1000);
+            
+            if (jTitle) jTitle.innerText = "⏳ TIEMPO PARA ALINEAR (CIERRE JUEVES 07:00)";
+            if (jEl) { 
+                jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}:${String(sL).padStart(2, '0')}`; 
+                jEl.classList.remove('text-emerald-400'); 
+                jEl.classList.add('text-white'); 
+            }
         }
     }, 1000);
 
@@ -631,7 +663,21 @@
                 if(document.getElementById('market-budget-ret')) document.getElementById('market-budget-ret').innerText = formatMoney(res.financials.bids);
                 
                 const setSlotState = (id, player) => { let el = document.getElementById(id); if(el) { el.innerText = '🪑'; if(player && player !== "") { el.classList.remove('grayscale', 'opacity-50'); el.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)"; } else { el.classList.add('grayscale', 'opacity-50'); el.style.filter = "none"; } } };
-                setSlotState('slot-ind-top', currentRoster.top); setSlotState('slot-ind-jgl', currentRoster.jgl); setSlotState('slot-ind-mid', currentRoster.mid); setSlotState('slot-ind-adc', currentRoster.adc); setSlotState('slot-ind-sup', currentRoster.sup); setSlotState('slot-ind-sub', currentRoster.sub);
+                setSlotState('slot-ind-top', currentRoster.top); setSlotState('slot-ind-jgl', currentRoster.jgl); setSlotState('slot-ind-mid', currentRoster.mid); setSlotState('slot-ind-adc', currentRoster.adc); setSlotState('slot-ind-sup', currentRoster.sup); 
+                setSlotState('slot-ind-sub', currentRoster.sub);
+                
+                // Indicador para sub2 en el mercado si existe el elemento
+                const sub2Ind = document.getElementById('slot-ind-sub2');
+                if(sub2Ind) {
+                    sub2Ind.innerText = '🪑';
+                    if(currentRoster.sub2 && currentRoster.sub2 !== "") {
+                        sub2Ind.classList.remove('grayscale', 'opacity-50');
+                        sub2Ind.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)";
+                    } else {
+                        sub2Ind.classList.add('grayscale', 'opacity-50');
+                        sub2Ind.style.filter = "none";
+                    }
+                }
 
                 let activeBanner = document.getElementById('gacha-active-banner');
                 if (activeBanner && currentRoster.activeCard && currentRoster.activeCard !== "") {
@@ -644,18 +690,27 @@
                 // 🟢 DESCARGAMOS STATS Y CALCULAMOS PUNTOS DE TODOS
                 fetchAllLigaData(function() {
                     let myLivePts = calculateManagerLivePoints(currentRoster);
-                    document.getElementById('ui-points').innerText = myLivePts.toFixed(1) + " PTS";
+                    
+                    // Buscamos los puntos acumulados del manager actual
+                    let myData = window.currentRankingData.find(m => String(m.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase());
+                    let accumulatedPts = myData ? parseFloat(myData.points) || 0 : 0;
+                    
+                    document.getElementById('ui-points').innerText = (accumulatedPts + myLivePts).toFixed(1) + " PTS";
 
                     window.currentRankingData.forEach(m => {
+                        let live = 0;
                         if (String(m.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase()) {
-                            m.livePoints = myLivePts;
+                            live = myLivePts;
                         } else {
                             let rObj = window.allFantasyRosters.find(x => String(x.manager).trim().toLowerCase() === String(m.name).trim().toLowerCase());
-                            m.livePoints = rObj ? calculateManagerLivePoints(rObj) : 0;
+                            live = rObj ? calculateManagerLivePoints(rObj) : 0;
                         }
+                        m.livePoints = live;
+                        m.totalPoints = (parseFloat(m.points) || 0) + live; // Acumulados + En vivo
                     });
                     
-                    window.currentRankingData.sort((a,b) => b.livePoints - a.livePoints || b.teamValue - a.teamValue);
+                    // Ordenamos por puntos totales (acumulados + live)
+                    window.currentRankingData.sort((a,b) => b.totalPoints - a.totalPoints || b.teamValue - a.teamValue);
                     renderFantasyRanking(window.currentRankingData);
                     
                     // 🟢 ACTUALIZAMOS EL GRÁFICO GIGANTE CON LOS PUNTOS REALES
@@ -724,8 +779,8 @@
             let clickEvt = isMe ? '' : `onclick="viewManagerRoster('${p.name}')" title="Ver plantilla"`;
             let valueText = formatMoney(p.teamValue || 0);
 
-            // 🟢 EL RANKING MUESTRA ESTRICTAMENTE LOS PUNTOS DE LA JORNADA
-            let ptsText = (p.livePoints !== undefined) ? p.livePoints.toFixed(1) : "0.0";
+            // 🟢 EL RANKING MUESTRA PUNTOS TOTALES (ACUMULADOS + JORNADA)
+            let ptsText = (p.totalPoints !== undefined) ? p.totalPoints.toFixed(1) : (parseFloat(p.points) || 0).toFixed(1);
 
             html += `<tr class="border-b border-slate-700/50 transition-colors ${rowClass}" ${clickEvt}>`;
             html += '<td class="p-4 text-center font-oswald text-lg text-slate-400">' + medal + '</td>';
@@ -794,10 +849,26 @@
 
     function renderRoster() {
         let grid = document.getElementById('roster-grid'); let subGrid = document.getElementById('sub-grid');
-        let isLocked = currentRoster && currentRoster.isLocked; let isLoadingStats = !isLigaDataLoaded;
+        
+        let now = new Date();
+        let day = now.getDay();
+        let hour = now.getHours();
+        let isForcedLock = (day === 2 && hour >= 7) || (day > 2) || (day === 0);
 
-        if (isLocked) { document.getElementById('roster-locked-banner').classList.remove('hidden'); document.getElementById('btn-lock-team').classList.add('hidden'); } 
-        else { document.getElementById('roster-locked-banner').classList.add('hidden'); document.getElementById('btn-lock-team').classList.remove('hidden'); document.getElementById('btn-lock-team').innerText = "🔒 Confirmar Equipo"; document.getElementById('btn-lock-team').disabled = false; }
+        let isLocked = (currentRoster && currentRoster.isLocked) || isForcedLock; 
+        let isLoadingStats = !isLigaDataLoaded;
+
+        if (isLocked) { 
+            document.getElementById('roster-locked-banner').classList.remove('hidden'); 
+            document.getElementById('btn-lock-team').classList.add('hidden'); 
+            document.getElementById('roster-locked-banner').innerHTML = `<div class="flex flex-col items-center"><div>🔒 ALINEACIÓN FIJADA PARA LA JORNADA</div><div class="text-[9px] opacity-70 mt-1">Puedes comprar/vender, pero solo puntúan los elegidos el jueves.</div></div>`;
+        } 
+        else { 
+            document.getElementById('roster-locked-banner').classList.add('hidden'); 
+            document.getElementById('btn-lock-team').classList.remove('hidden'); 
+            document.getElementById('btn-lock-team').innerText = "🔒 Confirmar Equipo"; 
+            document.getElementById('btn-lock-team').disabled = false; 
+        }
 
         let html = '';
         let roles = [ { key: 'top', label: 'TOP', icon: '🛡️', color: 'border-emerald-500' }, { key: 'jgl', label: 'JUNGLE', icon: '🌲', color: 'border-red-500' }, { key: 'mid', label: 'MIDDLE', icon: '🔥', color: 'border-purple-500' }, { key: 'adc', label: 'BOTTOM', icon: '🏹', color: 'border-yellow-500' }, { key: 'sup', label: 'SUPPORT', icon: '💖', color: 'border-blue-500' } ];
@@ -808,7 +879,7 @@
             let pData = getSafePlayerStats(playerName);
             if (!isLoadingStats && pData && pData.team !== 'Agente Libre' && playerName !== "") teamsCount[pData.team] = (teamsCount[pData.team] || 0) + 1;
 
-            let lockedOpacity = isLocked ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer active:cursor-grabbing';
+            let lockedOpacity = (isLocked && !playerName) ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer active:cursor-grabbing';
             let draggableAttr = (!isLocked && playerName) ? `draggable="true" ondragstart="drag(event, '${r.key}')"` : '';
             let clickAttr = (playerName && playerName !== "") ? `onclick="openFantasyPlayerStats('${enc(playerName)}')"` : '';
 
@@ -834,11 +905,16 @@
                 html += '<div class="flex flex-wrap gap-2 mt-auto w-full justify-center pointer-events-auto">';
                 if (!isLocked) {
                     html += '<button onclick="event.stopPropagation(); setCaptain(\'' + r.key + '\')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition border border-slate-600">👑 Capi</button>';
-                    html += '<button onclick="event.stopPropagation(); sellPlayerFromRoster(\'' + r.key + '\')" class="flex-1 bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>';
-                } else {
-                    html += '<div class="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest py-1 border border-slate-700 rounded bg-slate-800 pointer-events-none">🔒 BLOQUEADO</div>';
                 }
+                html += '<button onclick="event.stopPropagation(); sellPlayerFromRoster(\'' + r.key + '\')" class="flex-1 bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>';
                 html += '</div>';
+                
+                // 🟢 INDICADOR DE PUNTUACIÓN SI ESTÁ BLOQUEADO
+                if (isLocked && currentRoster.snap && currentRoster.snap[r.key]) {
+                    let snapName = currentRoster.snap[r.key];
+                    let scoringLabel = (snapName === playerName) ? 'PUNTUANDO ESTA JORNADA' : `PUNTUANDO: ${snapName}`;
+                    html += `<div class="absolute bottom-16 left-0 right-0 text-[8px] text-center font-black ${snapName === playerName ? 'text-purple-400' : 'text-yellow-400'} uppercase tracking-[0.2em] bg-black/60 py-1 border-y border-white/10 z-10">${scoringLabel}</div>`;
+                }
             } else {
                 if (!isLocked) {
                     html += '<button onclick="event.stopPropagation(); promptClause(\'' + r.label + '\')" class="absolute top-2 right-2 bg-red-900/50 text-red-400 border border-red-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded hover:bg-red-500 hover:text-white transition z-20 pointer-events-auto">🚨 Robar</button>';
@@ -862,40 +938,53 @@
         }
         grid.innerHTML = html;
 
-        let subHtml = ''; let subName = currentRoster ? currentRoster.sub : ""; let subData = getSafePlayerStats(subName);
-        let lockedSubOpacity = isLocked ? 'opacity-50 cursor-not-allowed' : 'opacity-80 hover:opacity-100 cursor-pointer active:cursor-grabbing';
-        let subDraggableAttr = (!isLocked && subName) ? `draggable="true" ondragstart="drag(event, 'sub')"` : '';
-        let subClickAttr = (subName && subName !== "") ? `onclick="openFantasyPlayerStats('${enc(subName)}')"` : '';
+        let subHtml = ''; 
+        let subs = [
+            { key: 'sub', label: 'BANQUILLO 1', name: currentRoster ? currentRoster.sub : "" },
+            { key: 'sub2', label: 'BANQUILLO 2', name: currentRoster ? currentRoster.sub2 : "" }
+        ];
 
-        subHtml += `<div id="slot-sub" class="bg-black/50 border border-slate-700 border-t-4 border-t-slate-500 rounded-xl p-5 flex flex-col items-center justify-center w-full max-w-[280px] min-h-[240px] shadow-2xl relative transition hover:border-slate-400 group ${lockedSubOpacity}" ${subClickAttr} ${subDraggableAttr} ondragover="allowDrop(event)" ondrop="drop(event, 'sub')" ondragenter="this.classList.add('scale-105', 'border-white')" ondragleave="this.classList.remove('scale-105', 'border-white')">`;
-        subHtml += '<div class="absolute top-2 left-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest pointer-events-none">BANQUILLO</div>';
+        subs.forEach(s => {
+            let sData = getSafePlayerStats(s.name);
+            let lockedSubOpacity = isLocked ? 'opacity-50 cursor-not-allowed' : 'opacity-80 hover:opacity-100 cursor-pointer active:cursor-grabbing';
+            let subDraggableAttr = (!isLocked && s.name) ? `draggable="true" ondragstart="drag(event, '${s.key}')"` : '';
+            let subClickAttr = (s.name && s.name !== "") ? `onclick="openFantasyPlayerStats('${enc(s.name)}')"` : '';
 
-        if (subName && subName !== "") {
-            let ovrSub = isLoadingStats ? "..." : calculatePlayerOVR(subData);
-            let priceText = isLoadingStats ? "..." : formatMoney(getFantasyPlayerPriceJS(subData)); 
+            subHtml += `<div id="slot-${s.key}" class="bg-black/50 border border-slate-700 border-t-4 border-t-slate-500 rounded-xl p-5 flex flex-col items-center justify-center w-full max-w-[280px] min-h-[240px] shadow-2xl relative transition hover:border-slate-400 group ${lockedSubOpacity} mx-2" ${subClickAttr} ${subDraggableAttr} ondragover="allowDrop(event)" ondrop="drop(event, '${s.key}')" ondragenter="this.classList.add('scale-105', 'border-white')" ondragleave="this.classList.remove('scale-105', 'border-white')">`;
+            subHtml += `<div class="absolute top-2 left-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest pointer-events-none">${s.label}</div>`;
 
-            subHtml += '<div class="absolute top-2 right-2 bg-slate-700 text-white font-black text-[10px] px-2 py-0.5 rounded shadow border border-slate-500 z-20 pointer-events-none">OVR ' + ovrSub + '</div>';
-            subHtml += '<div class="text-4xl font-oswald text-slate-300 tracking-normal uppercase mb-2 truncate w-full text-center drop-shadow mt-6 pointer-events-none group-hover:text-white transition-colors">' + subName + '</div>';
+            if (s.name && s.name !== "") {
+                let ovrSub = isLoadingStats ? "..." : calculatePlayerOVR(sData);
+                let priceText = isLoadingStats ? "..." : formatMoney(getFantasyPlayerPriceJS(sData)); 
 
-            let stName = isLoadingStats ? "Cargando..." : escHtml(subData.team);
-            subHtml += '<div class="text-[11px] text-slate-500 font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-slate-700 mb-3 truncate max-w-full pointer-events-none">' + stName + '</div>';
-            subHtml += '<div class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-900/30 px-3 py-1 rounded border border-emerald-500/50 mb-3 drop-shadow pointer-events-none">' + priceText + '</div>';
+                subHtml += '<div class="absolute top-2 right-2 bg-slate-700 text-white font-black text-[10px] px-2 py-0.5 rounded shadow border border-slate-500 z-20 pointer-events-none">OVR ' + ovrSub + '</div>';
+                subHtml += '<div class="text-4xl font-oswald text-slate-300 tracking-normal uppercase mb-2 truncate w-full text-center drop-shadow mt-6 pointer-events-none group-hover:text-white transition-colors">' + s.name + '</div>';
 
-            let pJornadaSub = isLoadingStats ? "-" : getLivePlayerPoints(subName, 'sub', currentRoster.activeCard, currentRoster.captain).toFixed(1);
-            subHtml += `<div class="flex items-center mt-1 mb-4 bg-slate-800/80 p-2.5 rounded-lg w-full justify-center border border-slate-700 pointer-events-none shadow-inner"><div class="text-center"><div class="text-[9px] text-slate-500 uppercase tracking-widest mb-0.5">Puntos Jornada</div><div class="text-3xl font-black ${pJornadaSub < 0 ? 'text-red-400' : 'text-slate-300'} drop-shadow-md">${pJornadaSub}</div></div></div>`;
+                let stName = isLoadingStats ? "Cargando..." : escHtml(sData.team);
+                subHtml += '<div class="text-[11px] text-slate-500 font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-slate-700 mb-3 truncate max-w-full pointer-events-none">' + stName + '</div>';
+                subHtml += '<div class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-900/30 px-3 py-1 rounded border border-emerald-500/50 mb-3 drop-shadow pointer-events-none">' + priceText + '</div>';
 
-            subHtml += '<div class="flex flex-wrap gap-2 mt-auto w-full justify-center pointer-events-auto">';
-            if (!isLocked) {
-                subHtml += '<button onclick="event.stopPropagation(); sellPlayerFromRoster(\'sub\')" class="w-full bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>';
+                let pJornadaSub = isLoadingStats ? "-" : getLivePlayerPoints(s.name, s.key, currentRoster.activeCard, currentRoster.captain).toFixed(1);
+                subHtml += `<div class="flex items-center mt-1 mb-4 bg-slate-800/80 p-2.5 rounded-lg w-full justify-center border border-slate-700 pointer-events-none shadow-inner"><div class="text-center"><div class="text-[9px] text-slate-500 uppercase tracking-widest mb-0.5">Puntos Jornada</div><div class="text-3xl font-black ${pJornadaSub < 0 ? 'text-red-400' : 'text-slate-300'} drop-shadow-md">${pJornadaSub}</div></div></div>`;
+
+                subHtml += '<div class="flex flex-wrap gap-2 mt-auto w-full justify-center pointer-events-auto">';
+                if (!isLocked) {
+                    subHtml += `<button onclick="event.stopPropagation(); sellPlayerFromRoster('${s.key}')" class="w-full bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>`;
+                } else {
+                    subHtml += '<div class="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest py-1 border border-slate-700 rounded bg-slate-800 pointer-events-none">🔒 BLOQUEADO</div>';
+                }
+                subHtml += '</div>';
             } else {
-                subHtml += '<div class="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest py-1 border border-slate-700 rounded bg-slate-800 pointer-events-none">🔒 BLOQUEADO</div>';
+                if (!isLocked) {
+                    subHtml += '<button onclick="event.stopPropagation(); switchFantasyTab(\'market\', document.querySelectorAll(\'.fantasy-tab-btn\')[2])" class="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-600 mb-3 mt-4 hover:bg-slate-800 transition pointer-events-auto"><span class="text-3xl font-light pointer-events-none">+</span></button>';
+                    subHtml += '<div class="text-[10px] text-slate-500 font-bold text-center mt-auto pointer-events-none">ARRASTRA O FICHA</div>';
+                } else {
+                    subHtml += '<div class="w-16 h-16 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-700 mb-3 mt-4 pointer-events-none"><span class="text-3xl font-light">X</span></div>';
+                    subHtml += '<div class="text-xs text-slate-600 font-bold uppercase tracking-widest mt-auto pointer-events-none">VACÍO</div>';
+                }
             }
             subHtml += '</div>';
-        } else {
-            subHtml += '<button onclick="event.stopPropagation(); switchFantasyTab(\'market\', document.querySelectorAll(\'.fantasy-tab-btn\')[2])" class="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-600 mb-3 mt-4 hover:bg-slate-800 transition pointer-events-auto"><span class="text-3xl font-light pointer-events-none">+</span></button>';
-            subHtml += '<div class="text-[10px] text-slate-500 font-bold text-center mt-auto pointer-events-none">ARRASTRA O FICHA</div>';
-        }
-        subHtml += '</div>';
+        });
         subGrid.innerHTML = subHtml;
     }
 
