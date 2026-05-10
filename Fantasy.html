@@ -25,190 +25,6 @@
       <div class="fantasy-tab-btn active px-6 py-4 cursor-pointer text-yellow-500 border-b-2 border-yellow-500 font-bold text-sm uppercase tracking-widest transition whitespace-nowrap" onclick="switchFantasyTab('home', this)">🏠 Inicio</div>
       <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('team', this)">🛡️ Mi Equipo</div>
       <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('market', this)">💰 Mercado</div>
-      <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('gacha', this)">🎰 Gacha & Cartas</div>
-      <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('ranking', this)">🏆 Ranking</div>
-    </div>
-
-    <div class="flex-1 w-full overflow-y-auto bg-slate-900 relative">
-      
-      <div id="f-tab-home" class="fantasy-pane block p-8">
-        <div class="flex flex-col md:flex-row gap-6 mb-8">
-            <div class="flex-1 bg-gradient-to-r from-blue-900 to-slate-900 border border-blue-500/50 rounded-xl p-6 shadow-lg flex items-center justify-between">
-                <div>
-                    <div id="fantasy-jornada-title" class="text-[10px] text-blue-300 font-bold uppercase tracking-widest mb-1">⏳ TIEMPO PARA ALINEAR (CIERRE MARTES 08:00)</div>
-                    <div class="text-sm text-slate-300">Si dejas huecos vacíos se te restarán 15 Pts</div>
-                </div>
-                <div id="fantasy-jornada-timer" class="text-3xl font-mono font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]">--:--:--</div>
-            </div>
-            <div class="flex-1 bg-gradient-to-r from-yellow-900 to-slate-900 border border-yellow-500/50 rounded-xl p-6 shadow-lg flex items-center justify-between">
-                <div>
-                    <div class="text-[10px] text-yellow-300 font-bold uppercase tracking-widest mb-1">🛒 ACTUALIZACIÓN DE MERCADO</div>
-                    <div class="text-sm text-slate-300">Nuevos jugadores y subastas a Medianoche</div>
-                </div>
-                <div id="fantasy-market-timer" class="text-3xl font-mono font-black text-white drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]">--:--:--</div>
-            </div>
-        </div>
-
-        <h2 class="text-3xl font-oswald text-white tracking-widest mb-6">RESUMEN DEL CLUB</h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-lg">
-                <h3 class="text-xl font-oswald text-yellow-500 tracking-widest mb-4 border-b border-slate-700 pb-2">📰 REGLAMENTO DE LA LIGA</h3>
-                <div class="text-sm text-slate-300 space-y-4">
-                    <p class="flex items-start gap-2"><span class="text-blue-400">🔒</span> <b>LOCK-IN (Martes 08:00).</b> Debes tener el 100% de la plantilla titular llena. Cada hueco vacío te restará 15 Pts de sanción. Una vez bloqueada, no podrás vender, quitar cartas ni cambiar al capitán.</p>
-                    <p class="flex items-start gap-2"><span class="text-blue-400">🃏</span> <b>CARTAS GACHA.</b> Puedes equipar y desequipar cartas de tu inventario a tu gusto hasta que el equipo se bloquee el martes.</p>
-                    <p class="flex items-start gap-2"><span class="text-blue-400">⚠️</span> <b>FUERA DE POSICIÓN.</b> Si alineas a un jugador en un rol que no es el suyo (ej. Un Support jugando de Jungla), sus puntos sufrirán una reducción del 80% esa jornada.</p>
-                </div>
-            </div>
-            <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-lg">
-                <h3 class="text-xl font-oswald text-emerald-400 tracking-widest mb-4 border-b border-slate-700 pb-2">💸 HISTORIAL OFICIAL</h3>
-                <div id="fantasy-recent-activity" class="space-y-3">
-                    <div class="text-center text-slate-500 text-sm py-4 animate-pulse">Cargando transacciones...</div>
-                </div>
-            </div>
-        </div>
-      </div>
-
-      <div id="f-tab-team" class="fantasy-pane hidden relative min-h-screen pb-20">
-        <div class="absolute inset-0 bg-[url('https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg')] bg-cover bg-center opacity-10 z-0"></div>
-        <div class="relative z-10 max-w-6xl mx-auto flex flex-col pt-10 px-4">
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-              <div class="bg-slate-900/90 border border-slate-700 p-5 rounded-xl shadow-lg backdrop-blur">
-                  <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 border-b border-slate-700 pb-2">📈 Evolución de Puntos</h3>
-                  <div id="pts-box-container" style="height: 180px;"><canvas id="fantasyPointsChart"></canvas></div>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-700 p-5 rounded-xl shadow-lg backdrop-blur">
-                  <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 border-b border-slate-700 pb-2">💰 Flujo de Caja (Presupuesto)</h3>
-                  <div id="bud-box-container" style="height: 180px;"><canvas id="fantasyBudgetChart"></canvas></div>
-              </div>
-          </div>
-
-          <div class="flex justify-between items-end mb-8 border-b border-slate-700 pb-4">
-            <h2 class="text-4xl font-oswald text-yellow-500 tracking-widest text-center drop-shadow-lg">ALINEACIÓN TITULAR</h2>
-            <button id="btn-lock-team" onclick="lockFantasyTeam()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3 rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.4)] transition tracking-widest uppercase text-sm">🔒 Confirmar Equipo</button>
-          </div>
-
-          <div id="roster-locked-banner" class="hidden col-span-full bg-yellow-500 text-black text-center font-black text-xl py-3 rounded-xl mb-6 shadow-[0_0_20px_rgba(251,191,36,0.6)] uppercase tracking-widest">
-              🔒 ALINEACIÓN CONFIRMADA Y BLOQUEADA PARA ESTA JORNADA
-          </div>
-
-          <div id="roster-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4 w-full mb-12">
-              <div class="col-span-full text-center text-yellow-500 py-10 animate-pulse font-bold tracking-widest uppercase">📡 Cargando plantilla...</div>
-          </div>
-
-          <h2 class="text-2xl font-oswald text-slate-400 tracking-widest mb-6 text-center">🪑 BANQUILLO (SUPLENTE)</h2>
-          <div id="sub-grid" class="flex justify-center w-full"></div>
-
-        </div>
-      </div>
-
-      <div id="f-tab-market" class="fantasy-pane hidden p-8">
-        <div class="flex justify-between items-end mb-6 border-b border-slate-700 pb-4">
-            <h2 class="text-3xl font-oswald text-white tracking-widest">MERCADO DE FICHAJES</h2>
-            <button onclick="loadMarket()" class="text-xs font-bold text-accent-blue uppercase tracking-widest bg-blue-900/30 px-3 py-1 rounded border border-blue-500/50 hover:bg-blue-600 transition shadow-lg">🔄 Refrescar Mercado</button>
-        </div>
-        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
-      </div>
-
-      <div id="f-tab-gacha" class="fantasy-pane hidden p-8">
-        <div class="max-w-5xl mx-auto">
-            <div class="bg-gradient-to-br from-purple-900 to-slate-900 border-2 border-purple-500 rounded-2xl p-8 text-center shadow-[0_0_40px_rgba(168,85,247,0.3)] mb-10 relative overflow-hidden">
-                <div class="absolute inset-0 bg-[url('https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg')] bg-cover opacity-10 mix-blend-overlay"></div>
-                <h2 class="text-5xl font-black font-oswald text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 tracking-widest mb-4 relative z-10 drop-shadow-lg">GACHA DE MISIONES</h2>
-                <p class="text-purple-200 mb-8 relative z-10 text-lg">Consigue cartas de bufos, sabotajes o misiones para multiplicar tus puntos.</p>
-                <button id="btn-roll-gacha" onclick="rollGacha()" class="relative z-10 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-black text-2xl px-12 py-4 rounded-full shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:scale-110 transition-transform tracking-widest uppercase">
-                    🎁 ABRIR SOBRE (500.000 €)
-                </button>
-                <div id="gacha-result" class="mt-8 relative z-10 hidden"></div>
-            </div>
-
-            <div class="flex justify-between items-end mb-6 border-b border-slate-700 pb-2">
-                <h3 class="text-2xl font-oswald text-white tracking-widest">🎒 TU INVENTARIO DE CARTAS</h3>
-                <div class="text-xs font-bold text-accent-blue uppercase tracking-widest">Límite: 1 Carta por Jornada</div>
-            </div>
-            
-            <div id="gacha-active-banner" class="hidden mb-6 bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex items-center justify-between shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                <div>
-                    <div class="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">CARTA EQUIPADA PARA ESTA JORNADA</div>
-                    <div id="gacha-active-name" class="text-xl font-oswald text-white">Nombre de la Carta</div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-3xl animate-pulse">🃏</div>
-                    <button onclick="unequipCard()" id="btn-unequip-card" class="text-xs bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-1.5 rounded uppercase tracking-widest transition">Quitar</button>
-                </div>
-            </div>
-
-            <div id="gacha-inventory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="text-slate-500 italic col-span-full">Cargando tus cartas...</div>
-            </div>
-        </div>
-      </div>
-
-      <div id="f-tab-ranking" class="fantasy-pane hidden p-8">
-        <h2 class="text-3xl font-oswald text-white tracking-widest mb-6 text-center">🏆 RANKING DE MÁNAGERS</h2>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
-            <table class="w-full text-left">
-                <thead class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-widest">
-                    <tr>
-                        <th class="p-4 w-16 text-center">POS</th>
-                        <th class="p-4">CLUB / MÁNAGER</th>
-                        <th class="p-4 text-right">VALOR PLANTILLA</th>
-                        <th class="p-4 text-center text-purple-400">PUNTOS (JORNADA)</th>
-                    </tr>
-                </thead>
-                <tbody id="fantasy-ranking-body" class="text-sm text-white">
-                    <tr><td colspan="4" class="text-center text-slate-500 py-10 animate-pulse">Cargando clasificación oficial...</td></tr>
-                </tbody>
-            </table>
-        </div>
-      </div>
-          <div id="view-roster-modal" class="modal-overlay" onclick="closeModal('view-roster-modal')">
-          <div class="modal-box bg-slate-900 border-2 border-purple-500 relative p-6 max-w-3xl w-full rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)]" onclick="event.stopPropagation()">
-              <button onclick="closeModal('view-roster-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-              <h2 class="text-2xl font-oswald text-purple-400 tracking-widest mb-1">PLANTILLA RIVAL</h2>
-              <div id="view-roster-name" class="text-white font-bold tracking-widest uppercase mb-6 border-b border-slate-700 pb-2">MÁNAGER</div>
-              <div id="view-roster-content"></div>
-        </div>
-      </div>
-    </div>
-
-    </div>
-
-    <div id="fantasy-player-modal" class="modal-overlay" onclick="closeFantasyPlayerModal()">
-        <div class="modal-box bg-slate-900 border-2 border-accent-blue relative p-6 max-w-3xl w-full rounded-2xl shadow-[0_0_40px_rgba(56,189,248,0.3)]" onclick="event.stopPropagation()">
-            <button onclick="closeFantasyPlayerModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-            <div id="fp-modal-content"></div>
-        </div>
-    </div>
-</div>
-
-<div id="fantasy-dashboard" class="hidden flex-col h-full w-full absolute inset-0 z-40 bg-slate-900">
-    <div class="bg-black border-b border-yellow-500/30 p-4 flex justify-between items-center shrink-0">
-      <div class="font-oswald text-2xl text-yellow-500 tracking-widest drop-shadow-md">
-        FANTASY<span class="text-white">PREMIER</span>
-      </div>
-      <div class="flex gap-6 items-center">
-        <div class="text-right">
-          <div class="text-[10px] text-slate-400 uppercase tracking-widest">Disponible</div>
-          <div id="ui-budget" class="text-lg font-bold text-emerald-400 font-mono drop-shadow-lg leading-none">0 €</div>
-          <div class="text-[9px] text-slate-500 font-mono mt-1 font-bold">Retenido: <span id="ui-bids-budget">0 €</span></div>
-        </div>
-        <div class="text-right">
-          <div class="text-[10px] text-slate-400 uppercase tracking-widest">Puntos Club</div>
-          <div id="ui-points" class="text-xl font-black text-purple-400 font-oswald">0 PTS</div>
-        </div>
-        <div class="h-8 w-px bg-slate-700"></div>
-        <div id="ui-manager-name" class="font-bold text-white uppercase tracking-widest text-sm">Manager</div>
-        <button onclick="logoutFantasy()" class="text-xs text-red-400 hover:text-red-300 font-bold uppercase tracking-widest border border-red-500/50 hover:bg-red-500/10 px-3 py-2 rounded transition">
-            🚪 Salir
-        </button>
-      </div>
-    </div>
-
-    <div class="flex bg-slate-800/80 border-b border-slate-700 shrink-0 shadow-lg overflow-x-auto">
-      <div class="fantasy-tab-btn active px-6 py-4 cursor-pointer text-yellow-500 border-b-2 border-yellow-500 font-bold text-sm uppercase tracking-widest transition whitespace-nowrap" onclick="switchFantasyTab('home', this)">🏠 Inicio</div>
-      <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('team', this)">🛡️ Mi Equipo</div>
-      <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('market', this)">💰 Mercado</div>
       <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('players', this)">🔍 Jugadores</div>
       <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('gacha', this)">🎰 Gacha & Cartas</div>
       <div class="fantasy-tab-btn px-6 py-4 cursor-pointer text-slate-400 border-b-2 border-transparent font-bold text-sm uppercase tracking-widest hover:text-white transition whitespace-nowrap" onclick="switchFantasyTab('ranking', this)">🏆 Ranking</div>
@@ -260,11 +76,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div class="bg-slate-900/90 border border-slate-700 p-5 rounded-xl shadow-lg backdrop-blur">
                   <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 border-b border-slate-700 pb-2">📈 Evolución de Puntos</h3>
-                  <div style="height: 180px;"><canvas id="fantasyPointsChart"></canvas></div>
+                  <div id="pts-box-container" style="height: 180px;"><canvas id="fantasyPointsChart"></canvas></div>
               </div>
               <div class="bg-slate-900/90 border border-slate-700 p-5 rounded-xl shadow-lg backdrop-blur">
                   <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 border-b border-slate-700 pb-2">💰 Flujo de Caja (Presupuesto)</h3>
-                  <div style="height: 180px;"><canvas id="fantasyBudgetChart"></canvas></div>
+                  <div id="bud-box-container" style="height: 180px;"><canvas id="fantasyBudgetChart"></canvas></div>
               </div>
           </div>
 
@@ -356,12 +172,15 @@
                 <div class="text-xs font-bold text-accent-blue uppercase tracking-widest">Límite: 1 Carta por Jornada</div>
             </div>
             
-            <div id="gacha-active-banner" class="hidden mb-6 bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex items-center justify-between">
+            <div id="gacha-active-banner" class="hidden mb-6 bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex items-center justify-between shadow-[0_0_20px_rgba(168,85,247,0.2)]">
                 <div>
-                    <div class="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">CARTA ACTIVA ESTA JORNADA</div>
+                    <div class="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">CARTA EQUIPADA PARA ESTA JORNADA</div>
                     <div id="gacha-active-name" class="text-xl font-oswald text-white">Nombre de la Carta</div>
                 </div>
-                <div class="text-3xl animate-pulse">🃏</div>
+                <div class="flex items-center gap-4">
+                    <div class="text-3xl animate-pulse">🃏</div>
+                    <button onclick="unequipCard()" id="btn-unequip-card" class="text-xs bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-1.5 rounded uppercase tracking-widest transition">Quitar</button>
+                </div>
             </div>
 
             <div id="gacha-inventory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -370,21 +189,39 @@
         </div>
       </div>
 
+      <div id="f-tab-ranking" class="fantasy-pane hidden p-8">
+        <h2 class="text-3xl font-oswald text-white tracking-widest mb-6 text-center">🏆 RANKING DE MÁNAGERS</h2>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-widest">
+                    <tr>
+                        <th class="p-4 w-16 text-center">POS</th>
+                        <th class="p-4">CLUB / MÁNAGER</th>
+                        <th class="p-4 text-right">VALOR PLANTILLA</th>
+                        <th class="p-4 text-center text-purple-400">PUNTOS (JORNADA)</th>
+                    </tr>
+                </thead>
+                <tbody id="fantasy-ranking-body" class="text-sm text-white">
+                    <tr><td colspan="4" class="text-center text-slate-500 py-10 animate-pulse">Cargando clasificación oficial...</td></tr>
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      <div id="view-roster-modal" class="modal-overlay" onclick="closeModal('view-roster-modal')">
+          <div class="modal-box bg-slate-900 border-2 border-purple-500 relative p-6 max-w-4xl w-full rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)]" onclick="event.stopPropagation()">
+              <button onclick="closeModal('view-roster-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+              <h2 class="text-2xl font-oswald text-purple-400 tracking-widest mb-1">PLANTILLA RIVAL</h2>
+              <div id="view-roster-name" class="text-white font-bold tracking-widest uppercase mb-6 border-b border-slate-700 pb-2">MÁNAGER</div>
+              <div id="view-roster-content"></div>
+          </div>
+      </div>
     </div>
 
     <div id="fantasy-player-modal" class="modal-overlay" onclick="closeFantasyPlayerModal()">
         <div class="modal-box bg-slate-900 border-2 border-accent-blue relative p-6 max-w-3xl w-full rounded-2xl shadow-[0_0_40px_rgba(56,189,248,0.3)]" onclick="event.stopPropagation()">
             <button onclick="closeFantasyPlayerModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
             <div id="fp-modal-content"></div>
-        </div>
-    </div>
-
-    <div id="view-roster-modal" class="modal-overlay" onclick="closeModal('view-roster-modal')">
-        <div class="modal-box bg-slate-900 border-2 border-purple-500 relative p-6 max-w-4xl w-full rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)]" onclick="event.stopPropagation()">
-            <button onclick="closeModal('view-roster-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-            <h2 class="text-2xl font-oswald text-purple-400 tracking-widest mb-1">PLANTILLA RIVAL</h2>
-            <div id="view-roster-name" class="text-white font-bold tracking-widest uppercase mb-6 border-b border-slate-700 pb-2">MÁNAGER</div>
-            <div id="view-roster-content"></div>
         </div>
     </div>
 </div>
@@ -399,7 +236,7 @@
     window.allFantasyRosters = [];
     window.currentRankingData = [];
 
-    function formatMoney(num) { return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " "; }
+    function formatMoney(num) { return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €"; }
 
     function getFantasyPlayerPriceJS(p) {
         if (!p || p.games === 0) return 500000;
@@ -413,7 +250,7 @@
         return Math.round(price / 10000) * 10000;
     }
 
-    //  CALCULO DE PUNTOS EN VIVO (LIVE SCORING)
+    // 🟢 CÁLCULO DE PUNTOS EN VIVO (LIVE SCORING)
     function getLivePlayerPoints(playerName, roleKey, activeCard, captainRole) {
         if (!window.liveStatsData) return 0;
         let pLive = window.liveStatsData.find(x => String(x.name).trim().toLowerCase() === String(playerName).trim().toLowerCase());
@@ -443,7 +280,7 @@
         let cR = String(captainRole || "").toUpperCase();
         let isCap = (cR === sk) || (cR === 'JUNGLE' && sk === 'JGL') || (cR === 'MIDDLE' && sk === 'MID') || (cR === 'BOTTOM' && sk === 'ADC') || (cR === 'SUPPORT' && sk === 'SUP');
         if (isCap && sk !== 'SUB') {
-            let capMult = (activeCard === "Pocion del Gigante") ? 2.5 : 1.25;
+            let capMult = (activeCard === "Poción del Gigante") ? 2.5 : 1.25;
             pts = pts > 0 ? pts * capMult : pts * 2.0;
         }
         return pts;
@@ -454,29 +291,23 @@
         let total = 0; let noNegs = true; let capPts = 0; let arr = [];
         let roles = ['top','jgl','mid','adc','sup'];
         
-        //  REGLA DE ORO: Si esta bloqueado, puntuamos con el SNAPSHOT del jueves
-        let useSnap = rosterObj.isLocked && rosterObj.snap && rosterObj.snap.top && rosterObj.snap.top !== "";
-        let source = useSnap ? rosterObj.snap : rosterObj;
-        
         roles.forEach(r => {
-            let pName = source[r];
+            let pName = rosterObj[r];
             if (pName && pName !== "") {
-                let pts = getLivePlayerPoints(pName, r, rosterObj.activeCard, source.captain);
+                let pts = getLivePlayerPoints(pName, r, rosterObj.activeCard, rosterObj.captain);
                 total += pts;
                 if (pts < 0) noNegs = false;
                 arr.push(pts);
                 
-                let sk = r.toUpperCase(); let cR = String(source.captain || "NONE").toUpperCase();
+                let sk = r.toUpperCase(); let cR = String(rosterObj.captain || "").toUpperCase();
                 let isCap = (cR === sk) || (cR === 'JUNGLE' && sk === 'JGL') || (cR === 'MIDDLE' && sk === 'MID') || (cR === 'BOTTOM' && sk === 'ADC') || (cR === 'SUPPORT' && sk === 'SUP');
                 if (isCap) capPts = pts;
-            } else {
-                total -= 15; // Penalizacion por hueco vacio en la alineacion titular
             }
         });
 
         let ac = rosterObj.activeCard || "";
-        if (ac === "Mision: El Dream Team" && total >= 80) total += 25;
-        if (ac === "Mision: Muro de Escudos" && noNegs && arr.length === 5) total += 15;
+        if (ac === "Misión: El Dream Team" && total >= 80) total += 25;
+        if (ac === "Misión: Muro de Escudos" && noNegs && arr.length === 5) total += 15;
         if (ac === "Contrato Bilateral" && arr.length > 0 && capPts > 0) {
             arr.sort((a,b)=>a-b); let diff = capPts - arr[0];
             if (diff > 0) total += diff;
@@ -493,49 +324,23 @@
 
         let dayOfWeek = now.getDay(); let hour = now.getHours();
         let jEl = document.getElementById('fantasy-jornada-timer'); let jTitle = document.getElementById('fantasy-jornada-title');
-        
-        // NUEVA LOGICA DE JORNADA:
-        // Bloqueo: Jueves (4) 07:00 - Domingo (0) 23:59
-        // Apertura (Cambios): Lunes a Miercoles y Jueves hasta las 07:00
-        
-        let isLockedPhase = (dayOfWeek === 4 && hour >= 7) || (dayOfWeek > 4) || (dayOfWeek === 0); 
+        let isLockedPhase = (dayOfWeek === 2 && hour >= 8) || (dayOfWeek > 2) || (dayOfWeek === 0); 
         
         if (isLockedPhase) {
-            // Jornada en curso, termina el domingo a las 23:59
-            let nextSunday = new Date(now); 
-            nextSunday.setDate(now.getDate() + (7 - dayOfWeek) % 7);
-            if (dayOfWeek === 0) nextSunday = now; 
-            nextSunday.setHours(23, 59, 59, 999);
-            
+            let nextSunday = new Date(now); nextSunday.setDate(now.getDate() + (7 - dayOfWeek) % 7);
+            if (dayOfWeek === 0) nextSunday = now; nextSunday.setHours(23, 59, 59, 999);
             let diffLock = nextSunday - now;
-            let dL = Math.floor(diffLock / 86400000); 
-            let hL = Math.floor((diffLock % 86400000) / 3600000); 
-            let mL = Math.floor((diffLock % 3600000) / 60000);
-            
-            if (jTitle) jTitle.innerText = " JORNADA EN CURSO (CIERRA DOMINGO 23:59)";
-            if (jEl) { 
-                jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}`; 
-                jEl.classList.add('text-emerald-400'); 
-                jEl.classList.remove('text-white'); 
-            }
+            let dL = Math.floor(diffLock / 86400000); let hL = Math.floor((diffLock % 86400000) / 3600000); let mL = Math.floor((diffLock % 3600000) / 60000);
+            if (jTitle) jTitle.innerText = "⏳ JORNADA EN CURSO (TERMINA EL DOMINGO)";
+            if (jEl) { jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}`; jEl.classList.add('text-emerald-400'); jEl.classList.remove('text-white'); }
         } else {
-            // Tiempo para alinear, termina el jueves a las 07:00
-            let nextThursday = new Date(now); 
-            let daysUntilThursday = (4 + 7 - dayOfWeek) % 7;
-            nextThursday.setDate(now.getDate() + daysUntilThursday); 
-            nextThursday.setHours(7, 0, 0, 0);
-            let diffLock = nextThursday - now;
-            let dL = Math.floor(diffLock / 86400000); 
-            let hL = Math.floor((diffLock % 86400000) / 3600000); 
-            let mL = Math.floor((diffLock % 3600000) / 60000); 
-            let sL = Math.floor((diffLock % 60000) / 1000);
-            
-            if (jTitle) jTitle.innerText = " TIEMPO PARA ALINEAR (CIERRE JUEVES 07:00)";
-            if (jEl) { 
-                jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}:${String(sL).padStart(2, '0')}`; 
-                jEl.classList.remove('text-emerald-400'); 
-                jEl.classList.add('text-white'); 
-            }
+            let nextTuesday = new Date(now); let daysUntilTuesday = (2 + 7 - dayOfWeek) % 7;
+            if (daysUntilTuesday === 0 && hour >= 8) daysUntilTuesday = 7;
+            nextTuesday.setDate(now.getDate() + daysUntilTuesday); nextTuesday.setHours(8, 0, 0, 0);
+            let diffLock = nextTuesday - now;
+            let dL = Math.floor(diffLock / 86400000); let hL = Math.floor((diffLock % 86400000) / 3600000); let mL = Math.floor((diffLock % 3600000) / 60000); let sL = Math.floor((diffLock % 60000) / 1000);
+            if (jTitle) jTitle.innerText = "⏳ TIEMPO PARA ALINEAR (CIERRE MARTES 08:00)";
+            if (jEl) { jEl.innerText = `${dL > 0 ? dL+'d ' : ''}${String(hL).padStart(2, '0')}:${String(mL).padStart(2, '0')}:${String(sL).padStart(2, '0')}`; jEl.classList.remove('text-emerald-400'); jEl.classList.add('text-white'); }
         }
     }, 1000);
 
@@ -549,6 +354,9 @@
         google.script.run.withSuccessHandler(function(res) {
             if(res.success) loadDashboard();
             else { alert(res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }
+        }).withFailureHandler(function(err) {
+            alert("❌ Error: " + err.message);
+            document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1';
         }).swapPlayers(currentManager.name, draggedRole, targetRoleKey);
     }
     function isOOP(playerRole, slotKey) {
@@ -570,7 +378,7 @@
         document.getElementById('f-tab-' + tabId).classList.remove('hidden'); document.getElementById('f-tab-' + tabId).classList.add('block');
         if (tabId === 'market') loadMarket();
         if (tabId === 'team' && currentManager) loadDashboard(); 
-        if (tabId === 'ranking' && currentManager) loadDashboard(); //  ACTUALIZA RANKING AL ENTRAR
+        if (tabId === 'ranking' && currentManager) loadDashboard();
         if (tabId === 'gacha' && currentManager) loadInventory();
         if (tabId === 'players') filterFantasyPlayers(); 
     }
@@ -640,7 +448,7 @@
         document.getElementById('ui-manager-name').innerText = currentManager.name;
 
         google.script.run
-            .withFailureHandler(function(err) { alert("Error de conexion: " + err.message); })
+            .withFailureHandler(function(err) { alert("Error de conexión: " + err.message); })
             .withSuccessHandler(function(res) {
                 if (!res.success) return alert("Error cargando tu Club: " + res.error);
                 
@@ -655,29 +463,13 @@
                 renderFantasyActivity(res.activity);
                 
                 currentRoster = res.roster || { top: "", jgl: "", mid: "", adc: "", sup: "", captain: "NONE", sub: "", isLocked: false, activeCard: "" };
-                
-                //  PINTAMOS EL CERO MIENTRAS CARGA, AHORA CON SUS ID CORRECTOS
                 renderFantasyCharts(window.lastFantasyCharts, 0); 
                 
                 if(document.getElementById('market-budget-disp')) document.getElementById('market-budget-disp').innerText = formatMoney(res.financials.budget);
                 if(document.getElementById('market-budget-ret')) document.getElementById('market-budget-ret').innerText = formatMoney(res.financials.bids);
                 
-                const setSlotState = (id, player) => { let el = document.getElementById(id); if(el) { el.innerText = ''; if(player && player !== "") { el.classList.remove('grayscale', 'opacity-50'); el.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)"; } else { el.classList.add('grayscale', 'opacity-50'); el.style.filter = "none"; } } };
-                setSlotState('slot-ind-top', currentRoster.top); setSlotState('slot-ind-jgl', currentRoster.jgl); setSlotState('slot-ind-mid', currentRoster.mid); setSlotState('slot-ind-adc', currentRoster.adc); setSlotState('slot-ind-sup', currentRoster.sup); 
-                setSlotState('slot-ind-sub', currentRoster.sub);
-                
-                // Indicador para sub2 en el mercado si existe el elemento
-                const sub2Ind = document.getElementById('slot-ind-sub2');
-                if(sub2Ind) {
-                    sub2Ind.innerText = '';
-                    if(currentRoster.sub2 && currentRoster.sub2 !== "") {
-                        sub2Ind.classList.remove('grayscale', 'opacity-50');
-                        sub2Ind.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)";
-                    } else {
-                        sub2Ind.classList.add('grayscale', 'opacity-50');
-                        sub2Ind.style.filter = "none";
-                    }
-                }
+                const setSlotState = (id, player) => { let el = document.getElementById(id); if(el) { el.innerText = '🪑'; if(player && player !== "") { el.classList.remove('grayscale', 'opacity-50'); el.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)"; } else { el.classList.add('grayscale', 'opacity-50'); el.style.filter = "none"; } } };
+                setSlotState('slot-ind-top', currentRoster.top); setSlotState('slot-ind-jgl', currentRoster.jgl); setSlotState('slot-ind-mid', currentRoster.mid); setSlotState('slot-ind-adc', currentRoster.adc); setSlotState('slot-ind-sup', currentRoster.sup); setSlotState('slot-ind-sub', currentRoster.sub);
 
                 let activeBanner = document.getElementById('gacha-active-banner');
                 if (activeBanner && currentRoster.activeCard && currentRoster.activeCard !== "") {
@@ -687,33 +479,21 @@
                     activeBanner.classList.remove('hidden');
                 } else if (activeBanner) activeBanner.classList.add('hidden');
 
-                //  DESCARGAMOS STATS Y CALCULAMOS PUNTOS DE TODOS
                 fetchAllLigaData(function() {
                     let myLivePts = calculateManagerLivePoints(currentRoster);
-                    
-                    // Buscamos los puntos acumulados del manager actual
-                    let myData = window.currentRankingData.find(m => String(m.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase());
-                    let accumulatedPts = myData ? parseFloat(myData.points) || 0 : 0;
-                    
-                    document.getElementById('ui-points').innerText = (accumulatedPts + myLivePts).toFixed(1) + " PTS";
+                    document.getElementById('ui-points').innerText = myLivePts.toFixed(1) + " PTS";
 
                     window.currentRankingData.forEach(m => {
-                        let live = 0;
                         if (String(m.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase()) {
-                            live = myLivePts;
+                            m.livePoints = myLivePts;
                         } else {
                             let rObj = window.allFantasyRosters.find(x => String(x.manager).trim().toLowerCase() === String(m.name).trim().toLowerCase());
-                            live = rObj ? calculateManagerLivePoints(rObj) : 0;
+                            m.livePoints = rObj ? calculateManagerLivePoints(rObj) : 0;
                         }
-                        m.livePoints = live;
-                        m.totalPoints = (parseFloat(m.points) || 0) + live; // Acumulados + En vivo
                     });
                     
-                    // Ordenamos por puntos totales (acumulados + live)
-                    window.currentRankingData.sort((a,b) => b.totalPoints - a.totalPoints || b.teamValue - a.teamValue);
+                    window.currentRankingData.sort((a,b) => b.livePoints - a.livePoints || b.teamValue - a.teamValue);
                     renderFantasyRanking(window.currentRankingData);
-                    
-                    //  ACTUALIZAMOS EL GRAFICO GIGANTE CON LOS PUNTOS REALES
                     renderFantasyCharts(window.lastFantasyCharts, myLivePts);
                     renderRoster();
                     if (document.getElementById('f-tab-market').classList.contains('block')) loadMarket();
@@ -745,20 +525,20 @@
         fPtsChart = new Chart(ctxPts, { type: 'line', data: { labels: cLabels, datasets: [{ label: 'Puntos Acumulados', data: cPoints, borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.2)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#94a3b8' } } } } });
 
         let ctxBud = document.getElementById('fantasyBudgetChart').getContext('2d'); if (fBudChart) fBudChart.destroy();
-        fBudChart = new Chart(ctxBud, { type: 'line', data: { labels: data.labels, datasets: [{ label: 'Patrimonio ()', data: data.budget, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#94a3b8', callback: function(v){ return (v/1000000).toFixed(1) + 'M'; } } } } } });
+        fBudChart = new Chart(ctxBud, { type: 'line', data: { labels: data.labels, datasets: [{ label: 'Patrimonio (€)', data: data.budget, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#94a3b8', callback: function(v){ return (v/1000000).toFixed(1) + 'M'; } } } } } });
     }
 
     function renderFantasyActivity(activities) {
         let container = document.getElementById('fantasy-recent-activity'); let html = '';
         if (!activities || activities.length === 0) { container.innerHTML = '<div class="text-slate-500 text-sm text-center py-8 border-2 border-dashed border-slate-700 rounded-xl">No ha habido movimientos.</div>'; return; }
         for (let i = 0; i < activities.length; i++) {
-            let a = activities[i]; let color = 'text-yellow-400'; let icon = ''; let actionText = 'ha cobrado';
-            if (a.type === 'BUY') { color = 'text-emerald-400'; icon = ''; actionText = 'ha fichado a'; }
-            else if (a.type === 'SELL') { color = 'text-red-400'; icon = ''; actionText = 'ha vendido a'; }
-            else if (a.type === 'CLAUSE') { color = 'text-red-500'; icon = ''; actionText = 'ha dado un CLAUSULAZO por'; }
-            else if (a.type === 'GACHA') { color = 'text-purple-400'; icon = ''; actionText = 'compro un Sobre Gacha'; a.player = ''; }
-            else if (a.type === 'JOIN') { color = 'text-blue-400'; icon = ''; actionText = 'ha fundado su Club'; a.player = ''; }
-            else if (a.type === 'MATCH') { color = 'text-blue-400'; icon = ''; actionText = a.player; a.player = ''; a.manager = 'LIGA'; }
+            let a = activities[i]; let color = 'text-yellow-400'; let icon = '🎁'; let actionText = 'ha cobrado';
+            if (a.type === 'BUY') { color = 'text-emerald-400'; icon = '🤝'; actionText = 'ha fichado a'; }
+            else if (a.type === 'SELL') { color = 'text-red-400'; icon = '💸'; actionText = 'ha vendido a'; }
+            else if (a.type === 'CLAUSE') { color = 'text-red-500'; icon = '🚨'; actionText = 'ha dado un CLAUSULAZO por'; }
+            else if (a.type === 'GACHA') { color = 'text-purple-400'; icon = '🎰'; actionText = 'compró un Sobre Gacha'; a.player = ''; }
+            else if (a.type === 'JOIN') { color = 'text-blue-400'; icon = '🎪'; actionText = 'ha fundado su Club'; a.player = ''; }
+            else if (a.type === 'MATCH') { color = 'text-blue-400'; icon = '⚔️'; actionText = a.player; a.player = ''; a.manager = 'LIGA'; }
 
             let amountLabel = (a.type === 'JOIN' || a.type === 'GACHA' || a.type === 'MATCH') ? '' : '<div class="text-[11px] font-mono ' + color + ' font-bold bg-black px-2 py-1 rounded border border-slate-700">' + formatMoney(a.amount) + '</div>';
             let safePlayerName = a.player ? a.player.replace(/'/g, "\\'") : '';
@@ -770,21 +550,19 @@
 
     function renderFantasyRanking(ranking) {
         let tbody = document.getElementById('fantasy-ranking-body'); let html = '';
-        if (!ranking || ranking.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-slate-500 py-10">Todavia no hay managers.</td></tr>'; return; }
+        if (!ranking || ranking.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-slate-500 py-10">Todavía no hay mánagers.</td></tr>'; return; }
         for (let i = 0; i < ranking.length; i++) {
             let p = ranking[i]; let pos = i + 1;
-            let medal = pos === 1 ? '' : (pos === 2 ? '' : (pos === 3 ? '' : pos));
+            let medal = pos === 1 ? 'GOLD' : (pos === 2 ? 'SILVER' : (pos === 3 ? 'BRONZE' : pos));
             let isMe = currentManager && String(p.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase();
-            let rowClass = isMe ? 'bg-yellow-500/10 border-l-4 border-yellow-500' : 'hover:bg-slate-700/30 border-l-4 border-transparent cursor-pointer hover:border-purple-500';
+            let rowCss = isMe ? 'bg-yellow-500/10 border-l-4 border-yellow-500' : 'hover:bg-slate-700/30 border-l-4 border-transparent cursor-pointer hover:border-purple-500';
             let clickEvt = isMe ? '' : `onclick="viewManagerRoster('${p.name}')" title="Ver plantilla"`;
             let valueText = formatMoney(p.teamValue || 0);
+            let ptsText = (p.livePoints !== undefined) ? p.livePoints.toFixed(1) : "0.0";
 
-            //  EL RANKING MUESTRA PUNTOS TOTALES (ACUMULADOS + JORNADA)
-            let ptsText = (p.totalPoints !== undefined) ? p.totalPoints.toFixed(1) : (parseFloat(p.points) || 0).toFixed(1);
-
-            html += `<tr class="border-b border-slate-700/50 transition-colors ${rowClass}" ${clickEvt}>`;
+            html += `<tr class="border-b border-slate-700/50 transition-colors ${rowCss}" ${clickEvt}>`;
             html += '<td class="p-4 text-center font-oswald text-lg text-slate-400">' + medal + '</td>';
-            html += '<td class="p-4 font-bold text-white text-base uppercase">' + p.name + (isMe ? ' <span class="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded ml-2 font-black shadow">TU</span>' : '') + '</td>';
+            html += '<td class="p-4 font-bold text-white text-base uppercase">' + p.name + (isMe ? ' <span class="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded ml-2 font-black shadow">TÚ</span>' : '') + '</td>';
             html += '<td class="p-4 text-right font-mono text-emerald-400 text-sm">' + valueText + '</td>'; 
             html += '<td class="p-4 text-center font-oswald text-purple-400 text-3xl font-black">' + ptsText + '</td></tr>';
         }
@@ -794,7 +572,7 @@
     function viewManagerRoster(managerName) {
         if(!isLigaDataLoaded) return alert("Espera a que carguen los datos de la liga.");
         document.getElementById('view-roster-name').innerText = managerName;
-        document.getElementById('view-roster-content').innerHTML = '<div class="py-10 text-center text-purple-400 animate-pulse font-bold tracking-widest uppercase">Infiltrandose en la base de datos...</div>';
+        document.getElementById('view-roster-content').innerHTML = '<div class="py-10 text-center text-purple-400 animate-pulse font-bold tracking-widest uppercase">Infiltrándose en la base de datos...</div>';
         document.getElementById('view-roster-modal').style.display = 'flex';
 
         google.script.run.withSuccessHandler(function(res) {
@@ -809,331 +587,232 @@
                     let img = getChampIcon(pData.champs ? pData.champs.split(',')[0] : '');
                     html += `<div class="bg-slate-800 p-3 rounded-xl border border-slate-600 shadow flex items-center gap-3"><img src="${img}" class="w-12 h-12 rounded-full border border-purple-500 bg-black" onerror="this.style.display='none'"><div class="overflow-hidden"><div class="text-[9px] text-slate-400 font-bold tracking-widest uppercase">${r.n}</div><div class="text-sm font-bold text-white truncate w-full">${escHtml(pName)}</div><div class="text-[10px] text-yellow-500 font-black">OVR ${ovr}</div></div></div>`;
                 } else {
-                    html += `<div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700/50 flex items-center justify-center opacity-50 h-20"><div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${r.n} VACIO</div></div>`;
+                    html += `<div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700/50 flex items-center justify-center opacity-50 h-20"><div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${r.n} VACÍO</div></div>`;
                 }
             });
             document.getElementById('view-roster-content').innerHTML = html + '</div>';
         }).getManagerRoster(managerName);
     }
 
-    function promptClause(role) {
-        let targetName = prompt(" CLAUSULAZO \n\n?A que jugador quieres ROBARLE a otro manager para esta posicion (" + role + ")?\nEscribe su nombre exacto:");
-        if (!targetName || targetName.trim() === "") return;
-        if (confirm("Vas a pagar el 150% del valor de mercado de " + targetName + " para robarselo a su dueno actual. ?Estas seguro?")) {
-            document.getElementById('roster-grid').style.opacity = '0.5';
-            google.script.run.withSuccessHandler(function(res) { document.getElementById('roster-grid').style.opacity = '1'; if(res.success) { alert(res.msg); loadDashboard(); } else alert(" Error: " + res.error); }).payClause(currentManager.name, targetName);
-        }
-    }
-
     function lockFantasyTeam() {
-        if (!confirm(" ?CONFIRMAR ALINEACION?\n\nTu equipo quedara bloqueado para esta jornada. Si tienes huecos vacios se te penalizara con -15 puntos por cada uno.")) return;
-        let btn = document.getElementById('btn-lock-team'); btn.innerText = " Confirmando..."; btn.disabled = true;
-        google.script.run.withFailureHandler(function(err) { alert("Error: " + err.message); btn.innerText = " Confirmar Equipo"; btn.disabled = false; }).withSuccessHandler(function(res) { if(res.success) { alert(" " + res.msg); loadDashboard(); } else { alert(" Error: " + res.error); btn.innerText = " Confirmar Equipo"; btn.disabled = false; } }).lockFantasyTeam(currentManager.name);
+        if (!confirm("🔒 ¿CONFIRMAR ALINEACIÓN?\n\nTu equipo quedará bloqueado para esta jornada. Si tienes huecos vacíos se te penalizará con -15 puntos por cada uno.")) return;
+        let btn = document.getElementById('btn-lock-team'); btn.innerText = "⏳ Confirmando..."; btn.disabled = true;
+        google.script.run.withFailureHandler(function(err) { alert("Error: " + err.message); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; }).withSuccessHandler(function(res) { if(res.success) { alert("✅ " + res.msg); loadDashboard(); } else { alert("❌ Error: " + res.error); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; } }).lockFantasyTeam(currentManager.name);
     }
 
     function sellPlayerFromRoster(roleKey) {
         if (!currentManager) return;
-        let choice = prompt("OPCIONES DE VENTA:\n\n1. Venta Instantanea (Recibes el 50% del valor ahora mismo)\n2. Poner en Mercado (Tu eliges el precio, otros managers pueden comprarlo)\n\nEscribe 1 o 2:");
+        let choice = prompt("OPCIONES DE VENTA:\n\n1. Venta Instantánea (Recibes el 50% del valor ahora mismo)\n2. Poner en Mercado (Tú eliges el precio, otros mánagers pueden comprarlo)\n\nEscribe 1 o 2:");
         if (choice === "1") {
-            if (confirm("?Seguro que quieres venderlo por la mitad de su valor al sistema?")) {
+            if (confirm("¿Seguro que quieres venderlo por la mitad de su valor al sistema?")) {
                 document.getElementById('roster-grid').style.opacity = '0.5'; document.getElementById('sub-grid').style.opacity = '0.5';
-                google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).sellPlayerInstant(currentManager.name, roleKey);
+                google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).sellPlayerInstant(currentManager.name, roleKey);
             }
         } else if (choice === "2") {
             let price = prompt("Introduce el precio de venta (ej: 8000000 para 8 Millones):");
-            if (!price || isNaN(price) || price <= 0) return alert("Precio no valido.");
+            if (!price || isNaN(price) || price <= 0) return alert("Precio no válido.");
             document.getElementById('roster-grid').style.opacity = '0.5'; document.getElementById('sub-grid').style.opacity = '0.5';
-            google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).listPlayerOnMarket(currentManager.name, roleKey, parseInt(price));
+            google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).listPlayerOnMarket(currentManager.name, roleKey, parseInt(price));
         }
     }
 
     function renderRoster() {
         let grid = document.getElementById('roster-grid'); let subGrid = document.getElementById('sub-grid');
+        let isLocked = currentRoster && currentRoster.isLocked; let isLoadingStats = !isLigaDataLoaded;
+        if (!grid) return;
         
-        let now = new Date();
-        let day = now.getDay();
-        let hour = now.getHours();
-        let isForcedLock = (day === 2 && hour >= 7) || (day > 2) || (day === 0);
-
-        let isLocked = (currentRoster && currentRoster.isLocked) || isForcedLock; 
-        let isLoadingStats = !isLigaDataLoaded;
-
-        if (isLocked) { 
-            document.getElementById('roster-locked-banner').classList.remove('hidden'); 
-            document.getElementById('btn-lock-team').classList.add('hidden'); 
-            document.getElementById('roster-locked-banner').innerHTML = `<div class="flex flex-col items-center"><div> ALINEACION FIJADA PARA LA JORNADA</div><div class="text-[9px] opacity-70 mt-1">Puedes comprar/vender, pero solo puntuan los elegidos el jueves.</div></div>`;
-        } 
-        else { 
-            document.getElementById('roster-locked-banner').classList.add('hidden'); 
-            document.getElementById('btn-lock-team').classList.remove('hidden'); 
-            document.getElementById('btn-lock-team').innerText = " Confirmar Equipo"; 
-            document.getElementById('btn-lock-team').disabled = false; 
-        }
-
-        let html = '';
-        let roles = [ { key: 'top', label: 'TOP', icon: '', color: 'border-emerald-500' }, { key: 'jgl', label: 'JUNGLE', icon: '', color: 'border-red-500' }, { key: 'mid', label: 'MIDDLE', icon: '', color: 'border-purple-500' }, { key: 'adc', label: 'BOTTOM', icon: '', color: 'border-yellow-500' }, { key: 'sup', label: 'SUPPORT', icon: '', color: 'border-blue-500' } ];
-        let teamsCount = {};
-
-        for (let i = 0; i < roles.length; i++) {
-            let r = roles[i]; let playerName = currentRoster ? currentRoster[r.key] : ""; let isCaptain = currentRoster ? (currentRoster.captain === r.label) : false;
-            let pData = getSafePlayerStats(playerName);
-            if (!isLoadingStats && pData && pData.team !== 'Agente Libre' && playerName !== "") teamsCount[pData.team] = (teamsCount[pData.team] || 0) + 1;
-
-            let lockedOpacity = (isLocked && !playerName) ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer active:cursor-grabbing';
-            let draggableAttr = (!isLocked && playerName) ? `draggable="true" ondragstart="drag(event, '${r.key}')"` : '';
-            let clickAttr = (playerName && playerName !== "") ? `onclick="openFantasyPlayerStats('${enc(playerName)}')"` : '';
-
-            html += `<div id="slot-${r.key}" class="bg-slate-900 border-t-4 ${r.color} rounded-xl p-5 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative transition hover:-translate-y-1 hover:border-slate-400 group ${lockedOpacity}" ${clickAttr} ${draggableAttr} ondragover="allowDrop(event)" ondrop="drop(event, '${r.key}')" ondragenter="this.classList.add('scale-105', 'border-white')" ondragleave="this.classList.remove('scale-105', 'border-white')">`;
-            html += '<div class="absolute top-2 left-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none">' + r.label + '</div>';
-
-            if (playerName && playerName !== "") {
-                let ovrText = isLoadingStats ? "..." : calculatePlayerOVR(pData);
-                let priceText = isLoadingStats ? "..." : formatMoney(getFantasyPlayerPriceJS(pData));
-                
-                if (!isLoadingStats && isOOP(pData.role, r.key)) html += '<div class="absolute top-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded shadow z-40 uppercase tracking-widest animate-pulse border border-red-300 pointer-events-none"> OOP (-80% PTS)</div>';
-                html += '<div class="absolute top-2 right-2 bg-yellow-500 text-black font-black text-[10px] px-2 py-0.5 rounded shadow border border-yellow-400 z-20 pointer-events-none">OVR ' + ovrText + '</div>';
-                if (isCaptain) html += '<div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black text-xs font-black px-3 py-0.5 rounded-full shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse border-2 border-yellow-300 z-30 pointer-events-none"> CAPITAN</div>';
-
-                html += '<div class="text-4xl font-oswald text-white tracking-normal uppercase mb-2 truncate w-full text-center drop-shadow mt-6 pointer-events-none group-hover:text-accent-blue transition-colors">' + playerName + '</div>';
-                let tName = isLoadingStats ? "Cargando..." : escHtml(pData.team);
-                html += '<div class="text-[11px] text-slate-400 font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-slate-700 mb-3 truncate max-w-full pointer-events-none">' + tName + '</div>';
-                html += '<div class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-900/30 px-3 py-1 rounded border border-emerald-500/50 mb-3 drop-shadow pointer-events-none">' + priceText + '</div>';
-
-                let livePts = isLoadingStats ? "-" : getLivePlayerPoints(playerName, r.key, currentRoster.activeCard, currentRoster.captain).toFixed(1);
-                html += `<div class="flex items-center mt-1 mb-4 bg-slate-800/80 p-2.5 rounded-lg w-full justify-center border border-slate-700 pointer-events-none shadow-inner"><div class="text-center"><div class="text-[9px] text-slate-500 uppercase tracking-widest mb-0.5">Puntos Jornada</div><div class="text-3xl font-black ${livePts < 0 ? 'text-red-400' : 'text-purple-400'} drop-shadow-md">${livePts}</div></div></div>`;
-
-                html += '<div class="flex flex-wrap gap-2 mt-auto w-full justify-center pointer-events-auto">';
-                if (!isLocked) {
-                    html += '<button onclick="event.stopPropagation(); setCaptain(\'' + r.key + '\')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition border border-slate-600"> Capi</button>';
-                }
-                html += '<button onclick="event.stopPropagation(); sellPlayerFromRoster(\'' + r.key + '\')" class="flex-1 bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>';
-                html += '</div>';
-                
-                //  INDICADOR DE PUNTUACION SI ESTA BLOQUEADO
-                if (isLocked && currentRoster.snap && currentRoster.snap[r.key]) {
-                    let snapName = currentRoster.snap[r.key];
-                    let scoringLabel = (snapName === playerName) ? 'PUNTUANDO ESTA JORNADA' : `PUNTUANDO: ${snapName}`;
-                    html += `<div class="absolute bottom-16 left-0 right-0 text-[8px] text-center font-black ${snapName === playerName ? 'text-purple-400' : 'text-yellow-400'} uppercase tracking-[0.2em] bg-black/60 py-1 border-y border-white/10 z-10">${scoringLabel}</div>`;
-                }
-            } else {
-                if (!isLocked) {
-                    html += '<button onclick="event.stopPropagation(); promptClause(\'' + r.label + '\')" class="absolute top-2 right-2 bg-red-900/50 text-red-400 border border-red-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded hover:bg-red-500 hover:text-white transition z-20 pointer-events-auto"> Robar</button>';
-                    html += '<button onclick="event.stopPropagation(); switchFantasyTab(\'market\', document.querySelectorAll(\'.fantasy-tab-btn\')[2])" class="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-500 hover:text-yellow-500 hover:border-yellow-500 hover:bg-yellow-500/10 transition mb-3 mt-4 pointer-events-auto"><span class="text-3xl font-light pointer-events-none">+</span></button>';
-                    html += '<div class="text-xs text-slate-500 font-bold uppercase tracking-widest mt-auto pointer-events-none">ARRASTRA O FICHA</div>';
-                } else {
-                    html += '<div class="w-16 h-16 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-700 mb-3 mt-4 pointer-events-none"><span class="text-3xl font-light">X</span></div>';
-                    html += '<div class="text-xs text-slate-600 font-bold uppercase tracking-widest mt-auto pointer-events-none">VACIO (-15 PTS)</div>';
-                }
+        const renderPlayerCard = (roleKey, roleLabel, pName) => {
+            let p = getSafePlayerStats(pName); let ovr = calculatePlayerOVR(p); let price = getFantasyPlayerPriceJS(p);
+            let img = getChampIcon(p.champs ? p.champs.split(',')[0] : '');
+            let isCap = currentRoster.captain === roleKey;
+            let capBadge = isCap ? '<div class="absolute -top-3 -right-2 bg-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded shadow-[0_0_10px_rgba(251,191,36,0.6)] z-20">CAPITÁN</div>' : '';
+            let oopBadge = isOOP(p.role, roleKey) ? '<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded z-20 border border-white/20 shadow-lg">OOP (-80%)</div>' : '';
+            
+            let btnUI = '';
+            if (!isLocked) {
+                btnUI = `<div class="absolute top-2 left-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition z-30">
+                            <button onclick="sellPlayerFromRoster('${roleKey}')" class="bg-red-600 hover:bg-red-500 text-white p-1.5 rounded-full shadow-lg" title="Vender">💸</button>
+                            ${!isCap && roleKey !== 'sub' ? `<button onclick="setAsCaptain('${roleKey}')" class="bg-yellow-500 hover:bg-yellow-400 text-black p-1.5 rounded-full shadow-lg" title="Capitán">CAP</button>` : ''}
+                         </div>`;
             }
-            html += '</div>';
-        }
 
-        if (!isLoadingStats) {
-            let activeSynergy = null;
-            for (let team in teamsCount) { if (teamsCount[team] >= 3) { activeSynergy = team; break; } }
-            if (activeSynergy) {
-                let synergyBanner = '<div class="col-span-full bg-gradient-to-r from-blue-900 to-purple-900 border border-blue-500 rounded-xl p-3 mb-2 flex items-center justify-between shadow-[0_0_15px_rgba(59,130,246,0.3)]"><div class="flex items-center gap-3"><span class="text-3xl"></span><div><div class="text-white font-black font-oswald tracking-widest uppercase">SINERGIA DE CLUB ACTIVA: ' + activeSynergy + '</div><div class="text-[10px] text-blue-200 font-bold uppercase tracking-widest">Tus jugadores puntuaran un +5% extra esta jornada</div></div></div></div>';
-                html = synergyBanner + html;
+            if (!pName || pName === "") {
+                return `<div class="bg-slate-900/40 border-2 border-dashed border-slate-700 rounded-2xl h-48 flex flex-col items-center justify-center p-4 group hover:border-accent-blue transition-all" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)">
+                            <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-4">${roleLabel}</div>
+                            <div class="text-3xl grayscale opacity-30 mb-2">👤</div>
+                            <button onclick="promptClause('${roleKey}')" class="text-[10px] text-accent-blue font-black uppercase tracking-widest hover:text-white transition">🔍 CLAUSULAZO</button>
+                        </div>`;
             }
-        }
-        grid.innerHTML = html;
 
-        let subHtml = ''; 
-        let subs = [
-            { key: 'sub', label: 'BANQUILLO 1', name: currentRoster ? currentRoster.sub : "" },
-            { key: 'sub2', label: 'BANQUILLO 2', name: currentRoster ? currentRoster.sub2 : "" }
-        ];
+            return `<div class="relative group bg-slate-800 border-2 border-slate-600 rounded-2xl p-4 shadow-xl hover:border-accent-blue transition-all cursor-move h-48 flex flex-col items-center justify-center" draggable="true" ondragstart="drag(event, '${roleKey}')" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)">
+                        ${capBadge} ${oopBadge} ${btnUI}
+                        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2">${roleLabel}</div>
+                        <div class="relative mb-2">
+                            <img src="${img}" class="w-16 h-16 rounded-full border-2 border-slate-600 bg-black shadow-lg" onerror="this.src='https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/rewards/logos/tier2-1.png'">
+                            <div class="absolute -bottom-1 -right-1 bg-black border border-slate-600 text-yellow-500 font-black text-xs px-1.5 py-0.5 rounded">${ovr}</div>
+                        </div>
+                        <div class="text-sm font-bold text-white truncate w-full text-center uppercase tracking-tighter">${escHtml(pName)}</div>
+                        <div class="text-[10px] text-emerald-400 font-mono font-bold mt-1">${formatMoney(price)}</div>
+                    </div>`;
+        };
 
-        subs.forEach(s => {
-            let sData = getSafePlayerStats(s.name);
-            let lockedSubOpacity = isLocked ? 'opacity-50 cursor-not-allowed' : 'opacity-80 hover:opacity-100 cursor-pointer active:cursor-grabbing';
-            let subDraggableAttr = (!isLocked && s.name) ? `draggable="true" ondragstart="drag(event, '${s.key}')"` : '';
-            let subClickAttr = (s.name && s.name !== "") ? `onclick="openFantasyPlayerStats('${enc(s.name)}')"` : '';
+        grid.innerHTML = renderPlayerCard('top', 'TOPLANE', currentRoster.top) +
+                         renderPlayerCard('jgl', 'JUNGLA', currentRoster.jgl) +
+                         renderPlayerCard('mid', 'MIDLANE', currentRoster.mid) +
+                         renderPlayerCard('adc', 'ADC', currentRoster.adc) +
+                         renderPlayerCard('sup', 'SUPPORT', currentRoster.sup);
+        
+        subGrid.innerHTML = renderPlayerCard('sub', 'BANQUILLO', currentRoster.sub);
+    }
 
-            subHtml += `<div id="slot-${s.key}" class="bg-black/50 border border-slate-700 border-t-4 border-t-slate-500 rounded-xl p-5 flex flex-col items-center justify-center w-full max-w-[280px] min-h-[240px] shadow-2xl relative transition hover:border-slate-400 group ${lockedSubOpacity} mx-2" ${subClickAttr} ${subDraggableAttr} ondragover="allowDrop(event)" ondrop="drop(event, '${s.key}')" ondragenter="this.classList.add('scale-105', 'border-white')" ondragleave="this.classList.remove('scale-105', 'border-white')">`;
-            subHtml += `<div class="absolute top-2 left-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest pointer-events-none">${s.label}</div>`;
-
-            if (s.name && s.name !== "") {
-                let ovrSub = isLoadingStats ? "..." : calculatePlayerOVR(sData);
-                let priceText = isLoadingStats ? "..." : formatMoney(getFantasyPlayerPriceJS(sData)); 
-
-                subHtml += '<div class="absolute top-2 right-2 bg-slate-700 text-white font-black text-[10px] px-2 py-0.5 rounded shadow border border-slate-500 z-20 pointer-events-none">OVR ' + ovrSub + '</div>';
-                subHtml += '<div class="text-4xl font-oswald text-slate-300 tracking-normal uppercase mb-2 truncate w-full text-center drop-shadow mt-6 pointer-events-none group-hover:text-white transition-colors">' + s.name + '</div>';
-
-                let stName = isLoadingStats ? "Cargando..." : escHtml(sData.team);
-                subHtml += '<div class="text-[11px] text-slate-500 font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-slate-700 mb-3 truncate max-w-full pointer-events-none">' + stName + '</div>';
-                subHtml += '<div class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-900/30 px-3 py-1 rounded border border-emerald-500/50 mb-3 drop-shadow pointer-events-none">' + priceText + '</div>';
-
-                let pJornadaSub = isLoadingStats ? "-" : getLivePlayerPoints(s.name, s.key, currentRoster.activeCard, currentRoster.captain).toFixed(1);
-                subHtml += `<div class="flex items-center mt-1 mb-4 bg-slate-800/80 p-2.5 rounded-lg w-full justify-center border border-slate-700 pointer-events-none shadow-inner"><div class="text-center"><div class="text-[9px] text-slate-500 uppercase tracking-widest mb-0.5">Puntos Jornada</div><div class="text-3xl font-black ${pJornadaSub < 0 ? 'text-red-400' : 'text-slate-300'} drop-shadow-md">${pJornadaSub}</div></div></div>`;
-
-                subHtml += '<div class="flex flex-wrap gap-2 mt-auto w-full justify-center pointer-events-auto">';
-                if (!isLocked) {
-                    subHtml += `<button onclick="event.stopPropagation(); sellPlayerFromRoster('${s.key}')" class="w-full bg-red-900/40 border border-red-500/50 hover:bg-red-500 text-red-200 text-[10px] uppercase tracking-widest font-bold px-2 py-2 rounded transition">Vender</button>`;
-                } else {
-                    subHtml += '<div class="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest py-1 border border-slate-700 rounded bg-slate-800 pointer-events-none"> BLOQUEADO</div>';
-                }
-                subHtml += '</div>';
-            } else {
-                if (!isLocked) {
-                    subHtml += '<button onclick="event.stopPropagation(); switchFantasyTab(\'market\', document.querySelectorAll(\'.fantasy-tab-btn\')[2])" class="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-600 mb-3 mt-4 hover:bg-slate-800 transition pointer-events-auto"><span class="text-3xl font-light pointer-events-none">+</span></button>';
-                    subHtml += '<div class="text-[10px] text-slate-500 font-bold text-center mt-auto pointer-events-none">ARRASTRA O FICHA</div>';
-                } else {
-                    subHtml += '<div class="w-16 h-16 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-700 mb-3 mt-4 pointer-events-none"><span class="text-3xl font-light">X</span></div>';
-                    subHtml += '<div class="text-xs text-slate-600 font-bold uppercase tracking-widest mt-auto pointer-events-none">VACIO</div>';
-                }
-            }
-            subHtml += '</div>';
-        });
-        subGrid.innerHTML = subHtml;
+    function setAsCaptain(roleKey) {
+        google.script.run.withSuccessHandler(function(res) { if(res.success) loadDashboard(); else alert(res.error); }).setManagerCaptain(currentManager.name, roleKey);
     }
 
     function loadMarket() {
-        const marketContainer = document.getElementById('market-grid'); marketContainer.innerHTML = '<div class="text-yellow-500 text-center col-span-full py-10 font-bold animate-pulse tracking-widest uppercase">Consultando el mercado...</div>';
-        fetchAllLigaData(function() {
-            google.script.run.withFailureHandler(function(err) { marketContainer.innerHTML = '<div class="text-red-500 text-center col-span-full py-10 font-bold"> Error cargando mercado.</div>'; })
-                .withSuccessHandler(function(res) {
-                    if(res.success) renderMarket(res.players); 
-                    else marketContainer.innerHTML = '<div class="text-red-500 text-center col-span-full py-10 font-bold"> Error: ' + res.error + '</div>';
-                }).getMarketPlayers();
-        });
+        let grid = document.getElementById('market-grid'); if(!grid) return;
+        grid.innerHTML = '<div class="col-span-full py-20 text-center text-yellow-500 animate-pulse font-bold tracking-widest uppercase">🔍 Escaneando mercado de fichajes...</div>';
+        google.script.run.withSuccessHandler(function(players) {
+            if(!players || players.length === 0) { grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500">No hay jugadores en el mercado hoy.</div>'; return; }
+            let html = '';
+            players.forEach(p => {
+                let ovr = calculatePlayerOVR(p); let price = getFantasyPlayerPriceJS(p);
+                let img = getChampIcon(p.champs ? p.champs.split(',')[0] : '');
+                let role = p.role ? p.role.toUpperCase() : 'FILL';
+                let isOwned = window.allFantasyRosters.some(r => Object.values(r).includes(p.name));
+                let owner = isOwned ? window.allFantasyRosters.find(r => Object.values(r).includes(p.name)).manager : null;
+
+                html += `<div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col items-center group hover:border-accent-blue transition relative overflow-hidden">
+                            <div class="absolute top-2 right-2 text-[10px] font-black text-slate-500">${role}</div>
+                            <img src="${img}" class="w-20 h-20 rounded-full border-4 border-slate-700 bg-black mb-3 shadow-xl group-hover:scale-110 transition" onerror="this.style.display='none'">
+                            <div class="text-base font-black text-white text-center uppercase tracking-tight mb-1">${escHtml(p.name)}</div>
+                            <div class="flex items-center gap-2 mb-4"><span class="text-xs bg-black px-2 py-0.5 rounded text-yellow-500 font-black border border-slate-700">OVR ${ovr}</span></div>
+                            <div class="text-sm font-mono font-bold text-emerald-400 mb-5 bg-black/50 px-4 py-1.5 rounded-full border border-slate-700">${formatMoney(price)}</div>
+                            ${isOwned ? `<div class="text-[10px] text-red-500 font-bold uppercase tracking-widest">DUEÑO: ${owner}</div>` : `<button onclick="placeBid('${escHtml(p.name)}', ${price})" class="w-full bg-accent-blue hover:bg-blue-500 text-white font-black py-2.5 rounded-xl transition shadow-lg text-xs uppercase tracking-widest">PUJAR</button>`}
+                            <button onclick="openFantasyPlayerStats('${enc(p.name)}')" class="mt-3 text-[9px] text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest">📈 Ver Estadísticas</button>
+                        </div>`;
+            });
+            grid.innerHTML = html;
+        }).getMarketPlayers();
     }
 
-    function renderMarket(players) {
-        const marketContainer = document.getElementById('market-grid'); let html = '';
-        if (!players || players.length === 0) { marketContainer.innerHTML = '<div class="text-slate-500 text-center col-span-full py-20 border-2 border-dashed border-slate-700 rounded-xl">El mercado esta vacio ahora mismo. Vuelve a medianoche.</div>'; return; }
-        for (let i = 0; i < players.length; i++) {
-            let p = players[i]; let safeName = p.name.replace(/'/g, "\\'"); 
-            let pData = getSafePlayerStats(p.name); let ovr = calculatePlayerOVR(pData);
-            let totalPts = Math.round(pData.points * pData.games) || 0; let displayRole = pData.role && pData.role !== 'TBD' ? pData.role : p.role;
-            html += '<div class="bg-slate-800 border border-slate-600 rounded-xl overflow-hidden shadow-lg transition hover:border-accent-blue flex flex-col relative cursor-pointer group" onclick="openFantasyPlayerStats(\'' + enc(p.name) + '\')">';
-            html += '<div class="absolute top-2 right-2 bg-yellow-500 text-black font-black text-[10px] px-2 py-1 rounded z-10 shadow border border-yellow-400">OVR ' + ovr + '</div>';
-            html += '<div class="bg-slate-700 p-2 text-left pl-3 text-[10px] font-black text-emerald-400 tracking-widest border-b border-slate-600">A LA VENTA</div>';
-            html += '<div class="p-6 text-center flex-1 flex flex-col items-center justify-center"><div class="text-3xl font-oswald text-white mb-2 truncate w-full group-hover:text-accent-blue transition-colors" title="' + p.name + '">' + p.name + '</div>';
-            html += '<div class="text-[11px] text-slate-400 uppercase font-bold tracking-widest mb-5 bg-slate-900 px-4 py-1.5 rounded-full border border-slate-700 w-full truncate shadow-inner">' + escHtml(pData.team) + '</div>';
-            html += '<div class="flex justify-center gap-2 w-full"><div class="text-[10px] text-slate-300 uppercase tracking-widest font-bold bg-slate-900 px-3 py-1 rounded-lg border border-slate-700">' + displayRole + '</div>';
-            html += '<div class="text-[10px] text-purple-400 uppercase tracking-widest font-black bg-purple-900/30 px-3 py-1 rounded-lg border border-purple-500/50">' + totalPts + ' PTS</div></div></div>';
-            html += '<div class="px-5 pb-5 text-center border-t border-slate-700/50 pt-4 bg-slate-800/50" onclick="event.stopPropagation();"><div class="text-slate-500 text-[10px] uppercase font-bold mb-1">Precio de Salida</div><div class="text-yellow-500 font-mono text-xl font-bold mb-3 drop-shadow-md">' + formatMoney(p.price) + '</div>';
-            html += '<input type="number" id="bid-input-' + i + '" placeholder="Pujar > ' + formatMoney(p.price) + '" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mb-2 text-white text-center outline-none focus:border-yellow-500 text-[11px] font-mono shadow-inner"><button id="btn-bid-' + i + '" onclick="submitBid(\'' + safeName + '\', ' + i + ')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded transition shadow-lg tracking-widest uppercase text-xs">Pujar Oculto</button></div><div class="bg-slate-900 p-2 text-center text-[9px] text-slate-500 tracking-widest uppercase font-bold border-t border-slate-700">Subasta cierra a medianoche</div></div>';
-        }
-        marketContainer.innerHTML = html;
-    }
-
-    function submitBid(playerName, index) {
-        if (!currentManager) return; let inputEl = document.getElementById('bid-input-' + index); let btnEl = document.getElementById('btn-bid-' + index); let bidAmount = parseInt(inputEl.value);
-        if (isNaN(bidAmount) || bidAmount <= 0) return alert("Introduce una cantidad valida mayor que 0.");
-        if (!confirm("?Quieres pujar " + formatMoney(bidAmount) + " por " + playerName + "?\n\nEl dinero se retendra de tu presupuesto actual hasta que se resuelva la subasta.")) return;
-        btnEl.innerText = " PROCESANDO..."; btnEl.disabled = true;
-        google.script.run.withFailureHandler(function(err) { alert("Error de conexion: " + err.message); btnEl.innerText = "PUJAR OCULTO"; btnEl.disabled = false; })
-            .withSuccessHandler(function(res) { if(res.success) { alert(" " + res.msg); loadDashboard(); btnEl.innerText = "PUJA REALIZADA"; btnEl.classList.remove('bg-blue-600', 'hover:bg-blue-500'); btnEl.classList.add('bg-emerald-600'); } else { alert(" Error: " + res.error); btnEl.innerText = "PUJAR OCULTO"; btnEl.disabled = false; } }).placeBid(currentManager.name, playerName, bidAmount);
+    function placeBid(playerName, price) {
+        let amount = prompt("💰 PUJA POR " + playerName.toUpperCase() + "\n\nIntroduce tu oferta (Mínimo " + formatMoney(price) + "):", price);
+        if(!amount || isNaN(amount) || parseInt(amount) < price) return;
+        if(parseInt(amount) > currentManager.budget) return alert("❌ No tienes suficiente presupuesto.");
+        google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("✅ Puja enviada correctamente."); loadDashboard(); } else alert("❌ Error: " + res.error); }).placeBid(currentManager.name, playerName, parseInt(amount));
     }
 
     function filterFantasyPlayers() {
-        if (!globalStatsData || globalStatsData.length === 0) { document.getElementById('fantasy-players-grid').innerHTML = '<div class="text-slate-500 text-center col-span-full py-10 font-bold uppercase tracking-widest">Cargando base de datos de la liga...</div>'; return; }
-        let searchText = document.getElementById('fantasy-player-search').value.toLowerCase().trim(); let roleFilter = document.getElementById('fantasy-role-filter').value;
+        let search = document.getElementById('fantasy-player-search').value.toLowerCase();
+        let roleFilter = document.getElementById('fantasy-role-filter').value;
+        let grid = document.getElementById('fantasy-players-grid');
+        if(!grid) return;
+        
         let filtered = globalStatsData.filter(p => {
-            let matchName = p.name.toLowerCase().includes(searchText);
-            let pRole = p.role ? p.role.toUpperCase() : 'FILL'; if (pRole === 'JGL') pRole = 'JUNGLE'; if (pRole === 'MID') pRole = 'MIDDLE'; if (pRole === 'ADC') pRole = 'BOTTOM'; if (pRole === 'SUP' || pRole === 'UTILITY') pRole = 'SUPPORT';
-            return matchName && (roleFilter === 'ALL' || pRole === roleFilter);
+            let nameMatch = p.name.toLowerCase().includes(search);
+            let roleMatch = roleFilter === 'ALL' || (p.role && p.role.toUpperCase() === roleFilter);
+            return nameMatch && roleMatch;
         });
-        filtered.sort((a,b) => (b.points || 0) - (a.points || 0)); renderFantasyPlayersList(filtered.slice(0, 50)); 
-    }
 
-    function renderFantasyPlayersList(players) {
-        const container = document.getElementById('fantasy-players-grid'); let html = '';
-        if (!players || players.length === 0) { container.innerHTML = '<div class="text-slate-500 text-center col-span-full py-20 border-2 border-dashed border-slate-700 rounded-xl">No se encontraron jugadores que coincidan con la busqueda.</div>'; return; }
-        for (let i = 0; i < players.length; i++) {
-            let pData = players[i]; let ovr = calculatePlayerOVR(pData); let totalPts = Math.round(pData.points * pData.games) || 0;
-            let displayRole = pData.role && pData.role !== 'TBD' ? pData.role : 'FILL'; let priceText = formatMoney(getFantasyPlayerPriceJS(pData));
-            html += '<div class="bg-slate-800 border border-slate-600 rounded-xl overflow-hidden shadow-lg transition hover:border-purple-500 flex flex-col relative cursor-pointer group" onclick="openFantasyPlayerStats(\'' + enc(pData.name) + '\')">';
-            html += '<div class="absolute top-2 right-2 bg-yellow-500 text-black font-black text-[10px] px-2 py-1 rounded z-10 shadow border border-yellow-400">OVR ' + ovr + '</div>';
-            html += '<div class="p-6 text-center flex-1 flex flex-col items-center justify-center mt-4"><div class="text-2xl font-oswald text-white mb-2 truncate w-full group-hover:text-purple-400 transition-colors" title="' + pData.name + '">' + pData.name + '</div>';
-            html += '<div class="text-[11px] text-slate-400 uppercase font-bold tracking-widest mb-4 bg-slate-900 px-4 py-1.5 rounded-full border border-slate-700 w-full truncate shadow-inner">' + escHtml(pData.team) + '</div>';
-            html += '<div class="flex justify-center gap-2 w-full"><div class="text-[10px] text-slate-300 uppercase tracking-widest font-bold bg-slate-900 px-3 py-1 rounded-lg border border-slate-700">' + displayRole + '</div>';
-            html += '<div class="text-[10px] text-purple-400 uppercase tracking-widest font-black bg-purple-900/30 px-3 py-1 rounded-lg border border-purple-500/50">' + totalPts + ' PTS</div></div></div>';
-            html += '<div class="px-4 py-3 text-center border-t border-slate-700/50 bg-slate-900"><div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Valor de Mercado</div><div class="text-emerald-400 font-mono text-sm font-bold">' + priceText + '</div></div></div>';
-        }
-        container.innerHTML = html;
-    }
-
-    function setCaptain(roleKey) {
-        if (!currentManager) return; let roleMap = { 'top': 'TOP', 'jgl': 'JUNGLE', 'mid': 'MIDDLE', 'adc': 'BOTTOM', 'sup': 'SUPPORT' }; let realRoleLabel = roleMap[roleKey] || 'TOP';
-        if (!confirm("?Estas seguro de nombrar a este jugador como Capitan ?")) return;
-        document.getElementById('roster-grid').style.opacity = '0.5';
-        google.script.run.withSuccessHandler(function(res) { if (res.success) loadDashboard(); else { alert(" Error al asignar capitan: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; } }).setManagerCaptain(currentManager.name, realRoleLabel);
+        grid.innerHTML = filtered.slice(0, 20).map(p => {
+            let ovr = calculatePlayerOVR(p); let price = getFantasyPlayerPriceJS(p);
+            let img = getChampIcon(p.champs ? p.champs.split(',')[0] : '');
+            return `<div class="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex flex-col items-center group hover:border-purple-500 transition cursor-pointer" onclick="openFantasyPlayerStats('${enc(p.name)}')">
+                        <img src="${img}" class="w-12 h-12 rounded-full border border-slate-600 bg-black mb-2" onerror="this.style.display='none'">
+                        <div class="text-xs font-bold text-white uppercase truncate w-full text-center">${escHtml(p.name)}</div>
+                        <div class="text-[9px] text-yellow-500 font-black mt-1">OVR ${ovr}</div>
+                        <div class="text-[10px] text-emerald-400 font-mono mt-1">${formatMoney(price)}</div>
+                    </div>`;
+        }).join('');
     }
 
     function openFantasyPlayerStats(nameEnc) {
-        const playerName = dec(nameEnc); let p = getSafePlayerStats(playerName);
-        let kpReal = (p.kp !== undefined && p.kp !== null) ? p.kp + '%' : '0%'; let winrate = p.winrate || 0; let wrColor = (winrate >= 50 && p.games > 0) ? 'text-emerald-400' : (p.games > 0 ? 'text-red-400' : 'text-slate-400');
-        let totalPts = Math.round(p.points * p.games) || 0; let ovrCalc = calculatePlayerOVR(p);
-        let html = `<div class="text-center mb-6 border-b border-slate-700 pb-6"><div class="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-2 bg-yellow-500/10 inline-block px-3 py-1 rounded border border-yellow-500/30">OVR ${ovrCalc}</div><h2 class="text-5xl font-oswald text-white tracking-widest uppercase mb-2 text-shadow">${escHtml(p.name)}</h2><div class="text-sm text-slate-400 font-bold uppercase tracking-widest bg-black/50 inline-block px-4 py-1.5 rounded-full border border-slate-700">${p.role} | ${escHtml(p.team)}</div></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"><div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center shadow-inner hover:border-slate-500 transition"><div class="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Partidas</div><div class="text-3xl font-black text-white">${p.games}</div></div><div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center shadow-inner hover:border-slate-500 transition"><div class="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Winrate</div><div class="text-3xl font-black ${wrColor}">${winrate}%</div></div><div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center shadow-inner hover:border-slate-500 transition"><div class="text-[10px] text-slate-400 uppercase tracking-widest mb-1">KDA</div><div class="text-2xl font-bold text-emerald-300 font-mono mt-1">${p.kdaText || '0.00'}</div></div><div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center shadow-[0_0_15px_rgba(168,85,247,0.2)] border-purple-500/50 hover:border-purple-400 transition"><div class="text-[10px] text-purple-400 uppercase tracking-widest mb-1 font-bold">Puntos Totales</div><div class="text-3xl font-black text-purple-400 font-oswald drop-shadow">${totalPts}</div></div></div><div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 shadow-lg"><h3 class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-4 border-b border-slate-700 pb-2">Estadisticas Avanzadas de Liga</h3><div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center"><div class="bg-black/40 p-3 rounded-lg border border-slate-700/50"><div class="text-[9px] text-slate-500 uppercase font-bold mb-1">DPM</div><div class="text-lg font-black text-white">${p.dpm || 0}</div></div><div class="bg-black/40 p-3 rounded-lg border border-slate-700/50"><div class="text-[9px] text-slate-500 uppercase font-bold mb-1">GPM</div><div class="text-lg font-black text-yellow-400">${p.gpm || 0}</div></div><div class="bg-black/40 p-3 rounded-lg border border-slate-700/50"><div class="text-[9px] text-slate-500 uppercase font-bold mb-1">CS/M</div><div class="text-lg font-black text-white">${p.cs || '0.0'}</div></div><div class="bg-black/40 p-3 rounded-lg border border-slate-700/50"><div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Impacto (KP)</div><div class="text-lg font-black text-blue-400">${kpReal}</div></div><div class="bg-black/40 p-3 rounded-lg border border-slate-700/50"><div class="text-[9px] text-slate-500 uppercase font-bold mb-1">MVP / ACE</div><div class="text-base font-black text-yellow-500 mt-1"> ${p.mvps || 0} |  ${p.aces || 0}</div></div></div></div><div class="mt-6 text-center text-xs text-slate-500">Los datos reflejan su rendimiento total en la Wargods Premier.</div>`;
-        document.getElementById('fp-modal-content').innerHTML = html; document.getElementById('fantasy-player-modal').style.display = 'flex';
+        let pName = dec(nameEnc); let p = getSafePlayerStats(pName); let ovr = calculatePlayerOVR(p);
+        let img = getChampIcon(p.champs ? p.champs.split(',')[0] : '');
+        let html = `<div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                        <div class="flex flex-col items-center">
+                            <div class="relative mb-4">
+                                <img src="${img}" class="w-32 h-32 rounded-full border-4 border-accent-blue bg-black shadow-2xl" onerror="this.style.display='none'">
+                                <div class="absolute -bottom-2 -right-2 bg-black border-2 border-accent-blue text-white font-black text-2xl px-3 py-1 rounded-xl shadow-lg">${ovr}</div>
+                            </div>
+                            <div class="text-2xl font-black text-white uppercase tracking-tighter mb-1">${escHtml(p.name)}</div>
+                            <div class="text-xs text-accent-blue font-bold uppercase tracking-widest mb-4">${p.role} | ${p.team}</div>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">KDA</div><div class="text-lg font-bold text-white">${p.kdaText}</div></div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">Winrate</div><div class="text-lg font-bold text-emerald-400">${p.winrate}%</div></div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">Pts/Partida</div><div class="text-lg font-bold text-purple-400">${p.points}</div></div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">DPM</div><div class="text-lg font-bold text-red-400">${p.dpm}</div></div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">GPM</div><div class="text-lg font-bold text-yellow-500">${p.gpm}</div></div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-center"><div class="text-[10px] text-slate-400 uppercase">Vision</div><div class="text-lg font-bold text-blue-400">${p.vspm}</div></div>
+                            </div>
+                        </div>
+                    </div>`;
+        document.getElementById('fp-modal-content').innerHTML = html;
+        document.getElementById('fantasy-player-modal').style.display = 'flex';
     }
 
     function closeFantasyPlayerModal() { document.getElementById('fantasy-player-modal').style.display = 'none'; }
 
     function loadInventory() {
-        if (!currentManager) return;
-        google.script.run.withSuccessHandler(function(res) { if(res.success) renderInventory(res.cards); }).getManagerInventory(currentManager.name);
-    }
+        let invDiv = document.getElementById('gacha-inventory'); if(!invDiv) return;
+        google.script.run.withSuccessHandler(function(cards) {
+            if(!cards || cards.length === 0) { invDiv.innerHTML = '<div class="col-span-full py-10 text-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl">No tienes cartas en tu inventario.</div>'; return; }
+            let hasActiveCard = currentRoster && currentRoster.activeCard && currentRoster.activeCard !== "";
+            let isLocked = currentRoster && currentRoster.isLocked;
 
-    function renderInventory(cards) {
-        let invDiv = document.getElementById('gacha-inventory');
-        if (!cards || cards.length === 0) { invDiv.innerHTML = '<div class="text-slate-500 italic col-span-full border-2 border-dashed border-slate-700 p-8 rounded-xl text-center">Tu inventario de cartas esta vacio. Compra un sobre arriba.</div>'; return; }
+            let html = '';
+            for (let i = 0; i < cards.length; i++) {
+                let c = cards[i]; let border = 'border-slate-500';
+                if (c.rarity === 'Rara') border = 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]';
+                if (c.rarity === 'Épica') border = 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]';
+                if (c.rarity === 'Legendaria') border = 'border-yellow-500 shadow-[0_0_30px_rgba(251,191,36,0.6)]';
 
-        let hasActiveCard = currentRoster && currentRoster.activeCard && currentRoster.activeCard !== "";
-        let isLocked = currentRoster && currentRoster.isLocked;
+                let btnHtml = '';
+                if (isLocked) btnHtml = '<div class="text-[10px] text-red-500 uppercase tracking-widest font-bold">EQUIPO BLOQUEADO</div>';
+                else if (hasActiveCard) btnHtml = '<div class="text-[10px] text-slate-600 uppercase tracking-widest font-bold">LÍMITE ALCANZADO</div>';
+                else btnHtml = '<button onclick="activateCard(\'' + escHtml(c.name) + '\')" class="text-[10px] text-accent-blue uppercase tracking-widest font-black hover:text-white transition cursor-pointer">▶️ ACTIVAR ESTA JORNADA</button>';
 
-        let html = '';
-        for (let i = 0; i < cards.length; i++) {
-            let c = cards[i]; let border = 'border-slate-500';
-            if (c.rarity === 'Rara') border = 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]';
-            if (c.rarity === 'Epica') border = 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]';
-            if (c.rarity === 'Legendaria') border = 'border-yellow-500 shadow-[0_0_30px_rgba(251,191,36,0.6)]';
-
-            let btnHtml = '';
-            if (isLocked) btnHtml = '<div class="text-[10px] text-red-500 uppercase tracking-widest font-bold">EQUIPO BLOQUEADO</div>';
-            else if (hasActiveCard) btnHtml = '<div class="text-[10px] text-slate-600 uppercase tracking-widest font-bold">LIMITE ALCANZADO</div>';
-            else btnHtml = '<button onclick="activateCard(\'' + escHtml(c.name) + '\')" class="text-[10px] text-accent-blue uppercase tracking-widest font-black hover:text-white transition cursor-pointer"> ACTIVAR ESTA JORNADA</button>';
-
-            html += '<div class="bg-gradient-to-b from-slate-800 to-slate-900 border-2 ' + border + ' rounded-xl p-6 relative group hover:-translate-y-2 transition-transform flex flex-col">';
-            html += '<div class="absolute -top-3 right-4 bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ' + border + '">' + c.rarity + '</div>';
-            html += '<h4 class="text-xl font-oswald text-white mb-2">' + c.name + '</h4><p class="text-xs text-slate-300 leading-relaxed mb-4 flex-1">' + c.desc + '</p><div class="mt-auto pt-4 border-t border-slate-700 text-center">' + btnHtml + '</div></div>';
-        }
-        invDiv.innerHTML = html;
+                html += '<div class="bg-gradient-to-b from-slate-800 to-slate-900 border-2 ' + border + ' rounded-xl p-6 relative group hover:-translate-y-2 transition-transform flex flex-col">';
+                html += '<div class="absolute -top-3 right-4 bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ' + border + '">' + c.rarity + '</div>';
+                html += '<h4 class="text-xl font-oswald text-white mb-2">' + c.name + '</h4><p class="text-xs text-slate-300 leading-relaxed mb-4 flex-1">' + c.desc + '</p><div class="mt-auto pt-4 border-t border-slate-700 text-center">' + btnHtml + '</div></div>';
+            }
+            invDiv.innerHTML = html;
+        }).getManagerInventory(currentManager.name);
     }
 
     function activateCard(cardName) {
-        if (currentRoster && currentRoster.isLocked) return alert("Tu equipo esta bloqueado esta jornada.");
-        if (!confirm("?Quieres EQUIPAR la carta '" + cardName + "' para esta jornada?\n\nPuedes cambiar de carta o quitarla siempre que tu equipo no este bloqueado (Martes 08:00).")) return;
-        google.script.run.withSuccessHandler(function(res) { if (res.success) { alert(" " + res.msg); loadDashboard(); } else alert(" Error: " + res.error); }).activateFantasyCard(currentManager.name, cardName);
+        if (currentRoster && currentRoster.isLocked) return alert("Tu equipo está bloqueado esta jornada.");
+        if (!confirm("¿Quieres EQUIPAR la carta '" + cardName + "' para esta jornada?\n\nPuedes cambiar de carta o quitarla siempre que tu equipo no esté bloqueado (Martes 08:00).")) return;
+        google.script.run.withSuccessHandler(function(res) { if (res.success) { alert("✅ " + res.msg); loadDashboard(); } else alert("❌ Error: " + res.error); }).activateFantasyCard(currentManager.name, cardName);
     }
 
     function unequipCard() {
-        if (currentRoster && currentRoster.isLocked) return alert("Tu equipo esta bloqueado esta jornada. No puedes quitar la carta.");
-        google.script.run.withSuccessHandler(function(res) { if (res.success) { alert(" " + res.msg); loadDashboard(); } else alert(" Error: " + res.error); }).unequipFantasyCard(currentManager.name);
+        if (currentRoster && currentRoster.isLocked) return alert("Tu equipo está bloqueado esta jornada. No puedes quitar la carta.");
+        google.script.run.withSuccessHandler(function(res) { if (res.success) { alert("✅ " + res.msg); loadDashboard(); } else alert("❌ Error: " + res.error); }).unequipFantasyCard(currentManager.name);
     }
 
     function rollGacha() {
         if (!currentManager) return;
-        if (!confirm("?Gastar 500.000  en un Sobre de Cartas?\n\nPueden tocarte misiones (para ganar mas puntos) o sabotajes legendarios.")) return;
+        if (!confirm("¿Gastar 500.000 € en un Sobre de Cartas?\n\nPueden tocarte misiones (para ganar más puntos) o sabotajes legendarios.")) return;
 
         let btn = document.getElementById('btn-roll-gacha'); let resDiv = document.getElementById('gacha-result');
-        btn.innerText = " ABRIENDO..."; btn.disabled = true; resDiv.classList.add('hidden');
+        btn.innerText = "ABRIENDO..."; btn.disabled = true; resDiv.classList.add('hidden');
 
         google.script.run.withSuccessHandler(function(res) {
-            btn.innerText = " ABRIR SOBRE (500.000 )"; btn.disabled = false;
+            btn.innerText = "ABRIR SOBRE (500.000 €)"; btn.disabled = false;
             if (res.success) {
                 loadDashboard();
                 let color = 'text-white';
                 if (res.card.rarity === 'Rara') color = 'text-blue-400';
-                if (res.card.rarity === 'Epica') color = 'text-purple-400';
+                if (res.card.rarity === 'Épica') color = 'text-purple-400';
                 if (res.card.rarity === 'Legendaria') color = 'text-yellow-500';
 
-                resDiv.innerHTML = `<div class="bg-black/50 border border-slate-600 p-6 rounded-xl animate-bounce"><div class="text-sm text-slate-400 uppercase tracking-widest mb-2">!NUEVA CARTA: ${res.card.rarity}!</div><div class="text-3xl font-oswald ${color} mb-2 drop-shadow-md">${res.card.name}</div><div class="text-sm text-slate-300">${res.card.desc}</div></div>`;
+                resDiv.innerHTML = `<div class="bg-black/50 border border-slate-600 p-6 rounded-xl animate-bounce"><div class="text-sm text-slate-400 uppercase tracking-widest mb-2">¡NUEVA CARTA: ${res.card.rarity}!</div><div class="text-3xl font-oswald ${color} mb-2 drop-shadow-md">${res.card.name}</div><div class="text-sm text-slate-300">${res.card.desc}</div></div>`;
                 resDiv.classList.remove('hidden'); loadInventory(); 
-            } else alert(" " + res.error);
+            } else alert("❌ " + res.error);
         }).buyGachaBox(currentManager.name);
     }
 </script>

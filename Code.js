@@ -4,7 +4,11 @@
 * v12.0 - ¡Bonos de Juego Avanzado y Misiones Secretas!
 ************************************************************/
 
-let GLOBAL_MATCH_CACHE = {}; // Memoria para premades
+// Cache en globalThis para evitar colisiones si existe código legacy duplicado.
+function getGlobalMatchCache() {
+  if (!globalThis.__WGP_MATCH_CACHE) globalThis.__WGP_MATCH_CACHE = {};
+  return globalThis.__WGP_MATCH_CACHE;
+}
 
 /* ----------------- GEMINI AI CONFIG ----------------- */
 const GEMINI_API_KEY = "AIzaSyA" + "..." // (Key parcial para evitar lints o robos accidentales, la pondr     completa)
@@ -139,8 +143,9 @@ function SetupInicial() {
     ['season_start_date', '2024-01-10T00:00:00Z', 'Fecha de inicio (Filtro partidas)'],
     ['match_mode', 'recentN', 'Modo de búsqueda'],
     ['match_fetch_count', '3', 'Partidas a buscar por ciclo'],
-    ['queue_filter', '420,440', 'Colas: SoloQ (420) y Flex (440)'],
-    ['riot_region', 'europe', 'Región API'],
+    ['queue_filter', '420,440,0', 'Colas: SoloQ (420), Flex (440) y Customs (0)'],
+    ['riot_region', 'europe', 'Región API de Routing (europe, americas, asia)'],
+    ['riot_platform', 'EUW1', 'Plataforma API (EUW1, NA1, EUN1, KR...)'],
 
     // --- 2. ECONOMÍA BASE (Balanceada) ---
     ['win_points', '3.0', 'Puntos Base Victoria'],
@@ -621,6 +626,24 @@ function logToSheet(msg) {
    }
 }
 
+function logEvent(level, code, msg, metaObj) {
+  try {
+    const meta = metaObj ? " | " + JSON.stringify(metaObj) : "";
+    logToSheet(`[${String(level || "INFO").toUpperCase()}][${code}] ${msg}${meta}`);
+  } catch (e) {
+    logToSheet(`[WARN][LOG_EVENT_FAIL] ${e.message}`);
+  }
+}
+
+function describeRiotEndpoint(url) {
+  const u = String(url || "");
+  if (u.indexOf("/lol/tournament/v5/games/by-code/") !== -1) return "tournament.by-code";
+  if (u.indexOf("/lol/match/v5/matches/by-puuid/") !== -1) return "match.by-puuid.ids";
+  if (u.indexOf("/lol/match/v5/matches/") !== -1 && u.indexOf("/timeline") !== -1) return "match.timeline";
+  if (u.indexOf("/lol/match/v5/matches/") !== -1) return "match.by-id";
+  return "riot.unknown";
+}
+
 function riotFetchJson(url) {
   const key = getApiKey();
   if (!key) throw new Error('No RIOT API key set.');
@@ -659,7 +682,14 @@ function riotFetchJson(url) {
         continue;
       }
       
-      logToSheet(`API Error ${code}: ${url}`);
+      const endpoint = describeRiotEndpoint(url);
+      if (code === 403 && endpoint === "tournament.by-code") {
+        logEvent("ERROR", "RIOT_403_TOURNAMENT", "Permiso denegado en Tournament API (by-code).", { endpoint: endpoint, url: url });
+      } else if (code === 404 && endpoint === "match.by-id") {
+        logEvent("WARN", "RIOT_404_MATCH", "Match ID no encontrado en match-v5.", { endpoint: endpoint, url: url });
+      } else {
+        logEvent("ERROR", "RIOT_API_ERROR", `Riot API devolvió ${code}.`, { endpoint: endpoint, url: url });
+      }
       return { __error: true, code: code };
 
     } catch (e) {
@@ -907,7 +937,19 @@ function syncMatchesToQueue() {
   let startIndex = parseInt(props.getProperty('SYNC_PLAYER_INDEX') || '0');
   if (startIndex >= playersData.length) startIndex = 0;
 
-  logToSheet(`          Iniciando Sync H    brido V5.0...`);
+  logEvent("INFO", "SYNC_START", "Iniciando Sync Híbrido V5.0.", {
+    startIndex: startIndex,
+    totalPlayers: playersData.length,
+    queues: targetQueues
+  });
+  const syncStats = {
+    eligiblePlayers: 0,
+    catchUpPlayers: 0,
+    playersWithNewGames: 0,
+    playersWithoutNewGames: 0,
+    enqueuedGames: 0,
+    scanErrors: 0
+  };
 
   // Optimize: Read queue sheet once
   let queueData = [];
@@ -928,7 +970,10 @@ function syncMatchesToQueue() {
       if (newRowsForQueue.length > 0) {
           queueSheet.getRange(queueSheet.getLastRow() + 1, 1, newRowsForQueue.length, 5).setValues(newRowsForQueue);
       }
-      logToSheet("       Tiempo l    mite. Pausando escaneo.");
+      logEvent("WARN", "SYNC_TIMEOUT", "Tiempo límite alcanzado. Sync pausado y estado guardado.", {
+        resumeIndex: i,
+        pendingRows: newRowsForQueue.length
+      });
       return; 
     }
 
@@ -938,6 +983,7 @@ function syncMatchesToQueue() {
     const active = String(playersData[i][4]).toLowerCase();
 
     if (!name || !puuid || active === 'no' || active === 'false') continue;
+    syncStats.eligiblePlayers++;
 
     let fetchCount = standardCount;
     let isCatchUp = false;
@@ -945,10 +991,12 @@ function syncMatchesToQueue() {
     if (lastSavedMatch === "" || lastSavedMatch === "undefined") {
         fetchCount = 20; // Catchup count
         isCatchUp = true;
-        logToSheet(`           CATCH-UP activado para ${name}`);
+        syncStats.catchUpPlayers++;
+        // logEvent("INFO", "SYNC_CATCHUP", `CATCH-UP activado para ${name}.`, { fetchCount: fetchCount });
     }
 
     let newestMatchForPlayer = lastSavedMatch;
+    let playerQueued = 0;
 
     for (const qId of targetQueues) {
         try {
@@ -975,10 +1023,14 @@ function syncMatchesToQueue() {
             matchesToQueue.reverse(); 
 
             if (matchesToQueue.length > 0) {
-                 logToSheet(`          ${name}: Encolando ${matchesToQueue.length} partidas nuevas (${qId}).`);
+                 logEvent("INFO", "SYNC_PLAYER_ENQUEUE", `${name}: encolando partidas nuevas.`, {
+                   queue: qId,
+                   count: matchesToQueue.length
+                 });
                  
                  // Push to array instead of appending immediately
                  matchesToQueue.forEach(mid => newRowsForQueue.push([mid, puuid, name, region, 'PENDING']));
+                 playerQueued += matchesToQueue.length;
                  
                  newestMatchForPlayer = matchesToQueue[matchesToQueue.length - 1];
             }
@@ -986,8 +1038,21 @@ function syncMatchesToQueue() {
           Utilities.sleep(100); 
 
         } catch (e) {
-          logToSheet(`       Error escaneando ${name}: ${e.message}`);
+          syncStats.scanErrors++;
+          logEvent("ERROR", "SYNC_PLAYER_SCAN_ERROR", `Error escaneando ${name}.`, {
+            queue: qId,
+            error: e.message
+          });
         }
+    }
+    if (playerQueued > 0) {
+      syncStats.playersWithNewGames++;
+      syncStats.enqueuedGames += playerQueued;
+    } else {
+      syncStats.playersWithoutNewGames++;
+      // logEvent("INFO", "SYNC_PLAYER_OK", `${name}: sin partidas nuevas.`, {
+      //   lastSavedMatch: lastSavedMatch || null
+      // });
     }
     
     // Update the player's last match ID in the sheet if it changed
@@ -1003,7 +1068,15 @@ function syncMatchesToQueue() {
 
   // Reset index when finished
   props.setProperty('SYNC_PLAYER_INDEX', '0');
-  logToSheet("        Escaneo H    brido completado.");
+  logEvent("INFO", "SYNC_DONE", "Escaneo Híbrido completado.", {
+    eligiblePlayers: syncStats.eligiblePlayers,
+    catchUpPlayers: syncStats.catchUpPlayers,
+    playersWithNewGames: syncStats.playersWithNewGames,
+    playersWithoutNewGames: syncStats.playersWithoutNewGames,
+    enqueuedGames: syncStats.enqueuedGames,
+    scanErrors: syncStats.scanErrors,
+    rowsWritten: newRowsForQueue.length
+  });
   
   // REMOVED: processQueue();  <-- This must be run by a separate trigger!
 }
@@ -1450,16 +1523,17 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
 
     //              AHORA S    : LLAMAMOS A RIOT (Con Memoria para Premades)
     let matchData;
-    if (GLOBAL_MATCH_CACHE[matchId]) {
+    const matchCache = getGlobalMatchCache();
+    if (matchCache[matchId]) {
         //   Si alguien de la premade ya la descarg     hoy, la cogemos de la memoria!
-        matchData = GLOBAL_MATCH_CACHE[matchId];
+        matchData = matchCache[matchId];
         Logger.log("              Usando datos en cach     para la premade: " + matchId);
     } else {
         // Si es el primero, vamos a Riot y la guardamos
         const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
         matchData = riotFetchJson(url);
         if (matchData && !matchData.__error) {
-            GLOBAL_MATCH_CACHE[matchId] = matchData;
+            matchCache[matchId] = matchData;
         }
     }
 
@@ -1519,10 +1593,10 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
       );
       if (!elderPresent && dragonsCount >= 5) elderPresent = true;
 
-      Logger.log("=== MATCH DEBUG START ===");
-      Logger.log("MatchID: " + matchId);
-      Logger.log("gameDuration raw: " + info.gameDuration);
-      Logger.log("=== MATCH DEBUG END ===");
+      // Logger.log("=== MATCH DEBUG START ===");
+      // Logger.log("MatchID: " + matchId);
+      // Logger.log("gameDuration raw: " + info.gameDuration);
+      // Logger.log("=== MATCH DEBUG END ===");
 
       const champion = p.championName || '';
       const lane = p.teamPosition || p.lane || '';
@@ -7045,7 +7119,7 @@ if (!p.win && durationMin >= 15) {
     const visionDiffTarget = opponent ? (p.visionScore || 0) - (opponent.visionScore || 0) : 0;
     const xpDiffTarget = opponent ? (p.challenges?.earlyLaningPhaseGoldExpAdvantage || 0) - (opponent.challenges?.earlyLaningPhaseGoldExpAdvantage || 0) : 0;
 
-    const cachedMatch = GLOBAL_MATCH_CACHE[matchId] || {};
+    const cachedMatch = getGlobalMatchCache()[matchId] || {};
     
     //          EXTRAEMOS EL CS AL MINUTO 15 DESDE LA CACH     
     const partId = p.participantId;
@@ -7105,8 +7179,7 @@ if (!p.win && durationMin >= 15) {
         losStats: cachedMatch.customLosStats || null,
         goldTimeline: cachedMatch.customGoldTimeline || null,
         eventsList: cachedMatch.customEventsList || null,
-        bans: cachedMatch.customBans || [], // <--- AÑADIDO: Incluir bans en el payload JSON
-        positions: cachedMatch.customPositions || null // <--- NUEVO: Para el Replay Map
+        bans: cachedMatch.customBans || [] // <--- AÑADIDO: Incluir bans en el payload JSON
     };
 
     return { total, notes, statsPayload };
@@ -7379,6 +7452,46 @@ function applyScoreColors() {
       const color = tierColor(tier);
       scores.getRange(i+1,1,1,4).setBackground(color);
    }
+}
+
+/* ==========================================================
+             ESCÁNER MANUAL DE PARTIDAS DE TORNEO (CUSTOMS)
+    ========================================================== */
+
+/**
+ * Disparador para detectar cuando el usuario pega un Riot ID manualmente 
+ * en la columna K (11) de la hoja TOURNAMENT_MATCHES.
+ */
+function onEdit(e) {
+  if (!e || !e.range) return;
+  const sheet = e.range.getSheet();
+  const sheetName = sheet.getName();
+  
+  if (sheetName === "TOURNAMENT_MATCHES") {
+    const row = e.range.getRow();
+    const col = e.range.getColumn();
+    
+    // Columna K (11) es "Riot ID"
+    if (col === 11 && row > 1) {
+      const riotId = String(e.value || "").trim();
+      if (riotId && riotId.includes('_')) {
+        const matchId = sheet.getRange(row, 1).getValue(); // Col A es MatchID (M1, M2...)
+        const status = sheet.getRange(row, 9).getValue(); // Col I es Status
+        
+        if (status === "PENDING" || status === "LOCKED") {
+          logToSheet(`[onEdit] Detectado Riot ID manual para ${matchId}: ${riotId}. Iniciando resolución...`);
+          // Ejecutamos la resolución automática
+          const res = autoResolveTournamentMatch(matchId, riotId);
+          
+          if (res && res.success) {
+            logToSheet(`[onEdit] Partida ${matchId} resuelta con éxito.`);
+          } else {
+            logToSheet(`[onEdit] Error resolviendo ${matchId}: ${res ? res.msg : "Sin respuesta"}`);
+          }
+        }
+      }
+    }
+  }
 }
 
 /* ==========================================================
@@ -8190,62 +8303,55 @@ function processNotesForBreakdown(notesString) {
 /* ----------------- WEB APP ENTRY POINT ----------------- */
 
 function doGet(e) {
-  const params = e.parameter;
-  
-  // Si llega ?player=NombreJugador, servir vista publica
-  if (params && params.player) {
-    const playerName = decodeURIComponent(params.player);
-    const template = HtmlService.createTemplateFromFile('PlayerProfile');
-    template.playerName = playerName;
-    return template.evaluate()
-      .setTitle('Perfil - ' + playerName + ' - Wargods Premier')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
-  
-  // Si llega ?team=NombreEquipo, servir vista publica de equipo
-  if (params && params.team) {
-    const teamName = decodeURIComponent(params.team);
-    const template = HtmlService.createTemplateFromFile('TeamProfile');
-    template.teamName = teamName;
-    return template.evaluate()
-      .setTitle(teamName + ' - Wargods Premier')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  // Verificación de Riot Games (por si acaso se necesita para la API)
+  if (e && e.queryString && e.queryString.indexOf('riot.txt') !== -1) {
+    return ContentService.createTextOutput("15623f0e-d2a6-4925-b2bb-6a55c3b35aaa");
   }
 
-  // Si llega ?p=ruta, enrutar a la herramienta del Centro de Datos correspondiente
-  if (params && params.p) {
-    var route = params.p;
-    var routeMap = {
-      'analytics':     'analytics',
-      'dashboard':     'dashboard',
-      'synergy':       'SynergyDashboard',
-      'behavior':      'BehaviorDashboard',
-      'inspector':     'Match_Inspector',
-      'global':        'GlobalDashboard',
-      'general':       'Grafico_General',
-      'match_details': 'MatchDetails',
-      'ranking':       'EpicRanking',
-      'graphics_menu': 'GraphicsMenu',
-      'history_global':'GlobalHistory',
-      'votar':         'VotingBooth',
-      'tournaments':   'LeagueMenu'
-    };
-    var templateName = routeMap[route] || 'LeagueMenu';
-    var template = HtmlService.createTemplateFromFile(templateName);
-    template.page = route;
-    template.seasonFilter = params.season || 'CURRENT';
-    return template.evaluate()
-      .setTitle('Wargods Premier - Centro de Datos')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  var p = (e && e.parameter && e.parameter.p) ? e.parameter.p : null;
+  var player = (e && e.parameter && e.parameter.player) ? e.parameter.player : null;
+
+  if (player) {
+    var t = HtmlService.createTemplateFromFile('PlayerProfile');
+    t.playerName = decodeURIComponent(player);
+    return t.evaluate()
+      .setTitle('Perfil - ' + t.playerName)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
-  
-  // Sin parametros: tu app normal (LeagueMenu.html)
-  return HtmlService.createTemplateFromFile('LeagueMenu')
-      .evaluate()
-      .setTitle('Wargods Premier')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  const routeMap = {
+    'ranking': 'EpicRanking',
+    'tournaments': 'LeagueMenu',
+    'graphics_menu': 'GraphicsMenu',
+    'match_details': 'MatchDetails',
+    'history_global': 'GlobalHistory',
+    'dashboard': 'dashboard',
+    'analytics': 'analytics',
+    'synergy': 'SynergyDashboard',
+    'behavior': 'BehaviorDashboard',
+    'inspector': 'Match_Inspector',
+    'global': 'GlobalDashboard',
+    'general': 'Grafico_General',
+    'votar': 'VotingBooth',
+    'forja': 'ForgeDashboard'
+  };
+
+  if (p && routeMap[p]) {
+    var template = HtmlService.createTemplateFromFile(routeMap[p]);
+    template.page = p;
+    template.seasonFilter = (e && e.parameter && e.parameter.season) ? e.parameter.season : 'CURRENT';
+    return template.evaluate()
+      .setTitle('Wargods Premier - ' + p)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // Por defecto, la liga
+  return HtmlService.createTemplateFromFile('LeagueMenu').evaluate()
+    .setTitle('Wargods Premier')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 /*
@@ -8521,33 +8627,7 @@ function showHeatmapHoras() {
   SpreadsheetApp.getUi().showModalDialog(html, '           Heatmap Horario');
 }
 
-
-function getPlayerList() {
-  try {
-    const ss = SpreadsheetApp.getActive();
-    // Cambiamos a la hoja PLAYERS para asegurar que salgan todos (incluso los que no han puntuado a    n)
-    const sheet = ss.getSheetByName("PLAYERS"); 
-    if (!sheet) return ['Error: Hoja PLAYERS no encontrada'];
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return []; 
-
-    // Leemos solo la columna A (Nombres)
-    const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-    
-    // 1. Aplanamos el array (de [[Nombre], [Nombre]] a [Nombre, Nombre])
-    // 2. Filtramos vac    os
-    // 3. Ordenamos alfab    ticamente (.sort())
-    const players = data
-      .flat()
-      .filter(name => name && name !== "")
-      .sort((a, b) => a.localeCompare(b)); // Orden alfab    tico A-Z seguro
-
-    return players;
-  } catch (e) {
-    return [`Error: ${e.message}`];
-  }
-}
+// Función movida a la sección de helpers.
 
 function getPlayerData(summonerName) {
    try {
@@ -16584,24 +16664,90 @@ function abrirUrnaInventario() { openVotingModalGeneric('INVENTORY'); } // Retro
 
 function getPlayerList() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PLAYERS');
+  if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   let players = [];
   
-  // Empezamos en 1 para saltar cabeceras
   for (let i = 1; i < data.length; i++) {
-    // Si la columna E (Activo) es "S    "
-    if (data[i][4] === "S    ") {
-      let name = data[i][0];
-      let rank = data[i][8] || "Unranked"; // Columna I
-      
-      // Enviamos un objeto en lugar de solo un string
-      players.push({
-        name: name,
-        rank: rank
-      });
+    // Aceptamos columna E = "S", true, "TRUE", "1", o simplemente si la fila tiene nombre
+    const active = data[i][4];
+    const name = String(data[i][0]).trim();
+    if (!name) continue;
+    if (active === "S" || active === true || String(active).toUpperCase() === "TRUE" || active === 1 || active === "1") {
+      players.push({ name: name, rank: data[i][8] || 'Unranked' });
     }
   }
-  return players;
+  
+  // Fallback: si no hay nadie activo, devolver TODOS los jugadores con nombre
+  if (players.length === 0) {
+    for (let i = 1; i < data.length; i++) {
+      const name = String(data[i][0]).trim();
+      if (name) players.push({ name: name, rank: data[i][8] || 'Unranked' });
+    }
+  }
+  
+  return players.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+function getPlayerListWithTeams() {
+  const ss = SpreadsheetApp.getActive();
+  
+  // 1. Leer equipos del torneo
+  const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+  const playersSheet = ss.getSheetByName('PLAYERS');
+  
+  let teamsMap = {}; // teamName -> [playerNames]
+  
+  if (teamsSheet && teamsSheet.getLastRow() > 1) {
+    const tData = teamsSheet.getDataRange().getValues();
+    for (let i = 1; i < tData.length; i++) {
+      const teamName = String(tData[i][1]).trim();
+      const rosterRaw = String(tData[i][8] || '').trim(); // Columna I = Roster
+      if (!teamName) continue;
+      
+      // El roster puede ser una lista separada por comas o saltos de línea
+      let members = [];
+      if (rosterRaw) {
+        members = rosterRaw.split(/[,\n]+/).map(n => n.trim()).filter(n => n);
+      }
+      teamsMap[teamName] = members;
+    }
+  }
+  
+  // 2. Si no hay equipos con roster, leer del sheet PLAYERS y agrupar todos bajo "Sin equipo"
+  if (Object.keys(teamsMap).length === 0 || Object.values(teamsMap).every(m => m.length === 0)) {
+    let allPlayers = [];
+    if (playersSheet && playersSheet.getLastRow() > 1) {
+      const pData = playersSheet.getDataRange().getValues();
+      for (let i = 1; i < pData.length; i++) {
+        const name = String(pData[i][0]).trim();
+        if (name) allPlayers.push(name);
+      }
+    }
+    teamsMap = { 'Todos los Jugadores': allPlayers };
+  }
+  
+  // 3. Leer ranks de la hoja PLAYERS para enriquecer los datos
+  let rankMap = {};
+  if (playersSheet && playersSheet.getLastRow() > 1) {
+    const pData = playersSheet.getDataRange().getValues();
+    for (let i = 1; i < pData.length; i++) {
+      const name = String(pData[i][0]).trim();
+      if (name) rankMap[name] = pData[i][8] || 'Unranked';
+    }
+  }
+  
+  // 4. Convertir a formato de respuesta
+  let result = [];
+  const teamNames = Object.keys(teamsMap).sort();
+  for (const teamName of teamNames) {
+    const members = teamsMap[teamName].map(p => ({ name: p, rank: rankMap[p] || '' }));
+    if (members.length > 0) {
+      result.push({ team: teamName, players: members });
+    }
+  }
+  
+  return result;
 }
 /* ==========================================================
    HELPER FUNCTIONS PARA LA WEB (VOTACIONES)
@@ -17385,7 +17531,16 @@ function updateMatchResult(matchId, scoreA, scoreB, riotId) {
       matchesSheet.getRange(i + 1, 9).setValue('COMPLETED'); 
       
       // AUTO-PAYOUT: Resolvemos apuestas inmediatamente
-      try { payoutLeagueBets(matchId, scoreA, scoreB); } catch(e) {}
+      var winnerIdx = -1;
+      if (scoreA > scoreB) winnerIdx = 0;
+      else if (scoreB > scoreA) winnerIdx = 1;
+      
+      if (winnerIdx !== -1) {
+          try { 
+              payoutLeagueBets(matchId, winnerIdx); 
+              resolveWeeklyPickems(matchId, winnerIdx);
+          } catch(e) {}
+      }
 
       if (riotId && String(riotId).trim() !== "") {
           matchesSheet.getRange(i + 1, 11).setValue(String(riotId).trim());
@@ -17562,6 +17717,28 @@ function createTournamentBackend(config) {
       matchData.push(['M8', 'Semis', 'Upper', 'W_M4', 'W_M5', 0, 0, '', 'LOCKED', `Ganador M4 vs Ganador M5`]);
       matchData.push(['M9', 'Gran Final', 'Final', 'W_M7', 'W_M8', 0, 0, '', 'LOCKED', `Ganador Semis 1 vs Ganador Semis 2`]);
   }
+  else if (config.format === 'elim_double' && numTeams === 10) {
+      let t = teamIds;
+      // Upper Bracket (Top 4 seeds)
+      matchData.push(['M1', 'UB Semi', 'Upper', t[0].id, t[3].id, 0, 0, '', 'PENDING', `${t[0].name} vs ${t[3].name}`]);
+      matchData.push(['M2', 'UB Semi', 'Upper', t[1].id, t[2].id, 0, 0, '', 'PENDING', `${t[1].name} vs ${t[2].name}`]);
+      matchData.push(['M3', 'UB Final', 'Upper', 'W_M1', 'W_M2', 0, 0, '', 'LOCKED', `Ganador M1 vs Ganador M2`]);
+      // Play-In R1 (Seeds 7-10)
+      matchData.push(['M4', 'Play-In R1', 'Lower', t[6].id, t[9].id, 0, 0, '', 'PENDING', `${t[6].name} vs ${t[9].name}`]);
+      matchData.push(['M5', 'Play-In R1', 'Lower', t[7].id, t[8].id, 0, 0, '', 'PENDING', `${t[7].name} vs ${t[8].name}`]);
+      // Play-In R2 (Seeds 5-6 vs Play-In winners)
+      matchData.push(['M6', 'Play-In R2', 'Lower', t[4].id, 'W_M4', 0, 0, '', 'LOCKED', `${t[4].name} vs Ganador M4`]);
+      matchData.push(['M7', 'Play-In R2', 'Lower', t[5].id, 'W_M5', 0, 0, '', 'LOCKED', `${t[5].name} vs Ganador M5`]);
+      // LB R1 (Losers UB Semi vs Play-In survivors)
+      matchData.push(['M8', 'LB R1', 'Lower', 'L_M1', 'W_M6', 0, 0, '', 'LOCKED', `Perdedor UB Semi 1 vs Ganador M6`]);
+      matchData.push(['M9', 'LB R1', 'Lower', 'L_M2', 'W_M7', 0, 0, '', 'LOCKED', `Perdedor UB Semi 2 vs Ganador M7`]);
+      // LB Semi
+      matchData.push(['M10', 'LB Semi', 'Lower', 'W_M8', 'W_M9', 0, 0, '', 'LOCKED', `Ganador M8 vs Ganador M9`]);
+      // LB Final
+      matchData.push(['M11', 'LB Final', 'Lower', 'L_M3', 'W_M10', 0, 0, '', 'LOCKED', `Perdedor UB Final vs Ganador LB Semi`]);
+      // Gran Final
+      matchData.push(['M12', 'Gran Final', 'Final', 'W_M3', 'W_M11', 0, 0, '', 'LOCKED', `Ganador Upper vs Ganador Lower`]);
+  }
   else if (config.format === 'elim_single' || config.format === 'elim_double') {
       let matchCounter = 1; let currentRoundIds = [];
       let r1Name = numTeams === 16 ? 'Octavos' : (numTeams === 8 ? 'Cuartos' : 'Semifinales');
@@ -17637,9 +17814,64 @@ function sendDiscordAlert(mensaje) {
 
         const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
         Logger.log("Discord enviado. C    digo: " + response.getResponseCode());
-
     } catch (e) { 
-        Logger.log("Error cr    tico Discord: " + e.message); 
+        Logger.log("Error critico Discord: " + e.message); 
+    }
+}
+
+function sendNegotiationDiscordNotification(actionType, actingTeamName, opponentDiscordId, opponentTeamName, matchRound, proposedDate, notes) {
+  // Usando el MISMO webhook que sendDiscordAlert (el que funciona)
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo";
+  
+  // Enlace dinámico a tu Web App (así nunca se rompe si cambias la URL)
+  const WEB_LINK = ScriptApp.getService().getUrl();
+
+  // Si no hay ID, se avisa solo con texto. Si hay ID se hace ping.
+  let mention = opponentDiscordId ? `<@${opponentDiscordId}>` : `@Capitán de ${opponentTeamName}`;
+  let contentMsg = "";
+
+  if (actionType === 'PROPOSE') {
+      contentMsg = `📢 **¡NUEVA PROPUESTA DE HORARIO!** ${mention}\n\nEl equipo **${actingTeamName}** ha propuesto una fecha para vuestro partido de **${matchRound}**.\n\n🗓️ **Fecha Propuesta:** ${proposedDate}\n📝 **Notas:** ${notes || "Ninguna"}\n\n👉 [Entra aquí para Aceptar o Rechazar la fecha](${WEB_LINK})`;
+  } else if (actionType === 'ACCEPT') {
+      contentMsg = `✅ **¡PACTO SELLADO!** ${mention}\n\nEl equipo **${actingTeamName}** ha **ACEPTADO** vuestra propuesta para la **${matchRound}**.\n\n🗓️ **Fecha Oficial:** ${proposedDate}\n\n¡Preparad las armas! ⚔️`;
+  } else if (actionType === 'REJECT') {
+      contentMsg = `❌ **¡PROPUESTA RECHAZADA!** ${mention}\n\nEl equipo **${actingTeamName}** ha **RECHAZADO** vuestra propuesta de horario para la **${matchRound}**.\n\n👉 [Entra aquí para proponer otra fecha](${WEB_LINK})`;
+  }
+
+  if (!contentMsg) return;
+
+  try {
+    let payload = {
+        username: "Wargods Referee",
+        avatar_url: "https://i.imgur.com/M0k3y3N.png",
+        content: contentMsg
+    };
+
+    let response = UrlFetchApp.fetch(WEBHOOK_URL, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+    });
+    Logger.log("Discord Negociación enviado. Código: " + response.getResponseCode() + " | Body: " + response.getContentText().substring(0,200));
+  } catch(e) {
+    Logger.log("ERROR CRITICO Discord Negociación: " + e.message + " | Stack: " + e.stack);
+  }
+}
+
+function formatDiscordDate(d) {
+    if (!d) return "";
+    try {
+        let dateObj = new Date(d);
+        if (isNaN(dateObj.getTime())) return String(d);
+        let day = ("0" + dateObj.getDate()).slice(-2);
+        let month = ("0" + (dateObj.getMonth() + 1)).slice(-2);
+        let year = dateObj.getFullYear();
+        let hours = ("0" + dateObj.getHours()).slice(-2);
+        let mins = ("0" + dateObj.getMinutes()).slice(-2);
+        return `${day}/${month}/${year} ${hours}:${mins}`;
+    } catch(e) {
+        return String(d);
     }
 }
 
@@ -17696,7 +17928,7 @@ function getTournamentData() {
      
      if (!mId) continue; 
 
-     let vodUrl = ""; let matchDate = ""; let propDate = ""; let propBy = "";
+     let vodUrl = ""; let matchDate = ""; let propDate = ""; let propBy = ""; let tCode = "";
      try {
          if (mData[i].length > 11 && mData[i][11]) vodUrl = String(mData[i][11]).trim();
          // Col M (12) Fecha final
@@ -17704,13 +17936,16 @@ function getTournamentData() {
          // Col N (13) Fecha Propuesta y Col O (14) Propuesto Por
          if (mData[i].length > 13 && mData[i][13]) propDate = String(mData[i][13]).trim();
          if (mData[i].length > 14 && mData[i][14]) propBy = String(mData[i][14]).trim();
+         // Col Q (16) Código de Torneo
+         if (mData[i].length > 16 && mData[i][16]) tCode = String(mData[i][16]).trim();
      } catch(e) {}
 
      matches.push({
          id: mId, round: mData[i][1], bracket: mData[i][2], tA: tA, tB: tB, 
          sA: sA, sB: sB, winner: mData[i][7], status: mStatus, names: mData[i][9],
          riotId: String(mData[i][10] || ""), vod: vodUrl,      
-         date: matchDate, proposedDate: propDate, proposedBy: propBy, //            A    adimos la propuesta
+         date: matchDate, proposedDate: propDate, proposedBy: propBy, 
+         tCode: tCode, // Añadimos el código de torneo
          votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0,
          volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0
      });
@@ -17766,12 +18001,36 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
         mSheet.insertColumnsAfter(mSheet.getMaxColumns(), 16 - mSheet.getMaxColumns());
     }
 
-    // 3. Ejecutamos la acci    n en el Excel
+    // 3. Extraer información común de los equipos para Discord
+    let matchData = mData[matchRow - 1]; 
+    let teamA_ID = String(matchData[3]);
+    let teamB_ID = String(matchData[4]);
+    let matchRound = String(matchData[1]);
+    
+    let opponentId = (teamId === teamA_ID) ? teamB_ID : teamA_ID;
+    let actingName = "Un equipo";
+    let opponentName = "Rival";
+    let opponentDiscordId = "";
+    
+    for(let j=1; j<tData.length; j++) {
+        let tId = String(tData[j][0]);
+        if(tId === teamId) actingName = String(tData[j][1]);
+        if(tId === opponentId) {
+            opponentName = String(tData[j][1]);
+            opponentDiscordId = String(tData[j][11] || "").trim(); // Columna L (Índice 11)
+        }
+    }
+
+    // 4. Ejecutamos la acción en el Excel
     if(action === 'PROPOSE') {
       mSheet.getRange(matchRow, 14).setValue(dateStr.replace("T", " ")); // N (Propuesta)
-      mSheet.getRange(matchRow, 15).setValue(teamId);  // O (Por qui    n)
+      mSheet.getRange(matchRow, 15).setValue(teamId);  // O (Por quién)
       mSheet.getRange(matchRow, 16).setValue(notesStr); // P (Notas)
-      return {success: true, msg: "        Propuesta enviada. El equipo rival debe aceptarla."};
+      mSheet.getRange(matchRow, 13).setValue(""); // Limpiar M (Hora definida/cerrada)
+
+      try { sendNegotiationDiscordNotification('PROPOSE', actingName, opponentDiscordId, opponentName, matchRound, formatDiscordDate(dateStr), notesStr); } catch(e){ Logger.log('DISCORD PROPOSE ERROR: ' + e.message); }
+
+      return {success: true, msg: "✅ Propuesta enviada. El equipo rival debe aceptarla."};
     }
     else if(action === 'ACCEPT') {
       let propDate = mSheet.getRange(matchRow, 14).getValue();
@@ -17779,16 +18038,46 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
       mSheet.getRange(matchRow, 14).setValue(""); // Limpiamos N
       mSheet.getRange(matchRow, 15).setValue(""); // Limpiamos O
       mSheet.getRange(matchRow, 16).setValue(""); // Limpiamos P
-      return {success: true, msg: "           PACTO SELLADO! El horario ya es oficial en la web."};
+
+      try { sendNegotiationDiscordNotification('ACCEPT', actingName, opponentDiscordId, opponentName, matchRound, formatDiscordDate(propDate), ""); } catch(e){ Logger.log('DISCORD ACCEPT ERROR: ' + e.message); }
+
+      return {success: true, msg: "🤝 PACTO SELLADO! El horario ya es oficial en la web."};
     }
     else if(action === 'REJECT') {
       mSheet.getRange(matchRow, 14).setValue("");
       mSheet.getRange(matchRow, 15).setValue("");
       mSheet.getRange(matchRow, 16).setValue("");
-      return {success: true, msg: "       Propuesta rechazada. El cuadro vuelve a estar vac    o."};
+
+      try { sendNegotiationDiscordNotification('REJECT', actingName, opponentDiscordId, opponentName, matchRound, "", ""); } catch(e){ Logger.log('DISCORD REJECT ERROR: ' + e.message); }
+
+      return {success: true, msg: "❌ Propuesta rechazada. El cuadro vuelve a estar vacío."};
     }
   } catch(e) { return {success: false, msg: "Error: " + e.message}; } 
   finally { lock.releaseLock(); }
+}
+
+function setTournamentCode(matchId, code) {
+  const ss = SpreadsheetApp.getActive();
+  const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+  const mData = matchesSheet.getDataRange().getValues();
+  
+  for (let i = 1; i < mData.length; i++) {
+    if (String(mData[i][0]) === String(matchId)) {
+      if (matchesSheet.getMaxColumns() < 17) {
+        matchesSheet.insertColumnsAfter(matchesSheet.getMaxColumns(), 17 - matchesSheet.getMaxColumns());
+      }
+      matchesSheet.getRange(i + 1, 17).setValue(String(code).trim());
+      
+      // Notificar a Discord
+      try {
+          const teamNames = String(mData[i][9] || "").split(" vs ");
+          sendDiscordAlert(`🎫 **Código de Torneo Actualizado** para el partido **${teamNames[0]} vs ${teamNames[1]}** (ID: ${matchId}).`);
+      } catch(e) {}
+
+      return { success: true, msg: "Código de torneo guardado correctamente." };
+    }
+  }
+  return { success: false, msg: "Partido no encontrado." };
 }
 
 
@@ -18218,10 +18507,29 @@ function announcePickemsToDiscord() {
                    ANUNCIAR RESULTADOS DEL TORNEO A DISCORD
    ========================================================== */
 function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
-  //            PEGA TU WEBHOOK DE DISCORD AQU               
+  // PEGA TU WEBHOOK DE DISCORD AQUI
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_ENLACE_AQUI")) return;
+
+  // Buscar los Discord IDs de los capitanes
+  const ss = SpreadsheetApp.getActive();
+  const tSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+  let tData = [];
+  if(tSheet) tData = tSheet.getDataRange().getValues();
+  
+  let discordIdA = "";
+  let discordIdB = "";
+  
+  for(let i=1; i<tData.length; i++) {
+    let name = String(tData[i][1]).trim();
+    if(name === String(teamA).trim()) discordIdA = String(tData[i][11] || "").trim();
+    if(name === String(teamB).trim()) discordIdB = String(tData[i][11] || "").trim();
+  }
+  
+  let mentionA = discordIdA ? `<@${discordIdA}>` : teamA;
+  let mentionB = discordIdB ? `<@${discordIdB}>` : teamB;
+  let mentions = `${mentionA} y ${mentionB}`;
 
   let winner = "";
   let loser = "";
@@ -18241,25 +18549,25 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   } else {
       // Empate
       const payloadDraw = {
-        content: "              **  RESULTADO DEL TORNEO!**",
+        content: `🚨 **¡RESULTADO DEL TORNEO!** Atención capitanes: ${mentions}`,
         embeds: [{
-          title: `Empate t    cnico entre ${teamA} y ${teamB}`,
-          description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**.   Reparto de puntos para ambos!`,
+          title: `Empate técnico entre ${teamA} y ${teamB}`,
+          description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**. ¡Reparto de puntos para ambos!`,
           color: 9807270
         }]
       };
-      UrlFetchApp.fetch(WEBHOOK_URL, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payloadDraw) });
+      UrlFetchApp.fetch(WEBHOOK_URL, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payloadDraw), muteHttpExceptions: true });
       return;
   }
 
   const payload = {
-    content: "          **  NUEVO RESULTADO OFICIAL DE LA LIGA!**",
+    content: `🏆 **¡NUEVO RESULTADO OFICIAL DE LA LIGA!** Atención capitanes: ${mentions}`,
     embeds: [{
-      title: `          ${winner} aplasta a ${loser}          `,
-      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\n          *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
+      title: `💥 ${winner} aplasta a ${loser} 💥`,
+      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\n👀 *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
       color: color,
       image: { url: "https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg" },
-      footer: { text: "Wargods Premier         Resultados Oficiales" }
+      footer: { text: "Wargods Premier - Resultados Oficiales" }
     }]
   };
 
@@ -18289,11 +18597,11 @@ function getPostGameLobbyData(matchId) {
   let officialAce = null;
   let isResolved = false;
 
+  //          A     ADIDO: Variables para guardar los datos globales del partido
   let matchWinStats = null;
   let matchLosStats = null;
   let matchTimeline = null;
-  let matchEvents = null; 
-  let matchPositions = null; // <--- NUEVO
+  let matchEvents = null; // <--- VITAL para el Timeline de Objetivos (OP.GG)
 
   if (mvpSheet && mvpSheet.getLastRow() > 1) {
       const vData = mvpSheet.getDataRange().getValues();
@@ -18321,17 +18629,19 @@ function getPostGameLobbyData(matchId) {
       
       let cs = "0.0";
       let csTotal = 0;
-      let cs15 = 0;
-      let plates = 0;
+      let cs15 = 0;      //          NUEVO
+      let plates = 0;    //          NUEVO
       let gpm = "0";
       let gold = 0;
       let tank = "-";
       let vspm = "0.00";
       let visionScore = 0;
+
       let items = [];
       let spells = [];
-      let dmgObj = 0;
-      let dmgTurrets = 0;
+
+      let dmgObj = 0;      //          A     ADIDO
+      let dmgTurrets = 0;  //          A     ADIDO
 
       const rawJson = data[i][15]; 
       if (rawJson) {
@@ -18340,23 +18650,28 @@ function getPostGameLobbyData(matchId) {
               
               if (adv.csMin) cs = Number(adv.csMin).toFixed(1);
               if (adv.cs) csTotal = Number(adv.cs);
+              
               if (adv.cs15 !== undefined) cs15 = Number(adv.cs15);    
               if (adv.plates !== undefined) plates = Number(adv.plates); 
+              
               if (adv.gpm) gpm = Number(adv.gpm).toFixed(0);
               if (adv.gold) gold = Number(adv.gold);
               if (adv.vspm) vspm = Number(adv.vspm).toFixed(2);
               if (adv.visionScore) visionScore = Number(adv.visionScore);
+              
               if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + "%";
+              if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + "k";
+
               if (adv.items) items = adv.items;
               if (adv.spells) spells = adv.spells;
-              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);
-              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets);
+              
+              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         //          A     ADIDO
+              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); //          A     ADIDO
               
               if (adv.goldTimeline && matchTimeline === null) {
                   matchTimeline = adv.goldTimeline;
                   matchWinStats = adv.winStats;
                   matchLosStats = adv.losStats;
-                  matchPositions = adv.positions || null; // <--- EXTRAER POSICIONES
               }
               if (adv.eventsList && matchEvents === null) {
                   matchEvents = adv.eventsList;
@@ -18370,28 +18685,26 @@ function getPostGameLobbyData(matchId) {
         name: pName,
         champ: data[i][3],
         role: data[i][4],
-        k: data[i][6],
-        d: data[i][7],
-        a: data[i][8],
-        dmg: data[i][9],
-        kp: data[i][10],
-        points: data[i][12],
-        notes: data[i][13],
+        k: Number(data[i][6] || 0),
+        d: Number(data[i][7] || 0),
+        a: Number(data[i][8] || 0),
+        dmg: Number(data[i][9] || 0),
+        kp: Number(data[i][10] || 0),
+        points: Number(data[i][12] || 0).toFixed(1),
         votes: currentMatchVotes[pName] || 0,
         cs: cs,
         csTotal: csTotal,
-        cs15: cs15,
-        plates: plates,
+        cs15: cs15,       //          NUEVO
+        plates: plates,   //          NUEVO
         gpm: gpm,
         gold: gold,
         tank: tank,
         vspm: vspm,
         visionScore: visionScore,
-        items: items,
-        spells: spells,
-        dmgObj: dmgObj,
-        dmgTurrets: dmgTurrets,
-        participantId: (JSON.parse(rawJson || '{}')).participantId || 0
+        items: items,   //          NUEVO
+        spells: spells,  //          NUEVO
+        dmgObj: dmgObj,        //          A     ADIDO
+        dmgTurrets: dmgTurrets //          A     ADIDO
       };
 
       if (data[i][5] === 'Win') winners.push(pData);
@@ -18413,8 +18726,7 @@ function getPostGameLobbyData(matchId) {
       winStats: matchWinStats, 
       losStats: matchLosStats, 
       timeline: matchTimeline,  
-      events: matchEvents,
-      positions: matchPositions
+      events: matchEvents //            ESTO ES LO QUE LE FALTABA A LA WEB PARA PINTAR EL TIMELINE DE OBJETIVOS!
   };
 }
 
@@ -18486,6 +18798,7 @@ function resolveMatchAwardsBackend(matchId) {
                 // Si hay un ganador claro, ejecutamos los pagos del Casino
                 if (winnerIdx !== -1) {
                     payoutLeagueBets(matchId, winnerIdx);
+                    resolveWeeklyPickems(matchId, winnerIdx);
                 }
             }
         } catch(e) {
@@ -19095,22 +19408,123 @@ function getTeamAdvancedStats(rosterStr) {
 /* ==========================================================
              ESC    NER MANUAL DE PARTIDAS DE TORNEO (CUSTOMS)
    ========================================================== */
-function registerTournamentMatch(matchId) {
+/* ==========================================================
+           HELPER: OBTENER MATCH ID DESDE CÓDIGO DE TORNEO
+   ========================================================== */
+function getMatchIdFromTournamentCode(tournamentCode) {
   try {
     const cfg = readConfigMap();
-    const region = cfg.riot_region || 'europe'; 
-    
-    matchId = String(matchId).trim();
-    if (!matchId.includes('_')) {
-      return { success: false, msg: "       Formato incorrecto. Debe incluir la regi    n (Ej: EUW1_12345678)" };
+    const platformRegion = cfg.riot_platform || 'euw1'; // ej: euw1, na1, eun1
+    const routingRegion = cfg.riot_region || 'europe';
+
+    // Paso 1: Obtener la lista de gameIds asociados al código de torneo
+    const gamesUrl = `https://${routingRegion}.api.riotgames.com/lol/tournament/v5/games/by-code/${encodeURIComponent(tournamentCode)}`;
+    const gamesData = riotFetchJson(gamesUrl);
+
+    if (!gamesData || gamesData.__error || !Array.isArray(gamesData) || gamesData.length === 0) {
+      const errCode = gamesData && gamesData.__error ? gamesData.code : null;
+      if (errCode === 403) {
+        logEvent("ERROR", "TOURNAMENT_LOOKUP_403", "Código de torneo rechazado por permisos de Riot.", {
+          tournamentCode: tournamentCode,
+          routingRegion: routingRegion
+        });
+        return { error: true, msg: "La API de torneos devolvió 403 (sin permisos para by-code en esta key/app)." };
+      }
+      logEvent("WARN", "TOURNAMENT_LOOKUP_EMPTY", "No se encontraron partidas para el código de torneo.", {
+        tournamentCode: tournamentCode,
+        response: gamesData
+      });
+      return { error: true, msg: "No se encontraron partidas para ese código de torneo. ¿Está bien escrito el código?" };
     }
 
-    // 1. Descargar la partida directamente de Riot API
-    const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
-    const matchData = riotFetchJson(url);
+    // El endpoint devuelve un array de partidas; cogemos la más reciente (última)
+    const lastGame = gamesData[gamesData.length - 1];
+    const gameId = lastGame.gameId || lastGame.id;
+
+    if (!gameId) {
+      return { error: true, msg: "La API de Torneos devolvió datos pero sin Game ID. Contacta con soporte." };
+    }
+
+    // Paso 2: Construir el Match ID completo (ej: EUW1_7841515865)
+    const platformUpper = String(platformRegion).toUpperCase(); // EUW1
+    const fullMatchId = `${platformUpper}_${gameId}`;
+    logEvent("INFO", "TOURNAMENT_LOOKUP_OK", "Código de torneo resuelto a Match ID.", {
+      tournamentCode: tournamentCode,
+      matchId: fullMatchId
+    });
+
+    return { error: false, matchId: fullMatchId, gameId: gameId };
+  } catch(e) {
+    return { error: true, msg: "Error buscando el código de torneo: " + e.message };
+  }
+}
+
+/* ==========================================================
+             ESCÁNER MANUAL DE PARTIDAS DE TORNEO (CUSTOMS)
+   ========================================================== */
+function registerTournamentMatch(matchId, tournamentCodeOpt) {
+  try {
+    const cfg = readConfigMap();
+    const region = cfg.riot_region || 'europe';
+    const tCode = String(tournamentCodeOpt || '').trim();
+
+    matchId = String(matchId || '').trim();
+    logEvent("INFO", "MATCH_SCAN_START", "Iniciando escaneo manual de partida.", {
+      matchIdInput: matchId || null,
+      tournamentCode: tCode || null,
+      region: region
+    });
+    if (!matchId && tCode) {
+      const fromCode = getMatchIdFromTournamentCode(tCode);
+      if (fromCode.error) return { success: false, msg: fromCode.msg };
+      matchId = fromCode.matchId;
+    }
+    if (!matchId || !matchId.includes('_')) {
+      return { success: false, msg: "Formato incorrecto: EUW1_12345678 o usa solo el campo de código de torneo." };
+    }
+
+    function fetchMatchV5(id) {
+      const u = `https://${region}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(id)}`;
+      return riotFetchJson(u);
+    }
+
+    // Reintentos: match-v5 puede devolver 404 unos minutos tras acabar la custom
+    let matchData = fetchMatchV5(matchId);
+    let retries = 0;
+    while (matchData && matchData.__error && matchData.code === 404 && retries < 5) {
+      retries++;
+      Utilities.sleep(4000);
+      matchData = fetchMatchV5(matchId);
+    }
+    if (retries > 0) {
+      logEvent("WARN", "MATCH_SCAN_RETRIES", "Reintentos aplicados por 404 en match-v5.", {
+        matchId: matchId,
+        retries: retries
+      });
+    }
+
+    if (matchData && matchData.__error && matchData.code === 404 && tCode) {
+      const alt = getMatchIdFromTournamentCode(tCode);
+      if (!alt.error && alt.matchId && String(alt.matchId) !== String(matchId)) {
+        matchId = alt.matchId;
+        matchData = fetchMatchV5(matchId);
+      }
+    }
 
     if (!matchData || matchData.__error) {
-      return { success: false, msg: "       Riot no encuentra la partida. Verifica que el ID es correcto." };
+      const errCode = matchData ? matchData.code : '?';
+      logEvent("ERROR", "MATCH_SCAN_FAIL", "No se pudo descargar la partida.", {
+        matchId: matchId,
+        errCode: errCode,
+        tournamentCode: tCode || null
+      });
+      if (errCode === 404) {
+        return {
+          success: false,
+          msg: "⚠️ Riot devuelve 404: la partida aún no está en match-v5 (normal 3–15 min tras el game) o el ID no coincide. Verifica riot_region en CONFIG (EUW → europe). Si usas código de torneo, el API de torneos requiere clave de producción y permisos."
+        };
+      }
+      return { success: false, msg: `❌ Error ${errCode} de la API de Riot. Comprueba el Match ID y CONFIG.` };
     }
 
     // =====================================================
@@ -19125,7 +19539,6 @@ function registerTournamentMatch(matchId) {
     let eventsList = []; 
     let csAt15 = {}; // <--- NUEVO: Para guardar el farmeo exacto al min 15
     let matchBans = [];
-    let playerPositions = {}; // <--- NUEVO: Para el Replay Map
 
     // EXTRAER BANS REALES DE LA PARTIDA (Independiente del Timeline)
     if (matchData && matchData.info && matchData.info.teams) {
@@ -19185,11 +19598,6 @@ function registerTournamentMatch(matchId) {
                 let wGold = 0, lGold = 0;
                 for (let pId in frame.participantFrames) {
                     let pf = frame.participantFrames[pId];
-                    
-                    // GUARDAR POSICIONES PARA EL REPLAY MAP
-                    if (!playerPositions[pf.participantId]) playerPositions[pf.participantId] = [];
-                    playerPositions[pf.participantId].push({ x: pf.position.x, y: pf.position.y });
-
                     let pData = matchData.info.participants.find(p => p.participantId == pf.participantId);
                     if (pData) {
                         if (pData.teamId === winTeamId) wGold += pf.totalGold;
@@ -19246,13 +19654,10 @@ function registerTournamentMatch(matchId) {
     matchData.customEventsList = eventsList; 
     matchData.customCsAt15 = csAt15;
     matchData.customBans = matchBans; // <--- AÑADIDO: Guardar bans reales en cache
-    matchData.customPositions = playerPositions; // <--- NUEVO: Guardar coordenadas
     // =====================================================
 
     // 2. Guardarla en la Memoria Global
-    if (typeof GLOBAL_MATCH_CACHE !== 'undefined') {
-        GLOBAL_MATCH_CACHE[matchId] = matchData;
-    }
+    getGlobalMatchCache()[matchId] = matchData;
 
     // 3. Mapear a los jugadores de nuestra base de datos
     const ss = SpreadsheetApp.getActive();
@@ -19299,8 +19704,15 @@ function registerTournamentMatch(matchId) {
     // -----------------------------------------------------
 
     if (processedCount > 0) {
+      logEvent("INFO", "MATCH_SCAN_OK", "Partida escaneada correctamente.", {
+        matchId: matchId,
+        processedPlayers: processedCount
+      });
       return { success: true, msg: `          Partida Escaneada! Se han guardado las estad    sticas de ${processedCount} jugadores.` };
     } else {
+      logEvent("WARN", "MATCH_SCAN_NO_PLAYERS", "La partida existe, pero no hubo jugadores mapeados en PLAYERS.", {
+        matchId: matchId
+      });
       return { success: false, msg: "             La partida existe, pero NINGUNO de los 10 jugadores est     en tu pesta    a PLAYERS." };
     }
 
@@ -19310,19 +19722,38 @@ function registerTournamentMatch(matchId) {
 }
 
 /* ==========================================================
-          AUTO-RESOLUCI     N M    GICA DE PARTIDOS DE TORNEO
+          AUTO-RESOLUCIÓN MÁGICA DE PARTIDOS DE TORNEO
    ========================================================== */
-function autoResolveTournamentMatch(tMatchId, riotId) {
+// tournamentCode es OPCIONAL. Si se pasa, usamos el Tournament API para obtener el riotId automáticamente.
+function autoResolveTournamentMatch(tMatchId, riotId, tournamentCode) {
   try {
-    riotId = String(riotId).trim();
-    if (!riotId.includes('_')) return { success: false, msg: "Riot ID inv    lido (Falta la regi    n, ej: EUW1_...)." };
+
+    // --- MODO CÓDIGO DE TORNEO: Resolver el Match ID automáticamente ---
+    if (tournamentCode && String(tournamentCode).trim() !== '') {
+      tournamentCode = String(tournamentCode).trim();
+      logToSheet(`Resolviendo partida de torneo por código: ${tournamentCode}`);
+
+      const codeResult = getMatchIdFromTournamentCode(tournamentCode);
+      if (codeResult.error) {
+        return { success: false, msg: '⚠️ ' + codeResult.msg };
+      }
+      // Usamos el Match ID resuelto por el código de torneo
+      riotId = codeResult.matchId;
+      logToSheet(`Match ID resuelto desde código de torneo: ${riotId}`);
+    }
+
+    // --- MODO NORMAL: Validar el riotId ---
+    riotId = String(riotId || '').trim();
+    if (!riotId || !riotId.includes('_')) {
+      return { success: false, msg: "Riot ID inválido (Falta la región, ej: EUW1_...). Si usas Código de Torneo, pégalo en el campo correspondiente." };
+    }
 
     // 1. Escanear y guardar la partida en la base de datos general
     const scanRes = registerTournamentMatch(riotId);
     if (!scanRes.success) return scanRes; 
 
-    // 2. Extraer datos de la cach     (registerTournamentMatch la guarda ah     al descargar)
-    let matchData = GLOBAL_MATCH_CACHE[riotId];
+    // 2. Extraer datos de la caché (registerTournamentMatch la guarda ahí al descargar)
+    let matchData = getGlobalMatchCache()[riotId];
     if (!matchData) {
         const cfg = readConfigMap();
         const url = `https://${cfg.riot_region || 'europe'}.api.riotgames.com/lol/match/v5/matches/${riotId}`;
@@ -19364,7 +19795,7 @@ function autoResolveTournamentMatch(tMatchId, riotId) {
         }
     }
 
-    // 6. Contar de qu     equipo son los ganadores
+    // 6. Contar de qué equipo son los ganadores
     const participants = matchData.info.participants;
     let matchedA = 0; let matchedB = 0;
 
@@ -19382,14 +19813,14 @@ function autoResolveTournamentMatch(tMatchId, riotId) {
     if (matchedA > matchedB) { pointsA = 1; pointsB = 0; }
     else if (matchedB > matchedA) { pointsA = 0; pointsB = 1; }
     else {
-        return { success: false, msg: "             Partida escaneada y guardada, pero no pude deducir autom    ticamente qui    n gan     porque los jugadores de la partida no coinciden con los nombres que pusiste en los Rosters. Por favor, pon el 1-0 manualmente abajo y dale a GUARDAR." };
+        return { success: false, msg: "⚠️ Partida escaneada y guardada, pero no pude deducir automáticamente quién ganó (los jugadores de la partida no coinciden con los Rosters). Pon el 1-0 manualmente y dale a GUARDAR." };
     }
 
     // 7. Aplicar Resultado Oficial
     const updateRes = updateMatchResult(tMatchId, pointsA, pointsB, riotId);
     
     if (updateRes.success) {
-        return { success: true, msg: `         MAGIA PURA! La partida se ha descargado, se ha detectado al ganador autom    ticamente y las stats están listas para verse en el Acta.` };
+        return { success: true, msg: `✅ ¡MAGIA PURA! La partida se ha descargado${tournamentCode ? ' (vía Código de Torneo)' : ''}, se detectó al ganador automáticamente y las stats están listas.` };
     } else {
         return { success: false, msg: "Fallo al guardar el resultado final en el cuadro." };
     }
@@ -19407,6 +19838,7 @@ function announceStreamBackend(streamUrl, matchInfo) {
   sendDiscordAlert(mensaje); // Usa el webhook que ya configuramos antes
   return "  Alerta de Stream enviada a Discord!";
 }
+
 
 
 function setStreamDate(dateStr) {
@@ -19484,6 +19916,248 @@ function getMetaStats() {
   return resultArr.sort((a, b) => b.picks - a.picks || b.winrate - a.winrate);
 }
 
+/* ==========================================================
+   🚀 FUNCIÓN MAESTRA UNIFICADA - getAllDashboardData
+   Lee cada hoja UNA SOLA VEZ y devuelve todo lo necesario.
+   Elimina ~17 lecturas redundantes por carga de página.
+   ========================================================== */
+function getAllDashboardData(roundFilter) {
+  roundFilter = roundFilter || 'ALL';
+  const ss = SpreadsheetApp.getActive();
+
+  // ── 1. LEER CADA HOJA UNA SOLA VEZ ──
+  const infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
+  const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+  const tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+  const matchesSheet = ss.getSheetByName('MATCHES');
+  const betSheet = ss.getSheetByName('Liga_Bets');
+  const votesSheet = ss.getSheetByName('TOURNAMENT_VOTES');
+  const mvpSheet = ss.getSheetByName('TOURNAMENT_MVP_VOTES');
+  const pickemsSheet = ss.getSheetByName('PICKEMS_RECORDS');
+  const walletSheet = ss.getSheetByName('Liga_Wallets');
+  const bpSheet = ss.getSheetByName('BATTLE_PASS');
+  const manualNewsSheet = ss.getSheetByName('NEWS_MANUAL');
+  const gazetteSheet = ss.getSheetByName('AI_GAZETTE');
+
+  const tData = teamsSheet ? teamsSheet.getDataRange().getValues() : [];
+  const tmData = tMatchesSheet ? tMatchesSheet.getDataRange().getValues() : [];
+  const mData = matchesSheet ? matchesSheet.getDataRange().getValues() : [];
+  const bData = betSheet && betSheet.getLastRow() > 1 ? betSheet.getDataRange().getValues() : [];
+  const vData = votesSheet && votesSheet.getLastRow() > 1 ? votesSheet.getDataRange().getValues() : [];
+  const mvpData = mvpSheet && mvpSheet.getLastRow() > 1 ? mvpSheet.getDataRange().getValues() : [];
+  const pickData = pickemsSheet && pickemsSheet.getLastRow() > 1 ? pickemsSheet.getDataRange().getValues() : [];
+  const walletData = walletSheet && walletSheet.getLastRow() > 1 ? walletSheet.getDataRange().getValues() : [];
+  const bpData = bpSheet && bpSheet.getLastRow() > 1 ? bpSheet.getDataRange().getValues() : [];
+
+  // ── 2. TOURNAMENT DATA (antes getTournamentData) ──
+  let tournament = { status: 'NONE' };
+  if (infoSheet && infoSheet.getLastRow() >= 2) {
+    const status = infoSheet.getRange('B4').getValue();
+    if (status !== 'NONE') {
+      const format = infoSheet.getRange('B2').getValue();
+      let teams = [];
+      for (let i = 1; i < tData.length; i++) {
+        let id = tData[i][0]; let name = tData[i][1];
+        if (!id || String(name).trim() === "") continue;
+        teams.push({ id: id, name: name, w: tData[i][2], l: tData[i][3], d: tData[i][4], pts: tData[i][5], roster: String(tData[i][8] || ""), logo: String(tData[i][9] || ""), streak: 0 });
+      }
+      let betsVolume = {};
+      for (let i = 1; i < bData.length; i++) {
+        let mId = String(bData[i][2]); let teamIdx = parseInt(bData[i][3]); let amount = parseFloat(bData[i][4]) || 0;
+        if (!betsVolume[mId]) betsVolume[mId] = { volA: 0, volB: 0 };
+        if (teamIdx === 0) betsVolume[mId].volA += amount; else if (teamIdx === 1) betsVolume[mId].volB += amount;
+      }
+      let votesMap = {};
+      for (let i = 1; i < vData.length; i++) { votesMap[vData[i][0]] = { a: vData[i][1], b: vData[i][2] }; }
+      let matches = []; let streaksTracker = {};
+      for (let i = 1; i < tmData.length; i++) {
+        let mId = tmData[i][0]; let tA = tmData[i][3]; let tB = tmData[i][4];
+        let sA = tmData[i][5]; let sB = tmData[i][6]; let mStatus = tmData[i][8];
+        if (!mId) continue;
+        let vodUrl = "", matchDate = "", propDate = "", propBy = "", tCode = "";
+        try {
+          if (tmData[i].length > 11 && tmData[i][11]) vodUrl = String(tmData[i][11]).trim();
+          if (tmData[i].length > 12 && tmData[i][12]) matchDate = String(tmData[i][12]).trim();
+          if (tmData[i].length > 13 && tmData[i][13]) propDate = String(tmData[i][13]).trim();
+          if (tmData[i].length > 14 && tmData[i][14]) propBy = String(tmData[i][14]).trim();
+          if (tmData[i].length > 16 && tmData[i][16]) tCode = String(tmData[i][16]).trim();
+        } catch(e) {}
+        matches.push({ id: mId, round: tmData[i][1], bracket: tmData[i][2], tA: tA, tB: tB, sA: sA, sB: sB, winner: tmData[i][7], status: mStatus, names: tmData[i][9], riotId: String(tmData[i][10] || ""), vod: vodUrl, date: matchDate, proposedDate: propDate, proposedBy: propBy, tCode: tCode, votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0, volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0 });
+        if (mStatus === 'COMPLETED') {
+          let cA = streaksTracker[tA] || 0; let cB = streaksTracker[tB] || 0;
+          if (sA > sB) { streaksTracker[tA] = cA > 0 ? cA + 1 : 1; streaksTracker[tB] = cB < 0 ? cB - 1 : -1; }
+          else if (sB > sA) { streaksTracker[tB] = cB > 0 ? cB + 1 : 1; streaksTracker[tA] = cA < 0 ? cA - 1 : -1; }
+        }
+      }
+      teams.forEach(t => { t.streak = streaksTracker[t.id] || 0; });
+      teams.sort((a, b) => b.pts - a.pts || b.w - a.w);
+      teams.forEach((t, idx) => t.pos = idx + 1);
+      tournament = { status: status, format: format, teams: teams, matches: matches };
+    }
+  }
+
+  // ── 3. STATS (antes getTournamentStatsForWeb) ──
+  const normalizeName = (n) => String(n).replace(/[\s\xA0]/g, '').toLowerCase();
+  const playerTeamMap = {};
+  for (let i = 1; i < tData.length; i++) {
+    const teamName = String(tData[i][1]).trim();
+    const rosterStr = String(tData[i][8] || "");
+    if (rosterStr) { rosterStr.split(',').forEach(p => { if(p.trim()) playerTeamMap[normalizeName(p)] = teamName; }); }
+  }
+  const validMatchIds = new Set(); const availableRounds = new Set();
+  for (let i = 1; i < tmData.length; i++) {
+    const rId = String(tmData[i][10] || "").trim();
+    const round = String(tmData[i][1] || "").trim();
+    if (round && round !== 'Round' && round !== 'Ronda') availableRounds.add(round);
+    if (rId && (roundFilter === 'ALL' || round === roundFilter)) validMatchIds.add(rId);
+  }
+  const playerVotes = {};
+  for (let i = 1; i < mvpData.length; i++) {
+    if (String(mvpData[i][1]) !== 'SYSTEM_RESOLVED') continue;
+    if (!validMatchIds.has(String(mvpData[i][2]).trim()) && roundFilter !== 'ALL') continue;
+    let pNameLow = normalizeName(mvpData[i][3]);
+    let vType = String(mvpData[i][4] || "MVP").toUpperCase();
+    if (!playerVotes[pNameLow]) playerVotes[pNameLow] = { mvps: 0, aces: 0 };
+    if (vType === 'ACE') playerVotes[pNameLow].aces++; else playerVotes[pNameLow].mvps++;
+  }
+  const pStats = {};
+  for (let i = mData.length - 1; i >= 1; i--) {
+    const matchId = String(mData[i][0]).trim();
+    if (validMatchIds.has(matchId)) {
+      const pNameRaw = String(mData[i][2]).trim(); const pNameLow = normalizeName(pNameRaw);
+      const result = mData[i][5]; let pTeam = playerTeamMap[pNameLow] || "Agente Libre";
+      if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0 }; }
+      let s = pStats[pNameLow]; s.games++; if (result === 'Win') s.wins++;
+      s.form.push(result === 'Win' ? 'W' : 'L');
+      s.kills += Number(mData[i][6]||0); s.deaths += Number(mData[i][7]||0); s.assists += Number(mData[i][8]||0);
+      s.dmg += Number(mData[i][9]||0); s.kpTotal += Number(mData[i][10]||0); s.duration += Number(mData[i][11]||1); s.points += Number(mData[i][12]||0);
+      if (mData[i][3]) s.champs.add(mData[i][3]);
+      const rawJson = mData[i][15];
+      if (rawJson) { try { let adv = JSON.parse(rawJson); s.csTotal += Number(adv.csMin||0); s.vsTotal += Number(adv.vspm||0); s.gpmTotal += Number(adv.gpm||0); s.dmgObjTotal += Number(adv.dmgObj||0); s.dmgTurretsTotal += Number(adv.dmgTurrets||0); s.tankTotal += Number(adv.dmgTaken||adv.damageTaken||adv.totalDamageTaken||0); s.pinksTotal += Number(adv.pinks||adv.controlWards||adv.visionWardsBoughtInGame||0); s.epicsTotal += Number(adv.epicMonsters||adv.epics||adv.dragonKills||0); s.pentasTotal += Number(adv.pentas||adv.pentaKills||adv.pentakills||0); } catch(e) {} }
+      let role = String(mData[i][4]).toUpperCase().trim();
+      if (role === 'UTILITY') role = 'SUPPORT'; if (role === 'BOT') role = 'BOTTOM'; if (role === 'MID') role = 'MIDDLE';
+      s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
+    }
+  }
+  const statsResult = [];
+  for (const key in pStats) {
+    const s = pStats[key];
+    if (s.games > 0) {
+      const kdaNum = s.deaths > 0 ? (s.kills + s.assists) / s.deaths : (s.kills + s.assists);
+      let trend = 'NORMAL';
+      if (s.form.length >= 2) { if (s.form[0]==='W'&&s.form[1]==='W') trend='ON_FIRE'; else if (s.form[0]==='L'&&s.form[1]==='L') trend='COLD'; }
+      const myVotes = playerVotes[key] || { mvps: 0, aces: 0 };
+      statsResult.push({ name: s.name, team: s.team, role: Object.keys(s.rolesCount).reduce((a,b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL"), games: s.games, winrate: Math.round((s.wins/s.games)*100), mvps: myVotes.mvps, aces: myVotes.aces, kp: Math.round((s.kpTotal/s.games)*100), kdaNum: kdaNum, kdaText: (s.kills/s.games).toFixed(1)+'/'+(s.deaths/s.games).toFixed(1)+'/'+(s.assists/s.games).toFixed(1), avgDeaths: (s.deaths/s.games).toFixed(1), cs: Number((s.csTotal/s.games).toFixed(1)), vspm: (s.vsTotal/s.games).toFixed(2), dpm: s.duration > 0 ? Math.round(s.dmg/s.duration) : 0, gpm: Math.round(s.gpmTotal/s.games), champs: Array.from(s.champs).join(', '), points: Number((s.points/s.games).toFixed(1)), dmgObj: s.dmgObjTotal, dmgTurrets: s.dmgTurretsTotal, trend: trend, tank: s.tankTotal, pinks: s.pinksTotal, epicMonsters: s.epicsTotal, pentas: s.pentasTotal });
+    }
+  }
+  statsResult.sort((a, b) => b.points - a.points);
+  const sortedRounds = Array.from(availableRounds).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+
+  // ── 4. META (antes getMetaStats) - reutiliza mData y tmData ──
+  const champStats = {}; const processedMatchesBans = new Set();
+  const allValidIds = new Set();
+  for (let i = 1; i < tmData.length; i++) { const rId = String(tmData[i][10]||"").trim(); if (rId) allValidIds.add(rId); }
+  for (let i = 1; i < mData.length; i++) {
+    const matchId = String(mData[i][0]).trim(); if (!allValidIds.has(matchId)) continue;
+    let champ = String(mData[i][3]).trim(); let result = mData[i][5];
+    if (!champ || champ === 'undefined') continue;
+    if (!champStats[champ]) champStats[champ] = { champ: champ, picks: 0, wins: 0, bans: 0 };
+    champStats[champ].picks++; if (result === 'Win') champStats[champ].wins++;
+    if (!processedMatchesBans.has(matchId)) {
+      let jsonStr = mData[i][15];
+      if (jsonStr && String(jsonStr).startsWith('{')) { try { let st = JSON.parse(jsonStr); if (st.bans && Array.isArray(st.bans)) { st.bans.forEach(b => { if (!champStats[b]) champStats[b] = { champ: b, picks: 0, wins: 0, bans: 0 }; champStats[b].bans++; }); processedMatchesBans.add(matchId); } } catch(e) {} }
+    }
+  }
+  const metaResult = Object.values(champStats).map(s => ({ champ: s.champ, picks: s.picks, wins: s.wins, bans: s.bans, winrate: Math.round((s.wins / Math.max(1, s.picks)) * 100) })).sort((a,b) => b.picks - a.picks || b.winrate - a.winrate);
+
+  // ── 5. RECORDS (antes getLeagueRecordsAndPickems) - reutiliza todo ──
+  const matchResultsMap = {};
+  for (let i = 1; i < tmData.length; i++) {
+    const mId = String(tmData[i][0]); const winnerId = String(tmData[i][7]); const st = String(tmData[i][8]);
+    if (st === 'COMPLETED' && winnerId !== "" && winnerId !== 'DRAW') {
+      const teamRow = tData.find(r => String(r[0]) === winnerId);
+      matchResultsMap[mId] = teamRow ? String(teamRow[1]) : winnerId;
+    }
+  }
+  let records = { bloodiest: { player: '-', val: 0, sub: 'Kills' }, pacifist: { player: '-', val: 999999, sub: 'Daño (Win)' }, tank: { player: '-', val: 0, sub: '% Absorbido (Media)' }, farmer: { player: '-', val: 0, sub: 'CS/M' } };
+  let playerTankAcc = {};
+  for (let i = 1; i < mData.length; i++) {
+    const mId = String(mData[i][0]).trim(); if (!validMatchIds.has(mId)) continue;
+    const p = String(mData[i][2]); const result = mData[i][5]; const k = Number(mData[i][6]||0); const dmg = Number(mData[i][9]||0);
+    if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
+    if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+    const rawJson = mData[i][15];
+    if (rawJson) { try { let adv = JSON.parse(rawJson); if (Number(adv.csMin||0) > records.farmer.val) records.farmer = { player: p, val: Number(adv.csMin).toFixed(1), sub: 'CS/M' }; let pct = 0; if (adv.tank !== undefined) pct = Number(adv.tank); else if (adv.dmgTakenPct !== undefined) pct = Number(adv.dmgTakenPct); if (pct > 0 && pct <= 1) pct = pct * 100; if (pct > 0) { if (!playerTankAcc[p]) playerTankAcc[p] = { sum: 0, count: 0 }; playerTankAcc[p].sum += pct; playerTankAcc[p].count++; } } catch(e) {} }
+  }
+  let bestTank = { player: '-', val: 0 };
+  for (let p in playerTankAcc) { let avg = playerTankAcc[p].sum / playerTankAcc[p].count; if (avg > bestTank.val) bestTank = { player: p, val: avg }; }
+  if (bestTank.val > 0) records.tank = { player: bestTank.player, val: bestTank.val.toFixed(0) + '%', sub: '% Absorbido' };
+  if (records.pacifist.val === 999999) records.pacifist.val = 0;
+  let oracles = {};
+  for (let i = 1; i < pickData.length; i++) {
+    const voter = String(pickData[i][1]).trim(); const mId = String(pickData[i][2]).trim(); const teamVoted = String(pickData[i][3]).trim();
+    if (!oracles[voter]) oracles[voter] = { name: voter, guesses: 0, correct: 0 }; oracles[voter].guesses++;
+    if (matchResultsMap[mId] && matchResultsMap[mId] === teamVoted) oracles[voter].correct++;
+  }
+  let oraclesArr = Object.values(oracles).filter(o => o.correct > 0).sort((a,b) => b.correct - a.correct).slice(0, 5);
+
+  // ── 6. NEWS (antes getNewsAndTrends) - reutiliza tournament y statsResult ──
+  let streamDate = "";
+  if (infoSheet) { let rawDate = infoSheet.getRange('B5').getValue(); if (rawDate instanceof Date) streamDate = rawDate.toISOString(); else if (typeof rawDate === 'string' && rawDate.trim() !== "") streamDate = rawDate.trim().replace(" ", "T"); }
+  let headlines = [];
+  if (manualNewsSheet && manualNewsSheet.getLastRow() > 1) {
+    let mnData = manualNewsSheet.getRange(2, 1, Math.min(manualNewsSheet.getLastRow() - 1, 5), 3).getValues();
+    mnData.forEach(row => { if (row[1]) headlines.push({ type: row[0] || 'ULTIMA HORA', text: row[1], priority: 0 }); });
+  }
+  if (tournament.matches) {
+    let pending = tournament.matches.filter(m => m.status !== 'COMPLETED');
+    if (pending.length > 0) {
+      let nextMatch = pending.sort((a,b) => ((b.votesA||0)+(b.votesB||0)) - ((a.votesA||0)+(a.votesB||0)))[0];
+      let names = nextMatch.names.split(' vs '); let tA = names[0].trim(); let tB = names[1].trim();
+      let bestA = statsResult.filter(p => p.team === tA).sort((a,b) => b.points - a.points)[0];
+      let bestB = statsResult.filter(p => p.team === tB).sort((a,b) => b.points - a.points)[0];
+      if (bestA && bestB) headlines.push({ type: 'IA ANALYTICS', text: `Análisis del próximo duelo: ¿Podrá el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?`, priority: 1 });
+      else headlines.push({ type: 'IA ANALYTICS', text: `Tensión máxima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.`, priority: 1 });
+    }
+  }
+  const onFire = statsResult.filter(p => p.trend === 'ON_FIRE');
+  if (onFire.length > 0) { let pf = onFire[Math.floor(Math.random() * onFire.length)]; headlines.push({ type: 'HOT', text: `Estado de gracia: **${pf.name}** está ON FIRE. Sus rivales deberían plantearse banear sus mejores campeones en el próximo draft.`, priority: 2 }); }
+  const cold = statsResult.filter(p => p.trend === 'COLD');
+  if (cold.length > 0) { let pc = cold[Math.floor(Math.random() * cold.length)]; headlines.push({ type: 'TILT ALERT', text: `Alarma roja para **${pc.name}**, que atraviesa una racha de derrotas. ¿Podrá romper la maldición en su próximo partido?`, priority: 2 }); }
+  statsResult.forEach(p => { if (p.mvps >= 2) headlines.push({ type: 'ALERTA', text: '¡Incontrolable! **' + p.name + '** encadena ' + p.mvps + ' MVPs y es el terror de la liga.', priority: 3 }); });
+  const topDpm = [...statsResult].sort((a,b) => b.dpm - a.dpm)[0];
+  if (topDpm && topDpm.dpm > 800) headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpm.name + '** revienta los medidores con una media de DPM de ' + topDpm.dpm + '.', priority: 3 });
+  let hasGazette = false;
+  if (gazetteSheet && gazetteSheet.getLastRow() >= 2) { hasGazette = true; headlines.push({ type: '🗞️ GACETA', text: 'Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!', priority: 0 }); }
+  if (headlines.length === 0) headlines.push({ type: 'INFO', text: "La liga está al rojo vivo. Analiza los scouting para preparar tus Pick'ems.", priority: 5 });
+  headlines.sort((a, b) => (a.priority || 5) - (b.priority || 5));
+
+  // ── 7. CASINO RANKING (antes getCasinoRanking) ──
+  let casinoRanking = [];
+  try {
+    let userStats = {};
+    for (let i = 1; i < walletData.length; i++) { let name = String(walletData[i][0]).trim(); if (name) userStats[name] = { name: name, balance: parseFloat(walletData[i][1]) || 0, betsWon: 0, betsResolved: 0, totalWon: 0 }; }
+    for (let j = 1; j < bData.length; j++) { let bName = String(bData[j][1]).trim(); let amount = parseFloat(bData[j][4]) || 0; let odds = parseFloat(bData[j][5]) || 0; let st = String(bData[j][6]).toUpperCase(); if (bName && userStats[bName] && (st === "WON" || st === "LOST")) { userStats[bName].betsResolved++; if (st === "WON") { userStats[bName].betsWon++; userStats[bName].totalWon += Math.floor(amount * odds); } } }
+    let bpMap = {};
+    for (let k = 1; k < bpData.length; k++) { let n = String(bpData[k][0]).trim(); if (n) bpMap[n] = { title: bpData[k][4] || '', color: bpData[k][5] || '' }; }
+    casinoRanking = Object.keys(userStats).map(k => { let u = userStats[k]; u.winRate = u.betsResolved > 0 ? (u.betsWon / u.betsResolved) * 100 : 0; if (bpMap[k]) { u.title = bpMap[k].title; u.color = bpMap[k].color; } return u; });
+  } catch(e) {}
+
+  // ── 8. PLAYOFFS STATUS ──
+  let playoffsActive = false;
+  if (infoSheet) { try { playoffsActive = infoSheet.getRange('B6').getValue() === 'ACTIVE'; } catch(e) {} }
+
+  // ── RETORNO UNIFICADO ──
+  return {
+    tournament: tournament,
+    statsPayload: { stats: statsResult, rounds: sortedRounds },
+    news: { streamDate: streamDate, headlines: headlines.slice(0, 10) },
+    meta: metaResult,
+    recordsPayload: { records: records, oracles: oraclesArr },
+    casinoRanking: casinoRanking,
+    playoffsActive: playoffsActive
+  };
+}
 
 /* ==========================================================
              SISTEMA DE PLAYOFFS (BOT     N M    GICO)
@@ -19500,10 +20174,87 @@ function getPlayoffsStatus() {
 function togglePlayoffsBackend(isActive) {
   const ss = SpreadsheetApp.getActive();
   let infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
-  if (!infoSheet) infoSheet = ss.insertSheet('TOURNAMENT_INFO'); // Por si acaso no existe
+  if (!infoSheet) infoSheet = ss.insertSheet('TOURNAMENT_INFO');
   
   infoSheet.getRange('B6').setValue(isActive ? 'ACTIVE' : 'INACTIVE');
-  return { msg: isActive ? "              rbol de Playoffs DESBLOQUEADO para todos los usuarios." : "           Fase de Playoffs OCULTA de nuevo." };
+
+  const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+  if (!matchesSheet) return { msg: "❌ No se encontró la hoja TOURNAMENT_MATCHES." };
+
+  if (isActive) {
+    // Comprobar si ya existen partidos de playoffs
+    const existingData = matchesSheet.getDataRange().getValues();
+    const hasPlayoffs = existingData.some(row => {
+      let round = String(row[1] || "").toLowerCase();
+      return round.includes('ub semi') || round.includes('play-in r1') || round.includes('lb r1') || round.includes('gran final');
+    });
+
+    if (hasPlayoffs) {
+      return { msg: "🏆 Playoffs ACTIVADOS. Los partidos ya existían, no se han duplicado." };
+    }
+
+    // Obtener clasificación actual ordenada por puntos y victorias
+    const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+    if (!teamsSheet) return { msg: "❌ No se encontró la hoja TOURNAMENT_TEAMS." };
+    const tData = teamsSheet.getDataRange().getValues();
+    let teams = [];
+    for (let i = 1; i < tData.length; i++) {
+      let id = tData[i][0]; let name = tData[i][1];
+      if (!id || String(name).trim() === "") continue;
+      teams.push({ id: id, name: String(name).trim(), pts: Number(tData[i][5]) || 0, w: Number(tData[i][2]) || 0 });
+    }
+    // Ordenar por puntos desc, luego victorias desc
+    teams.sort((a, b) => b.pts - a.pts || b.w - a.w);
+
+    if (teams.length < 10) {
+      return { msg: "❌ Se necesitan al menos 10 equipos para generar playoffs. Tienes " + teams.length + "." };
+    }
+
+    // Seeds 1-10
+    let s = teams.slice(0, 10);
+    let nextRow = matchesSheet.getLastRow() + 1;
+
+    // Estructura: 12 partidos de doble eliminación para 10 equipos
+    let playoffRows = [
+      // Upper Bracket (Top 4)
+      ["P1", "UB Semi", "Upper", s[0].id, s[3].id, 0, 0, "", "PENDING", s[0].name + " vs " + s[3].name],
+      ["P2", "UB Semi", "Upper", s[1].id, s[2].id, 0, 0, "", "PENDING", s[1].name + " vs " + s[2].name],
+      ["P3", "UB Final", "Upper", "", "", 0, 0, "", "LOCKED", "Ganador UB Semi 1 vs Ganador UB Semi 2"],
+      // Play-In R1 (Seeds 7-10)
+      ["P4", "Play-In R1", "Lower", s[6].id, s[9].id, 0, 0, "", "PENDING", s[6].name + " vs " + s[9].name],
+      ["P5", "Play-In R1", "Lower", s[7].id, s[8].id, 0, 0, "", "PENDING", s[7].name + " vs " + s[8].name],
+      // Play-In R2 (Seeds 5-6 vs ganadores PI R1)
+      ["P6", "Play-In R2", "Lower", s[4].id, "", 0, 0, "", "LOCKED", s[4].name + " vs Ganador P4"],
+      ["P7", "Play-In R2", "Lower", s[5].id, "", 0, 0, "", "LOCKED", s[5].name + " vs Ganador P5"],
+      // LB R1 (Perdedores UB Semi vs supervivientes PI)
+      ["P8", "LB R1", "Lower", "", "", 0, 0, "", "LOCKED", "Perdedor UB Semi 1 vs Superviviente PI"],
+      ["P9", "LB R1", "Lower", "", "", 0, 0, "", "LOCKED", "Perdedor UB Semi 2 vs Superviviente PI"],
+      // LB Semi
+      ["P10", "LB Semi", "Lower", "", "", 0, 0, "", "LOCKED", "Ganador LB R1-A vs Ganador LB R1-B"],
+      // LB Final
+      ["P11", "LB Final", "Lower", "", "", 0, 0, "", "LOCKED", "Perdedor UB Final vs Ganador LB Semi"],
+      // Gran Final
+      ["P12", "Gran Final", "Final", "", "", 0, 0, "", "LOCKED", "Ganador Upper vs Ganador Lower"]
+    ];
+
+    matchesSheet.getRange(nextRow, 1, playoffRows.length, playoffRows[0].length).setValues(playoffRows);
+    Logger.log("Playoffs generados: " + playoffRows.length + " partidos añadidos a partir de fila " + nextRow);
+
+    return { msg: "🏆 ¡PLAYOFFS GENERADOS! 12 partidos creados con la estructura de 10 equipos (5 columnas). Seeds asignados según clasificación actual." };
+  } else {
+    // Al desactivar, eliminar filas de playoffs (MatchID empieza por P)
+    const allData = matchesSheet.getDataRange().getValues();
+    let rowsToDelete = [];
+    for (let i = allData.length - 1; i >= 1; i--) {
+      if (String(allData[i][0]).startsWith("P")) {
+        rowsToDelete.push(i + 1);
+      }
+    }
+    // Borrar de abajo a arriba para no desplazar índices
+    rowsToDelete.forEach(r => matchesSheet.deleteRow(r));
+
+    return { msg: "🔒 Playoffs OCULTOS. Se han eliminado " + rowsToDelete.length + " partidos de playoffs." };
+  }
 }
 
 function checkAdminPassword(inputPass) {
@@ -19720,7 +20471,7 @@ function getFantasyInitData(managerId) {
         result.allRosters.push({
             manager: String(rData[k][0]),
             top: rData[k][1], jgl: rData[k][2], mid: rData[k][3], adc: rData[k][4], sup: rData[k][5], 
-            captain: rData[k][6], sub: rData[k][8], sub2: rData[k][7], activeCard: rData[k][10]
+            captain: rData[k][6], sub: rData[k][8], activeCard: rData[k][10]
         });
     }
 
@@ -19744,12 +20495,8 @@ function getFantasyInitData(managerId) {
       if (String(rData[r][0]).trim().toLowerCase() === searchId) {
         result.roster = {
           top: rData[r][1] || "", jgl: rData[r][2] || "", mid: rData[r][3] || "", adc: rData[r][4] || "",
-          sup: rData[r][5] || "", captain: rData[r][6] || "NONE", sub: rData[r][8] || "", sub2: rData[r][7] || "",
-          isLocked: rData[r][9] === true || String(rData[r][9]).toUpperCase() === "TRUE", activeCard: rData[r][10] || "",
-          snap: {
-            top: rData[r][11] || "", jgl: rData[r][12] || "", mid: rData[r][13] || "", 
-            adc: rData[r][14] || "", sup: rData[r][15] || "", captain: rData[r][16] || "NONE"
-          }
+          sup: rData[r][5] || "", captain: rData[r][6] || "NONE", sub: rData[r][8] || "", 
+          isLocked: rData[r][9] === true || String(rData[r][9]).toUpperCase() === "TRUE", activeCard: rData[r][10] || ""
         };
         break;
       }
@@ -19980,9 +20727,7 @@ function lockFantasyTeam(managerId) {
             return { success: false, error: "Debes tener los 5 huecos titulares ocupados para confirmar." };
         }
         sheet.getRange(i + 1, 10).setValue(true);
-        // Guardar snapshot para puntuación (Columnas 12-17)
-        sheet.getRange(i + 1, 12, 1, 6).setValues([[ data[i][1], data[i][2], data[i][3], data[i][4], data[i][5], data[i][6] ]]);
-        return { success: true, msg: "Alineación fijada para la jornada. ¡Suerte! (Ahora puedes seguir operando en el mercado)" };
+        return { success: true, msg: "Alineaci    n bloqueada para esta jornada." };
       }
     }
     return { success: false, error: "Roster no encontrado." };
@@ -19993,13 +20738,13 @@ function swapSub(managerId, roleKey) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Rosters");
     var data = sheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6 };
     var roleIdx = colMap[roleKey.toLowerCase()];
     var subIdx = 9; 
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim().toLowerCase() === String(managerId).trim().toLowerCase()) {
-        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
+        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         var currentStarter = data[i][roleIdx - 1] || "";
         var currentSub = data[i][subIdx - 1] || "";
         sheet.getRange(i + 1, roleIdx).setValue(currentSub);
@@ -20020,13 +20765,13 @@ function sellPlayerInstant(managerId, roleKey) {
     var txSheet = ss.getSheetByName("Fantasy_Transactions");
 
     var rData = rostersSheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
     var colIndex = colMap[roleKey.toLowerCase()];
     
     var rRow = -1; var playerName = "";
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        // Permitir venta incluso si el equipo está bloqueado para puntuación
+        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         rRow = i + 1; playerName = rData[i][colIndex - 1]; break;
       }
     }
@@ -20062,13 +20807,13 @@ function listPlayerOnMarket(managerId, roleKey, customPrice) {
     var rostersSheet = ss.getSheetByName("Fantasy_Rosters");
     
     var rData = rostersSheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
     var colIndex = colMap[roleKey.toLowerCase()];
     
     var rRow = -1; var playerName = "";
     for (var i = 1; i < rData.length; i++) {
       if (String(rData[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        // Permitir venta incluso si el equipo está bloqueado para puntuación
+        if (rData[i][9] === true || String(rData[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         rRow = i + 1; playerName = rData[i][colIndex - 1]; break;
       }
     }
@@ -20091,7 +20836,7 @@ function setManagerCaptain(managerId, roleLabel) {
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).toLowerCase() === String(managerId).toLowerCase()) {
-        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
+        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         sheet.getRange(i + 1, 7).setValue(roleLabel); 
         return { success: true, msg: "Capit    n actualizado a " + roleLabel };
       }
@@ -20333,8 +21078,6 @@ function autoLockTeamsWeekly() {
           }
       }
       rostersSheet.getRange(i+1, 10).setValue(true); // Bloqueamos el equipo
-      // Snapshot automático
-      rostersSheet.getRange(i + 1, 12, 1, 6).setValues([[ rData[i][1], rData[i][2], rData[i][3], rData[i][4], rData[i][5], rData[i][6] ]]);
   }
   return "Todos los equipos bloqueados. Penalizaciones aplicadas.";
 }
@@ -20641,13 +21384,13 @@ function swapPlayers(managerId, roleA, roleB) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fantasy_Rosters");
     var data = sheet.getDataRange().getValues();
-    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9, "sub2": 8 };
+    var colMap = { "top": 2, "jgl": 3, "mid": 4, "adc": 5, "sup": 6, "sub": 9 };
     var colA = colMap[roleA.toLowerCase()];
     var colB = colMap[roleB.toLowerCase()];
     
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim().toLowerCase() === String(managerId).trim().toLowerCase()) {
-        // Se elimina la restricción de equipo bloqueado para permitir operaciones de mercado permanentes
+        if (data[i][9] === true || String(data[i][9]).toUpperCase() === "TRUE") return { success: false, error: "Equipo bloqueado." };
         var valA = data[i][colA - 1] || "";
         var valB = data[i][colB - 1] || "";
         sheet.getRange(i + 1, colA).setValue(valB);
@@ -20761,6 +21504,43 @@ function placeLeagueBet(summonerName, matchId, teamIndex, amount, odds) {
     
     return { success: true, newBalance: balance - amount, msg: "  Apuesta registrada! Posible ganancia: " + Math.floor(amount * odds) + "          " };
   } catch(e) { return { success: false, error: e.message }; }
+}
+
+function getBettingHistory(summonerName) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var betSheet = ss.getSheetByName("Liga_Bets");
+    if (!betSheet) return [];
+    
+    var data = betSheet.getDataRange().getValues();
+    var sName = String(summonerName).trim().toLowerCase();
+    var history = [];
+    
+    for (var i = 1; i < data.length; i++) {
+       if (String(data[i][1]).trim().toLowerCase() === sName) {
+         history.push({
+           date: data[i][0] instanceof Date ? data[i][0].toISOString() : String(data[i][0]),
+           matchId: data[i][2],
+           teamIndex: data[i][3],
+           amount: data[i][4],
+           odds: data[i][5],
+           status: data[i][6]
+         });
+       }
+    }
+    return history.reverse(); 
+  } catch(e) { return []; }
+}
+
+function getLatestGazette() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName('AI_GAZETTE');
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  let lastRow = sheet.getLastRow();
+  return {
+    date: sheet.getRange(lastRow, 1).getValue(),
+    content: sheet.getRange(lastRow, 2).getValue()
+  };
 }
 
 
@@ -20887,6 +21667,26 @@ function payoutLeagueBets(matchId, winningTeamIndex) {
   }
 }
 
+function resolveWeeklyPickems(matchId, winningTeamIndex) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('PICKEMS_WEEKLY');
+    if (!sheet) return;
+    
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      // Si el matchId coincide y a    n no ha sido resuelto (Columna 5 /    ndice 4 está vacía)
+      if (String(data[i][2]) === String(matchId) && (data[i][4] === "" || data[i][4] === null)) {
+        var userPick = Number(data[i][3]);
+        var isCorrect = (userPick === winningTeamIndex);
+        sheet.getRange(i + 1, 5).setValue(isCorrect ? 1 : 0); // 1 = Correcto, 0 = Incorrecto
+      }
+    }
+  } catch(e) {
+    Logger.log("Error resolveWeeklyPickems: " + e.toString());
+  }
+}
+
 // ---------------------------------------------------------
 // 8. HELPERS B    SICOS HTML
 // ---------------------------------------------------------
@@ -20935,6 +21735,10 @@ function callGemini(prompt) {
 function getAIPrediction(matchData) {
   const { match, teamA, teamB, statsA, statsB } = matchData;
   
+  if (!teamA || !teamB) {
+    return "No se pueden generar predicciones para este partido todavía (faltan datos de los equipos).";
+  }
+
   let prompt = `Actúa como un analista experto de League of Legends para la liga "Wargods Premier". 
   Analiza el siguiente enfrentamiento y genera una predicción emocionante y táctica (máximo 150 palabras).
   
@@ -21163,31 +21967,42 @@ function generateWeeklyGazette() {
   let topTeam = [...tData.teams].sort((a, b) => b.pts - a.pts || b.w - a.w)[0];
   let hotStreakTeam = [...tData.teams].sort((a, b) => b.streak - a.streak)[0];
 
-  let prompt = `Eres el periodista estrella del diario "LA GACETA DE WARGODS", el periódico oficial de la Wargods Premier League de League of Legends.
+  let prompt = `Eres el periodista estrella y director del diario "LA GACETA DE WARGODS", el periódico oficial de la Wargods Premier League de League of Legends. 
+  Tu estilo es una mezcla entre diario deportivo clásico (Marca/AS) y prensa sensacionalista épica.
 
-DATOS DE LA LIGA:
-- Clasificación: ${tData.teams.map(t => t.name + ' (' + t.w + 'V-' + t.l + 'D)').join(', ')}
-- Líder actual: ${topTeam ? topTeam.name : 'Sin datos'}
-- Racha más larga: ${hotStreakTeam ? hotStreakTeam.name + ' (' + hotStreakTeam.streak + ')' : 'N/A'}
-- MVP de puntuación: ${topScorer ? topScorer.name + ' (' + topScorer.points + ' pts, ' + topScorer.games + ' partidas)' : 'N/A'}
-- Mejor KDA: ${topKda ? topKda.name + ' (' + topKda.kdaText + ')' : 'N/A'}
-- Partidos jugados: ${completedMatches.length}
-- Partidos pendientes: ${pendingMatches.length}
+  DATOS ACTUALES DE LA LIGA:
+  - Clasificación: ${tData.teams.map(t => t.name + ' (' + t.w + 'V-' + t.l + 'D)').join(', ')}
+  - Líder: ${topTeam ? topTeam.name : 'Sin datos'}
+  - Equipo en racha: ${hotStreakTeam ? hotStreakTeam.name + ' (' + hotStreakTeam.streak + ')' : 'N/A'}
+  - Jugador más valioso (Puntos): ${topScorer ? topScorer.name + ' (' + topScorer.points + ' pts)' : 'N/A'}
+  - Muro de Hierro (KDA): ${topKda ? topKda.name + ' (' + topKda.kdaText + ')' : 'N/A'}
+  - Partidos jugados: ${completedMatches.length} | Pendientes: ${pendingMatches.length}
 
-INSTRUCCIONES:
-Genera UN artículo de periódico deportivo con estas secciones EXACTAS (usa estos emojis como separadores):
+  INSTRUCCIONES DE REDACCIÓN:
+  Genera una edición completa de la Gaceta usando estas secciones EXACTAS:
 
-📰 TITULAR: Un titular sensacionalista y épico (1 línea)
+  📰 TITULAR: Un titular impactante, grande y sensacionalista.
+  
+  📝 EDITORIAL DEL DIRECTOR: Un breve resumen narrativo de lo que está pasando en la liga, con drama y pasión (4-5 frases).
 
-📝 CRÓNICA: Resumen narrativo de la jornada con drama y emoción (3-4 frases)
+  🏆 EL PODIO DE WARGODS:
+  1. ${topTeam ? topTeam.name : 'N/A'} (Los intocables)
+  2. ${topScorer ? topScorer.name : 'N/A'} (La bestia individual)
+  3. ${hotStreakTeam ? hotStreakTeam.name : 'N/A'} (Cuidado con ellos)
 
-⭐ MVP DE LA SEMANA: Quién destaca y por qué (2 frases)
+  💰 EL RINCÓN DEL FANTASY: Menciona a un jugador que esté subiendo de valor o que sea un "must-buy" según sus puntos.
+  
+  🤫 EL MENTIDERO (RUMORES): Inventa un rumor divertido o sarcástico sobre un posible fichaje o una rivalidad entre equipos.
+  
+  🔮 LA PROFECÍA: Una predicción arriesgada sobre el próximo Match of the Week.
 
-🔮 PREDICCIÓN: Qué pasará en la próxima jornada (2 frases con predicción arriesgada)
+  💀 LA ÚLTIMA PALABRA: Una frase corta, lapidaria y con mucho estilo para cerrar.
 
-💀 LA FRASE DEL DÍA: Una frase sarcástica/divertida sobre algún equipo o jugador (1 frase ingeniosa)
-
-Escribe en español, con tono épico, sarcástico y profesional. Máximo 250 palabras total.`;
+  REGLAS:
+  - Tono: Épico, profesional pero con toques de humor ácido y sarcasmo.
+  - Usa nombres reales de los equipos y jugadores proporcionados.
+  - Formato: Usa negritas (**texto**) para destacar nombres y conceptos.
+  - Máximo 350 palabras.`;
 
   let gazetteText = callGemini(prompt);
 
@@ -21202,15 +22017,13 @@ Escribe en español, con tono épico, sarcástico y profesional. Máximo 250 pal
   return { success: true, content: gazetteText };
 }
 
-function getLatestGazette() {
+function getAllGazettes() {
   const ss = SpreadsheetApp.getActive();
   let sheet = ss.getSheetByName('AI_GAZETTE');
-  if (!sheet || sheet.getLastRow() < 2) return null;
-  let lastRow = sheet.getLastRow();
-  return {
-    date: sheet.getRange(lastRow, 1).getValue(),
-    content: sheet.getRange(lastRow, 2).getValue()
-  };
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  
+  let data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  return data.map(r => ({ date: r[0], content: r[1] }));
 }
 
 
@@ -21288,37 +22101,75 @@ function buildPickemLeaderboard() {
   let sheet = ss.getSheetByName('PICKEMS_WEEKLY');
   if (!sheet || sheet.getLastRow() < 2) return [];
 
+  // Cargar resultados de partidos completados para resolver picks históricos en vuelo
+  var completedResults = {};
+  try {
+    var matchSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    if (matchSheet) {
+      var mData = matchSheet.getDataRange().getValues();
+      for (var m = 1; m < mData.length; m++) {
+        var status = String(mData[m][8]).toUpperCase();
+        if (status === 'COMPLETED') {
+          var sA = parseInt(mData[m][5]) || 0;
+          var sB = parseInt(mData[m][6]) || 0;
+          var winnerIdx = -1;
+          if (sA > sB) winnerIdx = 0;
+          else if (sB > sA) winnerIdx = 1;
+          if (winnerIdx !== -1) completedResults[String(mData[m][0])] = winnerIdx;
+        }
+      }
+    }
+  } catch(e) {}
+
   let data = sheet.getDataRange().getValues();
   let userStats = {};
 
   for (let i = 1; i < data.length; i++) {
     let name = String(data[i][1]).trim();
-    let correct = data[i][4];
-    if (!userStats[name]) userStats[name] = { name: name, total: 0, correct: 0, streak: 0 };
+    if (!name) continue;
+    let matchId = String(data[i][2]);
+    let userPick = Number(data[i][3]);
+    let correctVal = data[i][4]; // Puede ser 1, 0, '', FALSE, TRUE
+
+    if (!userStats[name]) userStats[name] = { name: name, total: 0, correct: 0 };
+
+    // Solo contar si el partido ya está completado
+    if (completedResults[matchId] === undefined) continue; // pendiente, no contar
+
     userStats[name].total++;
-    if (correct === true || correct === 'TRUE' || correct === 1) {
+
+    // Si la columna ya tiene resultado, usarlo
+    if (correctVal === 1 || correctVal === true || correctVal === 'TRUE') {
       userStats[name].correct++;
+    } else if (correctVal === '' || correctVal === null || correctVal === 0 || correctVal === false || correctVal === 'FALSE') {
+      // Resolver en vuelo contra el resultado real
+      if (completedResults[matchId] !== undefined && userPick === completedResults[matchId]) {
+        userStats[name].correct++;
+        // También persistir en la hoja para la próxima vez
+        try { sheet.getRange(i + 1, 5).setValue(1); } catch(e) {}
+      } else if (completedResults[matchId] !== undefined) {
+        try { sheet.getRange(i + 1, 5).setValue(0); } catch(e) {}
+      }
     }
   }
 
-  // Cargar personalización
-  let bpSheet = ss.getSheetByName("BATTLE_PASS");
-  let bpMap = {};
-  if (bpSheet) {
-      let bpData = bpSheet.getDataRange().getValues();
-      for(let k = 1; k < bpData.length; k++) {
-          let n = String(bpData[k][0]).trim();
-          if(n) bpMap[n] = { title: bpData[k][4] || '', color: bpData[k][5] || '' };
+  // Enriquecer con BattlePass (títulos/colores)
+  var bpMap = {};
+  try {
+    var bpSheet = ss.getSheetByName('BATTLE_PASS');
+    if (bpSheet) {
+      var bpData = bpSheet.getDataRange().getValues();
+      for (var k = 1; k < bpData.length; k++) {
+        var n = String(bpData[k][0]).trim();
+        if (n) bpMap[n] = { title: bpData[k][4] || '', color: bpData[k][5] || '' };
       }
-  }
+    }
+  } catch(e) {}
 
   let arr = Object.values(userStats);
   arr.forEach(u => {
     u.accuracy = u.total > 0 ? Math.round((u.correct / u.total) * 100) : 0;
-    if (bpMap[u.name]) {
-        u.title = bpMap[u.name].title;
-        u.color = bpMap[u.name].color;
-    }
+    if (bpMap[u.name]) { u.title = bpMap[u.name].title; u.color = bpMap[u.name].color; }
   });
   arr.sort((a, b) => b.correct - a.correct || b.accuracy - a.accuracy);
   return arr.slice(0, 10);
@@ -21576,15 +22427,15 @@ function getBattlePassRewards(currentLevel) {
     let unlocked = currentLevel >= lvl;
     let reward = { level: lvl, unlocked: unlocked };
     if (lvl === 5) { reward.name = '🥉 Bronce'; reward.desc = '250 WG Coins'; }
-    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; reward.title = 'Veterano'; }
+    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
     else if (lvl === 15) { reward.name = '🥇 Oro'; reward.desc = '750 WG Coins'; }
     else if (lvl === 20) { reward.name = '💎 Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
-    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; reward.title = 'Leyenda'; }
+    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
     else if (lvl === 30) { reward.name = '⚡ Ascendido'; reward.desc = '2000 WG Coins'; }
-    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Color Dorado'; reward.color = '#fbbf24'; reward.colorLabel = 'Dorado'; }
-    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins + Color Carmesí'; reward.color = '#ef4444'; reward.colorLabel = 'Infernal'; }
-    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; reward.title = 'Dios'; }
-    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Mítico'; reward.color = '#c084fc'; reward.colorLabel = 'Mítico (Violeta)'; reward.title = 'WARGOD'; }
+    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
+    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins'; }
+    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
+    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
     rewards.push(reward);
   }
   return rewards;

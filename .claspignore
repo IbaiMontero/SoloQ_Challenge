@@ -5,3 +5,16 @@
 **/combined.html
 **/test_*.js
 **/purge_*.js
+**/check_*.js
+**/extract_*.js
+**/find_*.js
+**/combine_*.js
+**/combined_*.html
+**/combined_*.js
+**/*.md
+**/.claspignore
+**/.clasp.json
+**/package.json
+**/package-lock.json
+**/combine_and_check.js
+**/extracted_*.js

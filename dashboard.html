@@ -177,14 +177,24 @@
       let globalStatsMap = {}; // Memoria para cambiar de rol al hacer click
 
       window.onload = function() {
-        google.script.run.withSuccessHandler(fillPlayers).getPlayerList();
+        console.log("Dashboard: Iniciando carga de jugadores...");
+        google.script.run
+          .withSuccessHandler(fillPlayers)
+          .withFailureHandler(function(err) {
+             console.error("Error al cargar lista:", err);
+             document.getElementById('player-select').innerHTML = '<option>Error al cargar</option>';
+          })
+          .getPlayerList();
       };
 
       function fillPlayers(list) {
         const sel = document.getElementById('player-select');
         sel.innerHTML = '<option value="">-- Selecciona Jugador --</option>';
+        if (!list || list.length === 0) {
+            sel.innerHTML = '<option>No hay jugadores</option>';
+            return;
+        }
         list.forEach(p => {
-           if (typeof p === 'string' && p.startsWith('Error')) return;
            const playerName = p.name || p; 
            const playerRank = p.rank ? ` [${p.rank}]` : '';
            let opt = document.createElement('option');
@@ -202,7 +212,13 @@
          document.getElementById('loader').classList.remove('hidden');
          document.getElementById('dashboard-content').classList.add('hidden');
 
-         google.script.run.withSuccessHandler(renderDashboard).getPlayerAnalytics(player);
+         google.script.run
+           .withSuccessHandler(renderDashboard)
+           .withFailureHandler(function(err) {
+              document.getElementById('loader').classList.add('hidden');
+              alert("Error cargando analiticas: " + err.message);
+           })
+           .getPlayerAnalytics(player);
       }
 
       function renderDashboard(data) {
@@ -221,7 +237,12 @@
          renderDoughnutChart(data.roleChartData);
          
          // 4. Tablas 
-         google.script.run.withSuccessHandler(renderTables).getPlayerData(document.getElementById('player-select').value);
+         google.script.run
+           .withSuccessHandler(renderTables)
+           .withFailureHandler(function(err) {
+              console.error("Error en tablas:", err);
+           })
+           .getPlayerData(document.getElementById('player-select').value);
       }
 
       //  LA MAGIA OCURRE AQUI: Esta funcion actualiza TODA la pantalla

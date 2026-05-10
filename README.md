@@ -1,82 +1,78 @@
-# 🏆 Wargods Premier League - Tournament Engine
+# 🏆 Wargods Premier League - Ecosystem v16.5 (Master Edition)
 
-**Wargods Premier** es un ecosistema integral de gestión para ligas competitivas de League of Legends. A diferencia de las hojas de cálculo tradicionales, este sistema combina una base de datos dinámica en **Google Sheets** con un frontend de alto rendimiento inspirado en los mejores paneles de eSports (LVP, LEC).
+**Wargods Premier** es el motor de gestión competitiva definitivo para League of Legends. Es un ecosistema masivo que transforma Google Sheets en una plataforma de eSports de alto rendimiento, integrando analíticas avanzadas, economía virtual, sistemas sociales y gamificación profunda.
 
------
+---
 
-## 🚀 Funcionalidades Principales
+## 🚀 Módulos Principales
 
-### 📊 Dashboard e Inteligencia de Datos
+### 1. 🕹️ Centro de Mando (Command Center)
+La puerta de entrada a la plataforma. Un hub moderno que unifica todas las experiencias:
+*   **Events Hub**: Acceso a la bolsa de valores, tienda y misiones.
+*   **Ranking Oficial**: Clasificación de jugadores, medallero y estadísticas de temporada.
+*   **Centro de Datos**: Analíticas Pro para equipos y analistas.
+*   **Ligas y Torneos**: Gestión integral de brackets y enfrentamientos competitivos.
+*   **Archivo Histórico**: Sistema "Ghost Filter" para navegar entre temporadas actuales y pasadas.
 
-  * **Riot API Integration:** Escaneo automático de partidas a través de Match IDs de Riot Games. Captura estadísticas avanzadas como DPM, GPM, daño mitigado (tank), puntos de visión y monstruos épicos.
-  * **Power Ranking Dinámico:** Algoritmo propio que calcula la fuerza de los equipos basándose en la calidad de sus victorias, derrotas y rachas actuales.
-  * **Hall of Fame:** 15 récords absolutos (El Verdugo, El Coloso, El Arquitecto...) con generación dinámica de medallas.
+### 2. 📊 Engine de Puntuación "SoloQ Pro" (v13.0)
+Un sistema de backend ultra-detallado en `Code.js` que analiza cada partida vía **Riot API**:
+*   **Scoring Multidimensional**: Puntos por victoria/derrota, MVP (OP.GG), KDA, objetivos (épicos, placas, torres), y rendimiento temprano (CS/Oro/XP @10).
+*   **Bonos de Rol**: Recompensas específicas para Tanques (daño mitigado), Supports (protección/curación) y Junglas (robos de objetivos).
+*   **Misiones Secretas**: Logros ocultos como el "888", "777", "Comeback" (7k oro desventaja) o "Throw" (pérdida de ventaja masiva).
+*   **Sistema de Tiers**: 8 rangos evolutivos desde "El Pozo" (<0 pts) hasta "Omnipotencia" (1500+ pts), pasando por materiales míticos y cósmicos.
 
-### 🎮 Sistema Fantasy & Gacha
+### 3. 💸 Ecosistema Económico & Social
+*   **Wargods Wall Street**: Mercado de valores en tiempo real donde los usuarios invierten en jugadores basados en su rendimiento.
+*   **Casino de la Liga**: Sistema de apuestas dinámico con cuotas calculadas algorítmicamente.
+*   **La Forja**: Sistema de crafteo donde los jugadores usan materiales para crear objetos y mejoras.
+*   **La Purga**: Mecánica de Battle Royale/Supervivencia integrada en la liga.
+*   **El Vestuario**: Chat de proximidad (Trash Talk) limitado a 140 caracteres con auto-borrado.
 
-  * **Mercado en Tiempo Real:** Fichajes, ventas y sistema de subastas ocultas que cierran a medianoche.
-  * **Gestión de Plantillas:** Sistema de alineación (Titulares + Suplentes) con penalizaciones por huecos vacíos y bonos por sinergia de equipo.
-  * **Cromos de Jugador (OVR):** Cálculo dinámico del "Overall" del jugador basado en su rendimiento estadístico global.
-  * **Sistema Gacha:** Apertura de sobres para obtener cartas de mejora, sabotaje o misiones especiales.
+### 4. 🎁 Progresión y Gamificación
+*   **Battle Pass**: Sistema de niveles con XP por actividad, desbloqueando títulos y cosméticos.
+*   **Daily Roulette**: Ruleta de premios diaria para fomentar el login recurrente.
+*   **Salón de la Fama**: 15 récords absolutos con generación dinámica de medallas y "Cromos" de jugador exportables.
+*   **Pick'em**: Sistema de predicciones semanales con recompensas en WG Coins.
 
-### 🤝 El Vestuario (Sistema de Negociación)
+### 5. 🔬 Centro de Datos Avanzado
+Suite de herramientas de análisis:
+*   **Team Scouting**: Comparativa H2H de macro-estadísticas entre equipos.
+*   **Synergy Dashboard**: Análisis de parejas de campeones y winrates combinados.
+*   **Match Inspector**: Desglose técnico de cada partida registrada.
+*   **Behavior Dashboard**: Análisis del estilo de juego y "momentum" de los jugadores.
 
-  * **Acuerdo de Horarios:** Sistema "Double-Check" donde un capitán propone una fecha y el rival debe aceptarla o proponer otra.
-  * **Seguridad por PIN:** Cada equipo posee un PIN de 4 dígitos para validar las acciones de los capitanes sin necesidad de logins complejos.
-  * **Bloqueo de Casino:** La fecha pactada bloquea automáticamente las apuestas en el Casino en el momento del inicio del partido.
-
-### 🎰 Casino Virtual
-
-  * **Cuotas Dinámicas:** Las cuotas (Odds) se calculan automáticamente cruzando el Power Ranking de los equipos con el volumen de dinero apostado por la comunidad.
-  * **Live Scoring:** Los puntos y balances se actualizan al instante tras el cierre oficial de cada acta.
-
------
+---
 
 ## 🛠️ Stack Tecnológico
 
-  * **Backend:** Google Apps Script (JavaScript V8).
-  * **Base de Datos:** Google Sheets (Relacional mediante IDs).
-  * **Frontend:** HTML5, CSS3 (Tailwind CSS), JS (Nativo + Chart.js).
-  * **Herramientas:** \* `html2canvas` para la exportación de promociones H2H y Cromos.
-      * `Twitch API Embed` para la retransmisión automática en la web.
-      * `clasp` / `Antigravity IDE` para el desarrollo y despliegue.
+*   **Backend**: Google Apps Script (JavaScript V8) + Gemini AI (Match Analysis).
+*   **Base de Datos**: Google Sheets (Relacional con +15 hojas activas).
+*   **Frontend**: HTML5, Vanilla JS, CSS3 (Custom Design) + Tailwind CSS (Components).
+*   **Librerías**: 
+    *   `Chart.js`: Visualización de datos y radares.
+    *   `html2canvas`: Generación de promociones y cromos.
+    *   `Twitch API`: Integración de directos y programación de streams.
 
------
+---
 
-## 📦 Estructura del Proyecto
+## 📂 Estructura del Proyecto
 
 ```bash
-├── Código.gs           # Lógica del servidor (CRUD, Riot API, Cálculos de Puntos)
-├── LeagueMenu.html      # Frontend principal (Dashboard, Calendario, Casino, Stats)
-├── Fantasy.html         # Módulo independiente del sistema de mánagers
-├── Styles.html          # (Opcional) CSS Global personalizado
-└── appsscript.json      # Manifiesto de configuración de permisos de Google
+├── index.html           # Command Center (Main Entry)
+├── LeagueMenu.html      # Dashboard Principal (Liga, Stats, Social)
+├── Fantasy.html         # Sistema de Managers Independiente
+├── Code.js              # El "Cerebro" (Riot API, Scoring, Economía)
+├── Centro_de_Datos/     # Suite de Analíticas
+│   ├── GlobalDashboard.html
+│   ├── BehaviorDashboard.html
+│   ├── SynergyDashboard.html
+│   └── Match_Inspector.html
+└── ...                  # Diálogos y Modales (Roulette, Profile, etc.)
 ```
 
------
-
-## ⚙️ Configuración e Instalación
-
-1.  **Spreadsheet:** Crear un Google Sheets con las pestañas: `TOURNAMENT_INFO`, `TOURNAMENT_TEAMS`, `TOURNAMENT_MATCHES`, `MATCHES`, `TOURNAMENT_MVP_VOTES` y `Liga_Bets`.
-2.  **Scripts:** Copiar el contenido de `Código.gs` en el editor de Apps Script.
-3.  **Frontend:** Crear archivos HTML con los nombres `LeagueMenu.html` y `Fantasy.html` y pegar el código correspondiente.
-4.  **API:** Configurar tu `RIOT_API_KEY` en las Propiedades del Proyecto en Google Apps Script.
-5.  **Despliegue:** Implementar como "Aplicación Web" con acceso "Cualquier persona".
-
------
-
-## 📸 Screenshots
-
-  * **Dashboard:** Interfaz oscura con tickers de resultados en vivo.
-  * **Radar Stats:** Comparativas H2H entre jugadores con gráficos de araña.
-  * **TV Mode:** Integración automática del canal de Twitch al comenzar el directo.
-
------
+---
 
 ## ✒️ Créditos
 
-Desarrollado para la **Wargods Premier League**.
-
------
-
-*Este proyecto está en constante desarrollo. Versión actual: 16.5 (Master Edition).*
+Desarrollado para la **Wargods Premier League**.  
+*Versión Actual: 16.5 (Master Edition) - "The Omnipotence Update"*
