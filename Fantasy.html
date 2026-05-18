@@ -371,14 +371,16 @@
         return true; 
     }
 
+    let dashboardLoaded = false;
+
     function switchFantasyTab(tabId, el) {
         document.querySelectorAll('.fantasy-tab-btn').forEach(b => { b.classList.remove('active', 'text-yellow-500', 'border-yellow-500'); b.classList.add('text-slate-400', 'border-transparent'); });
         document.querySelectorAll('.fantasy-pane').forEach(p => { p.classList.add('hidden'); p.classList.remove('block'); });
         el.classList.add('active', 'text-yellow-500', 'border-yellow-500'); el.classList.remove('text-slate-400', 'border-transparent');
         document.getElementById('f-tab-' + tabId).classList.remove('hidden'); document.getElementById('f-tab-' + tabId).classList.add('block');
         if (tabId === 'market') loadMarket();
-        if (tabId === 'team' && currentManager) loadDashboard(); 
-        if (tabId === 'ranking' && currentManager) loadDashboard();
+        // 🔥 OPTIMIZACIÓN: Solo recarga del servidor si no se ha cargado aún
+        if ((tabId === 'team' || tabId === 'ranking') && currentManager && !dashboardLoaded) loadDashboard();
         if (tabId === 'gacha' && currentManager) loadInventory();
         if (tabId === 'players') filterFantasyPlayers(); 
     }
@@ -451,6 +453,7 @@
             .withFailureHandler(function(err) { alert("Error de conexión: " + err.message); })
             .withSuccessHandler(function(res) {
                 if (!res.success) return alert("Error cargando tu Club: " + res.error);
+                dashboardLoaded = true;
                 
                 currentManager.budget = res.financials.budget;
                 document.getElementById('ui-budget').innerText = formatMoney(res.financials.budget) + " Disp.";
@@ -500,6 +503,17 @@
                 });
             })
             .getFantasyInitData(currentManager.name);
+    }
+
+    // 🔥 Función que faltaba: Clausulazo directo desde un hueco vacío del roster
+    function promptClause(roleKey) {
+        let playerName = prompt("🚨 CLAUSULAZO\n\nEscribe el nombre exacto del jugador que quieres robar de otro mánager:\n(Pagarás el 150% de su valor de mercado)");
+        if (!playerName || playerName.trim() === '') return;
+        if (!confirm('¿Seguro que quieres pagar la cláusula de rescisión de ' + playerName.trim() + '?\n\nEsto costará el 150% de su valor actual.')) return;
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) { alert('✅ ' + res.msg); dashboardLoaded = false; loadDashboard(); }
+            else alert('❌ ' + res.error);
+        }).payClause(currentManager.name, playerName.trim());
     }
 
     function renderFantasyCharts(data, livePts = 0) {
@@ -597,7 +611,7 @@
     function lockFantasyTeam() {
         if (!confirm("🔒 ¿CONFIRMAR ALINEACIÓN?\n\nTu equipo quedará bloqueado para esta jornada. Si tienes huecos vacíos se te penalizará con -15 puntos por cada uno.")) return;
         let btn = document.getElementById('btn-lock-team'); btn.innerText = "⏳ Confirmando..."; btn.disabled = true;
-        google.script.run.withFailureHandler(function(err) { alert("Error: " + err.message); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; }).withSuccessHandler(function(res) { if(res.success) { alert("✅ " + res.msg); loadDashboard(); } else { alert("❌ Error: " + res.error); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; } }).lockFantasyTeam(currentManager.name);
+        google.script.run.withFailureHandler(function(err) { alert("Error: " + err.message); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; }).withSuccessHandler(function(res) { if(res.success) { alert("✅ " + res.msg); dashboardLoaded = false; loadDashboard(); } else { alert("❌ Error: " + res.error); btn.innerText = "🔒 Confirmar Equipo"; btn.disabled = false; } }).lockFantasyTeam(currentManager.name);
     }
 
     function sellPlayerFromRoster(roleKey) {
@@ -606,13 +620,13 @@
         if (choice === "1") {
             if (confirm("¿Seguro que quieres venderlo por la mitad de su valor al sistema?")) {
                 document.getElementById('roster-grid').style.opacity = '0.5'; document.getElementById('sub-grid').style.opacity = '0.5';
-                google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).sellPlayerInstant(currentManager.name, roleKey);
+                google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); dashboardLoaded = false; loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).sellPlayerInstant(currentManager.name, roleKey);
             }
         } else if (choice === "2") {
             let price = prompt("Introduce el precio de venta (ej: 8000000 para 8 Millones):");
             if (!price || isNaN(price) || price <= 0) return alert("Precio no válido.");
             document.getElementById('roster-grid').style.opacity = '0.5'; document.getElementById('sub-grid').style.opacity = '0.5';
-            google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).listPlayerOnMarket(currentManager.name, roleKey, parseInt(price));
+            google.script.run.withSuccessHandler(function(res) { if(res.success) { alert(res.msg); dashboardLoaded = false; loadDashboard(); } else { alert("Error: " + res.error); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; } }).withFailureHandler(function(err) { alert("❌ Error: " + err.message); document.getElementById('roster-grid').style.opacity = '1'; document.getElementById('sub-grid').style.opacity = '1'; }).listPlayerOnMarket(currentManager.name, roleKey, parseInt(price));
         }
     }
 
@@ -682,11 +696,17 @@
                 let isOwned = window.allFantasyRosters.some(r => Object.values(r).includes(p.name));
                 let owner = isOwned ? window.allFantasyRosters.find(r => Object.values(r).includes(p.name)).manager : null;
 
+                // 🔥 Mostrar mini-stats en la tarjeta del mercado
+                let statsLine = p.games > 0 
+                    ? `<div class="flex gap-2 text-[10px] text-slate-400 font-mono mb-3"><span title="KDA">${p.kdaText || '?'}</span><span>|</span><span title="DPM">${p.dpm || 0} DPM</span><span>|</span><span title="Partidas">${p.games}G</span></div>`
+                    : '<div class="text-[10px] text-slate-500 mb-3">Sin partidas registradas</div>';
+
                 html += `<div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col items-center group hover:border-accent-blue transition relative overflow-hidden">
                             <div class="absolute top-2 right-2 text-[10px] font-black text-slate-500">${role}</div>
                             <img src="${img}" class="w-20 h-20 rounded-full border-4 border-slate-700 bg-black mb-3 shadow-xl group-hover:scale-110 transition" onerror="this.style.display='none'">
                             <div class="text-base font-black text-white text-center uppercase tracking-tight mb-1">${escHtml(p.name)}</div>
-                            <div class="flex items-center gap-2 mb-4"><span class="text-xs bg-black px-2 py-0.5 rounded text-yellow-500 font-black border border-slate-700">OVR ${ovr}</span></div>
+                            <div class="flex items-center gap-2 mb-2"><span class="text-xs bg-black px-2 py-0.5 rounded text-yellow-500 font-black border border-slate-700">OVR ${ovr}</span></div>
+                            ${statsLine}
                             <div class="text-sm font-mono font-bold text-emerald-400 mb-5 bg-black/50 px-4 py-1.5 rounded-full border border-slate-700">${formatMoney(price)}</div>
                             ${isOwned ? `<div class="text-[10px] text-red-500 font-bold uppercase tracking-widest">DUEÑO: ${owner}</div>` : `<button onclick="placeBid('${escHtml(p.name)}', ${price})" class="w-full bg-accent-blue hover:bg-blue-500 text-white font-black py-2.5 rounded-xl transition shadow-lg text-xs uppercase tracking-widest">PUJAR</button>`}
                             <button onclick="openFantasyPlayerStats('${enc(p.name)}')" class="mt-3 text-[9px] text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest">📈 Ver Estadísticas</button>
@@ -700,7 +720,7 @@
         let amount = prompt("💰 PUJA POR " + playerName.toUpperCase() + "\n\nIntroduce tu oferta (Mínimo " + formatMoney(price) + "):", price);
         if(!amount || isNaN(amount) || parseInt(amount) < price) return;
         if(parseInt(amount) > currentManager.budget) return alert("❌ No tienes suficiente presupuesto.");
-        google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("✅ Puja enviada correctamente."); loadDashboard(); } else alert("❌ Error: " + res.error); }).placeBid(currentManager.name, playerName, parseInt(amount));
+        google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("✅ Puja enviada correctamente."); dashboardLoaded = false; loadDashboard(); } else alert("❌ Error: " + res.error); }).placeBid(currentManager.name, playerName, parseInt(amount));
     }
 
     function filterFantasyPlayers() {

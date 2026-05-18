@@ -1,4 +1,5 @@
- /************************************************************
+ // V15.5.2 - Sync forced
+/************************************************************
 * SoloQ Pro - Sistema de Puntuación PRO completo
 *
 * v12.0 - ¡Bonos de Juego Avanzado y Misiones Secretas!
@@ -645,6 +646,10 @@ function describeRiotEndpoint(url) {
 }
 
 function riotFetchJson(url) {
+  if (!url || String(url).includes("undefined")) {
+    logEvent("WARN", "RIOT_URL_ERROR", "URL inválida o con parámetros undefined.", { url: url });
+    return { __error: true, code: 400, body: "URL undefined" };
+  }
   const key = getApiKey();
   if (!key) throw new Error('No RIOT API key set.');
   
@@ -7843,7 +7848,8 @@ function onOpen() {
   adminMenu.addSeparator();
   adminMenu.addItem('          Sincronizar Jugadores Bolsa', 'refreshMarketPlayers');
   adminMenu.addItem('          Configurar Vida Boss', 'adminSetBossLife');
-  adminMenu.addItem('          A    adir Inversor (Broker)', 'addPureInvestor');
+  adminMenu.addItem('          Añadir Inversor (Broker)', 'addPureInvestor');
+  adminMenu.addItem('          Importar JSON ROFL', 'importRoflJsonUI');
   adminMenu.addSeparator();
 
   // 4. SUBMEN     EVENTOS (  AQU     EST     LO NUEVO!)
@@ -17958,7 +17964,7 @@ function getTournamentData() {
   }
 
   teams.forEach(t => { t.streak = streaksTracker[t.id] || 0; });
-  teams.sort((a, b) => b.pts - a.pts || b.w - a.w);
+  teams = sortTeamsHelper(teams, matches);
   teams.forEach((t, idx) => t.pos = idx + 1);
 
   return { status: status, format: format, teams: teams, matches: matches };
@@ -19990,7 +19996,7 @@ function getAllDashboardData(roundFilter) {
         }
       }
       teams.forEach(t => { t.streak = streaksTracker[t.id] || 0; });
-      teams.sort((a, b) => b.pts - a.pts || b.w - a.w);
+      teams = sortTeamsHelper(teams, matches);
       teams.forEach((t, idx) => t.pos = idx + 1);
       tournament = { status: status, format: format, teams: teams, matches: matches };
     }
@@ -20171,7 +20177,7 @@ function getPlayoffsStatus() {
   return status === 'ACTIVE';
 }
 
-function togglePlayoffsBackend(isActive) {
+function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
   const ss = SpreadsheetApp.getActive();
   let infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
   if (!infoSheet) infoSheet = ss.insertSheet('TOURNAMENT_INFO');
@@ -20203,8 +20209,17 @@ function togglePlayoffsBackend(isActive) {
       if (!id || String(name).trim() === "") continue;
       teams.push({ id: id, name: String(name).trim(), pts: Number(tData[i][5]) || 0, w: Number(tData[i][2]) || 0 });
     }
-    // Ordenar por puntos desc, luego victorias desc
-    teams.sort((a, b) => b.pts - a.pts || b.w - a.w);
+    
+    // Preparar partidos para el H2H
+    let matchesPlayoffs = [];
+    for (let i = 1; i < existingData.length; i++) {
+        if (existingData[i][8] === 'COMPLETED') {
+            matchesPlayoffs.push({ tA: existingData[i][3], tB: existingData[i][4], winner: existingData[i][7] });
+        }
+    }
+
+    // Ordenar por puntos desc, luego victorias desc, luego H2H
+    teams = sortTeamsHelper(teams, matchesPlayoffs);
 
     if (teams.length < 10) {
       return { msg: "❌ Se necesitan al menos 10 equipos para generar playoffs. Tienes " + teams.length + "." };
@@ -20212,13 +20227,22 @@ function togglePlayoffsBackend(isActive) {
 
     // Seeds 1-10
     let s = teams.slice(0, 10);
+    
+    let opp1 = s[3]; // Por defecto Seed 4
+    let opp2 = s[2]; // Por defecto Seed 3
+    
+    if (p1Opponent && p2Opponent) {
+      opp1 = s.find(t => t.id === p1Opponent) || s[3];
+      opp2 = s.find(t => t.id === p2Opponent) || s[2];
+    }
+
     let nextRow = matchesSheet.getLastRow() + 1;
 
     // Estructura: 12 partidos de doble eliminación para 10 equipos
     let playoffRows = [
       // Upper Bracket (Top 4)
-      ["P1", "UB Semi", "Upper", s[0].id, s[3].id, 0, 0, "", "PENDING", s[0].name + " vs " + s[3].name],
-      ["P2", "UB Semi", "Upper", s[1].id, s[2].id, 0, 0, "", "PENDING", s[1].name + " vs " + s[2].name],
+      ["P1", "UB Semi", "Upper", s[0].id, opp1.id, 0, 0, "", "PENDING", s[0].name + " vs " + opp1.name],
+      ["P2", "UB Semi", "Upper", s[1].id, opp2.id, 0, 0, "", "PENDING", s[1].name + " vs " + opp2.name],
       ["P3", "UB Final", "Upper", "", "", 0, 0, "", "LOCKED", "Ganador UB Semi 1 vs Ganador UB Semi 2"],
       // Play-In R1 (Seeds 7-10)
       ["P4", "Play-In R1", "Lower", s[6].id, s[9].id, 0, 0, "", "PENDING", s[6].name + " vs " + s[9].name],
@@ -21700,7 +21724,7 @@ function include(filename) {
 // ---------------------------------------------------------
 function callGemini(prompt) {
   const apiKey = getGeminiApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -21948,7 +21972,7 @@ function addWGCoins(summoner, amount) {
 
 
 // ==========================================================
-// 12. PERIÓDICO SEMANAL IA — "LA GACETA DE WARGODS"
+// 12. PERIÓDICO SEMANAL IA — "EL CHIRINGUITO PREMIER"
 // ==========================================================
 function generateWeeklyGazette() {
   const ss = SpreadsheetApp.getActive();
@@ -21962,49 +21986,80 @@ function generateWeeklyGazette() {
   let completedMatches = tData.matches.filter(m => m.status === 'COMPLETED');
   let pendingMatches = tData.matches.filter(m => m.status !== 'COMPLETED');
 
-  let topScorer = [...players].sort((a, b) => b.points - a.points)[0];
-  let topKda = [...players].filter(p => p.games >= 2).sort((a, b) => b.kdaNum - a.kdaNum)[0];
-  let topTeam = [...tData.teams].sort((a, b) => b.pts - a.pts || b.w - a.w)[0];
-  let hotStreakTeam = [...tData.teams].sort((a, b) => b.streak - a.streak)[0];
-
-  let prompt = `Eres el periodista estrella y director del diario "LA GACETA DE WARGODS", el periódico oficial de la Wargods Premier League de League of Legends. 
-  Tu estilo es una mezcla entre diario deportivo clásico (Marca/AS) y prensa sensacionalista épica.
-
-  DATOS ACTUALES DE LA LIGA:
-  - Clasificación: ${tData.teams.map(t => t.name + ' (' + t.w + 'V-' + t.l + 'D)').join(', ')}
-  - Líder: ${topTeam ? topTeam.name : 'Sin datos'}
-  - Equipo en racha: ${hotStreakTeam ? hotStreakTeam.name + ' (' + hotStreakTeam.streak + ')' : 'N/A'}
-  - Jugador más valioso (Puntos): ${topScorer ? topScorer.name + ' (' + topScorer.points + ' pts)' : 'N/A'}
-  - Muro de Hierro (KDA): ${topKda ? topKda.name + ' (' + topKda.kdaText + ')' : 'N/A'}
-  - Partidos jugados: ${completedMatches.length} | Pendientes: ${pendingMatches.length}
-
-  INSTRUCCIONES DE REDACCIÓN:
-  Genera una edición completa de la Gaceta usando estas secciones EXACTAS:
-
-  📰 TITULAR: Un titular impactante, grande y sensacionalista.
+  // Jugadores con suficientes partidas
+  let activePlayers = players.filter(p => (p.games || 0) >= 1);
   
-  📝 EDITORIAL DEL DIRECTOR: Un breve resumen narrativo de lo que está pasando en la liga, con drama y pasión (4-5 frases).
-
-  🏆 EL PODIO DE WARGODS:
-  1. ${topTeam ? topTeam.name : 'N/A'} (Los intocables)
-  2. ${topScorer ? topScorer.name : 'N/A'} (La bestia individual)
-  3. ${hotStreakTeam ? hotStreakTeam.name : 'N/A'} (Cuidado con ellos)
-
-  💰 EL RINCÓN DEL FANTASY: Menciona a un jugador que esté subiendo de valor o que sea un "must-buy" según sus puntos.
+  let topScorer = [...activePlayers].sort((a, b) => (b.points || 0) - (a.points || 0))[0];
+  let topKda = [...activePlayers].filter(p => p.games >= 2).sort((a, b) => (b.kdaNum || 0) - (a.kdaNum || 0))[0];
+  let topDmg = [...activePlayers].sort((a, b) => (b.dpm || 0) - (a.dpm || 0))[0];
+  let topMvps = [...activePlayers].sort((a, b) => (b.mvps || 0) - (a.mvps || 0))[0];
+  let topTeam = [...tData.teams].sort((a, b) => (b.pts || 0) - (a.pts || 0) || (b.w || 0) - (a.w || 0))[0];
+  let bottomTeam = [...tData.teams].sort((a, b) => (a.pts || 0) - (b.pts || 0) || (a.w || 0) - (b.w || 0))[0];
+  let hotStreakTeam = [...tData.teams].filter(t => (t.streak || 0) > 0).sort((a, b) => (b.streak || 0) - (a.streak || 0))[0];
+  let coldStreakTeam = [...tData.teams].filter(t => (t.streak || 0) < 0).sort((a, b) => (a.streak || 0) - (b.streak || 0))[0];
   
-  🤫 EL MENTIDERO (RUMORES): Inventa un rumor divertido o sarcástico sobre un posible fichaje o una rivalidad entre equipos.
+  // Últimos resultados
+  let lastResults = completedMatches.slice(-5).map(m => `${m.names} (${m.sA}-${m.sB})`).join(', ');
   
-  🔮 LA PROFECÍA: Una predicción arriesgada sobre el próximo Match of the Week.
+  // Clasificación detallada
+  let standingsStr = [...tData.teams]
+    .sort((a, b) => (b.pts || 0) - (a.pts || 0))
+    .map((t, i) => `${i+1}º ${t.name} (${t.w || 0}V-${t.l || 0}D, ${t.pts || 0} pts, racha: ${t.streak || 0})`)
+    .join('\n  ');
+  
+  // Próximos partidos
+  let upcomingStr = pendingMatches.slice(0, 3).map(m => m.names + (m.date ? ` [${m.date}]` : ' [TBD]')).join(', ');
 
-  💀 LA ÚLTIMA PALABRA: Una frase corta, lapidaria y con mucho estilo para cerrar.
+  let prompt = `Eres Josep-BOT, el director y periodista estrella del programa "EL CHIRINGUITO PREMIER", la versión del famoso programa de debate futbolístico pero para la Wargods Premier League de League of Legends.
 
-  REGLAS:
-  - Tono: Épico, profesional pero con toques de humor ácido y sarcasmo.
-  - Usa nombres reales de los equipos y jugadores proporcionados.
-  - Formato: Usa negritas (**texto**) para destacar nombres y conceptos.
-  - Máximo 350 palabras.`;
+Tu estilo: drama extremo, titulares exagerados, opinión sin filtros, humor ácido y referencias a eventos de la liga. Como si fuera una mezcla de Josep Pedrerol + El Hormiguero.
+
+=== DATOS ACTUALES DE LA LIGA ===
+CLASIFICACIÓN:
+  ${standingsStr}
+
+Líder actual: ${topTeam ? topTeam.name : 'N/A'}
+Colista sufriendo: ${bottomTeam ? bottomTeam.name : 'N/A'}
+Equipo en racha positiva: ${hotStreakTeam ? hotStreakTeam.name + ' (' + hotStreakTeam.streak + ' victorias seguidas)' : 'Ninguno'}
+Equipo en caida libre: ${coldStreakTeam ? coldStreakTeam.name + ' (' + Math.abs(coldStreakTeam.streak || 0) + ' derrotas seguidas)' : 'Ninguno'}
+
+Últimos resultados: ${lastResults || 'Sin datos'}
+Próximos partidos: ${upcomingStr || 'Sin programar'}
+
+JUGADOR TOP (Puntos): ${topScorer ? topScorer.name + ' (' + topScorer.points + ' pts, ' + topScorer.role + ', ' + topScorer.team + ')' : 'N/A'}
+Mejor KDA: ${topKda ? topKda.name + ' (KDA: ' + topKda.kdaText + ', ' + topKda.team + ')' : 'N/A'}
+Más Daño (DPM): ${topDmg ? topDmg.name + ' (' + topDmg.dpm + ' DPM, ' + topDmg.team + ')' : 'N/A'}
+Rey de los MVPs: ${topMvps ? topMvps.name + ' (' + (topMvps.mvps || 0) + ' MVPs, ' + topMvps.team + ')' : 'N/A'}
+Partidos jugados: ${completedMatches.length} | Pendientes: ${pendingMatches.length}
+
+=== INSTRUCCIONES ===
+Genera una edición completa usando EXACTAMENTE estas secciones:
+
+📺 **FLASH DE ÚNTE**: [TITULAR impactante y sensacionalista, más una frase de intro dramática]
+
+🔥 **LA NOTICIA BOMBA**: [Destaca el resultado más sorprendente o el partido más importante. Sé dramático, menciona nombres reales]
+
+🥇 **EL MEJOR DE LA SEMANA**: [Análisis de ${topScorer ? topScorer.name : 'el top jugador'}, con estadísticas reales. Explica por qué es intocable esta semana]
+
+💫 **EL JUGADOR A VIGILAR**: [Destaca a ${topDmg ? topDmg.name : 'el más dañino'} con su DPM brutal. ¿Por qué nadie le puede parar?]
+
+💀 **EL FUNERAL**: [Critica con estilo al equipo que peor lo está haciendo: ${coldStreakTeam ? coldStreakTeam.name : bottomTeam ? bottomTeam.name : 'el colista'}. Sin piedad pero con humor]
+
+🤫 **EL RUMOR DEL VESTUARIO**: [Inventa un rumor gracioso y creible sobre la liga. Puede ser sobre un posible fichaje, una rivalidad, una conspiración táctica, etc.]
+
+🔮 **LA PREDICCIÓN DEL MAESTRO**: [Predicción arriesgada y específica sobre quién ganará el siguiente partido importante. Con confianza extrema]
+
+🎪 **CIERRE DE PROGRAMA**: [Una frase final lapidaria, con estilo, que resuma el estado de la liga. Al estilo Pedrerol]
+
+REGLAS OBLIGATORIAS:
+- Usa nombres REALES de equipos y jugadores de los datos
+- Usa negritas con **texto** para nombres y cifras importantes
+- Tono: epico, dramático, con toques de humor ácido y sarcasmo
+- Máximo 450 palabras totales
+- Cada sección debe tener al menos 2-3 frases sustanciales`;
 
   let gazetteText = callGemini(prompt);
+  if (!gazetteText) return { success: false, msg: 'Error llamando a la IA. Comprueba la API key de Gemini.' };
 
   // Guardar en caché
   let gazetteSheet = ss.getSheetByName('AI_GAZETTE');
@@ -22056,6 +22111,7 @@ function getWeeklyPickemData(summonerName) {
     matches: pendingMatches.map(m => ({
       id: m.id, names: m.names, round: m.round,
       tA: m.tA, tB: m.tB,
+      votesA: m.votesA, votesB: m.votesB,
       userPick: userPicks[String(m.id)] !== undefined ? userPicks[String(m.id)] : -1
     })),
     leaderboard: leaderboard
@@ -22458,3 +22514,398 @@ function setupManualNewsSheet() {
     sheet.appendRow(['INFO', '¡Bienvenido al nuevo panel de noticias manual! **Esto** sale en negrita.', new Date()]);
   }
 }
+
+
+/* ==========================================================
+   IMPORTACION DESDE ROFL PARSER (JSON)
+   ========================================================== */
+function importRoflJsonUI() {
+  const html = HtmlService.createHtmlOutput(
+    '<style>body{font-family:sans-serif;padding:10px;} textarea{width:100%;height:150px;margin-bottom:10px;}</style>' +
+    '<h3>Pega el JSON de la partida:</h3>' +
+    '<textarea id="jsonInput"></textarea>' +
+    '<button onclick="google.script.run.withSuccessHandler(google.script.host.close).processRoflJson(document.getElementById(\'jsonInput\').value)">Importar</button>'
+  ).setWidth(400).setHeight(250);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Importar ROFL JSON');
+}
+
+function processRoflJson(jsonStr) {
+  try {
+    const data = JSON.parse(jsonStr);
+    if (data.source !== 'ROFL_PARSER') throw new Error('Formato JSON inválido. Usa el exportador del RoflParser.');
+    
+    const ss = SpreadsheetApp.getActive();
+    const matchesSheet = ss.getSheetByName("MATCHES");
+    const config = readConfigMap();
+    const champDataMap = getChampionDataMap();
+    const invSheet = ss.getSheetByName("INVENTORY");
+    const allMatchesData = matchesSheet.getDataRange().getValues();
+    
+    const configSheet = ss.getSheetByName('CONFIG');
+    const currentSeason = configSheet ? configSheet.getRange('B2').getValue() : 'S1';
+
+    const matchId = 'ROFL_' + Date.now().toString().slice(-6);
+    const matchStartTime = new Date(data.timestamp || new Date());
+    const durationMin = Math.floor(data.gameDuration / 60);
+    
+    // Calcular kills totales por equipo para KP
+    let teamKills = {};
+    data.participants.forEach(p => {
+      const tid = p.teamId || 0;
+      teamKills[tid] = (teamKills[tid] || 0) + (p.kills || 0);
+    });
+
+    let importedCount = 0;
+    
+    data.participants.forEach(p => {
+      try {
+        // Calcular KP real
+        const tid = p.teamId || 0;
+        const totalTeamKills = teamKills[tid] || 1;
+        const kpReal = ((p.kills + p.assists) / Math.max(1, totalTeamKills));
+        
+        // Adaptar objeto del parser al formato que espera computePointsDetailed
+        const mockP = {
+          ...p,
+          championName: p.championName,
+          teamId: p.teamId,
+          win: p.win,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+          goldEarned: p.goldEarned,
+          visionScore: p.visionScore,
+          challenges: {
+            damagePerMinute: p.totalDamageDealtToChampions / Math.max(1, durationMin),
+            killParticipation: kpReal,
+            maxGoldDeficit: 0
+          }
+        };
+
+        const teamInfo = {
+          dragonsCount: 0, baronCount: 0, heraldCount: 0, hordeCount: 0,
+          towerCount: 0, inhibitorCount: 0, elderPresent: false,
+          enemyDragons: 0, enemyBarons: 0, enemyHeralds: 0, enemyHorde: 0
+        };
+
+        const pointsObj = computePointsDetailed(
+          mockP, data.participants, durationMin,
+          teamInfo, config, p.summonerName, 
+          invSheet, allMatchesData, matchId
+        );
+
+        const kpClean = parseFloat(kpReal.toFixed(2));
+        const finalNotes = (pointsObj.notes || []).join("; ");
+        
+        // Construir JSON de stats enriquecido (compatible con la API de Riot y el Salón de la Fama)
+        const enrichedStats = {
+          summonerName: p.summonerName,
+          championName: p.championName,
+          teamId: p.teamId,
+          win: p.win,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+          goldEarned: p.goldEarned,
+          visionScore: p.visionScore,
+          totalMinionsKilled: p.totalMinionsKilled,
+          // Estadísticas calculadas por minuto
+          csMin: p.csMin || parseFloat((p.totalMinionsKilled / Math.max(1, durationMin)).toFixed(2)),
+          gpm: p.gpm || Math.round(p.goldEarned / Math.max(1, durationMin)),
+          dpm: p.dpm || Math.round(p.totalDamageDealtToChampions / Math.max(1, durationMin)),
+          vspm: p.vspm || parseFloat((p.visionScore / Math.max(1, durationMin)).toFixed(2)),
+          kp: parseFloat((kpReal * 100).toFixed(1)),
+          // Datos avanzados extraídos del ROFL crudo (para el Salón de la Fama)
+          dmgObj: parseInt(p.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || p.dmgObj || 0),
+          dmgTurrets: parseInt(p.TOTAL_DAMAGE_DEALT_TO_TURRETS || p.TOTAL_DAMAGE_DEALT_TO_BUILDINGS || p.dmgTurrets || 0),
+          dmgTaken: parseInt(p.TOTAL_DAMAGE_TAKEN || p.dmgTaken || p.totalDamageTaken || 0),
+          pinks: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || p.pinks || p.controlWards || 0),
+          controlWards: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || p.controlWards || 0),
+          wardsKilled: parseInt(p.WARD_KILLED || p.wardsKilled || 0),
+          wardsPlaced: parseInt(p.WARD_PLACED || p.wardsPlaced || 0),
+          epicMonsters: parseInt(p.RIFT_HERALD_KILLS || 0) + parseInt(p.DRAGON_KILLS || 0) + parseInt(p.BARON_KILLS || 0),
+          pentas: parseInt(p.PENTA_KILLS || p.pentaKills || 0),
+          // Items y hechizos
+          items: [p.ITEM0, p.ITEM1, p.ITEM2, p.ITEM3, p.ITEM4, p.ITEM5, p.ITEM6].filter(x => x).map(Number),
+          spells: [p.SUMMONER_SPELL_1, p.SUMMONER_SPELL_2].filter(x => x).map(Number)
+        };
+        
+        const jsonStats = JSON.stringify(enrichedStats);
+
+        // Normalizar la línea para que Beautify la reconozca
+        let lane = p.lane || '';
+        if (lane === 'MIDDLE') lane = 'MID';
+        else if (lane === 'BOTTOM') lane = 'ADC';
+        else if (lane === 'UTILITY') lane = 'SUPP';
+        else if (lane === 'JUNGLE') lane = 'JNG';
+
+        matchesSheet.appendRow([
+          matchId, matchStartTime, p.summonerName, p.championName, lane, (p.win ? "Win" : "Loss"),
+          p.kills, p.deaths, p.assists, p.totalDamageDealtToChampions, kpClean, durationMin,
+          Number(pointsObj.total), finalNotes, currentSeason, jsonStats
+        ]);
+        
+        importedCount++;
+      } catch (e) {
+        Logger.log(`Error importando jugador ${p.summonerName}: ${e.message}`);
+      }
+    });
+    
+    SpreadsheetApp.getUi().alert('¡Éxito! Se han importado ' + importedCount + ' jugadores con cálculo de puntos.\nMatchID: ' + matchId);
+    
+    updateScores();
+    if (typeof beautifySpreadsheet === 'function') beautifySpreadsheet();
+  } catch (err) {
+    SpreadsheetApp.getUi().alert('Error procesando JSON: ' + err.message);
+  }
+}
+
+// ==========================================================
+// 🎲 SISTEMA DE JUEGOS DE CASINO (WALL STREET)
+// ==========================================================
+
+function checkAndDeductBalance(summoner, amount, reason) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('Liga_Wallets');
+    if (!sheet) return { success: false, msg: 'No se encontró la hoja de carteras.' };
+    
+    const data = sheet.getDataRange().getValues();
+    let userRow = -1;
+    let currentBalance = 0;
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(summoner).toLowerCase()) {
+        userRow = i + 1;
+        currentBalance = parseFloat(data[i][1]) || 0;
+        break;
+      }
+    }
+    
+    if (userRow === -1) return { success: false, msg: 'No tienes una cartera activa. ¡Participa en la liga!' };
+    if (currentBalance < amount) return { success: false, msg: 'Saldo insuficiente (WG Coins).' };
+    
+    sheet.getRange(userRow, 2).setValue(currentBalance - amount);
+    logToSheet(`[CASINO] ${summoner} apostó ${amount} WG en ${reason}. Nuevo saldo: ${currentBalance - amount}`);
+    return { success: true };
+  } catch (e) {
+    return { success: false, msg: 'Error al procesar la cartera: ' + e.message };
+  }
+}
+
+function addBalance(summoner, amount, reason) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('Liga_Wallets');
+    if (!sheet) return { success: false };
+    
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(summoner).toLowerCase()) {
+        const current = parseFloat(data[i][1]) || 0;
+        sheet.getRange(i + 1, 2).setValue(current + amount);
+        logToSheet(`[CASINO] ${summoner} ganó ${amount} WG en ${reason}. Nuevo saldo: ${current + amount}`);
+        return { success: true };
+      }
+    }
+    return { success: false };
+  } catch (e) {
+    return { success: false };
+  }
+}
+
+// --- POKER ROOM LOGIC (CacheService based) ---
+const POKER_CACHE_KEY = 'POKER_ROOM_STATE';
+
+function pokerGetState() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(POKER_CACHE_KEY);
+  if (cached) {
+    try { return JSON.parse(cached); } catch(e) {}
+  }
+  
+  // Default state
+  const state = { players: [], pot: 0, active: false, board: [], turn: 0, lastUpdate: new Date().getTime() };
+  cache.put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+  return state;
+}
+
+function pokerJoin(playerName, buyIn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return { success: false, msg: 'Servidor ocupado, reintenta.' };
+  try {
+    let state = pokerGetState();
+    const safeStack = parseInt(buyIn) || 5000;
+    const maxPlayers = 6;
+    
+    if (state.players.length >= maxPlayers) return { success: false, msg: 'La mesa está llena (' + maxPlayers + '/' + maxPlayers + ').' };
+    
+    // Verificar si ya está en la mesa
+    const already = state.players.some(p => (typeof p === 'object' ? p.name : p) === playerName);
+    if (!already) {
+      state.players.push({ name: playerName, stack: safeStack, lastAction: null });
+      state.lastUpdate = new Date().getTime();
+      CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+    }
+    return state;
+  } finally { lock.releaseLock(); }
+}
+
+function pokerLeave(playerName) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return { success: false, msg: 'Servidor ocupado.' };
+  try {
+    let state = pokerGetState();
+    state.players = state.players.filter(p => (typeof p === 'object' ? p.name : p) !== playerName);
+    state.lastUpdate = new Date().getTime();
+    CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+    return { success: true };
+  } finally { lock.releaseLock(); }
+}
+
+function pokerDoAction(playerName, action) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return pokerGetState();
+  try {
+    let state = pokerGetState();
+    // Registrar acción del jugador
+    let player = state.players.find(p => (typeof p === 'object' ? p.name : p) === playerName);
+    if (player && typeof player === 'object') {
+      player.lastAction = action;
+      player.lastActionTime = new Date().getTime();
+      
+      if (action === 'RAISE') {
+        let raiseAmt = Math.min(player.stack, 500);
+        player.stack = Math.max(0, player.stack - raiseAmt);
+        state.pot = (state.pot || 0) + raiseAmt;
+      } else if (action === 'CALL') {
+        let callAmt = Math.min(player.stack, 200);
+        player.stack = Math.max(0, player.stack - callAmt);
+        state.pot = (state.pot || 0) + callAmt;
+      } else if (action === 'FOLD') {
+        // El jugador se retira, dejar en la mesa con lastAction FOLD
+      }
+    }
+    state.lastUpdate = new Date().getTime();
+    state.turn = (state.turn || 0) + 1;
+    CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+    return state;
+  } finally { lock.releaseLock(); }
+}
+
+/* ───────────────── SYSTEM TIE-BREAKER HELPER (v25.0) ───────────────── */
+function sortTeamsHelper(teams, matches) {
+  if (!teams || teams.length <= 1) return teams;
+  
+  // Group teams by primary criteria: points (pts) desc, then wins (w) desc
+  const groups = {};
+  teams.forEach(t => {
+    const key = `${t.pts || 0}_${t.w || 0}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+  
+  // Sort keys descending: first by pts, then by wins (w)
+  const sortedKeys = Object.keys(groups).sort((x, y) => {
+    const [ptsX, wX] = x.split('_').map(Number);
+    const [ptsY, wY] = y.split('_').map(Number);
+    if (ptsY !== ptsX) return ptsY - ptsX;
+    return wY - wX;
+  });
+  
+  const finalSortedTeams = [];
+  sortedKeys.forEach(key => {
+    const tiedGroup = groups[key];
+    if (tiedGroup.length === 1) {
+      finalSortedTeams.push(tiedGroup[0]);
+    } else {
+      const resolved = resolveTiedGroup(tiedGroup, matches);
+      finalSortedTeams.push(...resolved);
+    }
+  });
+  
+  return finalSortedTeams;
+}
+
+function resolveTiedGroup(group, matches) {
+  if (group.length <= 1) return group;
+  
+  // 2-team tie: Standard Head-to-Head
+  if (group.length === 2) {
+    const [a, b] = group;
+    let aWins = 0, bWins = 0;
+    for (let m of matches) {
+      const tA = m.tA || m.tA_id || m.idA || "";
+      const tB = m.tB || m.tB_id || m.idB || "";
+      const winner = m.winner || "";
+      const isCompleted = m.status === undefined || m.status === 'COMPLETED';
+      
+      if (isCompleted) {
+        if ((tA === a.id && tB === b.id) || (tA === b.id && tB === a.id)) {
+          if (winner === a.id) aWins++;
+          else if (winner === b.id) bWins++;
+        }
+      }
+    }
+    if (aWins > bWins) return [a, b];
+    if (bWins > aWins) return [b, a];
+    
+    // Secondary fallback: overall game differential (d) desc
+    if ((b.d || 0) !== (a.d || 0)) {
+      return (b.d || 0) - (a.d || 0) > 0 ? [b, a] : [a, b];
+    }
+    return group; // Keep initial order
+  }
+  
+  // 3+ team tie: H2H Mini-League
+  const teamIds = new Set(group.map(t => t.id));
+  const miniLeagueWins = {};
+  group.forEach(t => {
+    miniLeagueWins[t.id] = 0;
+  });
+  
+  for (let m of matches) {
+    const tA = m.tA || m.tA_id || m.idA || "";
+    const tB = m.tB || m.tB_id || m.idB || "";
+    const winner = m.winner || "";
+    const isCompleted = m.status === undefined || m.status === 'COMPLETED';
+    
+    if (isCompleted && teamIds.has(tA) && teamIds.has(tB)) {
+      if (winner && miniLeagueWins[winner] !== undefined) {
+        miniLeagueWins[winner]++;
+      }
+    }
+  }
+  
+  // Group tied teams by their mini-league wins
+  const subGroups = {};
+  group.forEach(t => {
+    const wins = miniLeagueWins[t.id];
+    if (!subGroups[wins]) subGroups[wins] = [];
+    subGroups[wins].push(t);
+  });
+  
+  const sortedWinsKeys = Object.keys(subGroups).sort((x, y) => Number(y) - Number(x));
+  
+  // If the mini-league didn't differentiate anyone (e.g. perfect circular tie),
+  // we must fall back to the next criterion
+  if (sortedWinsKeys.length === 1) {
+    const hasDifferentD = group.some(t => (t.d || 0) !== (group[0].d || 0));
+    if (hasDifferentD) {
+      return [...group].sort((x, y) => (y.d || 0) - (x.d || 0));
+    }
+    return group; // Keep initial order
+  }
+  
+  // Recursively resolve sub-ties
+  const result = [];
+  sortedWinsKeys.forEach(winsKey => {
+    const subGroup = subGroups[winsKey];
+    result.push(...resolveTiedGroup(subGroup, matches));
+  });
+  
+  return result;
+}
+

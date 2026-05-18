@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wargods - Lector de Partidas (.ROFL)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #334155;
+            --win-color: #10b981;
+            --lose-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-zone {
+            background-color: var(--panel-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 4rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-color);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .results {
+            display: none;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .team-section {
+            margin-bottom: 2rem;
+        }
+
+        .team-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .win-title { color: var(--win-color); }
+        .lose-title { color: var(--lose-color); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(0,0,0,0.2);
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .kda { font-weight: bold; }
+        .champ-icon { width: 32px; height: 32px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        .error-message {
+            color: var(--lose-color);
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Wargods ROFL Parser</h1>
+        <p>Sube el archivo de repetición (.rofl) para extraer las estadísticas sin necesidad de la API de Riot.</p>
+    </header>
+
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-icon">📄</div>
+        <h2>Arrastra tu archivo .rofl aquí</h2>
+        <p>o haz clic para seleccionar</p>
+        <input type="file" id="file-input" accept=".rofl" />
+    </div>
+    
+    <div id="error-container" class="error-message"></div>
+
+    <div class="results" id="results-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Resultados de la Partida</h2>
+            <button class="btn" onclick="exportJSON()">Copiar Datos JSON (Para Base de Datos)</button>
+        </div>
+        <p id="match-info" style="color: #94a3b8; margin-bottom: 2rem;"></p>
+
+        <div class="team-section" id="team-100"></div>
+        <div class="team-section" id="team-200"></div>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const resultsContainer = document.getElementById('results-container');
+    const errorContainer = document.getElementById('error-container');
+    let extractedData = null;
+
+    // Drag and drop events
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    async function handleFile(file) {
+        errorContainer.textContent = '';
+        if (!file.name.endsWith('.rofl')) {
+            errorContainer.textContent = 'Por favor, sube un archivo con extensión .rofl';
+            return;
+        }
+
+        try {
+            // Leemos el archivo completo para buscar la metadata en cualquier posición
+            const buffer = await file.arrayBuffer();
+            const view = new Uint8Array(buffer);
+            
+            // Usamos un decoder para buscar cadenas en el buffer
+            // Nota: Para archivos muy grandes (>100MB) esto podría ser lento, pero los .rofl suelen ser de 10-30MB
+            const decoder = new TextDecoder('utf-8');
+            const text = decoder.decode(view);
+            
+            // Buscar el inicio del JSON de metadata. 
+            // Probamos varios keywords comunes que preceden al bloque de estadísticas
+            let jsonStartIndex = text.indexOf('{"gameLength"');
+            if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"gameDuration"');
+            if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"statsJson"');
+            
+            if (jsonStartIndex === -1) {
+                // Intento desesperado: buscar solo el campo statsJson si el objeto no empieza como esperamos
+                const statsKeyIndex = text.indexOf('"statsJson"');
+                if (statsKeyIndex !== -1) {
+                    // Retroceder para encontrar el inicio del objeto {
+                    jsonStartIndex = text.lastIndexOf('{', statsKeyIndex);
+                }
+            }
+
+            if (jsonStartIndex === -1) {
+                throw new Error("No se pudo encontrar la metadata de la partida. El archivo podría ser demasiado nuevo o estar en un formato no reconocido.");
+            }
+
+            // Extraer el objeto JSON desde el índice encontrado
+            const chunk = text.substring(jsonStartIndex);
+            let jsonStr = "";
+            let braceCount = 0;
+            let inString = false;
+            let escapeNext = false;
+            
+            for (let i = 0; i < chunk.length; i++) {
+                const char = chunk[i];
+                jsonStr += char;
+                
+                if (escapeNext) {
+                    escapeNext = false;
+                    continue;
+                }
+                if (char === '\\') {
+                    escapeNext = true;
+                    continue;
+                }
+                if (char === '"') {
+                    inString = !inString;
+                } else if (!inString) {
+                    if (char === '{') braceCount++;
+                    else if (char === '}') {
+                        braceCount--;
+                        if (braceCount === 0) break;
+                    }
+                }
+            }
+            
+            if (!jsonStr.endsWith('}')) {
+                throw new Error("JSON malformado o incompleto detectado en el archivo.");
+            }
+
+            const metadata = JSON.parse(jsonStr);
+            
+            // El campo statsJson suele venir como un string JSON escapado dentro del objeto principal
+            let players = null;
+            if (metadata.statsJson) {
+                players = typeof metadata.statsJson === 'string' ? JSON.parse(metadata.statsJson) : metadata.statsJson;
+            } else if (Array.isArray(metadata)) {
+                players = metadata;
+            } else if (metadata.participants) {
+                players = metadata.participants;
+            }
+
+            if (players) {
+                extractedData = {
+                    gameLength: metadata.gameLength || metadata.gameDuration || 0,
+                    gameVersion: metadata.gameVersion || "Desconocida",
+                    players: players
+                };
+                renderResults(players, extractedData.gameLength);
+            } else {
+                throw new Error("El archivo no parece contener el array de estadísticas de jugadores.");
+            }
+            
+        } catch (err) {
+            console.error(err);
+            errorContainer.textContent = 'Error al parsear el archivo: ' + err.message;
+        }
+    }
+
+    function renderResults(players, gameLengthMs) {
+        resultsContainer.style.display = 'block';
+        
+        const minutes = Math.floor(gameLengthMs / 60000);
+        const seconds = Math.floor((gameLengthMs % 60000) / 1000);
+        document.getElementById('match-info').textContent = `Duración: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Ordenar por equipo y luego por posición si está disponible
+        const sortedPlayers = [...players].sort((a, b) => {
+            if (a.TEAM !== b.TEAM) return a.TEAM - b.TEAM;
+            const posOrder = { 'TOP': 0, 'JUNGLE': 1, 'MIDDLE': 2, 'BOTTOM': 3, 'UTILITY': 4, 'SUPP': 4 };
+            const posA = posOrder[a.INDIVIDUAL_POSITION || a.TEAM_POSITION] || 99;
+            const posB = posOrder[b.INDIVIDUAL_POSITION || b.TEAM_POSITION] || 99;
+            return posA - posB;
+        });
+
+        const team100 = sortedPlayers.filter(p => p.TEAM === "100" || p.TEAM === 100);
+        const team200 = sortedPlayers.filter(p => p.TEAM === "200" || p.TEAM === 200);
+
+        renderTeam('team-100', 'Equipo Azul (Team 100)', team100);
+        renderTeam('team-200', 'Equipo Rojo (Team 200)', team200);
+    }
+
+    function renderTeam(containerId, teamName, players) {
+        const container = document.getElementById(containerId);
+        if (players.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const isWin = players[0].WIN === "Win" || players[0].WIN === true || players[0].WIN === "true";
+        const titleClass = isWin ? 'win-title' : 'lose-title';
+        const resultText = isWin ? 'VICTORIA' : 'DERROTA';
+
+        let html = `<div class="team-title ${titleClass}">${teamName} - ${resultText}</div>`;
+        html += `<table>
+            <thead>
+                <tr>
+                    <th>Campeón</th>
+                    <th>Jugador</th>
+                    <th>KDA</th>
+                    <th>Daño (Champ)</th>
+                    <th>Oro</th>
+                    <th>Visión</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        players.forEach(p => {
+            const kills = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
+            const deaths = parseInt(p.NUM_DEATHS || p.deaths || 0);
+            const assists = parseInt(p.ASSISTS || p.assists || 0);
+            const kdaText = `${kills} / ${deaths} / ${assists}`;
+            
+            const damage = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0).toLocaleString();
+            const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0).toLocaleString();
+            
+            // Riot a veces guarda el campeón en diferentes formatos dependiendo del parche
+            const champ = p.SKIN || p.championName || p.CHAMPION || "Unknown";
+            const playerName = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || p.PLAYER_CULTURAL_NAME || "Jugador";
+            const position = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || "";
+
+            html += `<tr>
+                <td><b>${champ}</b> <span style="font-size: 10px; color: #94a3b8">(${position})</span></td>
+                <td>${playerName}</td>
+                <td class="kda">${kdaText}</td>
+                <td>${damage}</td>
+                <td>${gold}</td>
+                <td>${p.VISION_SCORE || p.visionScore || 0}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    function exportJSON() {
+        if (!extractedData) return;
+        
+        console.log("Exportando datos completos...", extractedData);
+        
+        const durationMin = Math.max(1, extractedData.gameLength / 60000);
+        
+        // Calcular asesinatos totales por equipo para el KP
+        const teamKills = {};
+        extractedData.players.forEach(p => {
+            const tid = p.TEAM || p.teamId || 0;
+            const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
+            teamKills[tid] = (teamKills[tid] || 0) + k;
+        });
+
+        const exportFormat = {
+            source: "ROFL_PARSER",
+            timestamp: new Date().toISOString(),
+            gameDuration: Math.floor(extractedData.gameLength / 1000),
+            gameVersion: extractedData.gameVersion,
+            bans: extractedData.bans || [],
+            participants: extractedData.players.map(p => {
+                const name = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || p.PLAYER_CULTURAL_NAME || "Desconocido";
+                const skin = p.SKIN || p.championName || p.CHAMPION || "Unknown";
+                const win = p.WIN === "Win" || p.WIN === "true" || p.WIN === true || p.Win === "Win" || p.win === true;
+                const teamId = parseInt(p.TEAM || p.teamId || 0);
+                const lane = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || "";
+                
+                const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
+                const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
+                const a = parseInt(p.ASSISTS || p.assists || 0);
+                const dmg = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
+                const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
+                const vision = parseInt(p.VISION_SCORE || p.visionScore || 0);
+                const cs = parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) + parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
+                
+                const kp = teamKills[teamId] > 0 ? ((k + a) / teamKills[teamId] * 100).toFixed(1) : "0.0";
+
+                return {
+                    ...p, // Incluimos campos originales
+                    summonerName: name,
+                    championName: skin,
+                    lane: lane,
+                    teamId: teamId,
+                    win: win,
+                    kills: k,
+                    deaths: d,
+                    assists: a,
+                    totalDamageDealtToChampions: dmg,
+                    goldEarned: gold,
+                    visionScore: vision,
+                    totalMinionsKilled: cs,
+                    // Estadísticas calculadas para ser fiel al ejemplo
+                    csMin: parseFloat((cs / durationMin).toFixed(2)),
+                    gpm: Math.floor(gold / durationMin),
+                    dpm: Math.floor(dmg / durationMin),
+                    vspm: parseFloat((vision / durationMin).toFixed(2)),
+                    kp: parseFloat(kp)
+                };
+            })
+        };
+
+        const jsonStr = JSON.stringify(exportFormat, null, 2);
+        navigator.clipboard.writeText(jsonStr).then(() => {
+            alert('¡Datos completos copiados! Incluye nombres, posiciones, KP, DPM y estadísticas avanzadas.');
+        }).catch(err => {
+            console.error('Error al copiar', err);
+            alert('Error al copiar. Revisa la consola.');
+        });
+    }
+</script>
+</body>
+</html>

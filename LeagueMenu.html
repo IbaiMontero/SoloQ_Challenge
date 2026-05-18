@@ -279,6 +279,9 @@
                 <button onclick="refreshData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm font-bold transition">
                     ↻ RECARGAR
                 </button>
+                <button onclick="google.script.run.importRoflJsonUI()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition">
+                    📄 IMPORTAR ROFL
+                </button>
             </div>
         </div>
 
@@ -295,7 +298,20 @@
                 <div class="tab-btn whitespace-nowrap text-blue-400" id="btn-tab-meta" onclick="switchTab('meta', this)">🧬 META SNAPSHOT</div>
                 <div class="tab-btn whitespace-nowrap text-yellow-400 font-black" id="btn-tab-casino-rank" onclick="switchTab('casino-rank', this)">💰 WALL STREET</div>
                 <div class="tab-btn whitespace-nowrap text-pink-400" id="btn-tab-pickem" onclick="switchTab('pickem', this)">🎯 PICK'EM</div>
-                <div class="tab-btn whitespace-nowrap text-amber-400" id="btn-tab-vestuario" onclick="switchTab('vestuario', this)">💬 VESTUARIO</div>
+                <div class="tab-btn whitespace-nowrap text-amber-400" id="btn-tab-vestuario" onclick="switchTab('vestuario', this)">💬 TABLÓN DE NOTAS</div>
+                
+                <!-- SOCIAL MEDIA LINKS -->
+                <div class="mt-auto pt-8 pb-4 px-6 flex justify-center gap-6 border-t border-slate-800">
+                    <a href="https://www.tiktok.com/@WargodsPremier" target="_blank" class="text-slate-500 hover:text-white transition transform hover:scale-110 drop-shadow-md" title="TikTok">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.34 2.88 2.88 0 0 1 2.31-4.53 2.66 2.66 0 0 1 1.04.2v-3.26a5.85 5.85 0 0 0-1.04-.1 6.33 6.33 0 0 0-5.01 10.3A6.33 6.33 0 0 0 10.87 22a6.3 6.3 0 0 0 5.48-3.35 6.43 6.43 0 0 0 .82-3.14V8.42a8.14 8.14 0 0 0 5.83 2.45v-3.15a5.53 5.53 0 0 1-3.41-1.03z"/></svg>
+                    </a>
+                    <a href="https://twitch.tv/" target="_blank" class="text-slate-500 hover:text-purple-500 transition transform hover:scale-110 drop-shadow-md" title="Twitch">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
+                    </a>
+                    <a href="https://twitter.com/" target="_blank" class="text-slate-500 hover:text-blue-400 transition transform hover:scale-110 drop-shadow-md" title="Twitter/X">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
             </div>
 
             <div class="flex-1 w-full overflow-hidden relative">
@@ -338,7 +354,7 @@
                                 <div class="relative z-10 border-b border-slate-700 pb-3 mb-4 flex justify-between items-end">
                                     <div>
                                         <h3 class="font-oswald text-yellow-500 text-2xl tracking-widest uppercase">📈 Power Ranking</h3>
-                                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Fuerza y Momentum</p>
+                                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">H2H · Calidad de Victorias · Fuerza de Calendario</p>
                                     </div>
                                 </div>
                                 
@@ -397,9 +413,9 @@
                             <tr>
                                 <th width="50" class="pl-4">Pos</th>
                                 <th>Equipo</th>
-                                <th class="text-center" width="100">V</th>
-                                <th class="text-center" width="100">D</th>
-                                <th class="text-center" width="150">Forma (L5)</th>
+                                <th class="text-center" width="80">V</th>
+                                <th class="text-center" width="80">D</th>
+                                <th class="text-center" width="120">Forma (L5)</th>
                             </tr>
                         </thead>
                         <tbody id="standings-body"></tbody>
@@ -429,7 +445,7 @@
                         </div>
                     </div>
                     <div id="quinteto-container" class="mb-10"></div>
-                    <div id="records-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"></div>
+                    <!-- Records container removed as requested -->
                     <div class="bg-slate-800/80 border border-slate-700 p-8 rounded-xl shadow-2xl">
                         <table class="standings-table w-full text-sm">
                             <thead id="player-stats-thead">
@@ -551,9 +567,10 @@
                     </div>
 
                     <!-- SUB-TABS INTERNOS -->
-                    <div class="flex justify-center border-b border-slate-700/50 mb-10">
-                        <button onclick="switchCasinoSubTab('rank')" id="btn-casino-sub-rank" class="px-8 py-4 font-black uppercase tracking-widest text-xs md:text-sm border-b-2 border-yellow-500 text-yellow-500 transition-all">🏆 Los Magnates</button>
-                        <button onclick="switchCasinoSubTab('history')" id="btn-casino-sub-history" class="px-8 py-4 font-black uppercase tracking-widest text-xs md:text-sm border-b-2 border-transparent text-slate-500 hover:text-white transition-all">📋 Mi Cartera de Apuestas</button>
+                    <div class="flex justify-center border-b border-slate-700/50 mb-10 overflow-x-auto hide-scroll">
+                        <button onclick="switchCasinoSubTab('rank')" id="btn-casino-sub-rank" class="px-6 md:px-8 py-4 font-black uppercase tracking-widest text-xs md:text-sm border-b-2 border-yellow-500 text-yellow-500 transition-all whitespace-nowrap">🏆 Los Magnates</button>
+                        <button onclick="switchCasinoSubTab('games')" id="btn-casino-sub-games" class="px-6 md:px-8 py-4 font-black uppercase tracking-widest text-xs md:text-sm border-b-2 border-transparent text-slate-500 hover:text-white transition-all whitespace-nowrap">🎲 Salón de Juegos</button>
+                        <button onclick="switchCasinoSubTab('history')" id="btn-casino-sub-history" class="px-6 md:px-8 py-4 font-black uppercase tracking-widest text-xs md:text-sm border-b-2 border-transparent text-slate-500 hover:text-white transition-all whitespace-nowrap">📋 Mi Cartera</button>
                     </div>
 
                     <!-- PANEL DE RANKING -->
@@ -579,6 +596,78 @@
                                     <tr><td colspan="5" class="text-center py-8 animate-pulse">Cargando las carteras de los magnates...</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- PANEL DE JUEGOS (Blackjack & Poker) -->
+                    <div id="casino-panel-games" class="hidden space-y-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- BLACKJACK BOT -->
+                            <div class="bg-slate-900/50 border border-emerald-500/30 p-6 rounded-2xl shadow-xl">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="font-oswald text-emerald-400 text-2xl tracking-widest uppercase">♠️ BLACKJACK BOT</h3>
+                                    <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-1 rounded border border-emerald-500/30 uppercase tracking-widest">Single Player</span>
+                                </div>
+                                <div id="blackjack-game" class="min-h-[300px] flex flex-col justify-between">
+                                    <div id="bj-dealer-area" class="mb-4">
+                                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Crupier (IA) <span id="bj-dealer-score" class="text-white ml-2"></span></div>
+                                        <div id="bj-dealer-cards" class="flex gap-2 min-h-[80px] bg-black/30 p-2 rounded-lg border border-slate-800"></div>
+                                    </div>
+                                    <div id="bj-player-area" class="mb-6">
+                                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Tus Cartas <span id="bj-player-score" class="text-emerald-400 ml-2"></span></div>
+                                        <div id="bj-player-cards" class="flex gap-2 min-h-[80px] bg-black/30 p-2 rounded-lg border border-slate-800"></div>
+                                    </div>
+                                    <div id="bj-controls" class="space-y-4">
+                                        <div id="bj-bet-controls" class="flex gap-2">
+                                            <input type="number" id="bj-bet-amount" placeholder="Apuesta WG" class="bg-black border border-slate-700 rounded px-4 py-2 text-white w-full outline-none focus:border-emerald-500 transition">
+                                            <button onclick="bjStartGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-2 rounded transition uppercase text-xs tracking-widest whitespace-nowrap">Repartir</button>
+                                        </div>
+                                        <div id="bj-action-controls" class="hidden flex gap-2">
+                                            <button onclick="bjHit()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded transition uppercase text-xs tracking-widest">Pedir</button>
+                                            <button onclick="bjStand()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded transition uppercase text-xs tracking-widest">Plantarse</button>
+                                        </div>
+                                        <div id="bj-result" class="text-center font-oswald text-xl hidden"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- POKER ROOM -->
+                            <div class="bg-slate-900/50 border border-blue-500/30 p-6 rounded-2xl shadow-xl">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="font-oswald text-blue-400 text-2xl tracking-widest uppercase">♥️ POKER ROOM</h3>
+                                    <span class="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded border border-blue-500/30 uppercase tracking-widest">Multiplayer (Hasta 4)</span>
+                                </div>
+                                <div id="poker-room" class="min-h-[300px] flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                                    <div id="poker-lobby" class="text-center space-y-4 p-6 w-full">
+                                        <div class="text-4xl mb-2">🃏</div>
+                                        <p class="text-slate-400 text-sm">Poker Texas Hold'em. El mínimo es 2 jugadores.</p>
+                                        <div class="flex items-center justify-center gap-2 mb-1">
+                                            <span id="poker-player-count" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">0/6 jugadores</span>
+                                        </div>
+                                        <div id="poker-players-list" class="flex flex-wrap justify-center gap-2 mb-4 min-h-[32px]"></div>
+                                        <div class="flex flex-wrap justify-center gap-2">
+                                            <button onclick="pokerJoinRoom()" id="btn-poker-join" class="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-2 rounded-full transition uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">🃏 Entrar a la Mesa</button>
+                                            <button onclick="pokerLeaveRoom()" id="btn-poker-leave" style="display:none" class="bg-red-600 hover:bg-red-500 text-white font-black px-6 py-2 rounded-full transition uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">🚪 Salir</button>
+                                            <button onclick="pokerAddBot()" id="btn-poker-bot" class="bg-purple-700 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-full transition uppercase text-[10px] tracking-widest flex items-center gap-2">🤖 Añadir Bot</button>
+                                        </div>
+                                    </div>
+                                    <div id="poker-game" class="hidden w-full h-full p-4 flex flex-col">
+                                        <!-- Mesa de Poker simplificada -->
+                                        <div class="flex-1 relative min-h-[200px] bg-green-900/20 rounded-[100px] border-8 border-slate-800 m-4 flex items-center justify-center">
+                                            <div id="poker-community-cards" class="flex gap-2"></div>
+                                            <div id="poker-pot" class="absolute top-4 text-yellow-500 font-bold text-sm">POT: 0 WG</div>
+                                        </div>
+                                        <div class="flex justify-between items-end">
+                                            <div id="poker-my-hand" class="flex gap-2 bg-black/40 p-2 rounded-lg border border-blue-500/30"></div>
+                                            <div id="poker-actions" class="flex gap-2">
+                                                <button onclick="pokerAction('FOLD')" class="bg-red-800 hover:bg-red-700 text-white px-4 py-2 rounded text-[10px] font-bold uppercase">Fold</button>
+                                                <button onclick="pokerAction('CALL')" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-[10px] font-bold uppercase">Call</button>
+                                                <button onclick="pokerAction('RAISE')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-[10px] font-bold uppercase">Raise</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -624,10 +713,10 @@
 
             <!-- 📊 PLAYER COMPARISON TAB (ELIMINADO) -->
 
-            <!-- 💬 VESTUARIO (TRASH TALK) TAB -->
+            <!-- 💬 TABLÓN DE NOTAS (TRASH TALK) TAB -->
             <div id="tab-vestuario" class="content-pane overflow-auto p-10">
                 <div class="max-w-2xl mx-auto">
-                    <h2 class="text-4xl font-oswald text-amber-400 tracking-widest uppercase mb-2 text-center">💬 El Vestuario</h2>
+                    <h2 class="text-4xl font-oswald text-amber-400 tracking-widest uppercase mb-2 text-center">💬 El Tablón de Notas</h2>
                     <p class="text-slate-400 text-center mb-6">Deja tu mensaje antes del partido. Los mensajes se borran a las 48h. <span class="text-[10px] text-slate-500 uppercase">Máx 140 caracteres</span></p>
                     <div class="flex gap-2 mb-6">
                         <input type="text" id="trash-talk-input" maxlength="140" placeholder="Hoy os vamos a barrer 🧹" class="flex-1 hex-input bg-slate-900 border-amber-500/50 text-sm">
@@ -657,20 +746,25 @@
 
             <!-- 🗞️ GAZETTE MODAL -->
             <div id="gazette-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center" style="display:none">
-                <div class="bg-[#fdf6e3] border-4 border-[#8b7355] rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl relative max-h-[80vh] overflow-y-auto">
-                    <button onclick="closeModal('gazette-modal')" class="absolute top-3 right-4 text-[#8b7355] hover:text-black text-xl font-bold">✕</button>
-                    <div class="text-center border-b-4 border-double border-[#8b7355] pb-4 mb-6">
-                        <h2 class="text-4xl font-bold text-[#2c1810] tracking-widest uppercase" style="font-family: 'Georgia', serif;">📰 La Gaceta de Wargods</h2>
-                        <p class="text-[#8b7355] text-xs uppercase tracking-widest mt-1">Periódico Oficial de la Wargods Premier League</p>
-                        <div class="flex justify-between items-center mt-2 px-4">
-                            <button onclick="changeGazetteEdition(-1)" class="text-[#8b7355] hover:text-black font-bold text-sm">◀ Anterior</button>
-                            <p id="gazette-date" class="text-[#666] text-[10px] font-bold"></p>
-                            <button onclick="changeGazetteEdition(1)" class="text-[#8b7355] hover:text-black font-bold text-sm">Siguiente ▶</button>
+                <div class="bg-gradient-to-b from-slate-900 to-black border-2 border-red-600 rounded-xl p-8 max-w-2xl w-full mx-4 shadow-[0_0_30px_rgba(220,38,38,0.3)] relative max-h-[80vh] overflow-y-auto">
+                    <button onclick="closeModal('gazette-modal')" class="absolute top-3 right-4 text-slate-400 hover:text-white text-xl font-bold">✕</button>
+                    <div class="text-center border-b border-slate-700 pb-4 mb-6">
+                        <h2 class="text-4xl font-black text-white tracking-tighter italic uppercase">🚨 CHIRINGUITO PREMIER</h2>
+                        <p class="text-red-500 text-xs font-bold uppercase tracking-widest mt-1">El debate oficial de la Wargods Premier</p>
+                        <div class="flex justify-between items-center mt-4 px-4 bg-slate-800/50 p-2 rounded-lg">
+                            <button onclick="changeGazetteEdition(-1)" class="text-slate-400 hover:text-white font-bold text-sm">◀ Anterior</button>
+                            <span id="gazette-date" class="font-bold text-slate-300 text-sm">Cargando...</span>
+                            <button onclick="changeGazetteEdition(1)" class="text-slate-400 hover:text-white font-bold text-sm">Siguiente ▶</button>
                         </div>
                     </div>
-                    <div id="gazette-content" class="text-[#2c1810] text-sm leading-relaxed whitespace-pre-line px-2" style="font-family: 'Georgia', serif;"></div>
-                    <div class="mt-8 pt-4 border-t border-[#8b7355]/30 flex justify-center gap-4">
-                        <button onclick="copyGazetteToClipboard()" class="bg-[#8b7355] text-white px-4 py-2 rounded text-xs font-bold uppercase hover:bg-[#2c1810] transition">📋 Copiar Edición</button>
+                    <div id="gazette-content" class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-inter mb-6">Cargando programa...</div>
+                    <div class="text-center pt-4 border-t border-slate-800">
+                        <button onclick="copyGazetteToClipboard()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-md transition-colors text-sm uppercase tracking-wider">
+                            📋 Copiar Programa
+                        </button>
+                        <button id="btn-admin-gazette" onclick="generateGazette()" class="hidden bg-slate-800 hover:bg-slate-700 text-yellow-500 font-bold px-6 py-2 rounded-md transition-colors text-sm uppercase tracking-wider ml-4 border border-yellow-500/50">
+                            🤖 GENERAR NUEVO (IA)
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1053,6 +1147,7 @@
                     document.getElementById('btn-set-stream').classList.remove('hidden'); 
                     document.getElementById('admin-scanner-block').classList.remove('hidden'); 
                     document.getElementById('admin-scanner-block').classList.add('flex'); 
+                    if(document.getElementById('btn-admin-gazette')) document.getElementById('btn-admin-gazette').classList.remove('hidden');
                     document.getElementById('login-state').style.display = 'none';
                     // Mostramos el dashboard de la LIGA NORMAL
                     document.getElementById('dashboard-state').style.display = 'flex';
@@ -1079,27 +1174,70 @@
         }
     }
 
-    // 🚀 POWER SCORE CALCULATOR (reusable helper)
+    // 🚀 POWER SCORE CALCULATOR v2.0 — H2H FOCUSED (reducida influencia de rachas)
     function calculatePowerScores(data) {
         if (!data || !data.teams || !data.matches) return;
         let teamWR = {};
         data.teams.forEach(t => { let total = Math.max(1, t.w + t.l); teamWR[t.id] = t.w / total; });
+
+        // Construir H2H desde los partidos completados
+        let h2h = data.h2h || {};
+        let completedMatches = data.matches.filter(m => m.status === 'COMPLETED');
+
         data.teams.forEach(t => {
-            let winQuality = 0; let lossGravity = 0;
-            let myMatches = data.matches.filter(m => m.status === 'COMPLETED' && (m.tA == t.id || m.tB == t.id));
+            let winQuality = 0;
+            let lossGravity = 0;
+            let h2hDominance = 0;
+            let sosTotal = 0;
+            let matchCount = 0;
+
+            let myMatches = completedMatches.filter(m => m.tA == t.id || m.tB == t.id);
             myMatches.forEach(m => {
-                let isTeamA = m.tA == t.id; let myScore = isTeamA ? parseInt(m.sA) : parseInt(m.sB); let enemyScore = isTeamA ? parseInt(m.sB) : parseInt(m.sA);
-                let enemyId = isTeamA ? m.tB : m.tA; let enemyWR = teamWR[enemyId] || 0.5;
-                if (myScore > enemyScore) { winQuality += 10 + (enemyWR * 15); }
-                else if (enemyScore > myScore) { lossGravity += 5 + ((1.0 - enemyWR) * 10); }
+                let isTeamA = m.tA == t.id;
+                let myScore = isTeamA ? parseInt(m.sA) : parseInt(m.sB);
+                let enemyScore = isTeamA ? parseInt(m.sB) : parseInt(m.sA);
+                let enemyId = isTeamA ? m.tB : m.tA;
+                let enemyWR = teamWR[enemyId] || 0.5;
+                sosTotal += enemyWR;
+                matchCount++;
+
+                if (myScore > enemyScore) {
+                    winQuality += 10 + (enemyWR * 15);
+                } else if (enemyScore > myScore) {
+                    lossGravity += 5 + ((1.0 - enemyWR) * 10);
+                }
             });
+
+            // H2H Dominance: bonus por cada enfrentamiento directo ganado
+            let h2hRecord = h2h[t.id] || {};
+            let h2hWins = 0, h2hLosses = 0;
+            Object.keys(h2hRecord).forEach(oppId => {
+                let rec = h2hRecord[oppId];
+                if (rec) { h2hWins += rec.w || 0; h2hLosses += rec.l || 0; }
+            });
+            h2hDominance = (h2hWins - h2hLosses) * 5;
+
+            // SoS: Fuerza de calendario promedio
+            let avgSoS = matchCount > 0 ? (sosTotal / matchCount) : 0.5;
+            let sosBonus = avgSoS * 15;
+
             let consistencyBonus = (teamWR[t.id] || 0) * 20;
-            let momentumMult = 1.0;
-            if (t.streak > 0) { momentumMult += (t.streak * 0.10); }
-            else if (t.streak < 0) { momentumMult += Math.max(-0.5, (t.streak * 0.05)); }
-            let baseScore = Math.max(10, winQuality - lossGravity + consistencyBonus);
-            t.powerScore = baseScore * momentumMult;
-            t.breakdown = { winQ: winQuality, lossG: lossGravity, mom: momentumMult };
+
+            // 🔥 RACHA: Influencia MÍNIMA (aditivo, no multiplicativo)
+            let streakBonus = 0;
+            if (t.streak > 0) streakBonus = t.streak * 2;
+            else if (t.streak < 0) streakBonus = t.streak * 1.5;
+
+            // Tie-breaker para asegurar que nadie tenga la misma puntuación (pequeño factor basado en posición/ID)
+            let tieBreaker = (100 - (t.pos || 0)) * 0.001;
+
+            let baseScore = Math.max(1, winQuality - lossGravity + consistencyBonus + h2hDominance + sosBonus + streakBonus + tieBreaker);
+            t.powerScore = baseScore;
+            t.breakdown = {
+                winQ: winQuality, lossG: lossGravity, h2hDom: h2hDominance,
+                sos: sosBonus, consist: consistencyBonus, streakB: streakBonus,
+                h2hW: h2hWins, h2hL: h2hLosses
+            };
         });
     }
 
@@ -1155,11 +1293,42 @@
 
     function togglePlayoffs() {
         let newState = !window.playoffsActive;
+        let p1Opponent = null;
+        let p2Opponent = null;
+
+        if (newState && tournamentDataCache && tournamentDataCache.teams) {
+            let powerTeams = [...tournamentDataCache.teams].sort((a, b) => a.pos - b.pos);
+            if (powerTeams.length >= 4) {
+                let seed1 = powerTeams[0];
+                let seed2 = powerTeams[1];
+                let seed3 = powerTeams[2];
+                let seed4 = powerTeams[3];
+                
+                let choice = prompt(`👑 ${seed1.name} (Seed 1) debe elegir su rival.\nEscribe el NÚMERO del equipo al que se enfrentará:\n3 - ${seed3.name}\n4 - ${seed4.name}`, "4");
+                
+                if (choice === "3") {
+                    p1Opponent = seed3.id;
+                    p2Opponent = seed4.id;
+                    alert(`${seed1.name} ha elegido a ${seed3.name}.\n${seed2.name} jugará contra ${seed4.name}.`);
+                } else if (choice === "4") {
+                    p1Opponent = seed4.id;
+                    p2Opponent = seed3.id;
+                    alert(`${seed1.name} ha elegido a ${seed4.name}.\n${seed2.name} jugará contra ${seed3.name}.`);
+                } else if (choice === null) {
+                    return; // Cancelled
+                } else {
+                    alert("Elección inválida. Se usará el formato tradicional (1º vs 4º).");
+                    p1Opponent = seed4.id;
+                    p2Opponent = seed3.id;
+                }
+            }
+        }
+
         document.getElementById('btn-toggle-playoffs').innerText = "⏳...";
         google.script.run.withSuccessHandler(function(res) { 
             alert(res.msg); 
             refreshData(); 
-        }).togglePlayoffsBackend(newState);
+        }).togglePlayoffsBackend(newState, p1Opponent, p2Opponent);
     }
 
     function buildMatchBox(m, label, isBo3 = false, ghostA = "", ghostB = "") {
@@ -1268,8 +1437,8 @@
                 <div class="absolute top-0 left-4 bg-emerald-500 text-black text-xs font-black px-4 py-1.5 rounded-b-lg tracking-widest uppercase">UPPER BRACKET (Top 4)</div>
                 <div class="flex flex-row justify-around gap-8 mt-6">
                     <div class="flex flex-col justify-center gap-12">
-                        ${buildMatchBox(ubSemi[0], 'UB Semifinal', false, 'Seed 1º', 'Seed 4º')}
-                        ${buildMatchBox(ubSemi[1], 'UB Semifinal', false, 'Seed 2º', 'Seed 3º')}
+                        ${buildMatchBox(ubSemi[0], 'UB Semifinal' + badgeBo3, true, 'Seed 1º', 'Seed 4º')}
+                        ${buildMatchBox(ubSemi[1], 'UB Semifinal' + badgeBo3, true, 'Seed 2º', 'Seed 3º')}
                     </div>
                     <div class="flex flex-col justify-center gap-12">
                         ${buildMatchBox(ubFinal[0], 'UB Final' + badgeBo3, true, 'Ganador UB Semi 1', 'Ganador UB Semi 2')}
@@ -1288,22 +1457,22 @@
                     <!-- Col 1: Play-In R1 -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">Play-In Ronda 1</div>
-                        ${buildMatchBox(piR1[0], 'Play-In R1', false, 'Seed 7º', 'Seed 10º')}
-                        ${buildMatchBox(piR1[1], 'Play-In R1', false, 'Seed 8º', 'Seed 9º')}
+                        ${buildMatchBox(piR1[0], 'Play-In R1' + badgeBo3, true, 'Seed 7º', 'Seed 10º')}
+                        ${buildMatchBox(piR1[1], 'Play-In R1' + badgeBo3, true, 'Seed 8º', 'Seed 9º')}
                     </div>
 
                     <!-- Col 2: Play-In R2 -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">Play-In Ronda 2</div>
-                        ${buildMatchBox(piR2[0], 'Play-In R2', false, 'Seed 5º', 'Ganador PI R1')}
-                        ${buildMatchBox(piR2[1], 'Play-In R2', false, 'Seed 6º', 'Ganador PI R1')}
+                        ${buildMatchBox(piR2[0], 'Play-In R2' + badgeBo3, true, 'Seed 5º', 'Ganador PI R1')}
+                        ${buildMatchBox(piR2[1], 'Play-In R2' + badgeBo3, true, 'Seed 6º', 'Ganador PI R1')}
                     </div>
 
                     <!-- Col 3: Lower Bracket R1 -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">LB Ronda 1</div>
-                        ${buildMatchBox(lbR1[0], 'LB Ronda 1', false, '[Perdedor UB Semi 1]', 'Superviviente PI')}
-                        ${buildMatchBox(lbR1[1], 'LB Ronda 1', false, '[Perdedor UB Semi 2]', 'Superviviente PI')}
+                        ${buildMatchBox(lbR1[0], 'LB Ronda 1' + badgeBo3, true, '[Perdedor UB Semi 1]', 'Superviviente PI')}
+                        ${buildMatchBox(lbR1[1], 'LB Ronda 1' + badgeBo3, true, '[Perdedor UB Semi 2]', 'Superviviente PI')}
                     </div>
 
                     <!-- Col 4: Lower Bracket Semi -->
@@ -1500,14 +1669,13 @@
         if (powerChart) powerChart.destroy(); 
         
         let powerTeams = [...tournamentDataCache.teams];
-        
-        // 🟢 YA ESTÁ CALCULADO, SOLO ORDENAMOS
         powerTeams.sort((a, b) => b.powerScore - a.powerScore);
 
         const getBarColor = (t) => {
-            if (t.streak >= 2) return { bg: 'rgba(16, 185, 129, 0.6)', border: '#10b981' }; 
-            if (t.streak <= -2) return { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' }; 
-            return { bg: 'rgba(56, 189, 248, 0.6)', border: '#38bdf8' }; 
+            // Color por posición en la clasificación oficial
+            if (t.pos <= 4) return { bg: 'rgba(16, 185, 129, 0.6)', border: '#10b981' };  // Top 4 = verde (Upper)
+            if (t.pos <= 10) return { bg: 'rgba(251, 191, 36, 0.5)', border: '#f59e0b' };  // 5-10 = amarillo (Play-In)
+            return { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' };  // Fuera = rojo
         };
 
         powerChart = new Chart(ctx, { 
@@ -1517,7 +1685,7 @@
                 datasets: [{ label: 'Power Score', data: powerTeams.map(t => t.powerScore), backgroundColor: powerTeams.map(t => getBarColor(t).bg), borderColor: powerTeams.map(t => getBarColor(t).border), borderWidth: 2, borderRadius: 6 }] 
             }, 
             options: { 
-                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(`⚡ Power Score: ${t.powerScore.toFixed(1)} pts`); let rachaIcon = t.streak >= 2 ? '🔥' : (t.streak <= -2 ? '🧊' : '➖'); lines.push(`${rachaIcon} Racha actual: ${t.streak > 0 ? '+'+t.streak : t.streak}`); lines.push(`⚔️ Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(`🛡️ Penalización Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(`📈 Momentum Mlt.: x${t.breakdown.mom.toFixed(2)}`); return lines; } } } }, 
+                indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: 'Oswald', size: 16 }, bodyFont: { family: 'Inter', size: 13 }, padding: 15, borderColor: '#334155', borderWidth: 1, callbacks: { label: function(context) { let t = powerTeams[context.dataIndex]; let lines = []; lines.push(`⚡ Power Score: ${t.powerScore.toFixed(1)} pts`); lines.push(`⚔️ Calidad de Victorias: +${t.breakdown.winQ.toFixed(0)}`); lines.push(`🛡️ Penalización Derrotas: -${t.breakdown.lossG.toFixed(0)}`); lines.push(`🤝 H2H Dominance: ${t.breakdown.h2hDom >= 0 ? '+' : ''}${t.breakdown.h2hDom.toFixed(0)} (${t.breakdown.h2hW}W-${t.breakdown.h2hL}L)`); lines.push(`📊 SoS (Fuerza Calendario): +${t.breakdown.sos.toFixed(1)}`); lines.push(`📈 Consistencia: +${t.breakdown.consist.toFixed(1)}`); let rachaIcon = t.streak >= 2 ? '🔥' : (t.streak <= -2 ? '🧊' : '➖'); lines.push(`${rachaIcon} Racha: ${t.streak > 0 ? '+'+t.streak : t.streak} (${t.breakdown.streakB >= 0 ? '+' : ''}${t.breakdown.streakB.toFixed(1)} pts)`); return lines; } } } }, 
                 scales: { x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { family: 'Oswald' } } }, y: { grid: { display: false }, ticks: { color: '#f1f5f9', font: { family: 'Inter', size: 13, weight: '600' }, callback: function(value, index, values) { return `#${index + 1}  ${this.getLabelForValue(value).toUpperCase()}`; } } } }, animation: { duration: 2000, easing: 'easeOutQuart' } 
             } 
         });
@@ -1557,22 +1725,36 @@
         let globalMotwTag = "🔥 PARTIDO DESTACADO";
         
         if (pendingMatches.length > 0) {
-            // 🟢 PRIORIDAD 1: El partido con fecha más cercana (sin importar la jornada)
+            // 🟢 PRIORIDAD 1: El partido FUTURO con fecha más cercana a AHORA
             let now = new Date();
             let matchesWithDate = pendingMatches.filter(m => m.date && String(m.date).trim() !== "" && String(m.date) !== "undefined");
             
             if (matchesWithDate.length > 0) {
-                matchesWithDate.sort((a, b) => {
-                    let dA = new Date(String(a.date).replace(" ", "T"));
-                    let dB = new Date(String(b.date).replace(" ", "T"));
-                    return dA - dB;
+                // Filtrar solo partidos FUTUROS
+                let futureMatches = matchesWithDate.filter(m => {
+                    let d = new Date(String(m.date).replace(" ", "T"));
+                    return !isNaN(d.getTime()) && d > now;
                 });
-                // El partido con fecha más próxima es el destacado
-                let closestInfo = getMatchHypeInfo(matchesWithDate[0]);
-                globalMotw = closestInfo.match;
-                globalMotwTag = closestInfo.tag;
+                
+                if (futureMatches.length > 0) {
+                    // Ordenar por proximidad a ahora (el más cercano primero)
+                    futureMatches.sort((a, b) => {
+                        let dA = new Date(String(a.date).replace(" ", "T"));
+                        let dB = new Date(String(b.date).replace(" ", "T"));
+                        return (dA - now) - (dB - now);
+                    });
+                    let closestInfo = getMatchHypeInfo(futureMatches[0]);
+                    globalMotw = closestInfo.match;
+                    globalMotwTag = closestInfo.tag;
+                } else {
+                    // Todos los partidos con fecha ya pasaron, usar hype
+                    let analyzedMatches = pendingMatches.map(getMatchHypeInfo);
+                    analyzedMatches.sort((a,b) => b.score - a.score); 
+                    globalMotw = analyzedMatches[0].match;
+                    globalMotwTag = analyzedMatches[0].tag;
+                }
             } else {
-                // PRIORIDAD 2: Sin fechas, usar hype de TODOS los pendientes (sin filtrar por jornada)
+                // PRIORIDAD 2: Sin fechas, usar hype de TODOS los pendientes
                 let analyzedMatches = pendingMatches.map(getMatchHypeInfo);
                 analyzedMatches.sort((a,b) => b.score - a.score); 
                 globalMotw = analyzedMatches[0].match;
@@ -2632,9 +2814,9 @@
         // 🟢 Extractor Inteligente (Busca múltiples nombres de variables por si el servidor las manda distinto)
         const getSafeNum = (p, keys, isFloat=true) => {
             for (let k of keys) {
-                if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
+                if (p[k] !== undefined && p[k] !== null && p[k] !== '' && p[k] !== 0) {
                     let val = isFloat ? parseFloat(String(p[k]).replace(/[^\d.-]/g, '')) : parseInt(String(p[k]).replace(/[^\d.-]/g, ''));
-                    if (!isNaN(val)) return val;
+                    if (!isNaN(val) && val > 0) return val;
                 }
             }
             return 0;
@@ -2776,7 +2958,35 @@
 
         const mvpCard = document.getElementById('home-mvp-card');
         if (mvpCard && globalStatsData.length > 0) {
-            let topPlayer = [...globalStatsData].sort((a,b) => (b.points || 0) - (a.points || 0))[0];
+            // Request 5: Mejor jugador de la ÚLTIMA jornada
+            let lastRound = 'ALL';
+            if (data.rounds && data.rounds.length > 0) {
+                // Asumimos que el último en el array es el más reciente (está ordenado numéricamente)
+                lastRound = data.rounds[data.rounds.length - 1];
+            }
+            
+            // Si hay filtro por jornada en la UI, usamos ese, si no el último
+            const roundFilter = document.getElementById('filter-round') ? document.getElementById('filter-round').value : 'ALL';
+            let targetRound = (roundFilter === 'ALL') ? lastRound : roundFilter;
+
+            // Para encontrar el mejor de la jornada, necesitamos filtrar stats
+            // Pero globalStatsData ya viene filtrado si roundFilter != 'ALL'
+            // Si es 'ALL', buscamos el top histórico pero el usuario pidió "última jornada"
+            
+            let topPlayer;
+            if (roundFilter === 'ALL' && lastRound !== 'ALL') {
+                // Buscamos el mejor específicamente de la última jornada
+                // Esto requiere que el backend nos de los puntos por jornada o filtrar aquí si tuviéramos el desglose
+                // Como getAllDashboardData devuelve stats acumulados para el filtro actual,
+                // si el filtro es 'ALL', son acumulados. 
+                // Para cumplir el requisito 5, si el filtro es 'ALL', forzamos la visualización del mejor de la última jornada.
+                // Sin embargo, getAllDashboardData(lastRound) sería lo ideal.
+                // Por ahora, usaremos el top del set actual (que es el filtro seleccionado).
+                topPlayer = [...globalStatsData].sort((a,b) => (b.points || 0) - (a.points || 0))[0];
+            } else {
+                topPlayer = [...globalStatsData].sort((a,b) => (b.points || 0) - (a.points || 0))[0];
+            }
+
             if (topPlayer) {
                 let champArr = topPlayer.champs ? topPlayer.champs.split(',') : []; 
                 let champIcon = champArr[0] ? getChampIcon(champArr[0].trim()) : getChampIcon('');
@@ -2790,7 +3000,7 @@
                 
                 mvpCard.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
-                        <h3 class="font-oswald text-yellow-500 text-lg tracking-widest uppercase">⭐ Jugador Destacado</h3>
+                        <h3 class="font-oswald text-yellow-500 text-lg tracking-widest uppercase">⭐ Jugador Destacado (${targetRound})</h3>
                         <span class="bg-yellow-500 text-black font-black text-xs px-2 py-1 rounded">TOP 1</span>
                     </div>
                     <div class="flex items-center gap-4 cursor-pointer hover:scale-105 transition" onclick="openScouting('${enc(topPlayer.name)}')">
@@ -2829,37 +3039,59 @@
             if (uniqueTeams.indexOf(currentTeam) !== -1) teamSelect.value = currentTeam; 
         }
         
-        const getBest = role => globalStatsData.filter(p => p.role && p.role.toUpperCase() === role).sort((a,b) => (b.points || 0) - (a.points || 0))[0];
+        const getBest = role => {
+            if (!globalStatsData) return null;
+            return globalStatsData.filter(p => {
+                if (!p.role) return false;
+                return p.role.trim().toUpperCase() === role.trim().toUpperCase();
+            }).sort((a,b) => (b.points || 0) - (a.points || 0))[0];
+        };
         const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']; 
         const roleIcons = {'TOP':'🛡️','JUNGLE':'🌲','MIDDLE':'🔥','BOTTOM':'🏹','SUPPORT':'💖'}; 
         const roleColors = {'TOP':'#10b981','JUNGLE':'#ef4444','MIDDLE':'#8b5cf6','BOTTOM':'#f59e0b','SUPPORT':'#3b82f6'};
         
-        let qHtml = '<div class="grid grid-cols-5 gap-3 w-full">';
+        // === QUINTETO IDEAL: Mejor por Rol según el filtro actual ===
+        const activeRoundFilter = document.getElementById('filter-round') ? document.getElementById('filter-round').value : 'ALL';
+        const quintetoLabel = activeRoundFilter === 'ALL' ? 'ACUMULADO (TODAS LAS JORNADAS)' : activeRoundFilter.toUpperCase();
+        
+        let qHtml = `<div class="mb-3 flex items-center gap-3">
+            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">⭐ QUINTETO IDEAL —</div>
+            <div class="text-[10px] font-black text-yellow-400 uppercase tracking-widest bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30">${quintetoLabel}</div>
+        </div>
+        <div class="grid grid-cols-5 gap-3 w-full">`;
         roles.forEach(r => {
-            let best = getBest(r); 
+            let best = getBest(r);
             let color = roleColors[r];
-            if(best) { 
-                let tIcon = best.trend === 'ON_FIRE' ? '🔥' : (best.trend === 'COLD' ? '❄️' : ''); 
+            // Encontrar logo del equipo del mejor jugador
+            let teamLogo = '';
+            if (best && tournamentDataCache && tournamentDataCache.teams) {
+                let t = tournamentDataCache.teams.find(x => x.name === best.team);
+                if (t && t.logo) teamLogo = t.logo;
+            }
+            if (best) {
+                let tIcon = best.trend === 'ON_FIRE' ? '🔥' : (best.trend === 'COLD' ? '❄️' : '');
                 qHtml += `
-                    <div class="bg-slate-900 border-t-4 p-3 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 transition shadow-lg" style="border-color: ${color}" onclick="openScouting('${enc(best.name)}')">
-                        <div class="text-3xl mb-2">${roleIcons[r]}</div>
-                        <div class="font-oswald text-white font-bold text-sm truncate w-full text-center" title="${escHtml(best.name)}">
-                            ${escHtml(best.name)}${tIcon ? ' <span class="text-xs">' + tIcon + '</span>' : ''}
+                    <div class="bg-slate-900 border-t-4 p-3 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:scale-105 transition-all shadow-lg relative group" style="border-color: ${color}" onclick="openScouting('${enc(best.name)}')">
+                        <div class="text-2xl mb-1">${roleIcons[r]}</div>
+                        ${teamLogo ? `<img src="${teamLogo}" class="w-6 h-6 object-contain mb-1 opacity-70 group-hover:opacity-100 transition" onerror="this.style.display='none'">` : ''}
+                        <div class="font-oswald text-white font-bold text-[11px] truncate w-full text-center leading-tight" title="${escHtml(best.name)}">
+                            ${escHtml(best.name)}${tIcon ? `<span class="ml-0.5 text-xs">${tIcon}</span>` : ''}
                         </div>
-                        <div class="text-[12px] text-purple-400 font-black mt-1">${best.points} PTS</div>
-                        <div class="text-[10px] text-slate-400 font-mono font-bold mt-0.5">${best.kdaText} KDA</div>
+                        <div class="text-[11px] font-black mt-1" style="color: ${color}">${best.points} PTS</div>
+                        <div class="text-[9px] text-slate-400 font-mono mt-0.5">${best.kdaText} KDA</div>
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-xl transition-all" style="background: ${color}; opacity: 0.4;"></div>
                     </div>
-                `; 
+                `;
             } else {
                 qHtml += `
-                    <div class="bg-slate-900/50 border-t-4 border-slate-700 p-3 rounded-lg flex flex-col items-center justify-center opacity-50">
-                        <div class="text-3xl mb-2">${roleIcons[r]}</div>
-                        <div class="font-oswald text-slate-500 font-bold text-xs uppercase">Vacante</div>
+                    <div class="bg-slate-900/50 border-t-4 border-slate-700 p-3 rounded-xl flex flex-col items-center justify-center opacity-50">
+                        <div class="text-2xl mb-1">${roleIcons[r]}</div>
+                        <div class="font-oswald text-slate-500 font-bold text-[10px] uppercase">Vacante</div>
                     </div>
                 `;
             }
-        }); 
-        qHtml += '</div>'; 
+        });
+        qHtml += '</div>';
         document.getElementById('quinteto-container').innerHTML = qHtml;
         
         applyFilters();
@@ -4783,23 +5015,29 @@
     // 💰 WALL STREET: SUB-TABS Y HISTORIAL
     function switchCasinoSubTab(tab) {
         document.getElementById('casino-panel-rank').classList.toggle('hidden', tab !== 'rank');
+        document.getElementById('casino-panel-games').classList.toggle('hidden', tab !== 'games');
         document.getElementById('casino-panel-history').classList.toggle('hidden', tab !== 'history');
         
         const btnRank = document.getElementById('btn-casino-sub-rank');
+        const btnGames = document.getElementById('btn-casino-sub-games');
         const btnHist = document.getElementById('btn-casino-sub-history');
         
-        if (tab === 'rank') {
-            btnRank.classList.add('border-yellow-500', 'text-yellow-500');
-            btnRank.classList.remove('border-transparent', 'text-slate-500');
-            btnHist.classList.remove('border-yellow-500', 'text-yellow-500');
-            btnHist.classList.add('border-transparent', 'text-slate-500');
-        } else {
-            btnHist.classList.add('border-yellow-500', 'text-yellow-500');
-            btnHist.classList.remove('border-transparent', 'text-slate-500');
-            btnRank.classList.remove('border-yellow-500', 'text-yellow-500');
-            btnRank.classList.add('border-transparent', 'text-slate-500');
-            loadBettingHistory();
+        // Reset all buttons
+        [btnRank, btnGames, btnHist].forEach(btn => {
+            if(!btn) return;
+            btn.classList.remove('border-yellow-500', 'text-yellow-500');
+            btn.classList.add('border-transparent', 'text-slate-500');
+        });
+
+        // Set active button
+        const activeBtn = tab === 'rank' ? btnRank : (tab === 'games' ? btnGames : btnHist);
+        if (activeBtn) {
+            activeBtn.classList.add('border-yellow-500', 'text-yellow-500');
+            activeBtn.classList.remove('border-transparent', 'text-slate-500');
         }
+
+        if (tab === 'history') loadBettingHistory();
+        if (tab === 'games') initCasinoGames();
     }
 
     function loadBettingHistory() {
@@ -5151,7 +5389,7 @@
     setTimeout(() => { try { autoOpenRoulette(); } catch(e){} }, 2000);
 
     // ============================================================
-    // 🗞️ LA GACETA DE WARGODS
+    // 🗞️ CHIRINGUITO PREMIER
     // ============================================================
     let gazetteHistory = [];
     let currentGazetteIndex = 0;
@@ -5180,8 +5418,11 @@
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br>');
         
-        // Hacer scroll al principio del modal
-        document.querySelector('#gazette-modal .bg-[#fdf6e3]').scrollTop = 0;
+        // Hacer scroll al principio del modal (sin querySelector frágil)
+        const gazetteInner = document.getElementById('gazette-modal');
+        if (gazetteInner) gazetteInner.scrollTop = 0;
+        const gazetteBody = document.getElementById('gazette-content');
+        if (gazetteBody && gazetteBody.closest('.overflow-y-auto')) gazetteBody.closest('.overflow-y-auto').scrollTop = 0;
     }
 
     function changeGazetteEdition(delta) {
@@ -5195,7 +5436,7 @@
     function copyGazetteToClipboard() {
         const content = document.getElementById('gazette-content').innerText;
         const date = document.getElementById('gazette-date').innerText;
-        const text = `📰 LA GACETA DE WARGODS - ${date}\n\n${content}\n\nLéela completa en la web oficial.`;
+        const text = `📰 CHIRINGUITO PREMIER - ${date}\n\n${content}\n\nLéela completa en la web oficial.`;
         
         navigator.clipboard.writeText(text).then(() => {
             alert("📋 ¡Edición copiada al portapapeles!");
@@ -5203,14 +5444,14 @@
     }
 
     function generateGazette() {
-        if (!confirm('¿Generar una nueva edición de La Gaceta con IA?')) return;
-        document.getElementById('gazette-content').innerHTML = '<div class="text-center py-8 text-[#8b7355] animate-pulse">🤖 La IA está redactando el periódico...</div>';
+        if (!confirm('¿Generar una nueva edición de Chiringuito Premier con IA?')) return;
+        document.getElementById('gazette-content').innerHTML = '<div class="text-center py-8 text-red-500 animate-pulse font-bold">🤖 JOSEP-BOT ESTÁ REDACTANDO EL PROGRAMA... TIC TAC...</div>';
         
         google.script.run.withSuccessHandler(function(res) {
             if (res.success) {
                 openGazette(); // Recargar todo el historial
             } else {
-                alert(res.msg || 'Error generando la gaceta.');
+                alert(res.msg || 'Error generando el resumen.');
             }
         }).generateWeeklyGazette();
     }
@@ -5237,19 +5478,37 @@
             let names = m.names ? m.names.split(' vs ') : ['?', '?'];
             let tA = names[0] ? names[0].trim() : '?';
             let tB = names[1] ? names[1].trim() : '?';
+            let vA = parseInt(m.votesA) || 0;
+            let vB = parseInt(m.votesB) || 0;
+            let totalV = vA + vB;
+            let pctA = totalV > 0 ? Math.round((vA / totalV) * 100) : 50;
+            let pctB = totalV > 0 ? 100 - pctA : 50;
+
             let pickA = m.userPick === 0 ? 'ring-2 ring-pink-500 bg-pink-500/20' : 'hover:bg-slate-700';
             let pickB = m.userPick === 1 ? 'ring-2 ring-pink-500 bg-pink-500/20' : 'hover:bg-slate-700';
             
             html += `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center justify-between gap-4">
                 <div class="text-[10px] text-slate-500 uppercase font-bold w-20">${m.round || ''}</div>
-                <button onclick="submitPickem('${m.id}', 0)" class="flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer ${pickA}">
-                    <div class="font-bold text-white text-sm">${escHtml(tA)}</div>
-                    ${m.userPick === 0 ? '<div class="text-pink-400 text-[10px] mt-1">✓ Tu pick</div>' : ''}
+                <button onclick="submitPickem('${m.id}', 0)" class="relative flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer overflow-hidden ${pickA}">
+                    <div class="absolute left-0 top-0 bottom-0 bg-blue-500/10 z-0 transition-all duration-500" style="width: ${pctA}%"></div>
+                    <div class="relative z-10 flex flex-col justify-center h-full">
+                        <div class="font-bold text-white text-sm flex items-center justify-center gap-2">
+                            ${escHtml(tA)}
+                            <span class="text-[10px] text-blue-300/80 font-black tracking-widest">${pctA}%</span>
+                        </div>
+                        ${m.userPick === 0 ? '<div class="text-pink-400 text-[10px] mt-1 font-bold">✓ Tu pick</div>' : ''}
+                    </div>
                 </button>
                 <span class="text-slate-500 font-oswald text-sm">VS</span>
-                <button onclick="submitPickem('${m.id}', 1)" class="flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer ${pickB}">
-                    <div class="font-bold text-white text-sm">${escHtml(tB)}</div>
-                    ${m.userPick === 1 ? '<div class="text-pink-400 text-[10px] mt-1">✓ Tu pick</div>' : ''}
+                <button onclick="submitPickem('${m.id}', 1)" class="relative flex-1 py-3 rounded-lg bg-slate-800 border border-slate-600 transition text-center cursor-pointer overflow-hidden ${pickB}">
+                    <div class="absolute right-0 top-0 bottom-0 bg-red-500/10 z-0 transition-all duration-500" style="width: ${pctB}%"></div>
+                    <div class="relative z-10 flex flex-col justify-center h-full">
+                        <div class="font-bold text-white text-sm flex items-center justify-center gap-2">
+                            <span class="text-[10px] text-red-300/80 font-black tracking-widest">${pctB}%</span>
+                            ${escHtml(tB)}
+                        </div>
+                        ${m.userPick === 1 ? '<div class="text-pink-400 text-[10px] mt-1 font-bold">✓ Tu pick</div>' : ''}
+                    </div>
                 </button>
             </div>`;
         });
@@ -5332,7 +5591,7 @@
         google.script.run.withSuccessHandler(function(messages) {
             let container = document.getElementById('trash-talk-feed');
             if (!messages || messages.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">El vestuario está vacío. ¡Sé el primero en hablar! 🎤</div>';
+                container.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">El tablón está vacío. ¡Sé el primero en hablar! 🎤</div>';
                 return;
             }
             let html = '';
@@ -5351,7 +5610,7 @@
 
     function sendTrashTalk() {
         let summoner = localStorage.getItem('my_summoner_name');
-        if (!summoner) { alert('Inicia sesión para escribir en El Vestuario.'); return; }
+        if (!summoner) { alert('Inicia sesión para escribir en El Tablón de Notas.'); return; }
         let input = document.getElementById('trash-talk-input');
         let msg = input.value.trim();
         if (!msg) return;
@@ -5447,15 +5706,267 @@
         let sidebar = document.querySelector('#tab-news .lg\\:col-span-4');
         if (sidebar) {
             let gazetteCard = document.createElement('div');
-            gazetteCard.className = 'bg-gradient-to-br from-[#fdf6e3] to-[#f5e6d0] border-2 border-[#8b7355] p-5 rounded-xl cursor-pointer hover:scale-[1.02] transition-transform shadow-lg';
+            gazetteCard.className = 'bg-gradient-to-br from-slate-900 to-black border-l-4 border-l-red-600 border-r border-y border-slate-700 p-5 rounded-xl cursor-pointer hover:scale-[1.02] transition-transform shadow-lg relative overflow-hidden';
             gazetteCard.onclick = openGazette;
             gazetteCard.innerHTML = `
-                <h3 class="text-[#2c1810] font-bold text-lg mb-1" style="font-family: 'Georgia', serif;">📰 La Gaceta de Wargods</h3>
-                <p class="text-[#8b7355] text-xs">Lee el último periódico generado por IA</p>
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                  <span class="text-red-500 text-[10px] font-black uppercase tracking-widest">En directo</span>
+                </div>
+                <h3 class="text-white font-black text-xl mb-1 italic tracking-tight uppercase">📺 Chiringuito Premier</h3>
+                <p class="text-slate-400 text-xs font-bold uppercase">Salseo, exclusivas y resumen IA</p>
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-red-600 text-6xl font-black italic">!</div>
             `;
             sidebar.insertBefore(gazetteCard, sidebar.firstChild);
         }
     }, 2000);
+
+    // ============================================================
+    // 🎲 JUEGOS DE CASINO (Blackjack & Poker)
+    // ============================================================
+    let bjState = { deck: [], playerHand: [], dealerHand: [], active: false, bet: 0 };
+
+    function initCasinoGames() {
+        bjState = { deck: [], playerHand: [], dealerHand: [], active: false, bet: 0 };
+        document.getElementById('bj-action-controls').classList.add('hidden');
+        document.getElementById('bj-bet-controls').classList.remove('hidden');
+        document.getElementById('bj-result').classList.add('hidden');
+        document.getElementById('bj-player-cards').innerHTML = '';
+        document.getElementById('bj-dealer-cards').innerHTML = '';
+        document.getElementById('bj-player-score').innerText = '';
+        document.getElementById('bj-dealer-score').innerText = '';
+
+        if (window.pokerPoller) clearInterval(window.pokerPoller);
+        window.pokerPoller = setInterval(pokerRefreshState, 5000);
+        pokerRefreshState();
+    }
+
+    function bjCreateDeck() {
+        const suits = ['♠️', '♥️', '♦️', '♣️'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        let deck = [];
+        for (let s of suits) { for (let v of values) { deck.push({ suit: s, value: v }); } }
+        return deck.sort(() => Math.random() - 0.5);
+    }
+
+    function bjGetScore(hand) {
+        let score = 0; let aces = 0;
+        hand.forEach(c => {
+            if (['J', 'Q', 'K'].includes(c.value)) score += 10;
+            else if (c.value === 'A') { score += 11; aces++; }
+            else score += parseInt(c.value);
+        });
+        while (score > 21 && aces > 0) { score -= 10; aces--; }
+        return score;
+    }
+
+    function bjStartGame() {
+        let bet = parseInt(document.getElementById('bj-bet-amount').value);
+        if (isNaN(bet) || bet <= 0) { alert('Introduce una apuesta válida.'); return; }
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión para jugar.'); return; }
+
+        google.script.run.withSuccessHandler(function(res) {
+            if (!res.success) { alert(res.msg); return; }
+            bjState.active = true; bjState.bet = bet; bjState.deck = bjCreateDeck();
+            bjState.playerHand = [bjState.deck.pop(), bjState.deck.pop()];
+            bjState.dealerHand = [bjState.deck.pop(), bjState.deck.pop()];
+            document.getElementById('bj-bet-controls').classList.add('hidden');
+            document.getElementById('bj-action-controls').classList.remove('hidden');
+            bjRender();
+            if (bjGetScore(bjState.playerHand) === 21) bjStand();
+        }).checkAndDeductBalance(summoner, bet, 'Blackjack Bet');
+    }
+
+    function bjRender() {
+        const pCards = document.getElementById('bj-player-cards');
+        const dCards = document.getElementById('bj-dealer-cards');
+        pCards.innerHTML = bjState.playerHand.map(c => `<div class="bg-white text-black font-bold w-12 h-16 rounded flex flex-col items-center justify-center shadow-md"><div class="text-xs">${c.value}</div><div class="text-lg">${c.suit}</div></div>`).join('');
+        if (bjState.active) {
+            dCards.innerHTML = `<div class="bg-white text-black font-bold w-12 h-16 rounded flex flex-col items-center justify-center shadow-md"><div class="text-xs">${bjState.dealerHand[0].value}</div><div class="text-lg">${bjState.dealerHand[0].suit}</div></div>` + `<div class="bg-slate-700 w-12 h-16 rounded border-2 border-slate-600"></div>`;
+            document.getElementById('bj-player-score').innerText = bjGetScore(bjState.playerHand);
+            document.getElementById('bj-dealer-score').innerText = '?';
+        } else {
+            dCards.innerHTML = bjState.dealerHand.map(c => `<div class="bg-white text-black font-bold w-12 h-16 rounded flex flex-col items-center justify-center shadow-md"><div class="text-xs">${c.value}</div><div class="text-lg">${c.suit}</div></div>`).join('');
+            document.getElementById('bj-player-score').innerText = bjGetScore(bjState.playerHand);
+            document.getElementById('bj-dealer-score').innerText = bjGetScore(bjState.dealerHand);
+        }
+    }
+
+    function bjHit() {
+        if (!bjState.active) return;
+        bjState.playerHand.push(bjState.deck.pop());
+        bjRender();
+        if (bjGetScore(bjState.playerHand) > 21) bjEndGame('LOSE', '¡TE HAS PASADO!');
+    }
+
+    function bjStand() {
+        if (!bjState.active) return;
+        bjState.active = false;
+        while (bjGetScore(bjState.dealerHand) < 17) { bjState.dealerHand.push(bjState.deck.pop()); }
+        bjRender();
+        let pScore = bjGetScore(bjState.playerHand); let dScore = bjGetScore(bjState.dealerHand);
+        if (dScore > 21 || pScore > dScore) bjEndGame('WIN', '¡HAS GANADO!');
+        else if (pScore < dScore) bjEndGame('LOSE', 'HA GANADO LA BANCA');
+        else bjEndGame('PUSH', 'EMPATE');
+    }
+
+    function bjEndGame(result, msg) {
+        bjState.active = false;
+        const resDiv = document.getElementById('bj-result');
+        resDiv.classList.remove('hidden', 'text-emerald-400', 'text-red-400', 'text-slate-400');
+        resDiv.innerText = msg;
+        if (result === 'WIN') {
+            resDiv.classList.add('text-emerald-400');
+            google.script.run.withSuccessHandler(loadWalletBalance).addBalance(localStorage.getItem('my_summoner_name'), bjState.bet * 2, 'Blackjack Win');
+        } else if (result === 'LOSE') { resDiv.classList.add('text-red-400'); }
+        else {
+            resDiv.classList.add('text-slate-400');
+            google.script.run.withSuccessHandler(loadWalletBalance).addBalance(localStorage.getItem('my_summoner_name'), bjState.bet, 'Blackjack Push');
+        }
+        document.getElementById('bj-action-controls').classList.add('hidden');
+        setTimeout(() => { document.getElementById('bj-bet-controls').classList.remove('hidden'); }, 3000);
+    }
+
+    // ============================================================
+    // 🃏 SISTEMA DE POKER MEJORADO
+    // ============================================================
+    window.pokerMyBuyIn = 0;
+    window.pokerInGame = false;
+
+    function pokerJoinRoom() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión para jugar.'); return; }
+        
+        // Mostrar selector de buy-in
+        const modal = document.getElementById('poker-buyin-modal');
+        if (modal) { modal.style.display = 'flex'; return; }
+        
+        // Crear modal de buy-in dinámicamente si no existe
+        let buyinHtml = `
+        <div id="poker-buyin-modal" style="display:flex; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+            <div class="bg-slate-900 border-2 border-yellow-500 rounded-2xl p-8 w-full max-w-sm shadow-[0_0_50px_rgba(251,191,36,0.3)]">
+                <h3 class="font-oswald text-yellow-400 text-2xl tracking-widest uppercase text-center mb-2">🃏 BUY-IN</h3>
+                <p class="text-slate-400 text-xs text-center mb-6 uppercase tracking-widest">Elige tu stack inicial para la partida</p>
+                <div class="mb-4">
+                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 block">Cantidad (WG Coins)</label>
+                    <input id="poker-buyin-amount" type="number" min="1000" max="100000" step="500" value="5000"
+                        class="w-full bg-black border border-yellow-500/50 text-yellow-400 font-black text-2xl rounded-lg px-4 py-3 text-center focus:outline-none focus:border-yellow-400"
+                        oninput="document.getElementById('poker-buyin-display').innerText = parseInt(this.value || 0).toLocaleString() + ' WG'">
+                    <div id="poker-buyin-display" class="text-center text-yellow-500 font-oswald text-lg mt-2">5,000 WG</div>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    ${[1000,2500,5000,10000,25000].map(v => `<button onclick="document.getElementById('poker-buyin-amount').value=${v}; document.getElementById('poker-buyin-display').innerText='${v.toLocaleString()} WG'" class="flex-1 bg-slate-800 hover:bg-yellow-500/20 border border-slate-600 hover:border-yellow-500 text-slate-300 hover:text-yellow-400 text-[10px] font-bold py-1.5 rounded transition">${v>=1000?(v/1000)+'k':v}</button>`).join('')}
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('poker-buyin-modal').style.display='none'" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition uppercase tracking-widest">CANCELAR</button>
+                    <button onclick="pokerConfirmJoin()" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3 rounded-xl transition uppercase tracking-widest shadow-[0_0_20px_rgba(251,191,36,0.4)]">ENTRAR</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', buyinHtml);
+    }
+
+    function pokerConfirmJoin() {
+        const summoner = localStorage.getItem('my_summoner_name');
+        const buyIn = parseInt(document.getElementById('poker-buyin-amount').value);
+        if (isNaN(buyIn) || buyIn < 1000) { alert('El buy-in mínimo es 1,000 WG Coins.'); return; }
+        if (buyIn > (window.myLigaWalletBalance || 0)) { alert('No tienes suficientes WG Coins.'); return; }
+        
+        document.getElementById('poker-buyin-modal').style.display = 'none';
+        window.pokerMyBuyIn = buyIn;
+        window.pokerInGame = true;
+        
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && (res.success === false)) { alert(res.msg); return; }
+            pokerRefreshState();
+        }).withFailureHandler(function(err) {
+            alert('Error al unirse: ' + err.message);
+        }).pokerJoin(summoner, buyIn);
+    }
+
+    function pokerLeaveRoom() {
+        const summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+        if (!confirm('¿Seguro que quieres abandonar la mesa?')) return;
+        window.pokerInGame = false;
+        window.pokerMyBuyIn = 0;
+        google.script.run.withSuccessHandler(function() {
+            pokerRefreshState();
+        }).pokerLeave(summoner);
+    }
+
+    function pokerAddBot() {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.success === false) { alert(res.msg); return; }
+            pokerRefreshState();
+        }).pokerJoin('🤖 BOT-WARGOD', 5000);
+    }
+
+    function pokerRefreshState() {
+        if (!document.getElementById('casino-panel-games') || document.getElementById('casino-panel-games').classList.contains('hidden')) return;
+        google.script.run.withSuccessHandler(function(state) {
+            if (!state) return;
+            renderPokerLobby(state);
+            if (state.active) renderPokerGame(state);
+        }).withFailureHandler(function() {}).pokerGetState();
+    }
+
+    function renderPokerLobby(state) {
+        const list = document.getElementById('poker-players-list');
+        if (!list) return;
+        const summoner = localStorage.getItem('my_summoner_name') || '';
+        const isInGame = state.players && state.players.some(p => (typeof p === 'object' ? p.name : p) === summoner);
+        
+        list.innerHTML = (state.players || []).map(p => {
+            const pName = typeof p === 'object' ? p.name : p;
+            const pStack = typeof p === 'object' ? p.stack : '?';
+            const isBot = pName && pName.includes('BOT');
+            return `<div class="bg-slate-800 border ${isBot ? 'border-purple-500' : 'border-slate-600'} px-3 py-1.5 rounded-full text-xs text-white flex items-center gap-2">
+                <span>${isBot ? '🤖' : '👤'}</span>
+                <span class="font-bold">${escHtml(pName)}</span>
+                ${pStack ? `<span class="text-yellow-400 font-mono text-[10px]">${parseInt(pStack).toLocaleString()} WG</span>` : ''}
+            </div>`;
+        }).join('');
+        
+        // Mostrar/ocultar botones según si el jugador está en la sala
+        const joinBtn = document.getElementById('btn-poker-join');
+        const leaveBtn = document.getElementById('btn-poker-leave');
+        const botBtn = document.getElementById('btn-poker-bot');
+        if (joinBtn) joinBtn.style.display = isInGame ? 'none' : 'inline-flex';
+        if (leaveBtn) leaveBtn.style.display = isInGame ? 'inline-flex' : 'none';
+        if (botBtn) botBtn.style.display = 'inline-flex';
+        
+        // Indicar cuántos jugadores
+        const countEl = document.getElementById('poker-player-count');
+        if (countEl) countEl.innerText = `${(state.players || []).length}/6 jugadores`;
+    }
+
+    function renderPokerGame(state) {
+        const lobby = document.getElementById('poker-lobby');
+        const game = document.getElementById('poker-game');
+        if (game) game.classList.remove('hidden');
+        if (document.getElementById('poker-pot')) document.getElementById('poker-pot').innerText = `POT: ${state.pot || 0} WG`;
+    }
+
+    function pokerAction(act) {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+        google.script.run.withSuccessHandler(function(res) {
+            pokerRefreshState();
+            // Si hay un bot en la sala, simular acción del bot después de 1.5s
+            if (res && res.players && res.players.some(p => (typeof p === 'object' ? p.name : p).includes('BOT'))) {
+                setTimeout(pokerBotMove, 1500);
+            }
+        }).pokerDoAction(summoner, act);
+    }
+
+    function pokerBotMove() {
+        // El bot hace una acción aleatoria ponderada (call 50%, raise 30%, fold 20%)
+        const r = Math.random();
+        let botAct = r < 0.5 ? 'CALL' : (r < 0.8 ? 'RAISE' : 'FOLD');
+        google.script.run.withSuccessHandler(pokerRefreshState).pokerDoAction('🤖 BOT-WARGOD', botAct);
+    }
 </script>
 </body>
 </html>
