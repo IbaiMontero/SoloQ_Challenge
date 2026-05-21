@@ -1,4 +1,4 @@
- // V15.5.2 - Sync forced
+ // V26.0 - Champion Role Map + ROFL Web Import + Discord Capitanes
 /************************************************************
 * SoloQ Pro - Sistema de Puntuación PRO completo
 *
@@ -12,13 +12,74 @@ function getGlobalMatchCache() {
 }
 
 /* ----------------- GEMINI AI CONFIG ----------------- */
-const GEMINI_API_KEY = "AIzaSyA" + "..." // (Key parcial para evitar lints o robos accidentales, la pondr     completa)
+const GEMINI_API_KEY = "AIzaSyA" + "..." // (Key parcial para evitar lints o robos accidentales)
 // Nota: En producción usar PropertiesService.getScriptProperties().getProperty("GEMINI_KEY")
 const GEMINI_MODEL = "gemini-1.5-flash";
 
 function getGeminiApiKey() {
-  return PropertiesService.getScriptProperties().getProperty("GEMINI_KEY") || "AIzaSyA" + "..." // Fallback
+  return PropertiesService.getScriptProperties().getProperty("GEMINI_KEY") || "AIzaSyCDgSIeNI8E4L0XjoqyGgkvNSe2poFaWrk";
 }
+
+/* ----------------- CHAMPION → ROLE FALLBACK MAP ----------------- */
+// Mapa de campeón → rol para inferir la posición cuando la columna "lane" está vacía.
+// Usado en getAllDashboardData y getTournamentStatsForWeb para evitar VACANTE en el Quinteto.
+const CHAMPION_ROLE_FALLBACK = {
+  // TOP
+  'Aatrox':'TOP','Camille':'TOP','Darius':'TOP','Fiora':'TOP','Gangplank':'TOP',
+  'Garen':'TOP','Gnar':'TOP','Grasp':'TOP','Gwen':'TOP','Illaoi':'TOP',
+  'Irelia':'TOP','Jayce':'TOP','Jax':'TOP','Kennen':'TOP','Kled':'TOP',
+  'Malphite':'TOP','Mordekaiser':'TOP','Nasus':'TOP','Olaf':'TOP','Ornn':'TOP',
+  'Pantheon':'TOP','Poppy':'TOP','Quinn':'TOP','Renekton':'TOP','Riven':'TOP',
+  'Rumble':'TOP','Sett':'TOP','Shen':'TOP','Singed':'TOP','Sion':'TOP',
+  'Tahm Kench':'TOP','Teemo':'TOP','Tryndamere':'TOP','Urgot':'TOP','Vladimir':'TOP',
+  'Volibear':'TOP','Warwick':'TOP','Wukong':'TOP','Yasuo':'TOP','Yone':'TOP',
+  'Yorick':'TOP','Cho\u0027Gath':'TOP','Heimerdinger':'TOP','Kayle':'TOP',
+  'Rengar':'TOP','Akali':'TOP','Cassiopeia':'TOP',
+  // JUNGLE
+  'Amumu':'JUNGLE','Briar':'JUNGLE','Diana':'JUNGLE','Ekko':'JUNGLE','Elise':'JUNGLE',
+  'Evelynn':'JUNGLE','Fiddlesticks':'JUNGLE','Gragas':'JUNGLE','Graves':'JUNGLE','Gwen':'JUNGLE',
+  'Hecarim':'JUNGLE','Ivern':'JUNGLE','JarvanIV':'JUNGLE','Jarvan IV':'JUNGLE','Jax':'JUNGLE',
+  'Karthus':'JUNGLE','Kha\'Zix':'JUNGLE','KhaZix':'JUNGLE','KhaSix':'JUNGLE','Kindred':'JUNGLE',
+  'LeeSin':'JUNGLE','Lee Sin':'JUNGLE','Lillia':'JUNGLE','Maokai':'JUNGLE','Master Yi':'JUNGLE',
+  'MasterYi':'JUNGLE','Nidalee':'JUNGLE','Nocturne':'JUNGLE','NocturneJgl':'JUNGLE',
+  'Nunu':'JUNGLE','Nunu & Willump':'JUNGLE','Olaf':'JUNGLE','Pantheon':'JUNGLE',
+  'Rammus':'JUNGLE','RekSai':'JUNGLE','Rek\'Sai':'JUNGLE','Rengar':'JUNGLE',
+  'Sejuani':'JUNGLE','Shaco':'JUNGLE','Skarner':'JUNGLE','Talon':'JUNGLE',
+  'Trundle':'JUNGLE','Udyr':'JUNGLE','Vi':'JUNGLE','Viego':'JUNGLE','Volibear':'JUNGLE',
+  'Warwick':'JUNGLE','Wukong':'JUNGLE','XinZhao':'JUNGLE','Xin Zhao':'JUNGLE',
+  'Zac':'JUNGLE','Zed':'JUNGLE','Shyvana':'JUNGLE','Bel\'Veth':'JUNGLE','BelVeth':'JUNGLE',
+  'Kayn':'JUNGLE','Khazix':'JUNGLE','Rengar':'JUNGLE','Fiddlesticks':'JUNGLE',
+  // MIDDLE
+  'Ahri':'MIDDLE','Akali':'MIDDLE','Anivia':'MIDDLE','Annie':'MIDDLE','Aurelion Sol':'MIDDLE',
+  'AurelionSol':'MIDDLE','Azir':'MIDDLE','Corki':'MIDDLE','Ekko':'MIDDLE','Fizz':'MIDDLE',
+  'Galio':'MIDDLE','Gangplank':'MIDDLE','Kassadin':'MIDDLE','Katarina':'MIDDLE',
+  'Leblanc':'MIDDLE','LeBlanc':'MIDDLE','Lissandra':'MIDDLE','Lux':'MIDDLE','Malzahar':'MIDDLE',
+  'Orianna':'MIDDLE','Qiyana':'MIDDLE','Ryze':'MIDDLE','Syndra':'MIDDLE','Taliyah':'MIDDLE',
+  'Twisted Fate':'MIDDLE','TwistedFate':'MIDDLE','Veigar':'MIDDLE','Vel\'Koz':'MIDDLE',
+  'VelKoz':'MIDDLE','Viktor':'MIDDLE','Vladimir':'MIDDLE','Xerath':'MIDDLE','Zed':'MIDDLE',
+  'Zoe':'MIDDLE','Zyra':'MIDDLE','Jayce':'MIDDLE','Irelia':'MIDDLE','Yone':'MIDDLE',
+  'Naafiri':'MIDDLE','Neeko':'MIDDLE','Sylas':'MIDDLE','Talon':'MIDDLE','Vex':'MIDDLE',
+  'Hwei':'MIDDLE','Smolder':'MIDDLE','Aurora':'MIDDLE',
+  // BOTTOM (ADC)
+  'Aphelios':'BOTTOM','Ashe':'BOTTOM','Caitlyn':'BOTTOM','Draven':'BOTTOM','Ezreal':'BOTTOM',
+  'Graves':'BOTTOM','Jhin':'BOTTOM','Jinx':'BOTTOM','KaiSa':'BOTTOM','Kai\'Sa':'BOTTOM',
+  'Kaisa':'BOTTOM','Kalista':'BOTTOM','Kog\'Maw':'BOTTOM','KogMaw':'BOTTOM',
+  'Lucian':'BOTTOM','Miss Fortune':'BOTTOM','MissFortune':'BOTTOM','Nilah':'BOTTOM',
+  'Samira':'BOTTOM','Sivir':'BOTTOM','Tristana':'BOTTOM','Twitch':'BOTTOM','Vayne':'BOTTOM',
+  'Varus':'BOTTOM','Xayah':'BOTTOM','Zeri':'BOTTOM','Ziggs':'BOTTOM','Corki':'BOTTOM',
+  'Senna':'BOTTOM','Heimerdinger':'BOTTOM','Smolder':'BOTTOM',
+  // SUPPORT
+  'Alistar':'SUPPORT','Amumu':'SUPPORT','Bard':'SUPPORT','Blitzcrank':'SUPPORT',
+  'Brand':'SUPPORT','Braum':'SUPPORT','Janna':'SUPPORT','Karma':'SUPPORT',
+  'Leona':'SUPPORT','Lulu':'SUPPORT','Lux':'SUPPORT','Morgana':'SUPPORT',
+  'Nami':'SUPPORT','Nautilus':'SUPPORT','Pyke':'SUPPORT','Rakan':'SUPPORT',
+  'Renata Glasc':'SUPPORT','RenataGlasc':'SUPPORT','Senna':'SUPPORT','Seraphine':'SUPPORT',
+  'Shaco':'SUPPORT','Sona':'SUPPORT','Soraka':'SUPPORT','Taric':'SUPPORT',
+  'Thresh':'SUPPORT','Vel\'Koz':'SUPPORT','VelKoz':'SUPPORT','Yuumi':'SUPPORT',
+  'Zilean':'SUPPORT','Zyra':'SUPPORT','Milio':'SUPPORT','Neeko':'SUPPORT',
+  'Poppy':'SUPPORT','Rell':'SUPPORT','Xerath':'SUPPORT',
+};
+
 
 /* ----------------- API KEY HELPERS ----------------- */
 // FORMA CORRECTA, SEGURA Y OPTIMIZADA DE OBTENER LA KEY
@@ -17865,6 +17926,105 @@ function sendNegotiationDiscordNotification(actionType, actingTeamName, opponent
   }
 }
 
+/* ================================================================
+   WEBHOOK DE CAPITANES — Canal exclusivo para coordinación de partidos
+   Webhook: https://discord.com/api/webhooks/1499383638654193695/...
+   ================================================================ */
+function sendCaptainsDiscordNotification(type, data) {
+  const CAPTAINS_WEBHOOK = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng";
+  const WEB_LINK = ScriptApp.getService().getUrl();
+  
+  let embed = null;
+  
+  if (type === 'MATCH_PROPOSED') {
+    // Propuesta de horario entre capitanes
+    embed = {
+      title: "📅 NUEVA PROPUESTA DE HORARIO",
+      description: `El equipo **${data.actingTeam}** ha propuesto una fecha para su partido de **${data.round}**.`,
+      color: 0xF59E0B, // Amarillo
+      fields: [
+        { name: "⚔️ Enfrentamiento", value: data.matchName || "Por confirmar", inline: true },
+        { name: "📅 Fecha Propuesta", value: data.proposedDate || "Por confirmar", inline: true },
+        { name: "📝 Notas", value: data.notes || "Sin notas adicionales", inline: false },
+      ],
+      footer: { text: "Wargods Premier League • Canal de Capitanes" },
+      timestamp: new Date().toISOString()
+    };
+  } else if (type === 'MATCH_ACCEPTED') {
+    embed = {
+      title: "✅ ¡FECHA CONFIRMADA!",
+      description: `**${data.actingTeam}** ha aceptado la propuesta. ¡El partido está programado!`,
+      color: 0x10B981, // Verde
+      fields: [
+        { name: "⚔️ Partido", value: data.matchName || "Por confirmar", inline: true },
+        { name: "🗓️ Fecha Oficial", value: data.proposedDate || "Por confirmar", inline: true },
+        { name: "🔗 Acceder a la web", value: `[Entra aquí](${WEB_LINK})`, inline: false },
+      ],
+      footer: { text: "Wargods Premier League • Canal de Capitanes" },
+      timestamp: new Date().toISOString()
+    };
+  } else if (type === 'MATCH_REJECTED') {
+    embed = {
+      title: "❌ PROPUESTA RECHAZADA",
+      description: `**${data.actingTeam}** ha rechazado la propuesta de horario para **${data.round}**.`,
+      color: 0xEF4444, // Rojo
+      fields: [
+        { name: "⚔️ Partido", value: data.matchName || "Por confirmar", inline: true },
+        { name: "💬 Razón", value: data.notes || "Sin motivo especificado", inline: false },
+        { name: "🔗 Proponer nueva fecha", value: `[Entra aquí](${WEB_LINK})`, inline: false },
+      ],
+      footer: { text: "Wargods Premier League • Canal de Capitanes" },
+      timestamp: new Date().toISOString()
+    };
+  } else if (type === 'ROFL_IMPORTED') {
+    embed = {
+      title: "📁 DATOS DE PARTIDA IMPORTADOS",
+      description: `Un admin ha importado las estadísticas de la partida **${data.matchId}**.`,
+      color: 0x3B82F6, // Azul
+      fields: [
+        { name: "⚔️ Partido", value: data.matchName || data.matchId, inline: true },
+        { name: "👥 Jugadores importados", value: String(data.playerCount || '?'), inline: true },
+        { name: "📊 Estadísticas disponibles", value: `[Ver en la web](${WEB_LINK})`, inline: false },
+      ],
+      footer: { text: "Wargods Premier League • Importación ROFL" },
+      timestamp: new Date().toISOString()
+    };
+  } else if (type === 'MATCH_RESULT') {
+    const winner = data.winnerName || 'Ganador desconocido';
+    const loser = data.loserName || 'Perdedor desconocido';
+    embed = {
+      title: `🏆 ¡RESULTADO OFICIAL! ${data.round || ''}`,
+      description: `**${winner}** derrota a **${loser}**`,
+      color: 0xFFD700, // Dorado
+      fields: [
+        { name: "🏅 Ganador", value: `**${winner}**`, inline: true },
+        { name: "💔 Derrotado", value: loser, inline: true },
+        { name: "📊 Ver estadísticas", value: `[Ranking completo](${WEB_LINK})`, inline: false },
+      ],
+      footer: { text: "Wargods Premier League • Resultados Oficiales" },
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  if (!embed) return;
+  
+  try {
+    const response = UrlFetchApp.fetch(CAPTAINS_WEBHOOK, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        username: "Wargods Capitanes",
+        avatar_url: "https://i.imgur.com/M0k3y3N.png",
+        embeds: [embed]
+      }),
+      muteHttpExceptions: true
+    });
+    Logger.log("Discord Capitanes enviado. Código: " + response.getResponseCode());
+  } catch(e) {
+    Logger.log("Error Discord Capitanes: " + e.message);
+  }
+}
+
 function formatDiscordDate(d) {
     if (!d) return "";
     try {
@@ -17872,6 +18032,7 @@ function formatDiscordDate(d) {
         if (isNaN(dateObj.getTime())) return String(d);
         let day = ("0" + dateObj.getDate()).slice(-2);
         let month = ("0" + (dateObj.getMonth() + 1)).slice(-2);
+
         let year = dateObj.getFullYear();
         let hours = ("0" + dateObj.getHours()).slice(-2);
         let mins = ("0" + dateObj.getMinutes()).slice(-2);
@@ -18035,8 +18196,11 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
       mSheet.getRange(matchRow, 13).setValue(""); // Limpiar M (Hora definida/cerrada)
 
       try { sendNegotiationDiscordNotification('PROPOSE', actingName, opponentDiscordId, opponentName, matchRound, formatDiscordDate(dateStr), notesStr); } catch(e){ Logger.log('DISCORD PROPOSE ERROR: ' + e.message); }
+      // 🆕 Notificar también al canal de capitanes con embed
+      try { sendCaptainsDiscordNotification('MATCH_PROPOSED', { actingTeam: actingName, round: matchRound, matchName: String(matchData[9] || matchId), proposedDate: formatDiscordDate(dateStr), notes: notesStr }); } catch(e){ Logger.log('DISCORD CAPTAINS PROPOSE ERROR: ' + e.message); }
 
-      return {success: true, msg: "✅ Propuesta enviada. El equipo rival debe aceptarla."};
+      return {success: true, msg: "✅ Propuesta enviada. El equipo rival debe aceptarla. Se ha notificado al canal de capitanes de Discord."};
+
     }
     else if(action === 'ACCEPT') {
       let propDate = mSheet.getRange(matchRow, 14).getValue();
@@ -18046,8 +18210,11 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
       mSheet.getRange(matchRow, 16).setValue(""); // Limpiamos P
 
       try { sendNegotiationDiscordNotification('ACCEPT', actingName, opponentDiscordId, opponentName, matchRound, formatDiscordDate(propDate), ""); } catch(e){ Logger.log('DISCORD ACCEPT ERROR: ' + e.message); }
+      // 🆕 Notificar al canal de capitanes
+      try { sendCaptainsDiscordNotification('MATCH_ACCEPTED', { actingTeam: actingName, round: matchRound, matchName: String(matchData[9] || matchId), proposedDate: formatDiscordDate(propDate) }); } catch(e){ Logger.log('DISCORD CAPTAINS ACCEPT ERROR: ' + e.message); }
 
-      return {success: true, msg: "🤝 PACTO SELLADO! El horario ya es oficial en la web."};
+      return {success: true, msg: "🤝 PACTO SELLADO! El horario ya es oficial en la web. Discord notificado."};
+
     }
     else if(action === 'REJECT') {
       mSheet.getRange(matchRow, 14).setValue("");
@@ -18055,8 +18222,11 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
       mSheet.getRange(matchRow, 16).setValue("");
 
       try { sendNegotiationDiscordNotification('REJECT', actingName, opponentDiscordId, opponentName, matchRound, "", ""); } catch(e){ Logger.log('DISCORD REJECT ERROR: ' + e.message); }
+      // 🆕 Notificar al canal de capitanes
+      try { sendCaptainsDiscordNotification('MATCH_REJECTED', { actingTeam: actingName, round: matchRound, matchName: String(matchData[9] || matchId), notes: notesStr }); } catch(e){ Logger.log('DISCORD CAPTAINS REJECT ERROR: ' + e.message); }
 
-      return {success: true, msg: "❌ Propuesta rechazada. El cuadro vuelve a estar vacío."};
+      return {success: true, msg: "❌ Propuesta rechazada. Discord notificado."};
+
     }
   } catch(e) { return {success: false, msg: "Error: " + e.message}; } 
   finally { lock.releaseLock(); }
@@ -18635,8 +18805,8 @@ function getPostGameLobbyData(matchId) {
       
       let cs = "0.0";
       let csTotal = 0;
-      let cs15 = 0;      //          NUEVO
-      let plates = 0;    //          NUEVO
+      let cs15 = 0;      
+      let plates = 0;    
       let gpm = "0";
       let gold = 0;
       let tank = "-";
@@ -18646,8 +18816,16 @@ function getPostGameLobbyData(matchId) {
       let items = [];
       let spells = [];
 
-      let dmgObj = 0;      //          A     ADIDO
-      let dmgTurrets = 0;  //          A     ADIDO
+      let dmgObj = 0;      
+      let dmgTurrets = 0;  
+      
+      let heal = 0;
+      let ccScore = 0;
+      let pinks = 0;
+      let wardPlaced = 0;
+      let wardKilled = 0;
+      let jungleEnemy = 0;
+      let jungleTeam = 0;
 
       const rawJson = data[i][15]; 
       if (rawJson) {
@@ -18666,13 +18844,23 @@ function getPostGameLobbyData(matchId) {
               if (adv.visionScore) visionScore = Number(adv.visionScore);
               
               if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + "%";
-              if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + "k";
+              // Si viene en el nuevo formato (numérico), sobreescribir tank
+              if (adv.tank !== undefined && adv.tank > 0) tank = (Number(adv.tank) / 1000).toFixed(1) + "k";
+              else if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + "k";
 
               if (adv.items) items = adv.items;
               if (adv.spells) spells = adv.spells;
               
-              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         //          A     ADIDO
-              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); //          A     ADIDO
+              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         
+              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); 
+              
+              if (adv.heal) heal = Number(adv.heal);
+              if (adv.ccScore) ccScore = Number(adv.ccScore);
+              if (adv.pinks) pinks = Number(adv.pinks);
+              if (adv.wardPlaced) wardPlaced = Number(adv.wardPlaced);
+              if (adv.wardKilled) wardKilled = Number(adv.wardKilled);
+              if (adv.jungleEnemy) jungleEnemy = Number(adv.jungleEnemy);
+              if (adv.jungleTeam) jungleTeam = Number(adv.jungleTeam);
               
               if (adv.goldTimeline && matchTimeline === null) {
                   matchTimeline = adv.goldTimeline;
@@ -18700,17 +18888,24 @@ function getPostGameLobbyData(matchId) {
         votes: currentMatchVotes[pName] || 0,
         cs: cs,
         csTotal: csTotal,
-        cs15: cs15,       //          NUEVO
-        plates: plates,   //          NUEVO
+        cs15: cs15,       
+        plates: plates,   
         gpm: gpm,
         gold: gold,
         tank: tank,
         vspm: vspm,
         visionScore: visionScore,
-        items: items,   //          NUEVO
-        spells: spells,  //          NUEVO
-        dmgObj: dmgObj,        //          A     ADIDO
-        dmgTurrets: dmgTurrets //          A     ADIDO
+        items: items,   
+        spells: spells,  
+        dmgObj: dmgObj,        
+        dmgTurrets: dmgTurrets,
+        heal: heal,
+        ccScore: ccScore,
+        pinks: pinks,
+        wardPlaced: wardPlaced,
+        wardKilled: wardKilled,
+        jungleEnemy: jungleEnemy,
+        jungleTeam: jungleTeam
       };
 
       if (data[i][5] === 'Win') winners.push(pData);
@@ -19070,9 +19265,16 @@ function getTournamentStatsForWeb(roundFilter) {
           }
           
           let role = String(mData[i][4]).toUpperCase().trim();
-          if (role === 'UTILITY') role = 'SUPPORT';
-          if (role === 'BOT') role = 'BOTTOM';
+          if (role === 'UTILITY' || role === 'SUPP') role = 'SUPPORT';
+          if (role === 'BOT' || role === 'ADC') role = 'BOTTOM';
           if (role === 'MID') role = 'MIDDLE';
+          if (role === 'JNG' || role === 'JGL') role = 'JUNGLE';
+          // 🆕 Si el role sigue vacío o inválido, inferirlo del campeón
+          if (!role || role === '' || role === 'FILL' || role === 'NONE' || role === 'UNKNOWN') {
+            const champName = String(mData[i][3] || '').trim();
+            const inferred = CHAMPION_ROLE_FALLBACK[champName] || '';
+            if (inferred) role = inferred;
+          }
           s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
       }
   }
@@ -20044,7 +20246,13 @@ function getAllDashboardData(roundFilter) {
       if (role === 'UTILITY' || role === 'SUPP') role = 'SUPPORT'; 
       if (role === 'BOT' || role === 'ADC') role = 'BOTTOM'; 
       if (role === 'MID') role = 'MIDDLE';
-      if (role === 'JNG') role = 'JUNGLE';
+      if (role === 'JNG' || role === 'JGL') role = 'JUNGLE';
+      // 🆕 Si el role sigue vacío o inválido, inferirlo del campeón
+      if (!role || role === '' || role === 'FILL' || role === 'NONE' || role === 'UNKNOWN') {
+        const champName = String(mData[i][3] || '').trim();
+        const inferred = CHAMPION_ROLE_FALLBACK[champName] || '';
+        if (inferred) role = inferred;
+      }
       s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
     }
   }
@@ -21727,13 +21935,18 @@ function include(filename) {
 // ---------------------------------------------------------
 function callGemini(prompt) {
   const apiKey = getGeminiApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  if (!apiKey || apiKey.includes('...')) {
+    Logger.log('ERROR callGemini: API Key no configurada. Ve a Configuración > Propiedades del script y añade la clave "GEMINI_KEY".');
+    return null;
+  }
+  // gemini-1.5-flash requiere endpoint /v1beta/
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 800,
+      temperature: 0.85,
+      maxOutputTokens: 1500,
     }
   };
   
@@ -21746,18 +21959,27 @@ function callGemini(prompt) {
   
   try {
     const response = UrlFetchApp.fetch(url, options);
-    const json = JSON.parse(response.getContentText());
-    if (json.candidates && json.candidates[0].content.parts[0].text) {
+    const code = response.getResponseCode();
+    const text = response.getContentText();
+    
+    if (code !== 200) {
+      Logger.log(`ERROR callGemini HTTP ${code}: ${text}`);
+      return null;
+    }
+    
+    const json = JSON.parse(text);
+    if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0].text) {
       return json.candidates[0].content.parts[0].text;
     } else {
-      Logger.log("Error Gemini: " + response.getContentText());
-      return "La IA está descansando ahora mismo. Vuelve a intentarlo en un momento.";
+      Logger.log("Error Gemini (respuesta vacía): " + text);
+      return null;
     }
   } catch (e) {
     Logger.log("Error callGemini: " + e.message);
-    return "Error de conexión con el núcleo de la IA.";
+    return null;
   }
 }
+
 
 function getAIPrediction(matchData) {
   const { match, teamA, teamB, statsA, statsB } = matchData;
@@ -22061,8 +22283,17 @@ REGLAS OBLIGATORIAS:
 - Máximo 450 palabras totales
 - Cada sección debe tener al menos 2-3 frases sustanciales`;
 
+  // Comprobar API key antes de llamar
+  const apiKeyCheck = getGeminiApiKey();
+  if (!apiKeyCheck) {
+    return { 
+      success: false, 
+      msg: '🔑 GEMINI_KEY no configurada.\n\nPara activar el Chiringuito Premier:\n1. Abre el proyecto en script.google.com\n2. Ve a ⚙️ Configuración del proyecto\n3. En "Propiedades del script" añade:\n   • Propiedad: GEMINI_KEY\n   • Valor: tu API key de Google AI Studio\n\nObtén tu clave GRATIS en: aistudio.google.com'
+    };
+  }
+
   let gazetteText = callGemini(prompt);
-  if (!gazetteText) return { success: false, msg: 'Error llamando a la IA. Comprueba la API key de Gemini.' };
+  if (!gazetteText) return { success: false, msg: '❌ Error al llamar a Gemini. Revisa que la GEMINI_KEY sea válida y tenga acceso al modelo gemini-1.5-flash.' };
 
   // Guardar en caché
   let gazetteSheet = ss.getSheetByName('AI_GAZETTE');
@@ -22487,20 +22718,45 @@ function getBattlePassRewards(currentLevel) {
   for (let lvl = 5; lvl <= 50; lvl += 5) {
     let unlocked = currentLevel >= lvl;
     let reward = { level: lvl, unlocked: unlocked };
-    if (lvl === 5) { reward.name = '🥉 Bronce'; reward.desc = '250 WG Coins'; }
-    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
-    else if (lvl === 15) { reward.name = '🥇 Oro'; reward.desc = '750 WG Coins'; }
-    else if (lvl === 20) { reward.name = '💎 Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
-    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
-    else if (lvl === 30) { reward.name = '⚡ Ascendido'; reward.desc = '2000 WG Coins'; }
-    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
-    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins'; }
-    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
-    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
+    if (lvl === 5)  { reward.name = '🥉 Bronce';      reward.desc = '250 WG Coins'; }
+    else if (lvl === 10) { 
+      reward.name = '🥈 Plata';
+      reward.desc = '500 WG Coins + Título "Veterano"';
+      reward.titleValue = 'Veterano'; // Campo estructurado para el frontend
+    }
+    else if (lvl === 15) { reward.name = '🥇 Oro';        reward.desc = '750 WG Coins'; }
+    else if (lvl === 20) { reward.name = '💎 Diamante';   reward.desc = '1000 WG Coins + Badge Exclusivo'; }
+    else if (lvl === 25) { 
+      reward.name = '👑 Rey';
+      reward.desc = '1500 WG Coins + Título "Leyenda" + Nombre Plata';
+      reward.titleValue = 'Leyenda'; // Título estructurado
+      reward.colorValue = '#94a3b8'; // Color estructurado
+      reward.colorLabel = '🌫 Plata';
+    }
+    else if (lvl === 30) { reward.name = '⚡ Ascendido';  reward.desc = '2000 WG Coins'; }
+    else if (lvl === 35) { 
+      reward.name = '🔥 Infernal';
+      reward.desc = '2500 WG Coins + Nombre Rojo Infernal';
+      reward.colorValue = '#ef4444'; // Color rojo estructurado
+      reward.colorLabel = '🔥 Rojo Infernal';
+    }
+    else if (lvl === 40) { reward.name = '🌟 Estelar';    reward.desc = '3000 WG Coins'; }
+    else if (lvl === 45) { 
+      reward.name = '🌀 Dimensional';
+      reward.desc = '4000 WG Coins + Título "Dios"';
+      reward.titleValue = 'Dios';
+    }
+    else if (lvl === 50) { 
+      reward.name = '🏆 WARGOD';
+      reward.desc = '5000 WG Coins + Nombre Dorado';
+      reward.colorValue = '#fbbf24'; // Dorado estructurado
+      reward.colorLabel = '✨ Nombre Dorado';
+    }
     rewards.push(reward);
   }
   return rewards;
 }
+
 
 // ==========================================================
 // SETUP MANUAL NEWS SHEET
@@ -22671,6 +22927,194 @@ function processRoflJson(jsonStr) {
 // 🎲 SISTEMA DE JUEGOS DE CASINO (WALL STREET)
 // ==========================================================
 
+/* ================================================================
+   IMPORTACIÓN ROFL VINCULADA A UN PARTIDO DEL TORNEO (desde la web)
+   Recibe el JSON del parser y el ID del partido de TOURNAMENT_MATCHES
+   para que las estadísticas aparezcan automáticamente en la web.
+   ================================================================ */
+function processRoflJsonWithLink(jsonStr, tournamentMatchId) {
+  try {
+    if (!tournamentMatchId) return { success: false, msg: 'Debes seleccionar un partido del torneo.' };
+
+    const data = JSON.parse(jsonStr);
+    if (!data.participants || !Array.isArray(data.participants)) {
+      return { success: false, msg: 'Formato JSON inválido. El campo "participants" es obligatorio.' };
+    }
+    
+    const ss = SpreadsheetApp.getActive();
+    const matchesSheet = ss.getSheetByName('MATCHES');
+    const tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    const config = readConfigMap();
+    const champDataMap = getChampionDataMap();
+    const invSheet = ss.getSheetByName('INVENTORY');
+    const allMatchesData = matchesSheet.getDataRange().getValues();
+    
+    const configSheet = ss.getSheetByName('CONFIG');
+    const currentSeason = configSheet ? configSheet.getRange('B2').getValue() : 'S1';
+
+    // Usamos el ID del partido del torneo como matchId real
+    const matchId = String(tournamentMatchId).trim();
+    const matchStartTime = new Date(data.timestamp || new Date());
+    const durationMin = Math.floor((data.gameDuration || 0) / 60) || 30;
+    
+    // Calcular kills totales por equipo para KP
+    let teamKills = {};
+    data.participants.forEach(p => {
+      const tid = p.teamId || 0;
+      teamKills[tid] = (teamKills[tid] || 0) + (p.kills || 0);
+    });
+
+    // Primero eliminar filas antiguas de este matchId si existen (reimportación limpia)
+    const existingData = matchesSheet.getDataRange().getValues();
+    let rowsToDelete = [];
+    for (let i = existingData.length - 1; i >= 1; i--) {
+      if (String(existingData[i][0]).trim() === matchId) {
+        rowsToDelete.push(i + 1);
+      }
+    }
+    rowsToDelete.forEach(r => matchesSheet.deleteRow(r));
+
+    let importedCount = 0;
+    
+    data.participants.forEach(p => {
+      try {
+        const tid = p.teamId || 0;
+        const totalTeamKills = teamKills[tid] || 1;
+        const kpReal = ((p.kills + p.assists) / Math.max(1, totalTeamKills));
+        
+        const mockP = {
+          ...p,
+          championName: p.championName,
+          teamId: p.teamId,
+          win: p.win,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+          goldEarned: p.goldEarned,
+          visionScore: p.visionScore,
+          challenges: {
+            damagePerMinute: p.totalDamageDealtToChampions / Math.max(1, durationMin),
+            killParticipation: kpReal,
+            maxGoldDeficit: 0
+          }
+        };
+
+        const teamInfo = {
+          dragonsCount: 0, baronCount: 0, heraldCount: 0, hordeCount: 0,
+          towerCount: 0, inhibitorCount: 0, elderPresent: false,
+          enemyDragons: 0, enemyBarons: 0, enemyHeralds: 0, enemyHorde: 0
+        };
+
+        const pointsObj = computePointsDetailed(
+          mockP, data.participants, durationMin,
+          teamInfo, config, p.summonerName, 
+          invSheet, allMatchesData, matchId
+        );
+
+        const kpClean = parseFloat(kpReal.toFixed(2));
+        const finalNotes = (pointsObj.notes || []).join('; ');
+        
+        const enrichedStats = {
+          summonerName: p.summonerName,
+          championName: p.championName,
+          teamId: p.teamId,
+          win: p.win,
+          kills: p.kills, deaths: p.deaths, assists: p.assists,
+          totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+          goldEarned: p.goldEarned, visionScore: p.visionScore,
+          totalMinionsKilled: p.totalMinionsKilled,
+          csMin: p.csMin || parseFloat((p.totalMinionsKilled / Math.max(1, durationMin)).toFixed(2)),
+          gpm: p.gpm || Math.round(p.goldEarned / Math.max(1, durationMin)),
+          dpm: p.dpm || Math.round(p.totalDamageDealtToChampions / Math.max(1, durationMin)),
+          vspm: p.vspm || parseFloat((p.visionScore / Math.max(1, durationMin)).toFixed(2)),
+          kp: parseFloat((kpReal * 100).toFixed(1)),
+          dmgObj: parseInt(p.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || p.dmgObj || 0),
+          dmgTurrets: parseInt(p.TOTAL_DAMAGE_DEALT_TO_TURRETS || p.TOTAL_DAMAGE_DEALT_TO_BUILDINGS || p.dmgTurrets || 0),
+          dmgTaken: parseInt(p.TOTAL_DAMAGE_TAKEN || p.dmgTaken || p.totalDamageTaken || 0),
+          pinks: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || p.pinks || p.controlWards || 0),
+          controlWards: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || p.controlWards || 0),
+          wardsKilled: parseInt(p.WARD_KILLED || p.wardsKilled || 0),
+          wardsPlaced: parseInt(p.WARD_PLACED || p.wardsPlaced || 0),
+          epicMonsters: parseInt(p.RIFT_HERALD_KILLS || 0) + parseInt(p.DRAGON_KILLS || 0) + parseInt(p.BARON_KILLS || 0),
+          pentas: parseInt(p.PENTA_KILLS || p.pentaKills || 0),
+          items: [p.ITEM0, p.ITEM1, p.ITEM2, p.ITEM3, p.ITEM4, p.ITEM5, p.ITEM6].filter(x => x).map(Number),
+          spells: [p.SUMMONER_SPELL_1, p.SUMMONER_SPELL_2].filter(x => x).map(Number)
+        };
+        
+        const jsonStats = JSON.stringify(enrichedStats);
+
+        let lane = p.lane || '';
+        if (lane === 'MIDDLE') lane = 'MID';
+        else if (lane === 'BOTTOM') lane = 'ADC';
+        else if (lane === 'UTILITY') lane = 'SUPP';
+        else if (lane === 'JUNGLE') lane = 'JNG';
+
+        matchesSheet.appendRow([
+          matchId, matchStartTime, p.summonerName, p.championName, lane, (p.win ? 'Win' : 'Loss'),
+          p.kills, p.deaths, p.assists, p.totalDamageDealtToChampions, kpClean, durationMin,
+          Number(pointsObj.total), finalNotes, currentSeason, jsonStats
+        ]);
+        
+        importedCount++;
+      } catch (e) {
+        Logger.log('Error importando jugador ' + p.summonerName + ': ' + e.message);
+      }
+    });
+    
+    // Actualizar el riotId en TOURNAMENT_MATCHES para que getTournamentStatsForWeb lo reconozca
+    if (tMatchesSheet && importedCount > 0) {
+      const tmData = tMatchesSheet.getDataRange().getValues();
+      for (let i = 1; i < tmData.length; i++) {
+        if (String(tmData[i][0]).trim() === matchId) {
+          // Col 10 (índice 10) es el riotId — ya tiene el mismo matchId, no necesita cambio
+          // Marcamos como COMPLETED si no lo está
+          if (String(tmData[i][2]).trim() !== 'COMPLETED') {
+            // No forzamos el resultado — solo actualizamos el riotId con el mismo matchId para activar el enlace
+            tMatchesSheet.getRange(i + 1, 11).setValue(matchId);
+          }
+          break;
+        }
+      }
+    }
+
+    updateScores();
+    
+    logToSheet(`[ROFL_WEB] Importados ${importedCount} jugadores para partido ${matchId}`);
+    
+    // Notificar al canal de capitanes que los datos están disponibles
+    try {
+      const tMatchesSheet2 = ss.getSheetByName('TOURNAMENT_MATCHES');
+      let matchName = matchId;
+      if (tMatchesSheet2) {
+        const tm2 = tMatchesSheet2.getDataRange().getValues();
+        for (let i = 1; i < tm2.length; i++) {
+          if (String(tm2[i][0]).trim() === matchId && tm2[i][9]) {
+            matchName = String(tm2[i][9]);
+            break;
+          }
+        }
+      }
+      sendCaptainsDiscordNotification('ROFL_IMPORTED', {
+        matchId: matchId,
+        matchName: matchName,
+        playerCount: importedCount
+      });
+    } catch(discordErr) { Logger.log('Discord ROFL error: ' + discordErr.message); }
+    
+    return { 
+      success: true, 
+      msg: `¡Éxito! Se han importado ${importedCount} jugadores para el partido "${matchId}". Los datos ya aparecen en las estadísticas y actas.`
+    };
+
+    
+  } catch (err) {
+    Logger.log('Error processRoflJsonWithLink: ' + err.message);
+    return { success: false, msg: 'Error procesando JSON: ' + err.message };
+  }
+}
+
+
 function checkAndDeductBalance(summoner, amount, reason) {
   try {
     const ss = SpreadsheetApp.getActive();
@@ -22719,101 +23163,6 @@ function addBalance(summoner, amount, reason) {
   } catch (e) {
     return { success: false };
   }
-}
-
-// --- POKER ROOM LOGIC (CacheService based) ---
-const POKER_CACHE_KEY = 'POKER_ROOM_STATE';
-
-function pokerGetState() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(POKER_CACHE_KEY);
-  if (cached) {
-    try { return JSON.parse(cached); } catch(e) {}
-  }
-  
-  // Default state
-  const state = { players: [], pot: 0, active: false, board: [], turn: 0, lastUpdate: new Date().getTime() };
-  cache.put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
-  return state;
-}
-
-function pokerJoin(playerName, buyIn) {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return { success: false, msg: 'Servidor ocupado, reintenta.' };
-  try {
-    let state = pokerGetState();
-    const safeStack = parseInt(buyIn) || 5000;
-    const maxPlayers = 6;
-    
-    if (state.players.length >= maxPlayers) return { success: false, msg: 'La mesa está llena (' + maxPlayers + '/' + maxPlayers + ').' };
-    
-    // Verificar si ya está en la mesa
-    const already = state.players.some(p => (typeof p === 'object' ? p.name : p) === playerName);
-    if (!already) {
-      state.players.push({ name: playerName, stack: safeStack, lastAction: null });
-      state.lastUpdate = new Date().getTime();
-      CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
-    }
-    return state;
-  } finally { lock.releaseLock(); }
-}
-
-function pokerLeave(playerName) {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return { success: false, msg: 'Servidor ocupado.' };
-  try {
-    let state = pokerGetState();
-    state.players = state.players.filter(p => (typeof p === 'object' ? p.name : p) !== playerName);
-    state.lastUpdate = new Date().getTime();
-    CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
-    return { success: true };
-  } finally { lock.releaseLock(); }
-}
-
-function pokerDoAction(playerName, action) {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return pokerGetState();
-  try {
-    let state = pokerGetState();
-    // Registrar acción del jugador
-    let player = state.players.find(p => (typeof p === 'object' ? p.name : p) === playerName);
-    if (player && typeof player === 'object') {
-      player.lastAction = action;
-      player.lastActionTime = new Date().getTime();
-      
-      if (action === 'RAISE') {
-        let raiseAmt = Math.min(player.stack, 500);
-        player.stack = Math.max(0, player.stack - raiseAmt);
-        state.pot = (state.pot || 0) + raiseAmt;
-      } else if (action === 'CALL') {
-        let callAmt = Math.min(player.stack, 200);
-        player.stack = Math.max(0, player.stack - callAmt);
-        state.pot = (state.pot || 0) + callAmt;
-      } else if (action === 'FOLD') {
-        // El jugador se retira, dejar en la mesa con lastAction FOLD
-      }
-    }
-    state.lastUpdate = new Date().getTime();
-    state.turn = (state.turn || 0) + 1;
-    CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
-    return state;
-  } finally { lock.releaseLock(); }
-}
-
-function pokerStartGame() {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return pokerGetState();
-  try {
-    let state = pokerGetState();
-    if (state.players.length >= 2) {
-      state.active = true;
-      state.board = [];
-      state.pot = state.players.reduce((sum, p) => sum + (typeof p === 'object' ? 100 : 0), 0);
-      state.lastUpdate = new Date().getTime();
-      CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
-    }
-    return state;
-  } finally { lock.releaseLock(); }
 }
 
 /* ───────────────── SYSTEM TIE-BREAKER HELPER (v25.0) ───────────────── */
@@ -22929,4 +23278,6 @@ function resolveTiedGroup(group, matches) {
   
   return result;
 }
+
+
 
