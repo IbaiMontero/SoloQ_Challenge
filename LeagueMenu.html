@@ -279,8 +279,8 @@
                 <button onclick="refreshData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm font-bold transition">
                     ↻ RECARGAR
                 </button>
-                <button onclick="openRoflImportModal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded text-sm font-bold transition shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                    📁 IMPORTAR ROFL
+                <button onclick="google.script.run.importRoflJsonUI()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition">
+                    📄 IMPORTAR ROFL
                 </button>
             </div>
         </div>
@@ -631,6 +631,68 @@
                                 </div>
                             </div>
 
+                            </div></div>
+                    <!-- PANEL DE HISTORIAL -->
+                    <div id="casino-panel-history" class="hidden">
+                        <div class="overflow-x-auto rounded-xl border border-slate-700 shadow-inner">
+                            <table class="w-full text-left text-sm text-slate-300">
+                                <thead class="bg-slate-900 text-slate-500 uppercase tracking-widest text-[10px]">
+                                    <tr>
+                                        <th class="p-4">Fecha</th>
+                                        <th class="p-4">Partido</th>
+                                        <th class="p-4 text-center">Apuesta a</th>
+                                        <th class="p-4 text-right">Inversión</th>
+                                        <th class="p-4 text-center">Cuota</th>
+                                        <th class="p-4 text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="casino-history-container">
+                                    <tr><td colspan="6" class="text-center py-10 text-slate-500">No hay operaciones registradas en tu cartera.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🎯 PICK'EM TAB -->
+            <div id="tab-pickem" class="content-pane overflow-auto p-4 md:p-10">
+                <div class="w-full max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
+                    <div class="flex-1">
+                        <h2 class="text-4xl font-oswald text-pink-400 tracking-widest uppercase mb-2 text-center lg:text-left">🎯 Pick'em Semanal</h2>
+                        <p class="text-slate-400 text-center lg:text-left mb-8">Predice el ganador de cada partido. ¡Acumula aciertos y gana WG Coins!</p>
+                        <div id="pickem-matches" class="space-y-4 mb-10"></div>
+                    </div>
+                    <div class="w-full lg:w-96 flex-shrink-0">
+                        <div class="bg-slate-800/80 border border-pink-500/30 p-6 rounded-xl sticky top-4 shadow-xl">
+                            <h3 class="font-oswald text-pink-400 text-xl tracking-widest uppercase mb-4 border-b border-slate-700 pb-2">🏆 Mejores Analistas</h3>
+                            <div id="pickem-leaderboard" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 PLAYER COMPARISON TAB (ELIMINADO) -->
+
+            <!-- 💬 TABLÓN DE NOTAS (TRASH TALK) TAB -->
+            <div id="tab-vestuario" class="content-pane overflow-auto p-10">
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="text-4xl font-oswald text-amber-400 tracking-widest uppercase mb-2 text-center">💬 El Tablón de Notas</h2>
+                    <p class="text-slate-400 text-center mb-6">Deja tu mensaje antes del partido. Los mensajes se borran a las 48h. <span class="text-[10px] text-slate-500 uppercase">Máx 140 caracteres</span></p>
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" id="trash-talk-input" maxlength="140" placeholder="Hoy os vamos a barrer 🧹" class="flex-1 hex-input bg-slate-900 border-amber-500/50 text-sm">
+                        <button onclick="sendTrashTalk()" class="bg-amber-600 hover:bg-amber-500 text-black font-black px-5 py-3 rounded-lg transition uppercase text-sm tracking-widest shadow-lg">ENVIAR</button>
+                    </div>
+                    <div id="trash-talk-feed" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- 🎰 ROULETTE MODAL -->
+            <div id="roulette-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center" style="display:none">
+                <div class="bg-slate-900 border-2 border-yellow-500/50 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl relative">
+                    <button onclick="closeModal('roulette-modal')" class="absolute top-3 right-4 text-slate-500 hover:text-white text-xl">✕</button>
+                    <div class="text-6xl mb-4">🎰</div>
+                    <h2 class="font-oswald text-3xl text-yellow-400 tracking-widest uppercase mb-2">Ruleta Diaria</h2>
                     <p class="text-slate-400 text-sm mb-6">¡Gira la ruleta y gana WG Coins gratis cada día!</p>
                     <div id="roulette-streak" class="flex justify-center gap-1 mb-4"></div>
                     <div id="roulette-result" class="hidden mb-4">
@@ -657,12 +719,12 @@
                         </div>
                     </div>
                     <div id="gazette-content" class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-inter mb-6">Cargando programa...</div>
-                    <div class="text-center pt-4 border-t border-slate-800 flex flex-wrap justify-center gap-3">
+                    <div class="text-center pt-4 border-t border-slate-800">
                         <button onclick="copyGazetteToClipboard()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-md transition-colors text-sm uppercase tracking-wider">
                             📋 Copiar Programa
                         </button>
-                        <button id="btn-admin-gazette" onclick="generateGazette()" class="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold px-6 py-2 rounded-md transition-all text-sm uppercase tracking-wider border border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.3)] hover:scale-105 flex items-center gap-2">
-                            🤖 GENERAR NUEVA EDICIÓN (IA)
+                        <button id="btn-admin-gazette" onclick="generateGazette()" class="hidden bg-slate-800 hover:bg-slate-700 text-yellow-500 font-bold px-6 py-2 rounded-md transition-colors text-sm uppercase tracking-wider ml-4 border border-yellow-500/50">
+                            🤖 GENERAR NUEVO (IA)
                         </button>
                     </div>
                 </div>
@@ -756,9 +818,7 @@
         <div class="modal-box bg-slate-900 border-2 border-slate-700 relative max-w-lg w-full mx-4 p-8 rounded-xl shadow-2xl" onclick="event.stopPropagation()">
             <button onclick="closeModal('profile-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-3xl font-oswald text-white tracking-widest uppercase mb-4 text-center border-b border-slate-700 pb-4">👤 Personalizar Perfil</h2>
-            <!-- BATTLE PASS INFO -->
-            <div id="profile-bp-info" class="mb-5"></div>
-            <div class="space-y-6 mt-2">
+            <div class="space-y-6 mt-6">
                 <div>
                     <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Título de Invocador</label>
                     <select id="profile-title" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded shadow-inner outline-none focus:border-blue-500">
@@ -771,73 +831,13 @@
                         <option value="">Estándar</option>
                     </select>
                 </div>
-                <div class="pt-4 text-center">
+                <div class="pt-6 text-center">
                     <button onclick="saveProfileCustomization()" id="btn-save-profile" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded font-black tracking-widest uppercase shadow-lg transition">GUARDAR PERFIL</button>
                 </div>
             </div>
             <p class="text-xs text-slate-500 mt-6 text-center italic">Desbloquea más títulos y colores subiendo de nivel en el Pase de Temporada.</p>
         </div>
     </div>
-
-    <!-- ROFL IMPORT MODAL -->
-    <div id="rofl-import-modal" class="modal-overlay" style="display:none;" onclick="closeModal('rofl-import-modal')">
-        <div class="modal-box bg-slate-900 border-2 border-emerald-500/60 relative max-w-3xl w-full mx-4 p-8 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.2)]" onclick="event.stopPropagation()">
-            <button onclick="closeModal('rofl-import-modal')" class="absolute right-4 top-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
-            <h2 class="text-3xl font-oswald text-emerald-400 tracking-widest uppercase mb-1 text-center">📁 Importar Partida ROFL</h2>
-            <p class="text-slate-400 text-sm text-center mb-6">Sube el archivo <code class="text-emerald-400">.rofl</code> o pega el JSON del parser. Los datos quedarán vinculados al partido seleccionado.</p>
-            
-            <div class="space-y-4">
-                <!-- PASO 1: Seleccionar partido -->
-                <div>
-                    <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">1. Partido del Torneo</label>
-                    <select id="rofl-match-select" class="w-full bg-black border border-emerald-500/40 text-white p-3 rounded outline-none focus:border-emerald-400 transition">
-                        <option value="">⏳ Cargando partidos...</option>
-                    </select>
-                </div>
-
-                <!-- PASO 2: Subir .rofl o pegar JSON -->
-                <div>
-                    <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">2. Archivo .rofl o JSON del Parser</label>
-                    
-                    <!-- Drop zone para .rofl -->
-                    <div id="rofl-dropzone" class="border-2 border-dashed border-emerald-500/40 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-900/10 transition-all group mb-3"
-                         onclick="document.getElementById('rofl-file-input').click()"
-                         ondragover="event.preventDefault(); this.classList.add('border-emerald-400','bg-emerald-900/10')"
-                         ondragleave="this.classList.remove('border-emerald-400','bg-emerald-900/10')"
-                         ondrop="handleRoflFileDrop(event)">
-                        <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📄</div>
-                        <p class="text-slate-300 font-bold">Arrastra tu archivo <span class="text-emerald-400">.rofl</span> aquí</p>
-                        <p class="text-slate-500 text-xs mt-1">o haz clic para seleccionar</p>
-                        <input type="file" id="rofl-file-input" accept=".rofl" class="hidden" onchange="handleRoflFileSelect(event)">
-                    </div>
-                    
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="flex-1 h-px bg-slate-700"></div>
-                        <span class="text-slate-500 text-xs font-bold">O PEGA EL JSON DIRECTAMENTE</span>
-                        <div class="flex-1 h-px bg-slate-700"></div>
-                    </div>
-                    
-                    <textarea id="rofl-json-input" placeholder='{"source":"ROFL_PARSER","participants":[...],...}' class="w-full bg-black border border-emerald-500/40 text-slate-300 p-3 rounded outline-none focus:border-emerald-400 transition font-mono text-xs" rows="5" style="resize:vertical;"></textarea>
-                </div>
-
-                <!-- Preview de jugadores -->
-                <div id="rofl-preview" class="hidden">
-                    <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">👁️ Preview — Jugadores detectados</label>
-                    <div id="rofl-preview-content" class="bg-black/50 rounded-lg p-3 text-xs text-slate-300 max-h-40 overflow-y-auto font-mono"></div>
-                </div>
-                
-                <div id="rofl-import-status" class="hidden text-sm text-center p-3 rounded"></div>
-                
-                <div class="flex gap-3 justify-center pt-2">
-                    <button onclick="closeModal('rofl-import-modal')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-6 py-3 rounded-lg transition uppercase tracking-widest text-sm">Cancelar</button>
-                    <button onclick="submitRoflImport()" id="btn-rofl-import" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black px-8 py-3 rounded-lg transition uppercase tracking-widest text-sm shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
-                        📁 IMPORTAR PARTIDA
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <div id="postgame-modal" class="modal-overlay" onclick="closeModal('postgame-modal')">
         <div class="modal-box large bg-slate-900 border-2 border-slate-700 relative" onclick="event.stopPropagation()">
@@ -2628,84 +2628,37 @@
         titleSelect.innerHTML = '<option value="">(Ninguno)</option>';
         colorSelect.innerHTML = '<option value="">Estándar</option>';
 
-        // Mostrar estado de carga en el modal
-        let infoEl = document.getElementById('profile-bp-info');
-        if (infoEl) infoEl.innerHTML = '<span class="animate-pulse text-slate-500 text-xs">Cargando datos del pase...</span>';
-
         google.script.run.withSuccessHandler(function(data) {
-            if (!data) return;
-
-            // Mostrar nivel actual
-            if (infoEl) {
-                infoEl.innerHTML = `
-                    <div class="flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-3 border border-purple-500/30">
-                        <div class="text-purple-400 text-center">
-                            <div class="text-2xl font-black font-oswald">${data.level}</div>
-                            <div class="text-[9px] uppercase tracking-widest text-slate-400">Nivel BP</div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="text-xs text-slate-400 mb-1">XP al siguiente nivel</div>
-                            <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r from-purple-600 to-pink-500 rounded-full" style="width:${data.progress}%"></div>
-                            </div>
-                            <div class="text-[9px] text-slate-500 mt-1">${data.xpToNext} XP restantes</div>
-                        </div>
-                    </div>`;
-            }
-
-            // Construir listas de recompensas desbloqueadas
-            let unlockedTitles = [];
-            let unlockedColors = [];
-
-            if (data.rewards) {
+            if (data && data.rewards) {
+                let unlockedTitles = [];
+                let unlockedColors = [];
                 data.rewards.forEach(r => {
-                    if (!r.unlocked) return;
-                    // Títulos: detectar por campo titleValue o por regex en desc
-                    if (r.titleValue) {
-                        unlockedTitles.push(r.titleValue);
-                    } else if (r.desc && r.desc.includes('Título')) {
-                        let match = r.desc.match(/"(.*?)"/);
-                        if (match) unlockedTitles.push(match[1]);
-                    }
-                    // Colores: detectar por campo colorValue o por keywords
-                    if (r.colorValue) {
-                        unlockedColors.push({ label: r.colorLabel || r.name, val: r.colorValue });
-                    } else if (r.desc) {
-                        if (r.desc.includes('Nombre Dorado') || r.name === '🏆 WARGOD') unlockedColors.push({ label: '✨ Dorado', val: '#fbbf24' });
-                        if (r.desc.includes('Nombre Rojo') || r.desc.includes('Infernal') || r.name === '🔥 Infernal') unlockedColors.push({ label: '🔥 Rojo Infernal', val: '#ef4444' });
-                        if (r.desc.includes('Nombre Plata') || r.name === '🥈 Plata') unlockedColors.push({ label: '🌫 Plata', val: '#94a3b8' });
+                    if (r.unlocked) {
+                        if (r.desc.includes('Título')) {
+                            let match = r.desc.match(/"(.*?)"/);
+                            if(match) unlockedTitles.push(match[1]);
+                        }
+                        if (r.desc.includes('Nombre Dorado')) unlockedColors.push({label: 'Dorado', val: '#fbbf24'});
+                        if (r.desc.includes('Nombre Rojo') || r.desc.includes('Infernal')) unlockedColors.push({label: 'Infernal', val: '#ef4444'});
                     }
                 });
+                
+                unlockedTitles.forEach(t => {
+                    let opt = document.createElement('option');
+                    opt.value = t; opt.innerText = t;
+                    if(data.activeTitle === t) opt.selected = true;
+                    titleSelect.appendChild(opt);
+                });
+                
+                unlockedColors.forEach(c => {
+                    let opt = document.createElement('option');
+                    opt.value = c.val; opt.innerText = c.label;
+                    if(data.activeColor === c.val) opt.selected = true;
+                    colorSelect.appendChild(opt);
+                });
             }
-            
-            // Poblar selects
-            unlockedTitles.forEach(t => {
-                let opt = document.createElement('option');
-                opt.value = t; opt.innerText = '🏷️ ' + t;
-                if (data.activeTitle === t) opt.selected = true;
-                titleSelect.appendChild(opt);
-            });
-            
-            unlockedColors.forEach(c => {
-                let opt = document.createElement('option');
-                opt.value = c.val; opt.innerText = c.label;
-                opt.style.color = c.val;
-                if (data.activeColor === c.val) opt.selected = true;
-                colorSelect.appendChild(opt);
-            });
-
-            // Mensaje de estado
-            let msg = [];
-            if (unlockedTitles.length === 0) msg.push('Sube al nivel 10 para desbloquear tu primer título.');
-            if (unlockedColors.length === 0) msg.push('Los colores se desbloquean a partir del nivel 25.');
-            if (infoEl && msg.length > 0) {
-                infoEl.innerHTML += `<p class="text-[10px] text-slate-500 mt-2 italic text-center">${msg.join(' ')}</p>`;
-            }
-        }).withFailureHandler(function(err) {
-            if (infoEl) infoEl.innerHTML = '<span class="text-red-400 text-xs">Error cargando datos del pase.</span>';
         }).getBattlePassData(summoner);
     }
-
     
     function saveProfileCustomization() {
         let summoner = localStorage.getItem('my_summoner_name');
@@ -3055,20 +3008,11 @@
             if (uniqueTeams.indexOf(currentTeam) !== -1) teamSelect.value = currentTeam; 
         }
         
-        const normalizeRole = (r) => {
-            const up = String(r || '').trim().toUpperCase();
-            if (up === 'JNG' || up === 'JGL') return 'JUNGLE';
-            if (up === 'SUPP' || up === 'SUP') return 'SUPPORT';
-            if (up === 'ADC' || up === 'BOT') return 'BOTTOM';
-            if (up === 'MID') return 'MIDDLE';
-            if (up === 'TOP') return 'TOP';
-            return up;
-        };
         const getBest = role => {
             if (!globalStatsData) return null;
             return globalStatsData.filter(p => {
                 if (!p.role) return false;
-                return normalizeRole(p.role) === role.trim().toUpperCase();
+                return p.role.trim().toUpperCase() === role.trim().toUpperCase();
             }).sort((a,b) => (b.points || 0) - (a.points || 0))[0];
         };
         const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']; 
@@ -3460,8 +3404,7 @@
             let totL = { dmg: 0, gold: 0, vis: 0 };
             
             let jglW_cs = 0; let jglL_cs = 0;
-            let jglW_team = 0; let jglL_team = 0;
-            let jglW_enemy = 0; let jglL_enemy = 0;
+            let jglW_cs15 = 0; let jglL_cs15 = 0;
 
             let plW = { TOP: 0, MID: 0, BOT: 0, TOTAL: 0, GRUBS: 0, HERALD: 0 };
             let plL = { TOP: 0, MID: 0, BOT: 0, TOTAL: 0, GRUBS: 0, HERALD: 0 };
@@ -3490,8 +3433,7 @@
                 
                 if (r === 'JGL') {
                     jglW_cs = parseFloat(p.csTotal || (parseFloat(p.cs) * totalMins)) || 0; 
-                    jglW_enemy = p.jungleEnemy || 0;
-                    jglW_team = p.jungleTeam || 0; 
+                    jglW_cs15 = parseFloat(p.cs15) || Math.floor(jglW_cs * 0.45); 
                 }
 
                 plW.GRUBS += Number(p.grubs || 0);
@@ -3516,8 +3458,7 @@
                 
                 if (r === 'JGL') {
                     jglL_cs = parseFloat(p.csTotal || (parseFloat(p.cs) * totalMins)) || 0; 
-                    jglL_enemy = p.jungleEnemy || 0;
-                    jglL_team = p.jungleTeam || 0;
+                    jglL_cs15 = parseFloat(p.cs15) || Math.floor(jglL_cs * 0.45);
                 }
 
                 plL.GRUBS += Number(p.grubs || 0);
@@ -3563,6 +3504,46 @@
 
             let advancedStatsHtml = '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm"><div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div><div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50"><div class="w-1/3"></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' + escHtml(names[0]) + '</div></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' + escHtml(names[1]) + '</div></div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-purple-400 text-lg leading-none">🐛</span> Voidgrubs</div><div class="w-1/3 text-white font-mono">' + plW.GRUBS + '</div><div class="w-1/3 text-white font-mono">' + plL.GRUBS + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-indigo-400 text-lg leading-none">🪳</span> Heraldo</div><div class="w-1/3 text-white font-mono">' + plW.HERALD + '</div><div class="w-1/3 text-white font-mono">' + plL.HERALD + '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg leading-none">🛡️</span> Plates</div><div class="w-1/3 text-white font-mono">' + ptStr(plW.TOTAL) + '</div><div class="w-1/3 text-white font-mono">' + ptStr(plL.TOTAL) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.TOP) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.TOP) + '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.MID) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.MID) + '</div></div><div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.BOT) + '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.BOT) + '</div></div></div></div>';
 
+            advancedStatsHtml += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2"><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3">Distribución de Oro</h3><div class="flex items-center w-full h-full gap-2"><div style="position: relative; height: 160px; width: 50%;"><canvas id="matchGoldRadar"></canvas></div><div class="w-[50%] flex flex-col justify-center">' + goldTableHtml + '</div></div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><div class="flex justify-between bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3"><h3>Distribución de Daño</h3><div class="flex gap-4 text-[9px] font-black"><span class="text-blue-200">WIN</span><span class="text-red-200">LOSE</span></div></div><div class="flex flex-col justify-center flex-1">' + dmgBars + '</div></div><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-4">Control de Visión (VSPM)</h3><div class="flex flex-col gap-4"><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-blue-400">Ganadores</span><span class="text-slate-300 font-mono">' + totW.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visW_pct + '%; background: #3b82f6; height: 100%;"></div></div></div><div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-red-400">Perdedores</span><span class="text-slate-300 font-mono">' + totL.vis.toFixed(2) + '</span></div><div class="w-full h-4 bg-[#1c1c1f] rounded-sm overflow-hidden shadow-inner"><div style="width: ' + visL_pct + '%; background: #ef4444; height: 100%;"></div></div></div></div></div><div class="bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-3">JUNGLE SHARE</h3><div class="text-[9px] text-slate-400 italic mb-5">CS killed in team jungle + CS killed in enemy jungle</div><div class="flex flex-col gap-5"><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">At 15 min</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm"><div style="width: ' + jglW_pct15 + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs15) + '</div><div style="width: ' + jglL_pct15 + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs15) + '</div></div></div><div class="flex items-center gap-3"><div class="w-16 text-[10px] text-slate-300 font-bold">End game</div><div class="flex-1 h-6 bg-[#1c1c1f] flex overflow-hidden shadow-inner border border-slate-700 rounded-sm relative"><div style="width: ' + jglW_pct + '%; background: #3b82f6; height: 100%; display: flex; align-items: center; padding-left: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglW_cs) + '</div><div style="width: ' + jglL_pct + '%; background: #ef4444; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; color: white; font-size: 11px;">' + Math.floor(jglL_cs) + '</div></div></div><div class="flex justify-between text-[9px] text-slate-500 font-mono ml-[76px] mt-1 border-t border-slate-700 pt-1"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div></div></div></div>';
+            
+            // INYECTAMOS EL NUEVO GRÁFICO DE OBJETIVOS
+            advancedStatsHtml += '<div class="col-span-1 lg:col-span-2 bg-[#27272a] rounded-xl p-5 border border-slate-700 shadow-inner flex flex-col justify-center mt-4"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-5 -mt-5 rounded-t-xl mb-4">Daño a Objetivos vs Torretas</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="postGameObjectivesChart"></canvas></div></div>';
+
+            let advTableHtml = '<button onclick="document.getElementById(\'adv-stats-table\').classList.toggle(\'hidden\')" class="w-full mt-6 bg-[#1c1c1f] hover:bg-[#27272a] border border-slate-600 text-white py-3 rounded-xl font-oswald tracking-widest transition flex justify-center items-center gap-2 shadow-lg"><span>📊 VER / OCULTAR ESTADÍSTICAS AVANZADAS COMPLETAS</span></button><div id="adv-stats-table" class="hidden mt-4 bg-[#1c1c1f] border border-slate-700 rounded-xl overflow-x-auto shadow-inner"><table class="w-full text-left text-xs text-slate-300"><thead class="text-[9px] uppercase tracking-widest text-slate-500 border-b border-slate-700 bg-[#27272a]"><tr><th class="p-3">Pos</th><th class="p-3">Jugador</th><th class="p-3">K/D/A</th><th class="p-3 text-red-400">Daño (DPM)</th><th class="p-3 text-blue-400">Mitigado</th><th class="p-3 text-yellow-400">Oro (GPM)</th><th class="p-3 text-emerald-400">CS (CS/M)</th><th class="p-3 text-purple-400">Visión (VSPM)</th></tr></thead><tbody>';
+
+            let simulatedMins = totalMins; 
+            
+            const buildRow = (p, isWin) => {
+                let teamColor = isWin ? 'text-blue-400' : 'text-red-400';
+                let bgHover = isWin ? 'hover:bg-blue-900/10' : 'hover:bg-red-900/10';
+                
+                let safeDpm = p.dpm || Math.round(p.dmg / simulatedMins) || 0;
+                let safeGold = parseFloat(p.gold) || (parseFloat(p.gpm) * simulatedMins) || 0;
+                let goldFormatted = safeGold > 0 ? (safeGold / 1000).toFixed(1) + 'k' : '-';
+                let safeVis = p.vision || p.visionScore || p.vspm || 0;
+                let safeVspm = p.vspm || (safeVis / simulatedMins).toFixed(2);
+                let safeCs = p.csTotal || Math.floor((parseFloat(p.cs)||0) * simulatedMins);
+
+                return '<tr class="border-b border-slate-800 ' + bgHover + ' transition-colors"><td class="p-3 font-bold text-slate-500">' + (p.role||"FILL").substring(0,3) + '</td><td class="p-3 font-bold text-white flex items-center gap-2"><img src="' + getChampIcon(p.champ) + '" class="w-6 h-6 rounded border border-slate-600"> <span class="' + teamColor + '">' + escHtml(p.name) + '</span></td><td class="p-3 font-mono text-slate-200">' + p.k + '/' + p.d + '/' + p.a + '</td><td class="p-3 font-mono">' + (p.dmg/1000).toFixed(1) + 'k <span class="text-[9px] text-slate-500">(' + safeDpm + ')</span></td><td class="p-3 font-mono">' + (p.tank || '-') + '</td><td class="p-3 font-mono text-yellow-500">' + goldFormatted + ' <span class="text-[9px] text-slate-500">(' + (p.gpm || Math.round(safeGold/simulatedMins)) + ')</span></td><td class="p-3 font-mono text-emerald-400">' + safeCs + ' <span class="text-[9px] text-slate-500">(' + (p.cs || (safeCs/simulatedMins).toFixed(1)) + ')</span></td><td class="p-3 font-mono text-purple-400">' + safeVis + ' <span class="text-[9px] text-slate-500">(' + safeVspm + ')</span></td></tr>';
+            };
+
+            let winRowsHtml = res.winners.map(p => buildRow(p, true)).join('');
+            let losRowsHtml = res.losers.map(p => buildRow(p, false)).join('');
+            
+            advTableHtml += winRowsHtml + losRowsHtml + '</tbody></table></div>';
+
+            // 5. INSERCIÓN EN EL DOM Y RENDERIZADO FINAL
+            
+            let winMapHtml = res.winners.map(p => '<div class="flex items-center justify-end gap-3 opacity-50 hover:opacity-100 cursor-pointer transition"><div class="text-right"><div class="text-xs font-bold text-white">' + escHtml(p.name) + '</div><div class="text-[10px] text-slate-400">' + p.k + '/' + p.d + '/' + p.a + '</div></div><img src="' + getChampIcon(p.champ) + '" class="w-8 h-8 rounded border border-slate-700" onerror="this.style.display=\'none\'"></div>').join('');
+            
+            let losMapHtml = res.losers.map(p => '<div class="flex items-center gap-3 opacity-50 hover:opacity-100 cursor-pointer transition"><img src="' + getChampIcon(p.champ) + '" class="w-8 h-8 rounded border border-slate-700" onerror="this.style.display=\'none\'"><div class="text-left"><div class="text-xs font-bold text-white">' + escHtml(p.name) + '</div><div class="text-[10px] text-slate-400">' + p.k + '/' + p.d + '/' + p.a + '</div></div></div>').join('');
+
+            content.innerHTML = '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
+
+            // Renderizar gráficos (Chart.js)
+            renderGoldChart(realGoldDiff);
+
+            const objIcons = {
                 'FB': { icon: '🩸', bg: 'bg-red-900/80 border-red-500', label: 'First Blood' },
                 'FT': { icon: '🏯', bg: 'bg-yellow-900/80 border-yellow-500', label: 'Primera Torre' },
                 'DRAGON': { icon: '🐉', bg: 'bg-orange-900/80 border-orange-500', label: 'Dragón' },
@@ -5333,66 +5314,38 @@
         let btn = document.getElementById('btn-spin');
         btn.disabled = true;
         btn.innerHTML = '<span class="animate-spin inline-block">🌀</span> GIRANDO...';
-        
-        // Animación de slot machine antes de que llegue la respuesta del backend
-        const prizeEl = document.getElementById('roulette-prize');
-        const resultDiv = document.getElementById('roulette-result');
-        resultDiv.classList.remove('hidden');
-        
-        const prizes = ['🎰', '💰', '🎲', '⭐', '🏆', '💎', '🃏', '🎯'];
-        let spinCount = 0;
-        const maxSpins = 20;
-        const spinInterval = setInterval(() => {
-            const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
-            const randomNum = Math.floor(Math.random() * 500) + 50;
-            if (prizeEl) prizeEl.innerText = `${randomPrize} +${randomNum} WG 🪙`;
-            spinCount++;
-            if (spinCount >= maxSpins) clearInterval(spinInterval);
-        }, 100);
 
         google.script.run.withSuccessHandler(function(res) {
-            clearInterval(spinInterval);
-            
             if (res.alreadySpun) {
                 btn.innerHTML = '✅ Ya has girado hoy';
                 localStorage.setItem('last_spin_date', new Date().toISOString().split('T')[0]);
-                if (prizeEl) prizeEl.innerText = '✅ Ya giraste hoy';
                 return;
             }
             if (!res.success) {
                 alert(res.msg);
                 btn.disabled = false;
                 btn.innerHTML = '🎲 ¡GIRAR LA RULETA!';
-                resultDiv.classList.add('hidden');
                 return;
             }
 
             localStorage.setItem('last_spin_date', new Date().toISOString().split('T')[0]);
 
-            // Mostrar resultado final con animación de frenado (cubic-bezier)
-            if (prizeEl) {
-                prizeEl.style.transition = 'transform 0.8s cubic-bezier(0.17, 0.67, 0.12, 0.99), opacity 0.4s ease';
-                prizeEl.style.transform = 'scale(1.3)';
-                setTimeout(() => {
-                    prizeEl.innerText = '+' + res.totalPrize + ' WG 🪙';
-                    prizeEl.style.transform = 'scale(1)';
-                }, 150);
-            }
+            // Mostrar resultado con animación
+            document.getElementById('roulette-result').classList.remove('hidden');
+            document.getElementById('roulette-prize').innerText = '+' + res.totalPrize + ' WG 🪙';
             
-            let bonusText = '🔥 Racha: ' + res.streak + ' días seguidos';
+            let bonusText = 'Racha: ' + res.streak + ' días seguidos';
             if (res.streakBonus > 0) bonusText += ' | 🎉 ¡BONUS RACHA x7: +' + res.streakBonus + ' WG!';
-            if (res.firstTime) bonusText = '🎉 ¡Bonus de bienvenida! ¡Disfruta de la liga!';
-            const bonusEl = document.getElementById('roulette-bonus');
-            if (bonusEl) bonusEl.innerText = bonusText;
+            if (res.firstTime) bonusText = '🎉 ¡Bonus de bienvenida!';
+            document.getElementById('roulette-bonus').innerText = bonusText;
 
             // Streak dots
             let streakHtml = '';
             for (let i = 1; i <= 7; i++) {
                 let filled = i <= (res.streak % 7 || (res.streak >= 7 ? 7 : 0));
-                streakHtml += `<div class="w-6 h-6 rounded-full border-2 ${filled ? 'bg-yellow-500 border-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-slate-800 border-slate-600'} flex items-center justify-center text-[8px] font-bold ${filled ? 'text-black' : 'text-slate-500'} transition-all duration-500">${i}</div>`;
+                streakHtml += `<div class="w-6 h-6 rounded-full border-2 ${filled ? 'bg-yellow-500 border-yellow-400' : 'bg-slate-800 border-slate-600'} flex items-center justify-center text-[8px] font-bold ${filled ? 'text-black' : 'text-slate-500'}">${i}</div>`;
             }
-            const streakDiv2 = document.getElementById('roulette-streak');
-            if (streakDiv2) streakDiv2.innerHTML = streakHtml;
+            document.getElementById('roulette-streak').innerHTML = streakHtml;
 
             btn.innerHTML = '🎉 ¡PREMIO RECLAMADO!';
 
@@ -5401,11 +5354,8 @@
         }).spinDailyRoulette(summoner);
     }
 
-
-    // ⚠️ AUTO-OPEN ELIMINADO: La ruleta ya NO salta al entrar.
-    // El usuario puede abrirla manualmente desde el botón en el header.
-    // setTimeout(() => { try { autoOpenRoulette(); } catch(e){} }, 2000); ← ELIMINADO
-
+    // Auto-check roulette 2 seconds after loading
+    setTimeout(() => { try { autoOpenRoulette(); } catch(e){} }, 2000);
 
     // ============================================================
     // 🗞️ CHIRINGUITO PREMIER
@@ -5756,6 +5706,8 @@
         document.getElementById('bj-dealer-score').innerText = '';
 
         
+        
+        
     }
 
     function bjCreateDeck() {
@@ -5846,270 +5798,167 @@
     }
 
     // ============================================================
+    // 🃏 SISTEMA DE POKER MEJORADO
     // ============================================================
-    // 📁 IMPORTACIÓN ROFL DESDE LA WEB (soporta .rofl binario + JSON)
-    // ============================================================
-    let _roflParsedData = null; // Cache del JSON parseado del .rofl
+    window.pokerMyBuyIn = 0;
+    window.pokerInGame = false;
 
-    function openRoflImportModal() {
-        // Solo para admins
-        const userRole = localStorage.getItem('user_role') || '';
-        const summoner = localStorage.getItem('my_summoner_name') || '';
-        // Admins: verificar si el usuario tiene rol admin (o si está en la lista hardcoded)
-        // Si no hay lógica de roles, mostrar siempre (el backend ya controla los permisos)
+    function pokerJoinRoom() {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) { alert('Inicia sesión para jugar.'); return; }
         
-        document.getElementById('rofl-import-modal').style.display = 'flex';
-        document.getElementById('rofl-json-input').value = '';
-        const statusEl = document.getElementById('rofl-import-status');
-        statusEl.className = 'hidden text-sm text-center p-3 rounded';
-        statusEl.innerText = '';
-        document.getElementById('rofl-preview').classList.add('hidden');
-        _roflParsedData = null;
-
-        // Reset file input
-        const fi = document.getElementById('rofl-file-input');
-        if (fi) fi.value = '';
+        // Mostrar selector de buy-in
+        const modal = document.getElementById('poker-buyin-modal');
+        if (modal) { modal.style.display = 'flex'; return; }
         
-        // Cargar partidos del torneo en el select
-        const sel = document.getElementById('rofl-match-select');
-        if (tournamentDataCache && tournamentDataCache.matches) {
-            // Mostrar todos (PENDING + COMPLETED) para permitir re-importar
-            let allMatches = tournamentDataCache.matches;
-            sel.innerHTML = '<option value="">-- Selecciona el partido --</option>' +
-                allMatches.map(m => `<option value="${escHtml(m.id)}">${escHtml(m.names || m.id)} [${escHtml(m.round)}]${m.status === 'COMPLETED' ? ' ✅' : ''}</option>`).join('');
-        } else {
-            sel.innerHTML = '<option value="">No hay partidos. Recarga la página.</option>';
-        }
+        // Crear modal de buy-in dinámicamente si no existe
+        let buyinHtml = `
+        <div id="poker-buyin-modal" style="display:flex; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+            <div class="bg-slate-900 border-2 border-yellow-500 rounded-2xl p-8 w-full max-w-sm shadow-[0_0_50px_rgba(251,191,36,0.3)]">
+                <h3 class="font-oswald text-yellow-400 text-2xl tracking-widest uppercase text-center mb-2">🃏 BUY-IN</h3>
+                <p class="text-slate-400 text-xs text-center mb-6 uppercase tracking-widest">Elige tu stack inicial para la partida</p>
+                <div class="mb-4">
+                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 block">Cantidad (WG Coins)</label>
+                    <input id="poker-buyin-amount" type="number" min="1000" max="100000" step="500" value="5000"
+                        class="w-full bg-black border border-yellow-500/50 text-yellow-400 font-black text-2xl rounded-lg px-4 py-3 text-center focus:outline-none focus:border-yellow-400"
+                        oninput="document.getElementById('poker-buyin-display').innerText = parseInt(this.value || 0).toLocaleString() + ' WG'">
+                    <div id="poker-buyin-display" class="text-center text-yellow-500 font-oswald text-lg mt-2">5,000 WG</div>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    ${[1000,2500,5000,10000,25000].map(v => `<button onclick="document.getElementById('poker-buyin-amount').value=${v}; document.getElementById('poker-buyin-display').innerText='${v.toLocaleString()} WG'" class="flex-1 bg-slate-800 hover:bg-yellow-500/20 border border-slate-600 hover:border-yellow-500 text-slate-300 hover:text-yellow-400 text-[10px] font-bold py-1.5 rounded transition">${v>=1000?(v/1000)+'k':v}</button>`).join('')}
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('poker-buyin-modal').style.display='none'" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition uppercase tracking-widest">CANCELAR</button>
+                    <button onclick="pokerConfirmJoin()" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3 rounded-xl transition uppercase tracking-widest shadow-[0_0_20px_rgba(251,191,36,0.4)]">ENTRAR</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', buyinHtml);
     }
 
-    // Leer archivo .rofl como binario y extraer el JSON de estadísticas
-    async function parseRoflFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const buffer = e.target.result;
-                    const view = new Uint8Array(buffer);
-                    const decoder = new TextDecoder('utf-8');
-                    const text = decoder.decode(view);
-                    
-                    // Buscar el inicio del JSON de metadata
-                    let jsonStartIndex = text.indexOf('{"gameLength"');
-                    if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"gameDuration"');
-                    if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"statsJson"');
-                    if (jsonStartIndex === -1) {
-                        const statsKeyIndex = text.indexOf('"statsJson"');
-                        if (statsKeyIndex !== -1) jsonStartIndex = text.lastIndexOf('{', statsKeyIndex);
-                    }
-                    if (jsonStartIndex === -1) {
-                        reject(new Error('No se encontró el JSON de estadísticas en el archivo .rofl'));
-                        return;
-                    }
-                    
-                    // Extraer el objeto JSON completo con balance de llaves
-                    const chunk = text.substring(jsonStartIndex);
-                    let jsonStr = '';
-                    let braceCount = 0;
-                    let inString = false;
-                    let escapeNext = false;
-                    for (let i = 0; i < chunk.length; i++) {
-                        const char = chunk[i];
-                        jsonStr += char;
-                        if (escapeNext) { escapeNext = false; continue; }
-                        if (char === '\\') { escapeNext = true; continue; }
-                        if (char === '"') { inString = !inString; }
-                        else if (!inString) {
-                            if (char === '{') braceCount++;
-                            else if (char === '}') { braceCount--; if (braceCount === 0) break; }
-                        }
-                    }
-                    
-                    const metadata = JSON.parse(jsonStr);
-                    
-                    // Extraer jugadores: puede estar en statsJson (string escapado) o en participants
-                    let players = null;
-                    if (metadata.statsJson) {
-                        players = typeof metadata.statsJson === 'string' ? JSON.parse(metadata.statsJson) : metadata.statsJson;
-                    } else if (Array.isArray(metadata)) {
-                        players = metadata;
-                    } else if (metadata.participants) {
-                        players = metadata.participants;
-                    }
-                    
-                    if (!players || !Array.isArray(players) || players.length === 0) {
-                        reject(new Error('No se encontraron jugadores en el archivo .rofl'));
-                        return;
-                    }
-                    
-                    // Convertir al formato esperado por processRoflJsonWithLink
-                    const durationMin = Math.max(1, (metadata.gameLength || metadata.gameDuration || 1800000) / 60000);
-                    const teamKills = {};
-                    players.forEach(p => {
-                        const tid = p.TEAM || p.teamId || 0;
-                        const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
-                        teamKills[tid] = (teamKills[tid] || 0) + k;
-                    });
-                    
-                    const exportFormat = {
-                        source: 'ROFL_FILE',
-                        timestamp: new Date().toISOString(),
-                        gameDuration: Math.floor((metadata.gameLength || metadata.gameDuration || 0) / 1000),
-                        gameVersion: metadata.gameVersion || 'Desconocida',
-                        bans: metadata.bans || [],
-                        participants: players.map(p => {
-                            const name = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || p.PLAYER_CULTURAL_NAME || 'Desconocido';
-                            const skin = p.SKIN || p.championName || p.CHAMPION || 'Unknown';
-                            const win = p.WIN === 'Win' || p.WIN === 'true' || p.WIN === true || p.win === true;
-                            const teamId = parseInt(p.TEAM || p.teamId || 0);
-                            const lane = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || '';
-                            const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
-                            const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
-                            const a = parseInt(p.ASSISTS || p.assists || 0);
-                            const dmg = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
-                            const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
-                            const vision = parseInt(p.VISION_SCORE || p.visionScore || 0);
-                            const cs = parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) + parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
-                            const kp = (teamKills[teamId] || 0) > 0 ? parseFloat(((k + a) / teamKills[teamId] * 100).toFixed(1)) : 0;
-                            return {
-                                ...p,
-                                summonerName: name, championName: skin, lane: lane,
-                                teamId: teamId, win: win,
-                                kills: k, deaths: d, assists: a,
-                                totalDamageDealtToChampions: dmg, goldEarned: gold, visionScore: vision,
-                                totalMinionsKilled: cs,
-                                csMin: parseFloat((cs / durationMin).toFixed(2)),
-                                gpm: Math.floor(gold / durationMin),
-                                dpm: Math.floor(dmg / durationMin),
-                                vspm: parseFloat((vision / durationMin).toFixed(2)),
-                                kp: kp
-                            };
-                        })
-                    };
-                    
-                    resolve(exportFormat);
-                } catch(err) {
-                    reject(new Error('Error parseando .rofl: ' + err.message));
-                }
-            };
-            reader.onerror = () => reject(new Error('Error leyendo el archivo.'));
-            reader.readAsArrayBuffer(file);
-        });
-    }
-
-    async function handleRoflFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        await _processRoflFileObject(file);
-    }
-
-    async function handleRoflFileDrop(event) {
-        event.preventDefault();
-        const dropzone = document.getElementById('rofl-dropzone');
-        if (dropzone) dropzone.classList.remove('border-emerald-400', 'bg-emerald-900/10');
-        const file = event.dataTransfer.files[0];
-        if (!file) return;
-        if (!file.name.endsWith('.rofl')) { alert('El archivo debe tener extensión .rofl'); return; }
-        await _processRoflFileObject(file);
-    }
-
-    async function _processRoflFileObject(file) {
-        const statusEl = document.getElementById('rofl-import-status');
-        const dropzone = document.getElementById('rofl-dropzone');
-        statusEl.className = 'text-sm text-center p-3 rounded bg-slate-800 text-yellow-400 animate-pulse';
-        statusEl.innerText = `📄 Leyendo ${file.name}...`;
+    function pokerConfirmJoin() {
+        const summoner = localStorage.getItem('my_summoner_name');
+        const buyIn = parseInt(document.getElementById('poker-buyin-amount').value);
+        if (isNaN(buyIn) || buyIn < 1000) { alert('El buy-in mínimo es 1,000 WG Coins.'); return; }
+        if (buyIn > (window.myLigaWalletBalance || 0)) { alert('No tienes suficientes WG Coins.'); return; }
         
-        try {
-            const data = await parseRoflFile(file);
-            _roflParsedData = data;
+        document.getElementById('poker-buyin-modal').style.display = 'none';
+        window.pokerMyBuyIn = buyIn;
+        window.pokerInGame = true;
+        
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && (res.success === false)) { alert(res.msg); return; }
             
-            // Poner el JSON en el textarea también
-            document.getElementById('rofl-json-input').value = JSON.stringify(data, null, 2);
-            
-            // Mostrar preview
-            const previewDiv = document.getElementById('rofl-preview');
-            const previewContent = document.getElementById('rofl-preview-content');
-            previewDiv.classList.remove('hidden');
-            
-            const players = data.participants || [];
-            const durationMin = Math.floor((data.gameDuration || 0) / 60);
-            const team100 = players.filter(p => p.teamId === 100);
-            const team200 = players.filter(p => p.teamId === 200);
-            
-            previewContent.innerHTML = `<div class="text-emerald-400 font-bold mb-1">✅ ${players.length} jugadores | ${durationMin} min | ${data.gameVersion}</div>` +
-                `<div class="text-blue-400 font-bold">🔵 Equipo Azul:</div>` +
-                team100.map(p => `  ${p.summonerName} (${p.championName}) ${p.win ? '✅' : '❌'} KDA: ${p.kills}/${p.deaths}/${p.assists}`).join('<br>') +
-                `<div class="text-red-400 font-bold mt-1">🔴 Equipo Rojo:</div>` +
-                team200.map(p => `  ${p.summonerName} (${p.championName}) ${p.win ? '✅' : '❌'} KDA: ${p.kills}/${p.deaths}/${p.assists}`).join('<br>');
-            
-            // Actualizar dropzone
-            if (dropzone) dropzone.innerHTML = `<div class="text-2xl mb-1">✅</div><p class="text-emerald-400 font-bold">${escHtml(file.name)}</p><p class="text-slate-500 text-xs">${players.length} jugadores detectados</p>`;
-            
-            statusEl.className = 'text-sm text-center p-3 rounded bg-emerald-900/40 text-emerald-400';
-            statusEl.innerText = `✅ Archivo leído: ${players.length} jugadores. Selecciona el partido y pulsa "IMPORTAR".`;
-        } catch(err) {
-            statusEl.className = 'text-sm text-center p-3 rounded bg-red-900/40 text-red-400';
-            statusEl.innerText = '❌ ' + err.message;
-            _roflParsedData = null;
-        }
+        }).withFailureHandler(function(err) {
+            alert('Error al unirse: ' + err.message);
+        }).pokerJoin(summoner, buyIn);
     }
 
-    function submitRoflImport() {
-        const matchId = document.getElementById('rofl-match-select').value;
-        const statusEl = document.getElementById('rofl-import-status');
-        const btn = document.getElementById('btn-rofl-import');
+    function pokerLeaveRoom() {
+        const summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+        if (!confirm('¿Seguro que quieres abandonar la mesa?')) return;
+        window.pokerInGame = false;
+        window.pokerMyBuyIn = 0;
+        google.script.run.withSuccessHandler(function() {
+            
+        }).pokerLeave(summoner);
+    }
 
-        if (!matchId) { alert('Selecciona el partido del torneo al que corresponde esta partida.'); return; }
+    function pokerAddBot() {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.success === false) { alert(res.msg); return; }
+            
+        }).pokerJoin('🤖 BOT-WARGOD', 5000);
+    }
 
-        // Prioridad: datos del .rofl parseado > JSON pegado manualmente
-        let jsonStr = '';
-        if (_roflParsedData) {
-            jsonStr = JSON.stringify(_roflParsedData);
-        } else {
-            jsonStr = (document.getElementById('rofl-json-input').value || '').trim();
-            if (!jsonStr) { alert('Sube un archivo .rofl o pega el JSON en el campo de texto.'); return; }
-            try {
-                const parsed = JSON.parse(jsonStr);
-                if (!parsed.participants || !Array.isArray(parsed.participants)) throw new Error('Falta el campo "participants".');
-            } catch(e) {
-                alert('❌ JSON inválido: ' + e.message);
-                return;
+    function pokerStartGame() {
+        google.script.run.withSuccessHandler(function(state) {
+            if (state && state.active) {
+                renderPokerGame(state);
+                
+            } else {
+                alert("Hubo un problema iniciando la partida. Reintenta.");
             }
-        }
-
-        btn.innerHTML = '⏳ Importando...';
-        btn.disabled = true;
-        statusEl.className = 'text-sm text-center p-3 rounded bg-slate-800 text-yellow-400 animate-pulse';
-        statusEl.innerText = '🔄 Enviando datos al servidor...';
-
-        google.script.run
-            .withSuccessHandler(function(res) {
-                btn.innerHTML = '📁 IMPORTAR PARTIDA';
-                btn.disabled = false;
-                if (res && res.success) {
-                    statusEl.className = 'text-sm text-center p-3 rounded bg-emerald-900/40 text-emerald-400 border border-emerald-500/40';
-                    statusEl.innerText = '✅ ' + (res.msg || 'Importación completada. Discord notificado.');
-                    _roflParsedData = null;
-                    setTimeout(() => { refreshData(); closeModal('rofl-import-modal'); }, 2500);
-                } else {
-                    statusEl.className = 'text-sm text-center p-3 rounded bg-red-900/40 text-red-400 border border-red-500/40';
-                    statusEl.innerText = '❌ ' + (res ? res.msg : 'Error desconocido.');
-                }
-            })
-            .withFailureHandler(function(err) {
-                btn.innerHTML = '📁 IMPORTAR PARTIDA';
-                btn.disabled = false;
-                statusEl.className = 'text-sm text-center p-3 rounded bg-red-900/40 text-red-400 border border-red-500/40';
-                statusEl.innerText = '❌ Error: ' + (err.message || err);
-            })
-            .processRoflJsonWithLink(jsonStr, matchId);
+        }).pokerStartGame();
     }
 
+    function pokerRefreshState() {
+        if (!document.getElementById('casino-panel-games') || document.getElementById('casino-panel-games').classList.contains('hidden')) return;
+        google.script.run.withSuccessHandler(function(state) {
+            if (!state) return;
+            renderPokerLobby(state);
+            if (state.active) renderPokerGame(state);
+        }).withFailureHandler(function() {}).pokerGetState();
+    }
 
+    function renderPokerLobby(state) {
+        const list = document.getElementById('poker-players-list');
+        if (!list) return;
+        const summoner = localStorage.getItem('my_summoner_name') || '';
+        const isInGame = state.players && state.players.some(p => (typeof p === 'object' ? p.name : p) === summoner);
+        
+        list.innerHTML = (state.players || []).map(p => {
+            const pName = typeof p === 'object' ? p.name : p;
+            const pStack = typeof p === 'object' ? p.stack : '?';
+            const isBot = pName && pName.includes('BOT');
+            return `<div class="bg-slate-800 border ${isBot ? 'border-purple-500' : 'border-slate-600'} px-3 py-1.5 rounded-full text-xs text-white flex items-center gap-2">
+                <span>${isBot ? '🤖' : '👤'}</span>
+                <span class="font-bold">${escHtml(pName)}</span>
+                ${pStack ? `<span class="text-yellow-400 font-mono text-[10px]">${parseInt(pStack).toLocaleString()} WG</span>` : ''}
+            </div>`;
+        }).join('');
+        
+        // Mostrar/ocultar botones según si el jugador está en la sala
+        const joinBtn = document.getElementById('btn-poker-join');
+        const leaveBtn = document.getElementById('btn-poker-leave');
+        const botBtn = document.getElementById('btn-poker-bot');
+        const startBtn = document.getElementById('btn-poker-start');
+        const canStart = isInGame && state.players && state.players.length >= 2 && !state.active;
+        
+        if (joinBtn) joinBtn.style.display = isInGame ? 'none' : 'inline-flex';
+        if (leaveBtn) leaveBtn.style.display = isInGame ? 'inline-flex' : 'none';
+        if (botBtn) botBtn.style.display = 'inline-flex';
+        if (startBtn) startBtn.style.display = canStart ? 'inline-flex' : 'none';
+        
+        // Indicar cuántos jugadores
+        const countEl = document.getElementById('poker-player-count');
+        if (countEl) countEl.innerText = `${(state.players || []).length}/6 jugadores`;
+        
+        if (state.active) {
+            document.getElementById('poker-lobby').style.display = 'none';
+        } else {
+            document.getElementById('poker-lobby').style.display = 'block';
+            if (document.getElementById('poker-game')) document.getElementById('poker-game').classList.add('hidden');
+        }
+    }
 
+    function renderPokerGame(state) {
+        const lobby = document.getElementById('poker-lobby');
+        const game = document.getElementById('poker-game');
+        if (game) game.classList.remove('hidden');
+        if (document.getElementById('poker-pot')) document.getElementById('poker-pot').innerText = `POT: ${state.pot || 0} WG`;
+    }
+
+    function pokerAction(act) {
+        let summoner = localStorage.getItem('my_summoner_name');
+        if (!summoner) return;
+        google.script.run.withSuccessHandler(function(res) {
+            
+            // Si hay un bot en la sala, simular acción del bot después de 1.5s
+            if (res && res.players && res.players.some(p => (typeof p === 'object' ? p.name : p).includes('BOT'))) {
+                setTimeout(pokerBotMove, 1500);
+            }
+        }).pokerDoAction(summoner, act);
+    }
+
+    function pokerBotMove() {
+        // El bot hace una acción aleatoria ponderada (call 50%, raise 30%, fold 20%)
+        const r = Math.random();
+        let botAct = r < 0.5 ? 'CALL' : (r < 0.8 ? 'RAISE' : 'FOLD');
+        google.script.run.withSuccessHandler(pokerRefreshState).pokerDoAction('🤖 BOT-WARGOD', botAct);
+    }
 </script>
-
 </body>
 </html>
-
-
 
