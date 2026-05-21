@@ -9581,7 +9581,7 @@ function getEpicRankingData(seasonFilter) {
 /* ----------------- ANUNCIO DE ROLES A DISCORD ----------------- */
 function sendDiscordRolesAnnouncement(winnersData) {
   //            TU WEBHOOK           
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
 
   if (!WEBHOOK_URL) return;
 
@@ -9646,7 +9646,7 @@ function sendDiscordRolesAnnouncement(winnersData) {
 
 /* ----------------- NOTIFICACIONES EN VIVO (DISCORD V3.0 - EXTREME) ----------------- */
 function sendMatchNotification(player, champ, kda, points, result, notes, priceDelta) {
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_URL")) return;
 
@@ -15657,7 +15657,7 @@ function runDailySkirmish() {
 
 /* ----------------- ENV    O DISCORD ESCARAMUZA DETALLADA ----------------- */
 function sendDiscordWarNotification(missionName, winner, hexScore, chemScore, hexList, chemList, unitLabel) {
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
   
   let color = (winner === 'HEXTECH') ? 3447003 : 5763719; 
 
@@ -18481,7 +18481,7 @@ function announcePickemsToDiscord() {
   }
 
   //            PON TU WEBHOOK AQU               
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
   const webUrl = ScriptApp.getService().getUrl() + "?p=tournaments";
 
   const payload = {
@@ -18514,7 +18514,7 @@ function announcePickemsToDiscord() {
    ========================================================== */
 function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   // PEGA TU WEBHOOK DE DISCORD AQUI
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_ENLACE_AQUI")) return;
 
@@ -18964,7 +18964,7 @@ function getTournamentStatsForWeb(roundFilter) {
 
   if (!teamsSheet || !matchesSheet || !tMatchesSheet) return { stats: [], rounds: [] };
 
-  const normalizeName = (n) => String(n).replace(/[\s\xA0]/g, '').toLowerCase();
+  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
 
   const tData = teamsSheet.getDataRange().getValues();
   const playerTeamMap = {}; 
@@ -20003,7 +20003,7 @@ function getAllDashboardData(roundFilter) {
   }
 
   // ── 3. STATS (antes getTournamentStatsForWeb) ──
-  const normalizeName = (n) => String(n).replace(/[\s\xA0]/g, '').toLowerCase();
+  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
   const playerTeamMap = {};
   for (let i = 1; i < tData.length; i++) {
     const teamName = String(tData[i][1]).trim();
@@ -20041,7 +20041,10 @@ function getAllDashboardData(roundFilter) {
       const rawJson = mData[i][15];
       if (rawJson) { try { let adv = JSON.parse(rawJson); s.csTotal += Number(adv.csMin||0); s.vsTotal += Number(adv.vspm||0); s.gpmTotal += Number(adv.gpm||0); s.dmgObjTotal += Number(adv.dmgObj||0); s.dmgTurretsTotal += Number(adv.dmgTurrets||0); s.tankTotal += Number(adv.dmgTaken||adv.damageTaken||adv.totalDamageTaken||0); s.pinksTotal += Number(adv.pinks||adv.controlWards||adv.visionWardsBoughtInGame||0); s.epicsTotal += Number(adv.epicMonsters||adv.epics||adv.dragonKills||0); s.pentasTotal += Number(adv.pentas||adv.pentaKills||adv.pentakills||0); } catch(e) {} }
       let role = String(mData[i][4]).toUpperCase().trim();
-      if (role === 'UTILITY') role = 'SUPPORT'; if (role === 'BOT') role = 'BOTTOM'; if (role === 'MID') role = 'MIDDLE';
+      if (role === 'UTILITY' || role === 'SUPP') role = 'SUPPORT'; 
+      if (role === 'BOT' || role === 'ADC') role = 'BOTTOM'; 
+      if (role === 'MID') role = 'MIDDLE';
+      if (role === 'JNG') role = 'JUNGLE';
       s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
     }
   }
@@ -22382,8 +22385,9 @@ function getBattlePassData(summonerName) {
 
   let data = sheet.getDataRange().getValues();
   let userRow = -1;
+  let cleanSummoner = String(summonerName).trim().toLowerCase();
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim().toLowerCase() === summonerName.toLowerCase()) {
+    if (String(data[i][0]).trim().toLowerCase() === cleanSummoner) {
       userRow = i;
       break;
     }
@@ -22438,8 +22442,9 @@ function updateProfileCustomization(summonerName, title, color) {
   if (!sheet) return { success: false, msg: "No existe BATTLE_PASS." };
 
   let data = sheet.getDataRange().getValues();
+  let cleanSummoner = String(summonerName).trim().toLowerCase();
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim().toLowerCase() === summonerName.toLowerCase()) {
+    if (String(data[i][0]).trim().toLowerCase() === cleanSummoner) {
       sheet.getRange(i + 1, 5).setValue(title);
       sheet.getRange(i + 1, 6).setValue(color);
       return { success: true, msg: "Perfil actualizado correctamente." };
@@ -22791,6 +22796,22 @@ function pokerDoAction(playerName, action) {
     state.lastUpdate = new Date().getTime();
     state.turn = (state.turn || 0) + 1;
     CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+    return state;
+  } finally { lock.releaseLock(); }
+}
+
+function pokerStartGame() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return pokerGetState();
+  try {
+    let state = pokerGetState();
+    if (state.players.length >= 2) {
+      state.active = true;
+      state.board = [];
+      state.pot = state.players.reduce((sum, p) => sum + (typeof p === 'object' ? 100 : 0), 0);
+      state.lastUpdate = new Date().getTime();
+      CacheService.getScriptCache().put(POKER_CACHE_KEY, JSON.stringify(state), 3600);
+    }
     return state;
   } finally { lock.releaseLock(); }
 }

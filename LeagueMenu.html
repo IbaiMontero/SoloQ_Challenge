@@ -634,7 +634,7 @@
                             <!-- POKER ROOM -->
                             <div class="bg-slate-900/50 border border-blue-500/30 p-6 rounded-2xl shadow-xl">
                                 <div class="flex justify-between items-center mb-6">
-                                    <h3 class="font-oswald text-blue-400 text-2xl tracking-widest uppercase">♥️ POKER ROOM</h3>
+                                    <h3 class="font-oswald text-blue-400 text-2xl tracking-widest uppercase">🃏 POKER ROOM</h3>
                                     <span class="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded border border-blue-500/30 uppercase tracking-widest">Multiplayer (Hasta 4)</span>
                                 </div>
                                 <div id="poker-room" class="min-h-[300px] flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
@@ -648,6 +648,7 @@
                                         <div class="flex flex-wrap justify-center gap-2">
                                             <button onclick="pokerJoinRoom()" id="btn-poker-join" class="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-2 rounded-full transition uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">🃏 Entrar a la Mesa</button>
                                             <button onclick="pokerLeaveRoom()" id="btn-poker-leave" style="display:none" class="bg-red-600 hover:bg-red-500 text-white font-black px-6 py-2 rounded-full transition uppercase text-xs tracking-widest shadow-lg flex items-center gap-2">🚪 Salir</button>
+                                            <button onclick="pokerStartGame()" id="btn-poker-start" style="display:none" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-2 rounded-full transition uppercase text-xs tracking-widest shadow-lg flex items-center gap-2 animate-pulse">▶️ Iniciar Partida</button>
                                             <button onclick="pokerAddBot()" id="btn-poker-bot" class="bg-purple-700 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-full transition uppercase text-[10px] tracking-widest flex items-center gap-2">🤖 Añadir Bot</button>
                                         </div>
                                     </div>
@@ -1252,11 +1253,12 @@
             calculatePowerScores(data);
             tournamentDataCache = data;
             renderDashboard(data);
-            renderPowerRankings();
 
-            // Stats
+            // Stats (must be before renderPowerRankings so globalStatsData is populated)
             renderStatsAndAwards(payload.statsPayload);
             renderRecordsAndPickems(payload.recordsPayload);
+
+            renderPowerRankings();
 
             // News
             processNews(payload.news);
@@ -2404,7 +2406,14 @@
         
         let rosterHtml = '<p class="text-slate-500 text-sm italic">Agentes Libres</p>';
         if (roster && roster !== 'undefined' && roster.trim() !== '') {
+            let cleanRoster = roster.split(',').map(p => {
+                let name = p.trim();
+                if (!name.includes('#')) name += '#EUW';
+                return name;
+            }).join(',');
+            let opggLink = "https://www.op.gg/multisearch/euw?summoners=" + encodeURIComponent(cleanRoster);
             rosterHtml = roster.split(',').map(p => '<div class="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-emerald-300 font-bold shadow-inner text-center uppercase tracking-widest w-full max-w-[200px]">' + escHtml(p.trim()) + '</div>').join('');
+            rosterHtml += `<a href="${opggLink}" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded mt-4 text-center block w-full max-w-[200px] uppercase tracking-widest text-xs transition shadow-lg flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> OP.GG MULTI</a>`;
         }
         document.getElementById('tm-roster').innerHTML = rosterHtml;
 
@@ -5903,6 +5912,17 @@
         }).pokerJoin('🤖 BOT-WARGOD', 5000);
     }
 
+    function pokerStartGame() {
+        google.script.run.withSuccessHandler(function(state) {
+            if (state && state.active) {
+                renderPokerGame(state);
+                pokerRefreshState();
+            } else {
+                alert("Hubo un problema iniciando la partida. Reintenta.");
+            }
+        }).pokerStartGame();
+    }
+
     function pokerRefreshState() {
         if (!document.getElementById('casino-panel-games') || document.getElementById('casino-panel-games').classList.contains('hidden')) return;
         google.script.run.withSuccessHandler(function(state) {
@@ -5933,13 +5953,24 @@
         const joinBtn = document.getElementById('btn-poker-join');
         const leaveBtn = document.getElementById('btn-poker-leave');
         const botBtn = document.getElementById('btn-poker-bot');
+        const startBtn = document.getElementById('btn-poker-start');
+        const canStart = isInGame && state.players && state.players.length >= 2 && !state.active;
+        
         if (joinBtn) joinBtn.style.display = isInGame ? 'none' : 'inline-flex';
         if (leaveBtn) leaveBtn.style.display = isInGame ? 'inline-flex' : 'none';
         if (botBtn) botBtn.style.display = 'inline-flex';
+        if (startBtn) startBtn.style.display = canStart ? 'inline-flex' : 'none';
         
         // Indicar cuántos jugadores
         const countEl = document.getElementById('poker-player-count');
         if (countEl) countEl.innerText = `${(state.players || []).length}/6 jugadores`;
+        
+        if (state.active) {
+            document.getElementById('poker-lobby').style.display = 'none';
+        } else {
+            document.getElementById('poker-lobby').style.display = 'block';
+            if (document.getElementById('poker-game')) document.getElementById('poker-game').classList.add('hidden');
+        }
     }
 
     function renderPokerGame(state) {

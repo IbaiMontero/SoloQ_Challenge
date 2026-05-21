@@ -224,6 +224,43 @@
             <div id="fp-modal-content"></div>
         </div>
     </div>
+
+    <!-- MODAL DE CLAUSULAZO -->
+    <div id="clause-modal" class="modal-overlay hidden" onclick="closeClauseModal()">
+        <div class="modal-box bg-slate-900 border-2 border-yellow-500 relative p-6 max-w-md w-full rounded-2xl shadow-[0_0_40px_rgba(251,191,36,0.3)]" onclick="event.stopPropagation()">
+            <button onclick="closeClauseModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-2xl font-oswald text-yellow-500 tracking-widest mb-4 flex items-center gap-2"><span class="text-3xl">🚨</span> CLAUSULAZO</h2>
+            <div id="clause-modal-content" class="mb-6 text-slate-300 text-sm">
+                <!-- Se inyecta dinámicamente -->
+            </div>
+            <div class="flex gap-4">
+                <button onclick="closeClauseModal()" class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-lg border border-slate-600 hover:bg-slate-700 transition uppercase tracking-widest">Cancelar</button>
+                <button id="btn-confirm-clause" class="flex-1 bg-yellow-600 text-black font-black py-3 rounded-lg border border-yellow-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] hover:bg-yellow-500 hover:scale-105 transition-all tracking-widest uppercase">Pagar</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .drag-over-active { background-color: rgba(168, 85, 247, 0.2) !important; border-color: #a855f7 !important; transform: scale(1.02); }
+        .gacha-card-flip { animation: flipIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+        @keyframes flipIn {
+            0% { transform: perspective(400px) rotateY(90deg); opacity: 0; }
+            40% { transform: perspective(400px) rotateY(-20deg); }
+            60% { transform: perspective(400px) rotateY(10deg); opacity: 1; }
+            80% { transform: perspective(400px) rotateY(-5deg); }
+            100% { transform: perspective(400px); opacity: 1; }
+        }
+        .flash-toast { animation: toastFade 3s ease-out forwards; }
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        #fantasy-toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    </style>
+    
+    <div id="fantasy-toast-container"></div>
 </div>
 
 <script>
@@ -235,6 +272,19 @@
     let draggedRole = null;
     window.allFantasyRosters = [];
     window.currentRankingData = [];
+
+    
+    function showToast(msg, type = 'info') {
+        let container = document.getElementById('fantasy-toast-container');
+        if(!container) return;
+        let t = document.createElement('div');
+        let bg = type === 'error' ? 'bg-red-900 border-red-500 text-red-100' : (type === 'success' ? 'bg-emerald-900 border-emerald-500 text-emerald-100' : 'bg-slate-800 border-slate-500 text-white');
+        t.className = 'flash-toast px-6 py-4 rounded-xl border-l-4 ' + bg + ' font-bold tracking-widest uppercase shadow-2xl z-50 flex items-center gap-3';
+        let icon = type === 'error' ? '?' : (type === 'success' ? '?' : '??');
+        t.innerHTML = '<span class="text-xl">' + icon + '</span> <span>' + msg + '</span>';
+        container.appendChild(t);
+        setTimeout(() => { if(t.parentElement) t.remove(); }, 2800);
+    }
 
     function formatMoney(num) { return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €"; }
 
@@ -345,6 +395,7 @@
     }, 1000);
 
     function allowDrop(ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; }
+    function dragLeave(ev) { if(ev.target.closest('.fantasy-player-slot')) ev.target.closest('.fantasy-player-slot').classList.remove('drag-over-active'); }
     function drag(ev, roleKey) { draggedRole = roleKey; ev.dataTransfer.setData("text", roleKey); ev.dataTransfer.effectAllowed = "move"; }
     function drop(ev, targetRoleKey) {
         ev.preventDefault();
@@ -651,14 +702,14 @@
             }
 
             if (!pName || pName === "") {
-                return `<div class="bg-slate-900/40 border-2 border-dashed border-slate-700 rounded-2xl h-48 flex flex-col items-center justify-center p-4 group hover:border-accent-blue transition-all" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)">
+                return `<div class="bg-slate-900/40 border-2 border-dashed border-slate-700 rounded-2xl h-48 flex flex-col items-center justify-center p-4 group hover:border-accent-blue transition-all" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
                             <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-4">${roleLabel}</div>
                             <div class="text-3xl grayscale opacity-30 mb-2">👤</div>
                             <button onclick="promptClause('${roleKey}')" class="text-[10px] text-accent-blue font-black uppercase tracking-widest hover:text-white transition">🔍 CLAUSULAZO</button>
                         </div>`;
             }
 
-            return `<div class="relative group bg-slate-800 border-2 border-slate-600 rounded-2xl p-4 shadow-xl hover:border-accent-blue transition-all cursor-move h-48 flex flex-col items-center justify-center" draggable="true" ondragstart="drag(event, '${roleKey}')" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)">
+            return `<div class="relative group bg-slate-800 border-2 border-slate-600 rounded-2xl p-4 shadow-xl hover:border-accent-blue transition-all cursor-move h-48 flex flex-col items-center justify-center" draggable="true" ondragstart="drag(event, '${roleKey}')" ondrop="drop(event, '${roleKey}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
                         ${capBadge} ${oopBadge} ${btnUI}
                         <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2">${roleLabel}</div>
                         <div class="relative mb-2">
@@ -836,3 +887,5 @@
         }).buyGachaBox(currentManager.name);
     }
 </script>
+
+
