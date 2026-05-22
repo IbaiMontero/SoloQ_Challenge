@@ -39,8 +39,17 @@
 
     .hex-input { background: rgba(0,0,0,0.3); border: 1px solid #334155; color: var(--text-main); padding: 12px 15px; border-radius: 6px; width: 100%; outline: none; }
     .hex-input:focus { border-color: var(--gold); }
-    .tab-btn { padding: 15px 20px; font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 1.1em; color: var(--text-muted); border-left: 3px solid transparent; cursor: pointer; transition: 0.3s; text-align: left; display: block; width: 100%; }
-    .tab-btn.active { color: var(--gold); border-left-color: var(--gold); background: rgba(251,191,36,0.05); }
+    .tab-btn { padding: 15px 20px; font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 1.1em; color: var(--text-muted) !important; border-left: 3px solid transparent; cursor: pointer; transition: 0.3s; text-align: left; display: block; width: 100%; }
+    .tab-btn:hover { color: var(--text-main) !important; }
+    .tab-btn.active { color: var(--gold) !important; border-left-color: var(--gold); background: rgba(251,191,36,0.05); }
+    .tab-btn.text-yellow-400 { color: rgb(251 191 36) !important; }
+    .tab-btn.text-emerald-400 { color: rgb(52 211 153) !important; }
+    .tab-btn.text-red-500 { color: rgb(239 68 68) !important; }
+    .tab-btn.text-orange-400 { color: rgb(251 146 60) !important; }
+    .tab-btn.text-cyan-400 { color: rgb(34 211 238) !important; }
+    .tab-btn.text-blue-400 { color: rgb(96 165 250) !important; }
+    .tab-btn.text-pink-400 { color: rgb(244 114 182) !important; }
+    .tab-btn.text-amber-400 { color: rgb(251 191 36) !important; }
     .content-pane { display: none; animation: fadeIn 0.3s ease; height: 100%; width: 100%; overflow: auto; padding: 30px;}
     .content-pane.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -279,14 +288,14 @@
                 <button onclick="refreshData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm font-bold transition">
                     ↻ RECARGAR
                 </button>
-                <button onclick="google.script.run.importRoflJsonUI()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition">
+                <button onclick="openRoflImportModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition">
                     📄 IMPORTAR ROFL
                 </button>
             </div>
         </div>
 
         <div class="flex flex-1 overflow-hidden w-full">
-            <div class="flex flex-col bg-black/40 w-64 flex-shrink-0 overflow-y-auto border-r border-slate-800 hidden md:flex pb-20 custom-scrollbar">
+            <div class="flex flex-col bg-[#0b0f19] w-64 flex-shrink-0 overflow-y-auto border-r border-slate-800 hidden md:flex pb-20 custom-scrollbar">
                 <div class="tab-btn active whitespace-nowrap" id="btn-tab-news" onclick="switchTab('news', this)">📺 TV NOTICIAS</div>
                 <div class="tab-btn whitespace-nowrap" id="btn-tab-matches" onclick="switchTab('matches', this)">🗓️ CALENDARIO</div>
                 <div class="tab-btn whitespace-nowrap" id="btn-tab-standings" onclick="switchTab('standings', this)">🏆 CLASIFICACIÓN</div>
@@ -672,8 +681,6 @@
                 </div>
             </div>
 
-            <!-- 📊 PLAYER COMPARISON TAB (ELIMINADO) -->
-
             <!-- 💬 TABLÓN DE NOTAS (TRASH TALK) TAB -->
             <div id="tab-vestuario" class="content-pane overflow-auto p-10">
                 <div class="max-w-2xl mx-auto">
@@ -1015,6 +1022,55 @@
     window.playoffsActive = false; 
     window.currentScoutPlayer = null;
 
+    const ROLE_CANON = { TOP: 'TOP', JNG: 'JNG', JUNGLE: 'JNG', JGL: 'JNG', MID: 'MID', MIDDLE: 'MID', ADC: 'ADC', BOTTOM: 'ADC', BOT: 'ADC', SUPP: 'SUPP', SUPPORT: 'SUPP', UTILITY: 'SUPP' };
+    const ROLE_ICONS = { TOP: '🛡️', JNG: '🌲', MID: '🔥', ADC: '🏹', SUPP: '💖' };
+    const ROLE_COLORS = { TOP: '#10b981', JNG: '#ef4444', MID: '#8b5cf6', ADC: '#f59e0b', SUPP: '#3b82f6' };
+    const QUINTETO_ROLES = ['TOP', 'JNG', 'MID', 'ADC', 'SUPP'];
+
+    function normalizePlayerRole(role) {
+        if (!role) return '';
+        const up = String(role).trim().toUpperCase();
+        return ROLE_CANON[up] || up;
+    }
+
+    function isBracketPlaceholderName(name) {
+        if (!name) return true;
+        const n = String(name).trim();
+        if (!n || n === 'TBD') return true;
+        return /^(ganador|perdedor|superviviente|seed\s)/i.test(n);
+    }
+
+    /** Mejor jugador por rol (mayor PTS) para el quinteto ideal */
+    function buildIdealQuintet(players) {
+        const out = {};
+        if (!players || !players.length) return out;
+        QUINTETO_ROLES.forEach(function(role) {
+            const pool = players.filter(function(p) { return normalizePlayerRole(p.role) === role; });
+            if (!pool.length) return;
+            out[role] = pool.sort(function(a, b) { return (parseFloat(b.points) || 0) - (parseFloat(a.points) || 0); })[0];
+        });
+        return out;
+    }
+
+    /** Separa 10 jugadores en dos equipos de 5 (win/loss o teamId 100/200) */
+    function splitPlayersIntoTeams(players) {
+        const winners = players.filter(function(p) {
+            return p.win === true || p.win === 'true' || String(p.result || '').toLowerCase().includes('win');
+        });
+        const losers = players.filter(function(p) { return winners.indexOf(p) === -1; });
+        if (winners.length === 5 && losers.length === 5) return { team1: winners, team2: losers };
+
+        const t100 = players.filter(function(p) { return Number(p.teamId) === 100; });
+        const t200 = players.filter(function(p) { return Number(p.teamId) === 200; });
+        if (t100.length === 5 && t200.length === 5) {
+            const k100 = t100.reduce(function(a, p) { return a + (p.k || 0); }, 0);
+            const k200 = t200.reduce(function(a, p) { return a + (p.k || 0); }, 0);
+            if (k100 >= k200) return { team1: t100, team2: t200 };
+            return { team1: t200, team2: t100 };
+        }
+        return { team1: winners.length ? winners : players.slice(0, 5), team2: losers.length ? losers : players.slice(5, 10) };
+    }
+
     let RIOT_VERSION = "15.4.1";
     (function() {
         let cached = localStorage.getItem('ddragon_v');
@@ -1304,8 +1360,10 @@
             `; 
         }
         let names = String(m.names || "").split(' vs '); 
-        let tA = names[0] && names[0].trim() !== 'TBD' ? names[0].trim() : (ghostA || 'TBD'); 
-        let tB = names[1] && names[1].trim() !== 'TBD' ? names[1].trim() : (ghostB || 'TBD');
+        let tA = (names[0] && !isBracketPlaceholderName(names[0])) ? names[0].trim() : (ghostA || names[0] || 'TBD'); 
+        let tB = (names[1] && !isBracketPlaceholderName(names[1])) ? names[1].trim() : (ghostB || names[1] || 'TBD');
+        if (ghostA && isBracketPlaceholderName(names[0])) tA = ghostA;
+        if (ghostB && isBracketPlaceholderName(names[1])) tB = ghostB;
         
         let sA = parseInt(m.sA) || 0; 
         let sB = parseInt(m.sB) || 0;
@@ -1354,9 +1412,107 @@
         `;
     }
 
+    /** Propaga ganadores/perdedores en el cache del bracket (UI) según partidos COMPLETED */
+    function propagatePlayoffBracketInCache(matches) {
+        const ADVANCE = {
+            'P1': { win: { id: 'P3', slot: 'A' }, lose: { id: 'P8', slot: 'A' } },
+            'P2': { win: { id: 'P3', slot: 'B' }, lose: { id: 'P9', slot: 'A' } },
+            'P3': { win: { id: 'P12', slot: 'A' }, lose: { id: 'P11', slot: 'A' } },
+            'P4': { win: { id: 'P6', slot: 'B' } },
+            'P5': { win: { id: 'P7', slot: 'B' } },
+            'P6': { win: { id: 'P8', slot: 'B' } },
+            'P7': { win: { id: 'P9', slot: 'B' } },
+            'P8': { win: { id: 'P10', slot: 'A' } },
+            'P9': { win: { id: 'P10', slot: 'B' } },
+            'P10': { win: { id: 'P11', slot: 'B' } },
+            'P11': { win: { id: 'P12', slot: 'B' } }
+        };
+        const findM = function(id) { return matches.find(function(m) { return String(m.id) === String(id); }); };
+        const winnerOfLocal = function(m) {
+            if (!m) return '';
+            let sA = parseInt(m.sA) || 0, sB = parseInt(m.sB) || 0;
+            if (sA === sB) return '';
+            let names = String(m.names || '').split(' vs ');
+            if (sA > sB) return !isBracketPlaceholderName(names[0]) ? names[0].trim() : '';
+            return !isBracketPlaceholderName(names[1]) ? names[1].trim() : '';
+        };
+        const loserOfLocal = function(m) {
+            if (!m) return '';
+            let sA = parseInt(m.sA) || 0, sB = parseInt(m.sB) || 0;
+            if (sA === sB) return '';
+            let names = String(m.names || '').split(' vs ');
+            if (sA > sB) return !isBracketPlaceholderName(names[1]) ? names[1].trim() : '';
+            return !isBracketPlaceholderName(names[0]) ? names[0].trim() : '';
+        };
+        Object.keys(ADVANCE).forEach(function(mid) {
+            const src = findM(mid);
+            if (!src || (parseInt(src.sA) || 0) === (parseInt(src.sB) || 0)) return;
+            const cfg = ADVANCE[mid];
+            const wName = winnerOfLocal(src);
+            const lName = loserOfLocal(src);
+            if (cfg.win && wName) {
+                const tgt = findM(cfg.win.id);
+                if (tgt) {
+                    let parts = String(tgt.names || 'TBD vs TBD').split(' vs ');
+                    if (cfg.win.slot === 'A') parts[0] = wName; else parts[1] = wName;
+                    tgt.names = parts[0].trim() + ' vs ' + (parts[1] || 'TBD').trim();
+                }
+            }
+            if (cfg.lose && lName) {
+                const tgt = findM(cfg.lose.id);
+                if (tgt) {
+                    let parts = String(tgt.names || 'TBD vs TBD').split(' vs ');
+                    if (cfg.lose.slot === 'A') parts[0] = lName; else parts[1] = lName;
+                    tgt.names = parts[0].trim() + ' vs ' + (parts[1] || 'TBD').trim();
+                }
+            }
+        });
+    }
+
     function renderPlayoffsTree() {
         if(!tournamentDataCache || !tournamentDataCache.matches) return;
         const matches = tournamentDataCache.matches;
+        propagatePlayoffBracketInCache(matches);
+        const teams = tournamentDataCache.teams || [];
+
+        // Helper: find team name by id
+        const teamName = (id) => {
+            let t = teams.find(t => String(t.id) === String(id));
+            return t ? t.name : String(id);
+        };
+
+        // Helper: get winner name of a match (returns '' if not played)
+        const winnerOf = (m) => {
+            if (!m) return '';
+            let sA = parseInt(m.sA) || 0, sB = parseInt(m.sB) || 0;
+            if (m.status !== 'COMPLETED' && sA === sB) return '';
+            let names = String(m.names || '').split(' vs ');
+            if (sA > sB) {
+                let n = (names[0] || '').trim();
+                return !isBracketPlaceholderName(n) ? n : teamName(m.tA);
+            }
+            if (sB > sA) {
+                let n = (names[1] || '').trim();
+                return !isBracketPlaceholderName(n) ? n : teamName(m.tB);
+            }
+            return '';
+        };
+
+        const loserOf = (m) => {
+            if (!m) return '';
+            let sA = parseInt(m.sA) || 0, sB = parseInt(m.sB) || 0;
+            if (m.status !== 'COMPLETED' && sA === sB) return '';
+            let names = String(m.names || '').split(' vs ');
+            if (sA > sB) {
+                let n = (names[1] || '').trim();
+                return !isBracketPlaceholderName(n) ? n : teamName(m.tB);
+            }
+            if (sB > sA) {
+                let n = (names[0] || '').trim();
+                return !isBracketPlaceholderName(n) ? n : teamName(m.tA);
+            }
+            return '';
+        };
 
         // 🟢 Helper flexible: busca partidos probando varios nombres de ronda
         const findByRound = (...keywords) => {
@@ -1371,7 +1527,7 @@
         let ubSemi = findByRound('ub semi', 'upper semi');
         let ubFinal = findByRound('ub final', 'upper final');
 
-        // Play-In: intentar R1/R2 separados primero, si no, partir "Play-In" genérico
+        // Play-In
         let piR1 = findByRound('play-in r1');
         let piR2 = findByRound('play-in r2');
         if (piR1.length === 0 && piR2.length === 0) {
@@ -1390,6 +1546,36 @@
             return r.includes('gran final') || (r.includes('final') && !r.includes('ub') && !r.includes('lb') && !r.includes('upper') && !r.includes('lower'));
         });
 
+        // ── Propagate winners into next-round ghost names ──
+        // UB Semi → UB Final
+        let ubFinalGhostA = winnerOf(ubSemi[0]) || 'Ganador UB Semi 1';
+        let ubFinalGhostB = winnerOf(ubSemi[1]) || 'Ganador UB Semi 2';
+
+        // UB Final → Gran Final
+        let granFinalGhostA = winnerOf(ubFinal[0]) || 'Ganador Upper';
+
+        // Play-In R1 → Play-In R2 (winners advance)
+        let piR2GhostA_B = winnerOf(piR1[0]) || 'Ganador PI R1-A';
+        let piR2GhostB_B = winnerOf(piR1[1]) || 'Ganador PI R1-B';
+
+        // LB R1: loser UB Semi drops here
+        let lbR1GhostA_A = loserOf(ubSemi[0]) || 'Perdedor UB Semi 1';
+        let lbR1GhostB_A = loserOf(ubSemi[1]) || 'Perdedor UB Semi 2';
+        // LB R1 survivor from PI R2
+        let lbR1GhostA_B = winnerOf(piR2[0]) || 'Superviviente PI';
+        let lbR1GhostB_B = winnerOf(piR2[1]) || 'Superviviente PI';
+
+        // LB Semi
+        let lbSemiGhostA = winnerOf(lbR1[0]) || 'Ganador LBR1 A';
+        let lbSemiGhostB = winnerOf(lbR1[1]) || 'Ganador LBR1 B';
+
+        // LB Final
+        let lbFinalGhostA = loserOf(ubFinal[0]) || 'Perdedor UB Final';
+        let lbFinalGhostB = winnerOf(lbSemi[0]) || 'Ganador LB Semi';
+
+        // Gran Final lower slot
+        let granFinalGhostB = winnerOf(lbFinal[0]) || 'Ganador Lower';
+
         let badgeBo3 = ' <span class="bg-orange-600 text-black px-1.5 py-0.5 rounded ml-1 font-black tracking-widest shadow-[0_0_8px_rgba(234,88,12,0.8)] align-middle text-[8px]">BO3 FEARLESS</span>';
 
         let html = `
@@ -1403,10 +1589,10 @@
                         ${buildMatchBox(ubSemi[1], 'UB Semifinal' + badgeBo3, true, 'Seed 2º', 'Seed 3º')}
                     </div>
                     <div class="flex flex-col justify-center gap-12">
-                        ${buildMatchBox(ubFinal[0], 'UB Final' + badgeBo3, true, 'Ganador UB Semi 1', 'Ganador UB Semi 2')}
+                        ${buildMatchBox(ubFinal[0], 'UB Final' + badgeBo3, true, ubFinalGhostA, ubFinalGhostB)}
                     </div>
                     <div class="flex flex-col justify-center gap-12">
-                        ${buildMatchBox(granFinal[0], 'GRAN FINAL' + badgeBo3, true, 'Ganador Upper', 'Ganador Lower')}
+                        ${buildMatchBox(granFinal[0], 'GRAN FINAL' + badgeBo3, true, granFinalGhostA, granFinalGhostB)}
                     </div>
                 </div>
             </div>
@@ -1426,27 +1612,27 @@
                     <!-- Col 2: Play-In R2 -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">Play-In Ronda 2</div>
-                        ${buildMatchBox(piR2[0], 'Play-In R2' + badgeBo3, true, 'Seed 5º', 'Ganador PI R1')}
-                        ${buildMatchBox(piR2[1], 'Play-In R2' + badgeBo3, true, 'Seed 6º', 'Ganador PI R1')}
+                        ${buildMatchBox(piR2[0], 'Play-In R2' + badgeBo3, true, 'Seed 5º', piR2GhostA_B)}
+                        ${buildMatchBox(piR2[1], 'Play-In R2' + badgeBo3, true, 'Seed 6º', piR2GhostB_B)}
                     </div>
 
                     <!-- Col 3: Lower Bracket R1 -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">LB Ronda 1</div>
-                        ${buildMatchBox(lbR1[0], 'LB Ronda 1' + badgeBo3, true, '[Perdedor UB Semi 1]', 'Superviviente PI')}
-                        ${buildMatchBox(lbR1[1], 'LB Ronda 1' + badgeBo3, true, '[Perdedor UB Semi 2]', 'Superviviente PI')}
+                        ${buildMatchBox(lbR1[0], 'LB Ronda 1' + badgeBo3, true, lbR1GhostA_A, lbR1GhostA_B)}
+                        ${buildMatchBox(lbR1[1], 'LB Ronda 1' + badgeBo3, true, lbR1GhostB_A, lbR1GhostB_B)}
                     </div>
 
                     <!-- Col 4: Lower Bracket Semi -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">LB Semifinal</div>
-                        ${buildMatchBox(lbSemi[0], 'LB Semifinal' + badgeBo3, true, 'Ganador LBR1 A', 'Ganador LBR1 B')}
+                        ${buildMatchBox(lbSemi[0], 'LB Semifinal' + badgeBo3, true, lbSemiGhostA, lbSemiGhostB)}
                     </div>
 
                     <!-- Col 5: Lower Bracket Final -->
                     <div class="flex flex-col justify-center gap-8">
                         <div class="text-[9px] text-slate-500 font-bold uppercase text-center mb-2 tracking-widest">LB Final</div>
-                        ${buildMatchBox(lbFinal[0], 'LB Final' + badgeBo3, true, '[Perdedor UB Final]', 'Ganador LB Semi')}
+                        ${buildMatchBox(lbFinal[0], 'LB Final' + badgeBo3, true, lbFinalGhostA, lbFinalGhostB)}
                     </div>
                 </div>
             </div>
@@ -2153,8 +2339,8 @@
                 const pA_list = globalStatsData.filter(p => p.team === nameA);
                 const pB_list = globalStatsData.filter(p => p.team === nameB);
 
-                const roleColors = {'TOP':'#10b981','JUNGLE':'#ef4444','MIDDLE':'#8b5cf6','BOTTOM':'#f59e0b','SUPPORT':'#3b82f6'};
-                const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
+                const roleColors = {'TOP':'#10b981','JNG':'#ef4444','MID':'#8b5cf6','ADC':'#f59e0b','SUPP':'#3b82f6'};
+                const roles = ['TOP', 'JNG', 'MID', 'ADC', 'SUPP'];
 
                 const calcTeamAdvanced = (teamInfo, players, backendData) => {
                     let totalGames = teamInfo.w + teamInfo.l;
@@ -3008,29 +3194,19 @@
             if (uniqueTeams.indexOf(currentTeam) !== -1) teamSelect.value = currentTeam; 
         }
         
-        const getBest = role => {
-            if (!globalStatsData) return null;
-            return globalStatsData.filter(p => {
-                if (!p.role) return false;
-                return p.role.trim().toUpperCase() === role.trim().toUpperCase();
-            }).sort((a,b) => (b.points || 0) - (a.points || 0))[0];
-        };
-        const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']; 
-        const roleIcons = {'TOP':'🛡️','JUNGLE':'🌲','MIDDLE':'🔥','BOTTOM':'🏹','SUPPORT':'💖'}; 
-        const roleColors = {'TOP':'#10b981','JUNGLE':'#ef4444','MIDDLE':'#8b5cf6','BOTTOM':'#f59e0b','SUPPORT':'#3b82f6'};
-        
         // === QUINTETO IDEAL: Mejor por Rol según el filtro actual ===
         const activeRoundFilter = document.getElementById('filter-round') ? document.getElementById('filter-round').value : 'ALL';
         const quintetoLabel = activeRoundFilter === 'ALL' ? 'ACUMULADO (TODAS LAS JORNADAS)' : activeRoundFilter.toUpperCase();
+        const idealQuintet = buildIdealQuintet(globalStatsData);
         
         let qHtml = `<div class="mb-3 flex items-center gap-3">
             <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">⭐ QUINTETO IDEAL —</div>
             <div class="text-[10px] font-black text-yellow-400 uppercase tracking-widest bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30">${quintetoLabel}</div>
         </div>
         <div class="grid grid-cols-5 gap-3 w-full">`;
-        roles.forEach(r => {
-            let best = getBest(r);
-            let color = roleColors[r];
+        QUINTETO_ROLES.forEach(r => {
+            let best = idealQuintet[r];
+            let color = ROLE_COLORS[r];
             // Encontrar logo del equipo del mejor jugador
             let teamLogo = '';
             if (best && tournamentDataCache && tournamentDataCache.teams) {
@@ -3041,7 +3217,7 @@
                 let tIcon = best.trend === 'ON_FIRE' ? '🔥' : (best.trend === 'COLD' ? '❄️' : '');
                 qHtml += `
                     <div class="bg-slate-900 border-t-4 p-3 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:scale-105 transition-all shadow-lg relative group" style="border-color: ${color}" onclick="openScouting('${enc(best.name)}')">
-                        <div class="text-2xl mb-1">${roleIcons[r]}</div>
+                        <div class="text-2xl mb-1">${ROLE_ICONS[r]}</div>
                         ${teamLogo ? `<img src="${teamLogo}" class="w-6 h-6 object-contain mb-1 opacity-70 group-hover:opacity-100 transition" onerror="this.style.display='none'">` : ''}
                         <div class="font-oswald text-white font-bold text-[11px] truncate w-full text-center leading-tight" title="${escHtml(best.name)}">
                             ${escHtml(best.name)}${tIcon ? `<span class="ml-0.5 text-xs">${tIcon}</span>` : ''}
@@ -3054,7 +3230,7 @@
             } else {
                 qHtml += `
                     <div class="bg-slate-900/50 border-t-4 border-slate-700 p-3 rounded-xl flex flex-col items-center justify-center opacity-50">
-                        <div class="text-2xl mb-1">${roleIcons[r]}</div>
+                        <div class="text-2xl mb-1">${ROLE_ICONS[r]}</div>
                         <div class="font-oswald text-slate-500 font-bold text-[10px] uppercase">Vacante</div>
                     </div>
                 `;
@@ -3276,6 +3452,14 @@
         header.innerHTML = '<h2 class="text-3xl font-oswald text-white tracking-widest">📊 OBTENIENDO DATOS...</h2>'; 
         content.innerHTML = '<div class="col-span-2 text-center text-yellow-500 py-20 animate-pulse font-bold tracking-widest text-xl">📡 CONECTANDO...</div>';
 
+        let matchForLobby = tournamentDataCache && tournamentDataCache.matches
+            ? tournamentDataCache.matches.find(function(m) {
+                return m.id === matchId || m.riotId === searchId ||
+                    (m.riotId && String(m.riotId).split(',').map(function(x){ return x.trim(); }).indexOf(String(searchId).trim()) !== -1);
+            })
+            : null;
+        const lobbySearchId = (matchForLobby && matchForLobby.riotId) ? matchForLobby.riotId : searchId;
+
         google.script.run.withSuccessHandler(function(res) {
             if(res.error) { 
                 content.innerHTML = '<div class="col-span-2 text-red-500 text-center py-10">' + res.error + '</div>'; 
@@ -3288,10 +3472,24 @@
                 adminResolveBtn = '<button onclick="resolveMatchAwards(\'' + matchId + '\')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg transition flex items-center gap-2">🔒 CERRAR ACTA</button>'; 
             }
             
-            let matchInDb = tournamentDataCache.matches.find(m => m.riotId === searchId || m.id === matchId);
+            let matchInDb = matchForLobby;
             let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">🎬 VER REPETICIÓN</button>' : '';
 
+            let seriesBanner = '';
+            if (res.seriesScore && res.seriesScore.games > 1) {
+                seriesBanner = '<div class="col-span-2 mb-4 bg-slate-900 border border-yellow-500/40 rounded-xl px-6 py-3 flex items-center justify-center gap-8"><span class="text-blue-400 font-oswald text-3xl font-black">' + res.seriesScore.winsBlue + '</span><span class="text-slate-500 font-bold">SERIE BO' + res.seriesScore.games + '</span><span class="text-red-400 font-oswald text-3xl font-black">' + res.seriesScore.winsRed + '</span></div>';
+            }
+
             header.innerHTML = '<div class="flex items-center gap-4"><h2 class="text-3xl font-oswald text-white tracking-widest">ACTA OFICIAL <span class="text-yellow-500">' + matchId + '</span></h2></div><div class="flex gap-3 items-center">' + vodBtn + adminResolveBtn + '<button onclick="generateMatchSummaryImage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MATCH</button><button onclick="generateMVPImage()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MVP</button><button onclick="copyDiscordSummary()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold px-4 py-2 rounded shadow-lg transition">📋 COPIAR</button><button onclick="closeModal(\'postgame-modal\')" class="text-slate-400 hover:text-white text-4xl font-bold ml-4">&times;</button></div>';
+
+            if ((!res.winners || res.winners.length !== 5) && res.losers) {
+                var allPl = (res.winners || []).concat(res.losers || []);
+                if (allPl.length >= 10) {
+                    var splitFix = splitPlayersIntoTeams(allPl);
+                    res.winners = splitFix.team1;
+                    res.losers = splitFix.team2;
+                }
+            }
 
             const renderTeam = function(players, isWinner) {
                 const borderColor = isWinner ? 'border-blue-500' : 'border-red-500';
@@ -3538,7 +3736,7 @@
             
             let losMapHtml = res.losers.map(p => '<div class="flex items-center gap-3 opacity-50 hover:opacity-100 cursor-pointer transition"><img src="' + getChampIcon(p.champ) + '" class="w-8 h-8 rounded border border-slate-700" onerror="this.style.display=\'none\'"><div class="text-left"><div class="text-xs font-bold text-white">' + escHtml(p.name) + '</div><div class="text-[10px] text-slate-400">' + p.k + '/' + p.d + '/' + p.a + '</div></div></div>').join('');
 
-            content.innerHTML = '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
+            content.innerHTML = seriesBanner + '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
 
             // Renderizar gráficos (Chart.js)
             renderGoldChart(realGoldDiff);
@@ -3681,7 +3879,7 @@
                 }
             });
 
-        }).getPostGameLobbyData(searchId);
+        }).getPostGameLobbyData(lobbySearchId);
     }
 
     function generateMatchSummaryImage() {
@@ -4591,7 +4789,7 @@
             <div class="flex flex-col gap-3 p-4 bg-slate-800/30 rounded-xl">
         `;
 
-        const rolesOrder = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
+        const rolesOrder = ['TOP', 'JNG', 'MID', 'ADC', 'SUPP'];
         const roleIcons = {'TOP':'🛡️','JUNGLE':'🌲','MIDDLE':'🔥','BOTTOM':'🏹','SUPPORT':'💖'};
         
         let pA_list = globalStatsData.filter(p => p.team === tA.name);
@@ -5959,6 +6157,318 @@
         google.script.run.withSuccessHandler(pokerRefreshState).pokerDoAction('🤖 BOT-WARGOD', botAct);
     }
 </script>
+
+<!-- ROFL IMPORT MODAL v2 -->
+<div id="rofl-modal" class="fixed inset-0 bg-black/80 z-[9999] items-center justify-center backdrop-blur-sm" style="display:none;align-items:center;justify-content:center;">
+    <div class="bg-[#0f172a] border border-indigo-500/40 rounded-2xl w-full max-w-2xl shadow-2xl relative mx-4" style="max-height:90vh;overflow-y:auto;">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">📂</span>
+                <div>
+                    <h2 class="text-xl font-oswald text-white tracking-widest">IMPORTAR ROFL</h2>
+                    <p class="text-slate-500 text-[11px] font-medium uppercase tracking-wider">Sube las repeticiones directamente</p>
+                </div>
+            </div>
+            <button onclick="closeRoflModal()" class="text-slate-500 hover:text-white text-3xl font-bold leading-none transition">&times;</button>
+        </div>
+        <div class="p-6 space-y-5">
+            <div>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">🏆 Partido del Torneo</label>
+                <select id="rofl-match-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg text-white px-4 py-3 font-bold text-sm outline-none focus:border-indigo-500 transition">
+                    <option value="">Cargando partidos...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">📄 Archivos .ROFL de la Serie <span class="text-slate-500 font-normal normal-case tracking-normal">(arrastra o haz clic — máx. 3)</span></label>
+                <div id="rofl-dropzone" class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer transition hover:border-indigo-500 hover:bg-indigo-500/5"
+                    onclick="document.getElementById('rofl-file-input').click()"
+                    ondragover="event.preventDefault();this.classList.add('border-indigo-500','bg-indigo-500/10')"
+                    ondragleave="this.classList.remove('border-indigo-500','bg-indigo-500/10')"
+                    ondrop="handleRoflDrop(event)">
+                    <div id="rofl-drop-hint">
+                        <div class="text-4xl mb-2">🎮</div>
+                        <p class="text-slate-400 font-bold text-sm">Arrastra los archivos .rofl aquí</p>
+                        <p class="text-slate-600 text-xs mt-1">o haz clic para seleccionar (hasta 3 archivos)</p>
+                    </div>
+                    <div id="rofl-files-list" class="hidden space-y-2 text-left"></div>
+                    <input type="file" id="rofl-file-input" accept=".rofl" multiple class="hidden" onchange="handleRoflFileInput(this)">
+                </div>
+            </div>
+            <div id="rofl-scoreboard" class="hidden bg-slate-900/60 border border-slate-700/50 rounded-xl p-4">
+                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center mb-3">Resultado detectado</p>
+                <div class="flex items-center justify-center gap-6">
+                    <div class="text-center">
+                        <div id="rofl-score-a" class="text-5xl font-oswald text-blue-400">0</div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Lado Azul</div>
+                    </div>
+                    <div class="text-slate-600 text-3xl font-bold">–</div>
+                    <div class="text-center">
+                        <div id="rofl-score-b" class="text-5xl font-oswald text-red-400">0</div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Lado Rojo</div>
+                    </div>
+                </div>
+                <div id="rofl-game-tags" class="flex gap-2 flex-wrap justify-center mt-3"></div>
+            </div>
+            <div id="rofl-loading-bar" class="hidden text-center py-4">
+                <span class="text-2xl block mb-1">📡</span>
+                <p class="text-yellow-400 animate-pulse font-bold tracking-widest text-sm">IMPORTANDO Y CALCULANDO SCORES...</p>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                    <div class="bg-indigo-500 h-full rounded-full animate-pulse" style="width:70%"></div>
+                </div>
+            </div>
+            <div id="rofl-result-msg" class="hidden rounded-lg p-4 text-sm font-medium border"></div>
+        </div>
+        <div id="rofl-footer" class="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/50">
+            <button onclick="closeRoflModal()" class="px-5 py-2 text-slate-400 hover:text-white transition font-bold text-sm rounded-lg hover:bg-slate-800">CANCELAR</button>
+            <button id="rofl-submit-btn" onclick="submitRoflFiles()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg font-black text-sm shadow-lg transition flex items-center gap-2">
+                <span>📤</span> IMPORTAR SERIE
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+var _roflSeries = [];
+
+function closeRoflModal() {
+    document.getElementById('rofl-modal').style.display = 'none';
+    _roflSeries = [];
+    _renderRoflUI();
+}
+
+function openRoflImportModal() {
+    _roflSeries = [];
+    _renderRoflUI();
+    document.getElementById('rofl-result-msg').classList.add('hidden');
+    document.getElementById('rofl-loading-bar').classList.add('hidden');
+    document.getElementById('rofl-footer').style.display = 'flex';
+    document.getElementById('rofl-modal').style.display = 'flex';
+    _loadPendingMatches();
+}
+
+function _loadPendingMatches() {
+    var sel = document.getElementById('rofl-match-select');
+    sel.innerHTML = '<option value="">Cargando...</option>';
+    google.script.run.withSuccessHandler(function(matches) {
+        if (!matches || matches.length === 0) {
+            sel.innerHTML = '<option value="">Sin partidos pendientes</option>';
+            return;
+        }
+        sel.innerHTML = '<option value="">— Elige el partido —</option>' +
+            matches.map(function(m) {
+                return '<option value="' + m.id + '">' + m.id + ' — ' + m.name + (m.round ? ' (' + m.round + ')' : '') + '</option>';
+            }).join('');
+    }).withFailureHandler(function() {
+        sel.innerHTML = '<option value="">Error al cargar</option>';
+    }).getPendingTournamentMatches();
+}
+
+function handleRoflDrop(e) {
+    e.preventDefault();
+    document.getElementById('rofl-dropzone').classList.remove('border-indigo-500', 'bg-indigo-500/10');
+    var files = Array.from(e.dataTransfer.files).filter(function(f){ return f.name.endsWith('.rofl'); });
+    _processRoflFiles(files);
+}
+
+function handleRoflFileInput(input) {
+    var files = Array.from(input.files).filter(function(f){ return f.name.endsWith('.rofl'); });
+    input.value = '';
+    _processRoflFiles(files);
+}
+
+async function _processRoflFiles(files) {
+    if (!files.length) return;
+    if (_roflSeries.length + files.length > 3) {
+        alert('Máximo 3 archivos para una serie Bo3. Ya tienes ' + _roflSeries.length + ' cargados.');
+        return;
+    }
+    for (var i = 0; i < files.length; i++) {
+        await _parseSingleRofl(files[i]);
+    }
+    _renderRoflUI();
+}
+
+async function _parseSingleRofl(file) {
+    try {
+        var buffer = await file.arrayBuffer();
+        var text   = new TextDecoder('utf-8').decode(new Uint8Array(buffer));
+        var meta   = _extractRoflMetadata(text);
+        if (!meta) throw new Error('No se encontró metadata válida en ' + file.name);
+
+        var players = meta.statsJson
+            ? (typeof meta.statsJson === 'string' ? JSON.parse(meta.statsJson) : meta.statsJson)
+            : (Array.isArray(meta) ? meta : meta.participants);
+        if (!players) throw new Error('No se encontraron jugadores en ' + file.name);
+
+        var durationMin = Math.max(1, (meta.gameLength || meta.gameDuration || 60000) / 60000);
+        var teamKills = {};
+        players.forEach(function(p) {
+            var tid = p.TEAM || p.teamId || 0;
+            teamKills[tid] = (teamKills[tid] || 0) + parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
+        });
+
+        var exportData = {
+            source: 'ROFL_PARSER',
+            timestamp: new Date().toISOString(),
+            gameDuration: Math.floor((meta.gameLength || 60000) / 1000),
+            gameVersion:  meta.gameVersion || 'Unknown',
+            bans: [],
+            participants: players.map(function(p) {
+                var name   = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || 'Desconocido';
+                var skin   = p.SKIN || p.championName || p.CHAMPION || 'Unknown';
+                var win    = p.WIN === 'Win' || p.WIN === 'true' || p.WIN === true || p.win === true;
+                var teamId = parseInt(p.TEAM || p.teamId || 0);
+                var k = parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
+                var d = parseInt(p.NUM_DEATHS || p.deaths || 0);
+                var a = parseInt(p.ASSISTS || p.assists || 0);
+                var dmg  = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
+                var gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
+                var vis  = parseInt(p.VISION_SCORE || p.visionScore || 0);
+                var cs   = parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) + parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
+                var kp   = teamKills[teamId] > 0 ? ((k+a) / teamKills[teamId] * 100).toFixed(1) : '0.0';
+                var items  = [0,1,2,3,4,5,6].map(function(i){ return parseInt(p['ITEM'+i]||0); });
+                var spells = [parseInt(p.SUMMONER_SPELL_1||0), parseInt(p.SUMMONER_SPELL_2||0)];
+                return {
+                    summonerName: name, championName: skin, lane: p.INDIVIDUAL_POSITION || p.TEAM_POSITION || '',
+                    teamId: teamId, win: win, kills: k, deaths: d, assists: a,
+                    totalDamageDealtToChampions: dmg, goldEarned: gold, visionScore: vis, totalMinionsKilled: cs,
+                    csMin: parseFloat((cs/durationMin).toFixed(2)),
+                    gpm: Math.floor(gold/durationMin), dpm: Math.floor(dmg/durationMin),
+                    vspm: parseFloat((vis/durationMin).toFixed(2)), kp: parseFloat(kp),
+                    items: items, spells: spells,
+                    pinks: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME||0),
+                    wardPlaced: parseInt(p.WARD_PLACED||0), wardKilled: parseInt(p.WARD_KILLED||0),
+                    pentas: parseInt(p.PENTA_KILLS||0)
+                };
+            })
+        };
+
+        var winSide = _detectRoflWinner(players);
+        _roflSeries.push({ exportData: exportData, winner: winSide, fileName: file.name });
+
+    } catch(err) {
+        alert('Error parseando ' + file.name + ': ' + err.message);
+    }
+}
+
+function _extractRoflMetadata(text) {
+    var idx = text.indexOf('{"gameLength"');
+    if (idx === -1) idx = text.indexOf('{"gameDuration"');
+    if (idx === -1) idx = text.indexOf('{"statsJson"');
+    if (idx === -1) { var ki = text.indexOf('"statsJson"'); if(ki !== -1) idx = text.lastIndexOf('{', ki); }
+    if (idx === -1) return null;
+    var chunk = text.substring(idx);
+    var jsonStr = '', braces = 0, inStr = false, esc = false;
+    for (var i = 0; i < chunk.length; i++) {
+        var c = chunk[i]; jsonStr += c;
+        if (esc) { esc = false; continue; }
+        if (c === '\\\\') { esc = true; continue; }
+        if (c === '"') inStr = !inStr;
+        else if (!inStr) { if (c === '{') braces++; else if (c === '}') { braces--; if(braces===0) break; } }
+    }
+    if (!jsonStr.endsWith('}')) return null;
+    try { return JSON.parse(jsonStr); } catch(e) { return null; }
+}
+
+function _detectRoflWinner(players) {
+    var w = players.find(function(p){ return p.WIN==='Win'||p.WIN===true||p.WIN==='true'||p.win===true; });
+    return w ? String(w.TEAM || w.teamId || '100') : null;
+}
+
+function _removeRoflGame(idx) {
+    _roflSeries.splice(idx, 1);
+    _renderRoflUI();
+}
+
+function _renderRoflUI() {
+    var hint       = document.getElementById('rofl-drop-hint');
+    var list       = document.getElementById('rofl-files-list');
+    var scoreboard = document.getElementById('rofl-scoreboard');
+    var tags       = document.getElementById('rofl-game-tags');
+
+    if (!_roflSeries.length) {
+        if(hint) hint.style.display = 'block';
+        if(list) list.classList.add('hidden');
+        if(scoreboard) scoreboard.classList.add('hidden');
+        return;
+    }
+
+    if(hint) hint.style.display = 'none';
+    if(list) {
+        list.classList.remove('hidden');
+        var winsA = _roflSeries.filter(function(g){ return g.winner === '100'; }).length;
+        var winsB = _roflSeries.filter(function(g){ return g.winner === '200'; }).length;
+
+        list.innerHTML = _roflSeries.map(function(g, i) {
+            var winIcon = g.winner === '100' ? '🔵' : g.winner === '200' ? '🔴' : '❓';
+            return '<div class="flex items-center justify-between bg-slate-800/60 rounded-lg px-4 py-2.5 mt-2">' +
+                '<div class="flex items-center gap-2">' +
+                '<span class="text-base">' + winIcon + '</span>' +
+                '<span class="text-white text-sm font-bold">P' + (i+1) + '</span>' +
+                '<span class="text-slate-400 text-xs font-mono truncate" style="max-width:240px">' + g.fileName + '</span>' +
+                '</div>' +
+                '<button onclick="_removeRoflGame(' + i + ')" class="text-slate-600 hover:text-red-400 transition text-xl font-bold leading-none ml-3">✕</button>' +
+                '</div>';
+        }).join('');
+
+        if (_roflSeries.length > 1 && scoreboard) {
+            scoreboard.classList.remove('hidden');
+            document.getElementById('rofl-score-a').textContent = winsA;
+            document.getElementById('rofl-score-b').textContent = winsB;
+            if(tags) tags.innerHTML = _roflSeries.map(function(g, i){
+                var cls = g.winner==='100' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                          g.winner==='200' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                            'bg-slate-700 text-slate-400 border-slate-600';
+                var label = g.winner==='100' ? 'Azul' : g.winner==='200' ? 'Rojo' : '?';
+                return '<span class="text-[10px] px-2 py-1 rounded border font-bold ' + cls + '">P' + (i+1) + ' → ' + label + '</span>';
+            }).join('');
+        } else if(scoreboard) {
+            scoreboard.classList.add('hidden');
+        }
+    }
+}
+
+function submitRoflFiles() {
+    var matchId = document.getElementById('rofl-match-select').value;
+    if (!matchId) { alert('Elige el partido del torneo antes de importar.'); return; }
+    if (!_roflSeries.length) { alert('Sube al menos un archivo .rofl.'); return; }
+
+    var isSeries = _roflSeries.length > 1;
+    var payload;
+    if (isSeries) {
+        payload = {
+            source: 'ROFL_PARSER', seriesMode: true,
+            tournamentMatchId: matchId, timestamp: new Date().toISOString(),
+            games: _roflSeries.map(function(g){ return g.exportData; })
+        };
+    } else {
+        payload = _roflSeries[0].exportData;
+        payload.tournamentMatchId = matchId;
+    }
+
+    document.getElementById('rofl-loading-bar').classList.remove('hidden');
+    document.getElementById('rofl-footer').style.display = 'none';
+
+    google.script.run.withSuccessHandler(function(res) {
+        document.getElementById('rofl-loading-bar').classList.add('hidden');
+        var msgEl = document.getElementById('rofl-result-msg');
+        msgEl.classList.remove('hidden');
+        if (res && res.success) {
+            msgEl.className = 'rounded-lg p-4 text-sm font-medium border bg-green-500/10 border-green-500/30 text-green-400';
+            msgEl.innerHTML = '✅ ' + res.msg.replace(/\n/g, '<br>');
+            if (typeof loadAllData === 'function') setTimeout(loadAllData, 500);
+            setTimeout(function(){ document.getElementById('rofl-modal').style.display = 'none'; }, 4000);
+        } else {
+            msgEl.className = 'rounded-lg p-4 text-sm font-medium border bg-red-500/10 border-red-500/30 text-red-400';
+            msgEl.innerHTML = '❌ ' + (res ? res.msg : 'Error desconocido');
+            document.getElementById('rofl-footer').style.display = 'flex';
+        }
+    }).withFailureHandler(function(err) {
+        document.getElementById('rofl-loading-bar').classList.add('hidden');
+        document.getElementById('rofl-footer').style.display = 'flex';
+        alert('Error de red al importar: ' + err.message);
+    }).processRoflJsonBackend(JSON.stringify(payload));
+}
+</script>
 </body>
 </html>
-
