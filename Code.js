@@ -18806,7 +18806,6 @@ function getPostGameLobbyData(matchId) {
 
       if (isWin) winners.push(pData);
       else losers.push(pData);
-    }
   }
 
   // Contar mapas ganados por lado (100 = azul, 200 = rojo)
