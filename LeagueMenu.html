@@ -3276,7 +3276,7 @@
         const roleF = document.getElementById('filter-role').value; 
         const tbody = document.getElementById('stats-body');
         
-        let filtered = globalStatsData.filter(p => (teamF === 'ALL' || p.team === teamF) && (roleF === 'ALL' || (p.role && p.role.toUpperCase() === roleF)));
+        let filtered = globalStatsData.filter(p => (teamF === 'ALL' || p.team === teamF) && (roleF === 'ALL' || normalizePlayerRole(p.role) === normalizePlayerRole(roleF)));
         
         const crit = window.currentSortCriteria;
         const asc = window.sortAscending;
@@ -3441,6 +3441,20 @@
 
 
 
+    function getPostGameSeriesIds(matchForLobby, searchId) {
+        if (matchForLobby && matchForLobby.riotId && String(matchForLobby.riotId).indexOf(',') !== -1) {
+            return String(matchForLobby.riotId).split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+        if (searchId && String(searchId).indexOf(',') !== -1) {
+            return String(searchId).split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+        return [String(searchId || '').trim()].filter(Boolean);
+    }
+
+    function switchPostGameMap(gameId) {
+        openPostGame(window.lastPostGameMatchId, gameId);
+    }
+
     function openPostGame(matchId, searchId) {
         window.lastPostGameMatchId = matchId; 
         window.lastPostGameSearchId = searchId;
@@ -3458,7 +3472,11 @@
                     (m.riotId && String(m.riotId).split(',').map(function(x){ return x.trim(); }).indexOf(String(searchId).trim()) !== -1);
             })
             : null;
-        const lobbySearchId = (matchForLobby && matchForLobby.riotId) ? matchForLobby.riotId : searchId;
+        const seriesIds = getPostGameSeriesIds(matchForLobby, searchId);
+        let fetchGameId = seriesIds[seriesIds.length - 1] || searchId;
+        if (searchId && String(searchId).indexOf(',') === -1) fetchGameId = searchId;
+        window.postGameSeriesIds = seriesIds;
+        window.postGameActiveMapId = fetchGameId;
 
         google.script.run.withSuccessHandler(function(res) {
             if(res.error) { 
@@ -3476,8 +3494,18 @@
             let vodBtn = (matchInDb && matchInDb.vod) ? '<button onclick="openVod(\'' + matchInDb.vod + '\')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">🎬 VER REPETICIÓN</button>' : '';
 
             let seriesBanner = '';
-            if (res.seriesScore && res.seriesScore.games > 1) {
-                seriesBanner = '<div class="col-span-2 mb-4 bg-slate-900 border border-yellow-500/40 rounded-xl px-6 py-3 flex items-center justify-center gap-8"><span class="text-blue-400 font-oswald text-3xl font-black">' + res.seriesScore.winsBlue + '</span><span class="text-slate-500 font-bold">SERIE BO' + res.seriesScore.games + '</span><span class="text-red-400 font-oswald text-3xl font-black">' + res.seriesScore.winsRed + '</span></div>';
+            let mapTabsHtml = '';
+            if (window.postGameSeriesIds && window.postGameSeriesIds.length > 1) {
+                const tNames = matchInDb ? String(matchInDb.names || '').split(' vs ') : ['Equipo A', 'Equipo B'];
+                const sA = matchInDb ? (parseInt(matchInDb.sA, 10) || 0) : (res.seriesScore ? res.seriesScore.scoreA : 0);
+                const sB = matchInDb ? (parseInt(matchInDb.sB, 10) || 0) : (res.seriesScore ? res.seriesScore.scoreB : 0);
+                seriesBanner = '<div class="col-span-2 mb-2 bg-slate-900 border border-yellow-500/40 rounded-xl px-6 py-3 flex items-center justify-center gap-6 flex-wrap"><span class="text-blue-400 font-oswald text-2xl font-black truncate max-w-[140px]" title="' + escHtml(tNames[0]) + '">' + escHtml(tNames[0]) + ' <span class="text-4xl">' + sA + '</span></span><span class="text-slate-500 font-bold text-sm">SERIE BO' + window.postGameSeriesIds.length + '</span><span class="text-red-400 font-oswald text-2xl font-black truncate max-w-[140px]" title="' + escHtml(tNames[1] || '') + '"><span class="text-4xl">' + sB + '</span> ' + escHtml(tNames[1] || '') + '</span></div>';
+                mapTabsHtml = '<div class="col-span-2 flex gap-2 mb-4 flex-wrap" id="postgame-map-tabs">';
+                window.postGameSeriesIds.forEach(function(gid, idx) {
+                    const isActive = gid === window.postGameActiveMapId;
+                    mapTabsHtml += '<button type="button" class="' + (isActive ? 'bg-yellow-500 text-black' : 'bg-slate-800 text-slate-300 hover:bg-slate-700') + ' px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition" onclick="switchPostGameMap(\'' + gid.replace(/'/g, "\\'") + '\')">Mapa ' + (idx + 1) + '</button>';
+                });
+                mapTabsHtml += '</div>';
             }
 
             header.innerHTML = '<div class="flex items-center gap-4"><h2 class="text-3xl font-oswald text-white tracking-widest">ACTA OFICIAL <span class="text-yellow-500">' + matchId + '</span></h2></div><div class="flex gap-3 items-center">' + vodBtn + adminResolveBtn + '<button onclick="generateMatchSummaryImage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MATCH</button><button onclick="generateMVPImage()" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded shadow-lg transition">📸 MVP</button><button onclick="copyDiscordSummary()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold px-4 py-2 rounded shadow-lg transition">📋 COPIAR</button><button onclick="closeModal(\'postgame-modal\')" class="text-slate-400 hover:text-white text-4xl font-bold ml-4">&times;</button></div>';
@@ -3586,13 +3614,7 @@
             }
 
             const getNormRole = (r) => {
-                if(!r) return 'FILL'; let up = r.toUpperCase();
-                if(up.includes('TOP')) return 'TOP'; 
-                if(up.includes('JUNG') || up === 'JGL') return 'JGL';
-                if(up.includes('MID')) return 'MID'; 
-                if(up.includes('BOT') || up === 'ADC') return 'ADC';
-                if(up.includes('SUP') || up.includes('UTIL')) return 'SUP'; 
-                return 'FILL';
+                return normalizePlayerRole(r) === 'SUPP' ? 'SUP' : (normalizePlayerRole(r) === 'JNG' ? 'JGL' : normalizePlayerRole(r));
             };
 
             let rArr = ['TOP', 'JGL', 'MID', 'ADC', 'SUP'];
@@ -3736,7 +3758,7 @@
             
             let losMapHtml = res.losers.map(p => '<div class="flex items-center gap-3 opacity-50 hover:opacity-100 cursor-pointer transition"><img src="' + getChampIcon(p.champ) + '" class="w-8 h-8 rounded border border-slate-700" onerror="this.style.display=\'none\'"><div class="text-left"><div class="text-xs font-bold text-white">' + escHtml(p.name) + '</div><div class="text-[10px] text-slate-400">' + p.k + '/' + p.d + '/' + p.a + '</div></div></div>').join('');
 
-            content.innerHTML = seriesBanner + '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
+            content.innerHTML = seriesBanner + mapTabsHtml + '<div class="col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4"><button onclick="document.getElementById(\'overview-tab\').classList.remove(\'hidden\'); document.getElementById(\'map-tab\').classList.add(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.nextElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition">Resumen (Overview)</button><button onclick="document.getElementById(\'overview-tab\').classList.add(\'hidden\'); document.getElementById(\'map-tab\').classList.remove(\'hidden\'); this.classList.add(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.remove(\'text-white\', \'border-b-2\', \'border-white\'); this.previousElementSibling.classList.add(\'text-slate-500\');" class="text-sm font-bold text-slate-500 pb-2 px-2 transition">Replay Map</button></div><div id="overview-tab" class="col-span-1 lg:col-span-2 w-full"><div class="bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative"><div class="flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4">GOLD GRAPH & TIMELINE</div><div style="height: 200px; width: 100%;"><canvas id="goldTimelineChart"></canvas></div><div id="objective-timeline-container"></div><div id="momentum-tracker-container" class="mt-6 border-t border-slate-700 pt-4"></div></div>' + renderTeam(res.winners, true) + renderTeam(res.losers, false) + advancedStatsHtml + advTableHtml + '</div><div id="map-tab" class="hidden col-span-1 lg:col-span-2 w-full bg-[#1c1c1f] rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center bg-[#27272a] border-b border-slate-700 px-4 py-3"><h3 class="text-white font-bold flex items-center gap-2"><span class="w-3 h-3 bg-blue-500"></span> Replay Map</h3><span class="text-xs text-slate-400">Ver. ' + RIOT_VERSION + '</span></div><div class="flex p-6 h-[500px]"><div class="w-1/4 flex flex-col gap-2 pr-4"><div class="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 inline-block"></span> Blue Side</div>' + winMapHtml + '</div><div class="w-2/4 relative flex justify-center items-center bg-[#18181b] rounded-xl border border-slate-700 p-2"><div class="relative w-full max-w-[400px] aspect-square rounded overflow-hidden"><img src="https://ddragon.leagueoflegends.com/cdn/' + RIOT_VERSION + '/img/map/map11.png" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale" style="border-radius: 0.5rem; filter: invert(1) hue-rotate(180deg) opacity(0.3);" onerror="this.src=\'https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg\';"><div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-bold text-center p-4 z-10 pointer-events-none">El mapa de calor requiere coordenadas de la API.</div></div></div><div class="w-1/4 flex flex-col gap-2 pl-4"><div class="text-xs font-bold text-red-400 mb-2 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 inline-block"></span> Red Side</div>' + losMapHtml + '</div></div></div>';
 
             // Renderizar gráficos (Chart.js)
             renderGoldChart(realGoldDiff);
@@ -3879,7 +3901,7 @@
                 }
             });
 
-        }).getPostGameLobbyData(lobbySearchId);
+        }).getPostGameLobbyData(fetchGameId);
     }
 
     function generateMatchSummaryImage() {
