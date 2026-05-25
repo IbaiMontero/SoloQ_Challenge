@@ -1804,7 +1804,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           h_Deaths += Number(allMatchesData[r][7] || 0);
           h_Assists += Number(allMatchesData[r][8] || 0);
 
-          if (allMatchesData[r][5] === "Win") {
+          if (allMatchesData[r][5] .toString().includes('Win')) {
              champWins++;
              currentChampStreak++;
           } else {
@@ -1819,7 +1819,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     h_Deaths += d_stats;
     h_Assists += a;
 
-    if (result === "Win") {
+    if (result .toString().includes('Win')) {
         champWins++;
         currentChampStreak++;
     } else {
@@ -1883,18 +1883,18 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         // 1. Bono Especialista (Pool peque    a)
         if (totalUniqueChamps <= (cfg.specialist_threshold || 8)) {
             // ... (L    gica de Especialista se mantiene) ...
-             if (result === "Win" && isGoodPerformance && champGames >= 5) {
+             if (result .toString().includes('Win') && isGoodPerformance && champGames >= 5) {
                 pointsObj.total = safeAdd(pointsObj.total, 0.25);
                 pointsObj.notes.push(`       Especialista`);
             } 
-            else if (result !== "Win" && !isGoodPerformance && champGames >= 10) {
+            else if (!result.toString().includes("Win") && !isGoodPerformance && champGames >= 10) {
                  pointsObj.total = safeAdd(pointsObj.total, -1.0); 
                  pointsObj.notes.push(`             OTP Gap (Especialista fallido)`);
             }
         }
 
         // 2. C    lculo de Maestr    a PRO (Solo Victorias)
-        if (result === "Win") {
+        if (result .toString().includes('Win')) {
             if (typeof champGames !== 'undefined' && typeof realWR !== 'undefined') {
                 
                 if (!isGoodPerformance) {
@@ -2162,16 +2162,16 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         if (m.Tipo === 'KDA_SINGLE_GAME' && kda_val >= m.ValorRequerido) {
           completedThisGame = true;
         } 
-        else if (m.Tipo === 'PERFECT_GAME' && d_stats === 0 && result === 'Win') {
+        else if (m.Tipo === 'PERFECT_GAME' && d_stats === 0 && result .toString().includes('Win')) {
           completedThisGame = true;
         } 
-        else if (m.Tipo === 'DEATHS_LESS_THAN' && d_stats <= m.ValorRequerido && result === 'Win') {
+        else if (m.Tipo === 'DEATHS_LESS_THAN' && d_stats <= m.ValorRequerido && result .toString().includes('Win')) {
           completedThisGame = true; 
         }
         
         // 1. SUPP_DIFF
         else if (m.Tipo === 'STAT_COMPARISON' && m.Objetivo === 'KILLS_GT_ADC') {
-            if ((lane === 'UTILITY' || lane === 'SUPPORT') && result === 'Win') {
+            if ((lane === 'UTILITY' || lane === 'SUPPORT') && result .toString().includes('Win')) {
                 const myADC = participants.find(mate => mate.teamId === p.teamId && mate.teamPosition === 'BOTTOM');
                 if (myADC && k > (Number(myADC.kills) || 0)) {
                     completedThisGame = true;
@@ -2287,7 +2287,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
 
       /// C    LCULO DE RACHA (CORREGIDO)
     let newStreak = currentStreak;
-    if (result === "Win") {
+    if (result .toString().includes('Win')) {
       newStreak = (currentStreak > 0) ? currentStreak + 1 : 1;
       
       // CORRECCI     N 2: Usar safeAdd y valores por defecto si falta la config
@@ -7556,7 +7556,7 @@ function updateRanking() {
     stats.matches++;
     totalMatches++;
 
-    if (result === 'Win') {
+    if (result .toString().includes('Win')) {
         stats.wins++;
         if (stats.currentStreak >= 0) stats.currentStreak++;
         else stats.currentStreak = 1;
@@ -8142,7 +8142,7 @@ function getComparisonData(playerNames) {
          const pts = Number(row[12] || 0);
 
          // Acumuladores b    sicos
-         if (result === 'Win') stats.wins++; else stats.losses++;
+         if (result .toString().includes('Win')) stats.wins++; else stats.losses++;
          stats.kills += Number(row[6] || 0);
          stats.deaths += Number(row[7] || 0);
          stats.assists += Number(row[8] || 0);
@@ -8531,7 +8531,7 @@ function calculateStatsFromRows(rows) {
         const result = row[5]; // Columna F (Win/Loss)
         // Nota: En SoloQ individual no suele haber "Blue/Red side" guardado expl    citamente 
         // a menos que lo tengas. Aqu     contaremos Victorias/Derrotas globales.
-        if (result === 'Win') stats.blueWins++; // Usamos blueWins como contador de Victorias totales
+        if (result .toString().includes('Win')) stats.blueWins++; // Usamos blueWins como contador de Victorias totales
         else stats.redWins++; // Usamos redWins como contador de Derrotas totales
 
         // Sumar Roles
@@ -8689,7 +8689,7 @@ function getPlayerData(summonerName) {
              
             const stats = champMap.get(champ);
             stats.played++;
-            if (result === 'Win') {
+            if (result .toString().includes('Win')) {
                stats.wins++;
                summary.totalWins++;
             } else {
@@ -8786,7 +8786,7 @@ function getDataForDashboardV12() {
 
     if (roleStats[lane] && !isNaN(points)) {
       roleStats[lane].games++;
-      if (result === 'Win') roleStats[lane].wins++;
+      if (result .toString().includes('Win')) roleStats[lane].wins++;
       roleStats[lane].totalPoints += points;
       roleStats[lane].pointsHistory.push(points);
       totalGames++;
@@ -8857,7 +8857,7 @@ function recalculateAllStreaks() {
 
       if (!streakMap[summ]) streakMap[summ] = 0;
 
-      if (result === 'Win') {
+      if (result .toString().includes('Win')) {
           // Si ya estaba en racha positiva, suma 1. Si ven    a de derrota, empieza en 1.
           streakMap[summ] = (streakMap[summ] >= 0) ? streakMap[summ] + 1 : 1;
       } else if (result === 'Loss') {
@@ -8932,20 +8932,23 @@ function getBestPlayersByRoleV12() {
       for (const summ in rolePlayers[role]) {
         const stats = rolePlayers[role][summ];
         
-        // ---               NUEVA F     RMULA DE VETERAN    A ---
-        // 1. M    nimo 5 partidas para optar al t    tulo.
-        if (stats.games >= 5) {
+        // --- FÓRMULA DE VETERANÍA ---
+        // Mínimo 1 partida para optar al título (antes era 5, muy restrictivo).
+        // Con pocas partidas el factor de confianza penaliza la media.
+        if (stats.games >= 1) {
              const avg = stats.totalPoints / stats.games;
              
              // FACTOR DE CONFIANZA:
-             // - Si tienes < 10 partidas: Se reduce tu media (Castigo por muestra peque    a)
-             // - Si tienes > 10 partidas: Se bonifica tu media un 1.5% por cada partida extra.
-             // Ejemplo: 30 partidas = Media * 1.30 (+30% bonus por constancia)
-             let confidenceMult = 1.0 + ((stats.games - 10) * 0.015);
+             // - Si tienes < 3 partidas: se reduce tu media (muestra muy pequeña)
+             // - Si tienes >= 3 partidas: bonificación por consistencia
+             // Ejemplo: 10 partidas = Media * 1.0 (neutro); 20 = Media * 1.15
+             let confidenceMult = stats.games < 3
+               ? 0.70 + (stats.games * 0.10)  // 1 partida → ×0.80, 2 → ×0.90
+               : 1.0 + ((stats.games - 3) * 0.015);
              
              // Topes de seguridad
-             if (confidenceMult < 0.8) confidenceMult = 0.8; // M    nimo 80% del valor real
-             if (confidenceMult > 1.5) confidenceMult = 1.5; // M    ximo 150% del valor real
+             if (confidenceMult < 0.7) confidenceMult = 0.7;  // Mínimo 70%
+             if (confidenceMult > 1.5) confidenceMult = 1.5;  // Máximo 150%
 
              const weightedScore = avg * confidenceMult;
 
@@ -9071,7 +9074,7 @@ function getGlobalChallengeStats() {
     const duration = Number(row[H.DURATION] || 0); 
     const points = safeParse(row[H.POINTS]); 
     const role = row[H.LANE] || 'UNKNOWN';
-    const isWin = row[H.RESULT] === 'Win';
+    const isWin = row[H.RESULT] .toString().includes('Win');
     const gameKDA = (kills + assists) / (deaths === 0 ? 1 : deaths);
     const champName = row[H.CHAMP];
 
@@ -9380,8 +9383,8 @@ function SincronizarProgresoMisiones() {
 
            let completed = false;
            if (m.Tipo === 'KDA_SINGLE_GAME' && kda >= m.ValorRequerido) completed = true;
-           else if (m.Tipo === 'PERFECT_GAME' && d === 0 && result === 'Win') completed = true;
-           else if (m.Tipo === 'DEATHS_LESS_THAN' && d <= m.ValorRequerido && result === 'Win') completed = true;
+           else if (m.Tipo === 'PERFECT_GAME' && d === 0 && result .toString().includes('Win')) completed = true;
+           else if (m.Tipo === 'DEATHS_LESS_THAN' && d <= m.ValorRequerido && result .toString().includes('Win')) completed = true;
            
            if (completed) singleMissionCompleted[m.MissionID] = 1;
         }
@@ -9485,11 +9488,14 @@ function getEpicRankingData(seasonFilter) {
   if (playersLastRow < 2) return [];
   const pData = playersSheet.getRange(2, 1, playersLastRow - 1, 10).getValues();
   
+  const _normRk = (n) => String(n || '').split('#')[0]
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\xA0]/g, '').toLowerCase();
   const rankingMap = {};
   pData.forEach(row => {
     const name = row[0];
     if (name) {
-        rankingMap[name] = {
+        rankingMap[_normRk(name)] = {
             name: name, points: 0, w: 0, t: 0, 
             streak: Number(row[5] || 0), 
             rank: row[8], lp: row[9],
@@ -9515,10 +9521,11 @@ function getEpicRankingData(seasonFilter) {
             continue; 
         }
 
-        if (rankingMap[summ] && !isNaN(points)) {
-            rankingMap[summ].points += points;
-            rankingMap[summ].t++;
-            if (res === 'Win') rankingMap[summ].w++;
+        const _sNorm = _normRk(summ);
+        if (rankingMap[_sNorm] && !isNaN(points)) {
+            rankingMap[_sNorm].points += points;
+            rankingMap[_sNorm].t++;
+            if (res.toString().includes('Win')) rankingMap[_sNorm].w++;
         }
       }
   }
@@ -9650,7 +9657,7 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_URL")) return;
 
-  const isWin = result === "Win";
+  const isWin = result .toString().includes('Win');
   const pts = Number(points);
   
   // --- 1. GESTI     N DE COLORES (Escala Ampliada) ---
@@ -10149,7 +10156,7 @@ function getSynergyData() {
 
           const s = synergies[key];
           s.games++;
-          if (p1.result === 'Win') s.wins++; // Si jugaron juntos, el resultado es el mismo
+          if (p1.result .toString().includes('Win')) s.wins++; // Si jugaron juntos, el resultado es el mismo
           
           // Asignar puntos a quien corresponda
           if (p1.name === s.p1) { s.p1_totalPoints += p1.points; s.p2_totalPoints += p2.points; }
@@ -10502,7 +10509,7 @@ function getBehaviorData() {
 
     if (playersData[summ].timeSlots[slot]) {
       playersData[summ].timeSlots[slot].games++;
-      if (result === 'Win') playersData[summ].timeSlots[slot].wins++;
+      if (result .toString().includes('Win')) playersData[summ].timeSlots[slot].wins++;
     }
   }
 
@@ -10641,7 +10648,7 @@ function getPlayerAnalytics(summonerName) {
         keysToUpdate.forEach(k => {
             const s = dataMap[k];
             s.games++;
-            if (result === 'Win') s.wins++; else s.losses++;
+            if (result .toString().includes('Win')) s.wins++; else s.losses++;
             s.k += Number(matchesData[i][6] || 0);
             s.d += Number(matchesData[i][7] || 0);
             s.a += Number(matchesData[i][8] || 0);
@@ -14738,7 +14745,7 @@ function forceRecalculatePlayerStats() {
         // B. Calcular Racha
         let currentS = playerStats[playerName].streak;
 
-        if (result === 'Win') {
+        if (result .toString().includes('Win')) {
             currentS = (currentS >= 0) ? currentS + 1 : 1;
         } else if (result === 'Loss') {
             currentS = (currentS <= 0) ? currentS - 1 : -1;
@@ -14817,7 +14824,7 @@ function checkSponsorships(targetPlayer, result) {
     // Condici    n: Que sea el jugador objetivo Y que el patrocinio est     ACTIVO
     if (target === targetPlayer && status === 'ACTIVE') {
        
-       if (result === 'Win') {
+       if (result .toString().includes('Win')) {
           // --- CASO VICTORIA: PAGO DOBLE ---
           const payout = amount * 2;
           const investorRow = walletMap[investor];
@@ -15249,7 +15256,7 @@ function syncRoleMissionsFromHistory() {
 
       if (rowName === String(summonerName).trim().toLowerCase()) {
         games++;
-        if (result === 'Win') wins++;
+        if (result .toString().includes('Win')) wins++;
       }
     }
 
@@ -17893,7 +17900,7 @@ function sendDiscordAlert(mensaje) {
 
 function sendNegotiationDiscordNotification(actionType, actingTeamName, opponentDiscordId, opponentTeamName, matchRound, proposedDate, notes) {
   // Usando el MISMO webhook que sendDiscordAlert (el que funciona)
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo";
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng";
   
   // Enlace dinámico a tu Web App (así nunca se rompe si cambias la URL)
   const WEB_LINK = ScriptApp.getService().getUrl();
@@ -17983,10 +17990,24 @@ function getTournamentData() {
   }
 
   let votesMap = {};
-  const votesSheet = ss.getSheetByName('TOURNAMENT_VOTES');
-  if (votesSheet && votesSheet.getLastRow() > 1) {
-      let vData = votesSheet.getDataRange().getValues();
-      for (let i = 1; i < vData.length; i++) { votesMap[vData[i][0]] = { a: vData[i][1], b: vData[i][2] }; }
+  const _weeklyVotesSheet = ss.getSheetByName('PICKEMS_WEEKLY');
+  if (_weeklyVotesSheet && _weeklyVotesSheet.getLastRow() > 1) {
+      const _wvData = _weeklyVotesSheet.getDataRange().getValues();
+      for (let i = 1; i < _wvData.length; i++) {
+          const _mId = String(_wvData[i][2] || '').trim();
+          const _tIdx = parseInt(_wvData[i][3]);
+          if (!_mId) continue;
+          if (!votesMap[_mId]) votesMap[_mId] = { a: 0, b: 0 };
+          if (_tIdx === 0) votesMap[_mId].a++;
+          else if (_tIdx === 1) votesMap[_mId].b++;
+      }
+  }
+  if (Object.keys(votesMap).length === 0) {
+      const _lvSheet = ss.getSheetByName('TOURNAMENT_VOTES');
+      if (_lvSheet && _lvSheet.getLastRow() > 1) {
+          const _lvData = _lvSheet.getDataRange().getValues();
+          for (let i = 1; i < _lvData.length; i++) votesMap[_lvData[i][0]] = { a: _lvData[i][1], b: _lvData[i][2] };
+      }
   }
 
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
@@ -18580,7 +18601,7 @@ function announcePickemsToDiscord() {
    ========================================================== */
 function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   // PEGA TU WEBHOOK DE DISCORD AQUI
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_ENLACE_AQUI")) return;
 
@@ -18599,8 +18620,8 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
     if(name === String(teamB).trim()) discordIdB = String(tData[i][11] || "").trim();
   }
   
-  let mentionA = discordIdA ? `<@${discordIdA}>` : teamA;
-  let mentionB = discordIdB ? `<@${discordIdB}>` : teamB;
+  let mentionA = discordIdA ? `<@&${discordIdA}>` : teamA;
+  let mentionB = discordIdB ? `<@&${discordIdB}>` : teamB;
   let mentions = `${mentionA} y ${mentionB}`;
 
   let winner = "";
@@ -18665,7 +18686,9 @@ function isMatchWinResult_(result) {
 }
 
 function normalizeRosterNameForMatch_(n) {
-  return String(n || '').split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
+  return String(n || '').split('#')[0]
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\xA0]/g, '').toLowerCase();
 }
 
 function getTeamRosterSetFromSheet_(teamsSheet, teamId) {
@@ -18698,7 +18721,7 @@ function buildValidMatchIdsForStats_(tmData, roundFilter) {
     const round = String(tmData[i][1] || '').trim();
     const mId = String(tmData[i][0] || '').trim();
     const rId = String(tmData[i][10] || '').trim();
-    const isJornada = round.indexOf('Jornada') === 0;
+    const isJornada = round && round !== 'Round' && round !== 'Ronda';
     if (isJornada) availableRounds.add(round);
     if (!isJornada) continue;
     if (roundFilter !== 'ALL' && round !== roundFilter) continue;
@@ -18736,7 +18759,7 @@ function resolveSeriesScoreByRoster_(tMatchId, games) {
   games.forEach(function(game) {
     const parts = game.participants || [];
     const winners = parts.filter(function(p) {
-      return p.win === true || p.win === 'true' || p.WIN === 'Win' || p.WIN === true;
+      return p.win === true || p.win === 'true' || p.WIN .toString().includes('Win') || p.WIN === true;
     });
     if (!winners.length) return;
     let countA = 0, countB = 0;
@@ -18815,25 +18838,58 @@ function parseSingleGameLobby_(data, gameId, currentMatchVotes) {
     const pName = String(data[i][2]).trim();
     let cs = '0.0', csTotal = 0, cs15 = 0, plates = 0, gpm = '0', gold = 0, tank = '-', vspm = '0.00', visionScore = 0;
     let items = [], spells = [], dmgObj = 0, dmgTurrets = 0;
+    let jsonDmg = 0;
     const rawJson = data[i][15];
 
     if (rawJson) {
       try {
         const adv = JSON.parse(rawJson);
+        let tp = Number(adv.TIME_PLAYED || adv.timePlayed || (Number(data[i][11]||0) * 60) || 1);
+
         if (adv.csMin) cs = Number(adv.csMin).toFixed(1);
+        else if (adv.MINIONS_KILLED) cs = (Number(adv.MINIONS_KILLED) / (tp/60)).toFixed(1);
+
         if (adv.cs) csTotal = Number(adv.cs);
+        else if (adv.MINIONS_KILLED) csTotal = Number(adv.MINIONS_KILLED);
+        else if (adv.totalMinionsKilled) csTotal = Number(adv.totalMinionsKilled);
+
         if (adv.cs15 !== undefined) cs15 = Number(adv.cs15);
         if (adv.plates !== undefined) plates = Number(adv.plates);
+        
         if (adv.gpm) gpm = Number(adv.gpm).toFixed(0);
+        else if (adv.GOLD_EARNED || adv.goldEarned) gpm = (Number(adv.GOLD_EARNED || adv.goldEarned) / (tp/60)).toFixed(0);
+
         if (adv.gold) gold = Number(adv.gold);
+        else if (adv.GOLD_EARNED || adv.goldEarned) gold = Number(adv.GOLD_EARNED || adv.goldEarned);
+
         if (adv.vspm) vspm = Number(adv.vspm).toFixed(2);
+        else if (adv.VISION_SCORE || adv.visionScore) vspm = (Number(adv.VISION_SCORE || adv.visionScore) / (tp/60)).toFixed(2);
+
         if (adv.visionScore) visionScore = Number(adv.visionScore);
+        else if (adv.VISION_SCORE) visionScore = Number(adv.VISION_SCORE);
+
         if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + '%';
-        if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + 'k';
+        if (adv.dmgTaken || adv.TOTAL_DAMAGE_TAKEN || adv.damageTaken) tank = (Number(adv.dmgTaken || adv.TOTAL_DAMAGE_TAKEN || adv.damageTaken) / 1000).toFixed(1) + 'k';
+        
         if (adv.items) items = adv.items;
+        else {
+           let itms = [];
+           for(let k=0; k<=6; k++) if(adv['ITEM'+k] !== undefined) itms.push(Number(adv['ITEM'+k]));
+           if (itms.length > 0) items = itms;
+        }
+
         if (adv.spells) spells = adv.spells;
-        if (adv.dmgObj) dmgObj = Number(adv.dmgObj);
-        if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets);
+        else if (adv.SUMMONER_SPELL_1 || adv.SUMMONER_SPELL_2) spells = [Number(adv.SUMMONER_SPELL_1||0), Number(adv.SUMMONER_SPELL_2||0)];
+
+        if (adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES) dmgObj = Number(adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES);
+        if (adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS) dmgTurrets = Number(adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS);
+
+        jsonDmg = Number(adv.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || adv.totalDamageDealtToChampions || 0);
+        if (jsonDmg === 0 && adv.dpm) {
+            var _tp = Number(adv.TIME_PLAYED || adv.timePlayed || (Number(data[i][11] || 0) * 60) || 1);
+            jsonDmg = Math.round(Number(adv.dpm) * (_tp / 60));
+        }
+
         if (adv.goldTimeline) matchTimeline = adv.goldTimeline;
         if (adv.winStats) matchWinStats = adv.winStats;
         if (adv.losStats) matchLosStats = adv.losStats;
@@ -18852,10 +18908,13 @@ function parseSingleGameLobby_(data, gameId, currentMatchVotes) {
       } catch (e) {}
     }
 
+    let dDmg = Number(data[i][9] || 0);
+    if (dDmg === 0 && jsonDmg > 0) dDmg = jsonDmg;
+
     const pData = {
       name: pName, champ: data[i][3], role: data[i][4], teamId: teamId,
       k: Number(data[i][6] || 0), d: Number(data[i][7] || 0), a: Number(data[i][8] || 0),
-      dmg: Number(data[i][9] || 0), kp: Number(data[i][10] || 0),
+      dmg: dDmg, kp: Number(data[i][10] || 0),
       points: Number(data[i][12] || 0).toFixed(1), votes: currentMatchVotes[pName] || 0,
       cs: cs, csTotal: csTotal, cs15: cs15, plates: plates, gpm: gpm, gold: gold,
       tank: tank, vspm: vspm, visionScore: visionScore, items: items, spells: spells,
@@ -18889,6 +18948,26 @@ function parseSingleGameLobby_(data, gameId, currentMatchVotes) {
   };
   winners.sort(sortRoles);
   losers.sort(sortRoles);
+
+  // ── Reconstruir goldTimeline si está a cero (partidas con bug Win) ──
+  if (!matchTimeline || !matchTimeline.some(function(v) { return Math.abs(v) > 500; })) {
+    var _wG = winners.reduce(function(s, p) { return s + (p.gold || 0); }, 0);
+    var _lG = losers.reduce(function(s, p) { return s + (p.gold || 0); }, 0);
+    var _gDiff = _wG - _lG;
+    if (Math.abs(_gDiff) > 1000) {
+      var _durMins = 0;
+      for (var _di = 1; _di < data.length; _di++) {
+        if (String(data[_di][0]).trim() === String(gameId).trim()) {
+          _durMins = Number(data[_di][11] || 0); break;
+        }
+      }
+      _durMins = Math.max(15, _durMins);
+      matchTimeline = [];
+      for (var _m = 0; _m <= _durMins; _m++) {
+        matchTimeline.push(Math.round(_gDiff * Math.pow(_m / _durMins, 1.5)));
+      }
+    }
+  }
 
   return {
     gameId: gameId, winners: winners, losers: losers,
@@ -19188,7 +19267,7 @@ function getMatchScoutingData(matchId) {
                 roles[r] = (roles[r] || 0) + 1;
                 champs[c] = (champs[c] || 0) + 1;
                 
-                if (allMatches[i][5] === 'Win') wins++;
+                if (allMatches[i][5] .toString().includes('Win')) wins++;
                 k += Number(allMatches[i][6]||0); d += Number(allMatches[i][7]||0); a += Number(allMatches[i][8]||0);
                 totalDmg += Number(allMatches[i][9]||0); totalDur += Number(allMatches[i][11]||1);
             }
@@ -19223,7 +19302,7 @@ function getTournamentStatsForWeb(roundFilter) {
 
   if (!teamsSheet || !matchesSheet || !tMatchesSheet) return { stats: [], rounds: [] };
 
-  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
+  const normalizeName = (n) => String(n).split('#')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\xA0]/g, '').toLowerCase();
 
   const tData = teamsSheet.getDataRange().getValues();
   const playerTeamMap = {}; 
@@ -19245,7 +19324,9 @@ function getTournamentStatsForWeb(roundFilter) {
       const rId = String(tmData[i][10] || "").trim(); 
       const round = String(tmData[i][1] || "").trim();
       if (round && round !== 'Round' && round !== 'Ronda') availableRounds.add(round);
-      if (rId && (roundFilter === 'ALL' || round === roundFilter)) validMatchIds.add(rId);
+      if (_rIdField && (roundFilter === 'ALL' || round === roundFilter)) {
+          _rIdField.split(',').forEach(function(_id) { var _t = _id.trim(); if (_t) validMatchIds.add(_t); });
+      }
   }
 
   const playerVotes = {};
@@ -19270,7 +19351,7 @@ function getTournamentStatsForWeb(roundFilter) {
   for (let i = mData.length - 1; i >= 1; i--) {
       const matchId = String(mData[i][0]).trim();
       
-      if (validMatchIds.has(matchId)) {
+      if (validMatchIds.has(matchId) || matchId.toString().startsWith('ROFL_')) {
           const pNameRaw = String(mData[i][2]).trim();
           const pNameLow = normalizeName(pNameRaw);
           const result = mData[i][5]; 
@@ -19295,9 +19376,9 @@ function getTournamentStatsForWeb(roundFilter) {
 
           let s = stats[pNameLow];
           s.games++;
-          if (result === 'Win') s.wins++;
+          if (result .toString().includes('Win')) s.wins++;
           
-          s.form.push(result === 'Win' ? 'W' : 'L');
+          s.form.push(result .toString().includes('Win') ? 'W' : 'L');
 
           s.kills += Number(mData[i][6] || 0);
           s.deaths += Number(mData[i][7] || 0);
@@ -19533,7 +19614,7 @@ function getLeagueRecordsAndPickems(roundFilter) {
             const rawJson = mData[i][15]; // Columna P
             
             if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
-            if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+            if (result .toString().includes('Win') && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
             
             if (rawJson) {
                 try {
@@ -19631,7 +19712,7 @@ function getTeamAdvancedStats(rosterStr) {
         }
 
         if (!teamMatches[mId]) {
-            teamMatches[mId] = { k: 0, d: 0, a: 0, dmg: 0, gold: 0, vision: 0, duration: dur, win: result === 'Win' };
+            teamMatches[mId] = { k: 0, d: 0, a: 0, dmg: 0, gold: 0, vision: 0, duration: dur, win: result .toString().includes('Win') };
         }
         
         // Sumamos las stats de este jugador al total de su equipo en esta partida
@@ -20126,8 +20207,10 @@ function getMetaStats() {
   const tmData = tMatchesSheet.getDataRange().getValues();
   const validMatchIds = new Set();
   for (let i = 1; i < tmData.length; i++) {
-      const rId = String(tmData[i][10] || "").trim();
-      if (rId) validMatchIds.add(rId);
+      const _rIdField = String(tmData[i][10] || "").trim();
+      if (_rIdField) {
+          _rIdField.split(',').forEach(function(_id) { var _t = _id.trim(); if (_t) validMatchIds.add(_t); });
+      }
   }
 
   const mData = matchesSheet.getDataRange().getValues();
@@ -20146,7 +20229,7 @@ function getMetaStats() {
           champStats[champ] = { champ: champ, picks: 0, wins: 0, bans: 0 };
       }
       champStats[champ].picks++;
-      if (result === 'Win') champStats[champ].wins++;
+      if (result .toString().includes('Win')) champStats[champ].wins++;
 
       //           L     GICA DE BANS: Recoger del JSON de la columna P (15)
       if (!processedMatchesBans.has(matchId)) {
@@ -20272,7 +20355,7 @@ function getAllDashboardData(roundFilter) {
   }
 
   // ── 3. STATS (antes getTournamentStatsForWeb) ──
-  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
+  const normalizeName = (n) => String(n).split('#')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\xA0]/g, '').toLowerCase();
   const playerTeamMap = {};
   for (let i = 1; i < tData.length; i++) {
     const teamName = String(tData[i][1]).trim();
@@ -20295,22 +20378,36 @@ function getAllDashboardData(roundFilter) {
   const pStats = {};
   for (let i = mData.length - 1; i >= 1; i--) {
     const matchId = String(mData[i][0]).trim();
-    if (validMatchIds.has(matchId)) {
+    if (validMatchIds.has(matchId) || matchId.toString().startsWith('ROFL_')) {
       const pNameRaw = String(mData[i][2]).trim(); const pNameLow = normalizeName(pNameRaw);
       const result = mData[i][5]; let pTeam = playerTeamMap[pNameLow] || "Agente Libre";
       if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0 }; }
-      let s = pStats[pNameLow]; s.games++; if (result === 'Win') s.wins++;
-      s.form.push(result === 'Win' ? 'W' : 'L');
+      let s = pStats[pNameLow]; s.games++; if (result .toString().includes('Win')) s.wins++;
+      s.form.push(result .toString().includes('Win') ? 'W' : 'L');
       s.kills += Number(mData[i][6]||0); s.deaths += Number(mData[i][7]||0); s.assists += Number(mData[i][8]||0);
       s.dmg += Number(mData[i][9]||0); s.kpTotal += Number(mData[i][10]||0); s.duration += Number(mData[i][11]||1); s.points += Number(mData[i][12]||0);
       if (mData[i][3]) s.champs.add(mData[i][3]);
       const rawJson = mData[i][15];
-      if (rawJson) { try { let adv = JSON.parse(rawJson); s.csTotal += Number(adv.csMin||0); s.vsTotal += Number(adv.vspm||0); s.gpmTotal += Number(adv.gpm||0); s.dmgObjTotal += Number(adv.dmgObj||0); s.dmgTurretsTotal += Number(adv.dmgTurrets||0); s.tankTotal += Number(adv.dmgTaken||adv.damageTaken||adv.totalDamageTaken||0); s.pinksTotal += Number(adv.pinks||adv.controlWards||adv.visionWardsBoughtInGame||0); s.epicsTotal += Number(adv.epicMonsters||adv.epics||adv.dragonKills||0); s.pentasTotal += Number(adv.pentas||adv.pentaKills||adv.pentakills||0); } catch(e) {} }
-      let role = String(mData[i][4]).toUpperCase().trim();
+      if (rawJson) { 
+        try { 
+          let adv = JSON.parse(rawJson); 
+          s.csTotal += Number(adv.csMin||0); 
+          s.vsTotal += Number(adv.vspm||0); 
+          s.gpmTotal += Number(adv.gpm||0); 
+          s.dmgObjTotal += Number(adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || 0); 
+          s.dmgTurretsTotal += Number(adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS || 0); 
+          s.tankTotal += Number(adv.dmgTaken || adv.damageTaken || adv.totalDamageTaken || adv.TOTAL_DAMAGE_TAKEN || 0); 
+          s.pinksTotal += Number(adv.pinks || adv.controlWards || adv.visionWardsBoughtInGame || adv.VISION_WARDS_BOUGHT_IN_GAME || 0); 
+          s.epicsTotal += Number(adv.epicMonsters || adv.epics || adv.dragonKills || 0) + (adv.epicMonsters ? 0 : (Number(adv.DRAGON_KILLS||0) + Number(adv.BARON_KILLS||0) + Number(adv.RIFT_HERALD_KILLS||0))); 
+          s.pentasTotal += Number(adv.pentas || adv.pentaKills || adv.pentakills || adv.PENTA_KILLS || 0); 
+        } catch(e) {} 
+      }
+      let roleRaw = String(mData[i][4]);
+      let role = roleRaw.replace(/[^a-zA-Z]/g, '').toUpperCase().trim();
       if (role === 'UTILITY' || role === 'SUPP') role = 'SUPPORT'; 
       if (role === 'BOT' || role === 'ADC') role = 'BOTTOM'; 
       if (role === 'MID') role = 'MIDDLE';
-      if (role === 'JNG') role = 'JUNGLE';
+      if (role === 'JNG' || role === 'JGL') role = 'JUNGLE';
       s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
     }
   }
@@ -20338,7 +20435,7 @@ function getAllDashboardData(roundFilter) {
     let champ = String(mData[i][3]).trim(); let result = mData[i][5];
     if (!champ || champ === 'undefined') continue;
     if (!champStats[champ]) champStats[champ] = { champ: champ, picks: 0, wins: 0, bans: 0 };
-    champStats[champ].picks++; if (result === 'Win') champStats[champ].wins++;
+    champStats[champ].picks++; if (result .toString().includes('Win')) champStats[champ].wins++;
     if (!processedMatchesBans.has(matchId)) {
       let jsonStr = mData[i][15];
       if (jsonStr && String(jsonStr).startsWith('{')) { try { let st = JSON.parse(jsonStr); if (st.bans && Array.isArray(st.bans)) { st.bans.forEach(b => { if (!champStats[b]) champStats[b] = { champ: b, picks: 0, wins: 0, bans: 0 }; champStats[b].bans++; }); processedMatchesBans.add(matchId); } } catch(e) {} }
@@ -20361,7 +20458,7 @@ function getAllDashboardData(roundFilter) {
     const mId = String(mData[i][0]).trim(); if (!validMatchIds.has(mId)) continue;
     const p = String(mData[i][2]); const result = mData[i][5]; const k = Number(mData[i][6]||0); const dmg = Number(mData[i][9]||0);
     if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
-    if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+    if (result .toString().includes('Win') && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
     const rawJson = mData[i][15];
     if (rawJson) { try { let adv = JSON.parse(rawJson); if (Number(adv.csMin||0) > records.farmer.val) records.farmer = { player: p, val: Number(adv.csMin).toFixed(1), sub: 'CS/M' }; let pct = 0; if (adv.tank !== undefined) pct = Number(adv.tank); else if (adv.dmgTakenPct !== undefined) pct = Number(adv.dmgTakenPct); if (pct > 0 && pct <= 1) pct = pct * 100; if (pct > 0) { if (!playerTankAcc[p]) playerTankAcc[p] = { sum: 0, count: 0 }; playerTankAcc[p].sum += pct; playerTankAcc[p].count++; } } catch(e) {} }
   }
@@ -23244,7 +23341,18 @@ function getPendingTournamentMatches() {
 // processRoflJsonBackend: Processes ROFL JSON from the web portal modal
 // Works for both single game and Bo3 series
 // ---------------------------------------------------------------------------
-function processRoflJsonBackend(jsonStr) {
+function processRoflJsonBackend(jsonStr, adminKey) {
+  try {
+    var _cfgSheet = SpreadsheetApp.getActive().getSheetByName('CONFIG');
+    var _cfgData = _cfgSheet ? _cfgSheet.getDataRange().getValues() : [];
+    var _adminRow = _cfgData.find(function(r) { return r[0] === 'admin_password'; });
+    var _adminPw = _adminRow ? String(_adminRow[1]).trim() : null;
+    if (!_adminPw || adminKey !== _adminPw) {
+      return { success: false, msg: '⛔ Acceso denegado. Solo el administrador puede importar archivos ROFL.' };
+    }
+  } catch(e) {
+    return { success: false, msg: '⛔ Error verificando permisos: ' + e.message };
+  }
   try {
     var data = JSON.parse(jsonStr);
     if (!data || data.source !== 'ROFL_PARSER') {
@@ -23371,8 +23479,21 @@ function processRoflSingleGame_(data, overrideMatchId) {
         dpm:  p.dpm  || Math.round((p.totalDamageDealtToChampions||0) / Math.max(1, durationMin)),
         vspm: p.vspm || parseFloat(((p.visionScore||0) / Math.max(1, durationMin)).toFixed(2)),
         kp: parseFloat((kpReal * 100).toFixed(1)),
-        pinks: p.pinks || 0, wardPlaced: p.wardPlaced || 0,
-        wardKilled: p.wardKilled || 0, pentas: p.pentas || 0,
+        // ── Datos avanzados del ROFL (ya traducidos a camelCase por el parser) ──
+        dmgObj:      parseInt(p.dmgObj || 0),
+        dmgTurrets:  parseInt(p.dmgTurrets || 0),
+        dmgTaken:    parseInt(p.dmgTaken || 0),
+        pinks:       parseInt(p.pinks || 0),
+        controlWards: parseInt(p.pinks || 0),
+        wardsPlaced: parseInt(p.wardPlaced || 0),
+        wardsKilled: parseInt(p.wardKilled || 0),
+        pentas:      parseInt(p.pentas || 0),
+        pentaKills:  parseInt(p.pentas || 0),
+        epicMonsters: parseInt(p.epicMonsters || 0),
+        // Campos de compatibilidad con el Salón de la Fama (nombres alternativos)
+        damageTaken:      parseInt(p.dmgTaken || 0),
+        totalDamageTaken: parseInt(p.dmgTaken || 0),
+        visionWardsBoughtInGame: parseInt(p.pinks || 0),
         items: p.items || [], spells: p.spells || []
       };
 

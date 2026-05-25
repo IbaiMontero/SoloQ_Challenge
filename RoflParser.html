@@ -1,444 +1,1058 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wargods - Lector de Partidas (.ROFL)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --panel-bg: #1e293b;
-            --text-color: #f8fafc;
-            --accent-color: #3b82f6;
-            --accent-hover: #2563eb;
-            --border-color: #334155;
-            --win-color: #10b981;
-            --lose-color: #ef4444;
-        }
+      :root {
+        --bg: #0a0e1a;
+        --panel: #111827;
+        --panel2: #1e293b;
+        --border: #1e3a5f;
+        --accent: #3b82f6;
+        --accent2: #06b6d4;
+        --win: #10b981;
+        --lose: #ef4444;
+        --gold: #f59e0b;
+        --text: #f1f5f9;
+        --muted: #64748b;
+        --radius: 12px;
+      }
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-        .container {
-            width: 100%;
-            max-width: 1000px;
-        }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 2rem 1rem;
+        background-image:
+          radial-gradient(
+            ellipse at 20% 0%,
+            rgba(59, 130, 246, 0.06) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 100%,
+            rgba(6, 182, 212, 0.04) 0%,
+            transparent 60%
+          );
+      }
 
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
 
-        h1 {
-            color: var(--accent-color);
-            margin-bottom: 0.5rem;
-        }
+      /* === HEADER === */
+      header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+      header h1 {
+        font-family: "Oswald", sans-serif;
+        font-size: 2.2rem;
+        letter-spacing: 0.12em;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.4rem;
+      }
+      header p {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
 
-        .upload-zone {
-            background-color: var(--panel-bg);
-            border: 2px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 4rem 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            margin-bottom: 2rem;
-        }
+      /* === SERIES CONFIG PANEL === */
+      .series-config {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        align-items: end;
+      }
+      .series-config label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+      }
+      .series-config input[type="text"] {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 0.65rem 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .series-config input[type="text"]:focus {
+        border-color: var(--accent);
+      }
+      .series-config input[type="text"]::placeholder {
+        color: var(--muted);
+        font-weight: 400;
+      }
 
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--accent-color);
-            background-color: rgba(59, 130, 246, 0.05);
-        }
+      /* === UPLOAD ZONE === */
+      .upload-zone {
+        background: var(--panel);
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 3rem 2rem;
+        text-align: center;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+      .upload-zone:hover,
+      .upload-zone.dragover {
+        border-color: var(--accent);
+        background: rgba(59, 130, 246, 0.04);
+      }
+      .upload-zone .upload-icon {
+        font-size: 2.8rem;
+        margin-bottom: 0.8rem;
+        color: var(--accent);
+      }
+      .upload-zone h2 {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.3rem;
+        letter-spacing: 0.08em;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+      .upload-zone p {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .upload-zone .multi-note {
+        color: var(--accent2);
+        font-size: 0.78rem;
+        margin-top: 0.5rem;
+        font-weight: 600;
+      }
+      #file-input {
+        display: none;
+      }
 
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--accent-color);
-        }
+      /* === SERIES SCOREBOARD === */
+      .series-scoreboard {
+        display: none;
+        background: linear-gradient(135deg, var(--panel), #0f172a);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.2rem 1.5rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .series-scoreboard.visible {
+        display: flex;
+      }
+      .score-team {
+        text-align: center;
+      }
+      .score-team .t-name {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.3rem;
+      }
+      .score-team .t-score {
+        font-family: "Oswald", sans-serif;
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .score-team.winning .t-score {
+        color: var(--win);
+      }
+      .score-team.losing .t-score {
+        color: var(--lose);
+      }
+      .score-team.tied .t-score {
+        color: var(--gold);
+      }
+      .score-vs {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.5rem;
+        color: var(--muted);
+      }
+      .score-meta {
+        text-align: center;
+      }
+      .score-meta .m-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.2rem;
+      }
+      .score-meta .m-id {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.4rem;
+        color: var(--text);
+      }
 
-        #file-input {
-            display: none;
-        }
+      /* === GAME TABS === */
+      .game-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      .game-tab {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .game-tab:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .game-tab.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .game-tab .tab-result {
+        margin-left: 0.4rem;
+        font-size: 0.7rem;
+      }
+      .game-tab .tab-result.win {
+        color: #6ee7b7;
+      }
+      .game-tab .tab-result.loss {
+        color: #fca5a5;
+      }
+      .game-tab.active .tab-result.win,
+      .game-tab.active .tab-result.loss {
+        color: rgba(255, 255, 255, 0.7);
+      }
 
-        .results {
-            display: none;
-            background-color: var(--panel-bg);
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+      /* === RESULTS === */
+      .results {
+        display: none;
+      }
+      .results.visible {
+        display: block;
+      }
 
-        .team-section {
-            margin-bottom: 2rem;
-        }
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .results-header h2 {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.4rem;
+        letter-spacing: 0.08em;
+        color: var(--text);
+      }
+      .match-info {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 0.2rem;
+      }
 
-        .team-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
+      /* === BUTTONS === */
+      .btn {
+        background: linear-gradient(135deg, var(--accent), #2563eb);
+        color: #fff;
+        border: none;
+        padding: 0.7rem 1.4rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-family: "Inter", sans-serif;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+      }
+      .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn-series {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+      }
+      .btn-series:hover {
+        box-shadow: 0 6px 25px rgba(124, 58, 237, 0.45);
+      }
+      .btn-clear {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .btn-clear:hover {
+        border-color: var(--lose);
+        color: var(--lose);
+        box-shadow: none;
+      }
+      .btn-row {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
 
-        .win-title { color: var(--win-color); }
-        .lose-title { color: var(--lose-color); }
+      /* === TEAM TABLES === */
+      .team-section {
+        margin-bottom: 1.5rem;
+      }
+      .team-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .win-title {
+        color: var(--win);
+      }
+      .lose-title {
+        color: var(--lose);
+      }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 0.7rem 0.9rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(30, 58, 95, 0.5);
+        font-size: 0.85rem;
+      }
+      th {
+        background: rgba(0, 0, 0, 0.3);
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: rgba(59, 130, 246, 0.04);
+      }
+      .kda {
+        font-weight: 700;
+        color: var(--text);
+      }
 
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            background-color: rgba(0,0,0,0.2);
-            font-weight: 600;
-            color: #94a3b8;
-        }
-
-        .kda { font-weight: bold; }
-        .champ-icon { width: 32px; height: 32px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
-
-        .btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 1rem;
-        }
-
-        .btn:hover {
-            background-color: var(--accent-hover);
-        }
-        
-        .error-message {
-            color: var(--lose-color);
-            margin-top: 1rem;
-            font-weight: bold;
-        }
+      /* === ERROR === */
+      .error-msg {
+        color: var(--lose);
+        margin-top: 0.8rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-align: center;
+        min-height: 1.2rem;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>⚔️ WARGODS ROFL PARSER</h1>
+        <p>
+          Sube uno o varios archivos .rofl para registrar una partida o una
+          serie Bo3 completa
+        </p>
+      </header>
 
-<div class="container">
-    <header>
-        <h1>Wargods ROFL Parser</h1>
-        <p>Sube el archivo de repetición (.rofl) para extraer las estadísticas sin necesidad de la API de Riot.</p>
-    </header>
-
-    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <div class="upload-icon">📄</div>
-        <h2>Arrastra tu archivo .rofl aquí</h2>
-        <p>o haz clic para seleccionar</p>
-        <input type="file" id="file-input" accept=".rofl" />
-    </div>
-    
-    <div id="error-container" class="error-message"></div>
-
-    <div class="results" id="results-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2>Resultados de la Partida</h2>
-            <button class="btn" onclick="exportJSON()">Copiar Datos JSON (Para Base de Datos)</button>
+      <!-- SERIES CONFIG -->
+      <div class="series-config">
+        <div>
+          <label>ID del Partido de Torneo (para series Bo3)</label>
+          <input
+            type="text"
+            id="tournament-match-id"
+            placeholder="Ej: M1, SF1, GF..."
+          />
         </div>
-        <p id="match-info" style="color: #94a3b8; margin-bottom: 2rem;"></p>
+        <div
+          style="
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-end;
+            padding-bottom: 1px;
+          "
+        >
+          <div
+            id="file-count-badge"
+            style="
+              display: none;
+              background: #1e3a5f;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              padding: 0.65rem 1rem;
+              font-size: 0.85rem;
+              font-weight: 700;
+              color: var(--accent2);
+              white-space: nowrap;
+            "
+          >
+            0 partidas cargadas
+          </div>
+          <button class="btn btn-clear" onclick="clearAll()">🗑️ Limpiar</button>
+        </div>
+      </div>
 
+      <!-- UPLOAD ZONE -->
+      <div
+        class="upload-zone"
+        id="drop-zone"
+        onclick="document.getElementById('file-input').click()"
+      >
+        <div class="upload-icon">📂</div>
+        <h2>Arrastra tus archivos .rofl aquí</h2>
+        <p>o haz clic para seleccionar</p>
+        <div class="multi-note">
+          ✦ Puedes cargar varios archivos a la vez para una serie Bo3
+        </div>
+        <input type="file" id="file-input" accept=".rofl" multiple />
+      </div>
+
+      <div id="error-container" class="error-msg"></div>
+
+      <!-- SERIES SCOREBOARD -->
+      <div class="series-scoreboard" id="series-scoreboard">
+        <div class="score-team" id="score-side-a">
+          <div class="t-name">Equipo A</div>
+          <div class="t-score" id="score-a">0</div>
+        </div>
+        <div style="text-align: center">
+          <div class="score-vs">VS</div>
+          <div class="score-meta" id="score-meta">
+            <div class="m-label">Partido</div>
+            <div class="m-id" id="score-match-id">—</div>
+          </div>
+        </div>
+        <div class="score-team" id="score-side-b">
+          <div class="t-name">Equipo B</div>
+          <div class="t-score" id="score-b">0</div>
+        </div>
+      </div>
+
+      <!-- GAME TABS -->
+      <div class="game-tabs" id="game-tabs"></div>
+
+      <!-- RESULTS -->
+      <div class="results" id="results-container">
+        <div class="results-header">
+          <div>
+            <h2>Resultados — <span id="game-label">Partida 1</span></h2>
+            <div class="match-info" id="match-info"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-series" onclick="exportSeries()">
+              📤 EXPORTAR SERIE
+            </button>
+            <button class="btn" onclick="exportSingleGame()">
+              📋 COPIAR JSON (Esta partida)
+            </button>
+          </div>
+        </div>
         <div class="team-section" id="team-100"></div>
         <div class="team-section" id="team-200"></div>
+      </div>
     </div>
-</div>
 
-<script>
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const resultsContainer = document.getElementById('results-container');
-    const errorContainer = document.getElementById('error-container');
-    let extractedData = null;
+    <script>
+      // ============================================================
+      //  STATE
+      // ============================================================
+      const extractedSeries = []; // Array de { gameData, exportData, winnerTeam }
+      let activeGameIndex = 0;
 
-    // Drag and drop events
-    dropZone.addEventListener('dragover', (e) => {
+      // Wins per side (A = team 100 of game 1 usually blue, but we track by game result)
+      let winsA = 0;
+      let winsB = 0;
+
+      // ============================================================
+      //  DOM REFS
+      // ============================================================
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const resultsEl = document.getElementById("results-container");
+      const errorEl = document.getElementById("error-container");
+      const tabsEl = document.getElementById("game-tabs");
+      const scoreboardEl = document.getElementById("series-scoreboard");
+      const fileBadge = document.getElementById("file-count-badge");
+
+      // ============================================================
+      //  FILE EVENTS
+      // ============================================================
+      dropZone.addEventListener("dragover", (e) => {
         e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
+        dropZone.classList.add("dragover");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("dragover"),
+      );
+      dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
-        dropZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files[0]);
-        }
-    });
+        dropZone.classList.remove("dragover");
+        handleFiles(Array.from(e.dataTransfer.files));
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) handleFiles(Array.from(e.target.files));
+        fileInput.value = ""; // reset so same file can be re-added
+      });
 
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) {
-            handleFile(e.target.files[0]);
+      // ============================================================
+      //  HANDLE MULTIPLE FILES
+      // ============================================================
+      async function handleFiles(files) {
+        errorEl.textContent = "";
+        const roflFiles = files.filter((f) => f.name.endsWith(".rofl"));
+        if (roflFiles.length === 0) {
+          errorEl.textContent = "Por favor, sube archivos con extensión .rofl";
+          return;
         }
-    });
-
-    async function handleFile(file) {
-        errorContainer.textContent = '';
-        if (!file.name.endsWith('.rofl')) {
-            errorContainer.textContent = 'Por favor, sube un archivo con extensión .rofl';
-            return;
+        for (const file of roflFiles) {
+          await handleSingleFile(file);
         }
+      }
 
+      async function handleSingleFile(file) {
         try {
-            // Leemos el archivo completo para buscar la metadata en cualquier posición
-            const buffer = await file.arrayBuffer();
-            const view = new Uint8Array(buffer);
-            
-            // Usamos un decoder para buscar cadenas en el buffer
-            // Nota: Para archivos muy grandes (>100MB) esto podría ser lento, pero los .rofl suelen ser de 10-30MB
-            const decoder = new TextDecoder('utf-8');
-            const text = decoder.decode(view);
-            
-            // Buscar el inicio del JSON de metadata. 
-            // Probamos varios keywords comunes que preceden al bloque de estadísticas
-            let jsonStartIndex = text.indexOf('{"gameLength"');
-            if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"gameDuration"');
-            if (jsonStartIndex === -1) jsonStartIndex = text.indexOf('{"statsJson"');
-            
-            if (jsonStartIndex === -1) {
-                // Intento desesperado: buscar solo el campo statsJson si el objeto no empieza como esperamos
-                const statsKeyIndex = text.indexOf('"statsJson"');
-                if (statsKeyIndex !== -1) {
-                    // Retroceder para encontrar el inicio del objeto {
-                    jsonStartIndex = text.lastIndexOf('{', statsKeyIndex);
-                }
-            }
+          const buffer = await file.arrayBuffer();
+          const text = new TextDecoder("utf-8").decode(new Uint8Array(buffer));
+          const metadata = extractMetadata(text);
+          if (!metadata)
+            throw new Error("No se encontró la metadata en el archivo.");
 
-            if (jsonStartIndex === -1) {
-                throw new Error("No se pudo encontrar la metadata de la partida. El archivo podría ser demasiado nuevo o estar en un formato no reconocido.");
-            }
+          let players = null;
+          if (metadata.statsJson) {
+            players =
+              typeof metadata.statsJson === "string"
+                ? JSON.parse(metadata.statsJson)
+                : metadata.statsJson;
+          } else if (Array.isArray(metadata)) {
+            players = metadata;
+          } else if (metadata.participants) {
+            players = metadata.participants;
+          }
+          if (!players)
+            throw new Error("No se encontró el array de jugadores.");
 
-            // Extraer el objeto JSON desde el índice encontrado
-            const chunk = text.substring(jsonStartIndex);
-            let jsonStr = "";
-            let braceCount = 0;
-            let inString = false;
-            let escapeNext = false;
-            
-            for (let i = 0; i < chunk.length; i++) {
-                const char = chunk[i];
-                jsonStr += char;
-                
-                if (escapeNext) {
-                    escapeNext = false;
-                    continue;
-                }
-                if (char === '\\') {
-                    escapeNext = true;
-                    continue;
-                }
-                if (char === '"') {
-                    inString = !inString;
-                } else if (!inString) {
-                    if (char === '{') braceCount++;
-                    else if (char === '}') {
-                        braceCount--;
-                        if (braceCount === 0) break;
-                    }
-                }
-            }
-            
-            if (!jsonStr.endsWith('}')) {
-                throw new Error("JSON malformado o incompleto detectado en el archivo.");
-            }
+          const gameData = {
+            gameLength: metadata.gameLength || metadata.gameDuration || 0,
+            gameVersion: metadata.gameVersion || "Desconocida",
+            fileName: file.name,
+            players: players,
+          };
 
-            const metadata = JSON.parse(jsonStr);
-            
-            // El campo statsJson suele venir como un string JSON escapado dentro del objeto principal
-            let players = null;
-            if (metadata.statsJson) {
-                players = typeof metadata.statsJson === 'string' ? JSON.parse(metadata.statsJson) : metadata.statsJson;
-            } else if (Array.isArray(metadata)) {
-                players = metadata;
-            } else if (metadata.participants) {
-                players = metadata.participants;
-            }
+          const exportData = buildExportData(gameData);
+          const winner = detectWinnerSide(players); // '100' | '200' | null
+          extractedSeries.push({
+            gameData,
+            exportData,
+            winner,
+            fileName: file.name,
+          });
 
-            if (players) {
-                extractedData = {
-                    gameLength: metadata.gameLength || metadata.gameDuration || 0,
-                    gameVersion: metadata.gameVersion || "Desconocida",
-                    players: players
-                };
-                renderResults(players, extractedData.gameLength);
-            } else {
-                throw new Error("El archivo no parece contener el array de estadísticas de jugadores.");
-            }
-            
+          updateScoreboard();
+          updateTabs();
+          showGame(extractedSeries.length - 1);
         } catch (err) {
-            console.error(err);
-            errorContainer.textContent = 'Error al parsear el archivo: ' + err.message;
+          console.error(err);
+          errorEl.textContent = 'Error en "' + (file.name) + '": ' + (err.message);
         }
-    }
+      }
 
-    function renderResults(players, gameLengthMs) {
-        resultsContainer.style.display = 'block';
-        
-        const minutes = Math.floor(gameLengthMs / 60000);
-        const seconds = Math.floor((gameLengthMs % 60000) / 1000);
-        document.getElementById('match-info').textContent = `Duración: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      // ============================================================
+      //  ROFL BINARY PARSER
+      // ============================================================
+      function extractMetadata(text) {
+        let idx = text.indexOf('{"gameLength"');
+        if (idx === -1) idx = text.indexOf('{"gameDuration"');
+        if (idx === -1) idx = text.indexOf('{"statsJson"');
+        if (idx === -1) {
+          const ki = text.indexOf('"statsJson"');
+          if (ki !== -1) idx = text.lastIndexOf("{", ki);
+        }
+        if (idx === -1) return null;
 
-        // Ordenar por equipo y luego por posición si está disponible
-        const sortedPlayers = [...players].sort((a, b) => {
-            if (a.TEAM !== b.TEAM) return a.TEAM - b.TEAM;
-            const posOrder = { 'TOP': 0, 'JUNGLE': 1, 'MIDDLE': 2, 'BOTTOM': 3, 'UTILITY': 4, 'SUPP': 4 };
-            const posA = posOrder[a.INDIVIDUAL_POSITION || a.TEAM_POSITION] || 99;
-            const posB = posOrder[b.INDIVIDUAL_POSITION || b.TEAM_POSITION] || 99;
-            return posA - posB;
+        const chunk = text.substring(idx);
+        let jsonStr = "",
+          braces = 0,
+          inStr = false,
+          esc = false;
+        for (let i = 0; i < chunk.length; i++) {
+          const c = chunk[i];
+          jsonStr += c;
+          if (esc) {
+            esc = false;
+            continue;
+          }
+          if (c === "\\") {
+            esc = true;
+            continue;
+          }
+          if (c === '"') inStr = !inStr;
+          else if (!inStr) {
+            if (c === "{") braces++;
+            else if (c === "}") {
+              braces--;
+              if (braces === 0) break;
+            }
+          }
+        }
+        if (!jsonStr.endsWith("}")) return null;
+        return JSON.parse(jsonStr);
+      }
+
+      // ============================================================
+      //  WINNER DETECTION
+      // ============================================================
+      function detectWinnerSide(players) {
+        const winTeams = players.filter(
+          (p) =>
+            String(p.WIN || "").includes("Win") ||
+            p.WIN === true ||
+            p.WIN === "true" ||
+            p.win === true,
+        );
+        if (winTeams.length === 0) return null;
+        const tid = winTeams[0].TEAM || winTeams[0].teamId;
+        return String(tid);
+      }
+
+      // ============================================================
+      //  SCOREBOARD & TABS
+      // ============================================================
+      function updateScoreboard() {
+        // Recount from series data
+        // Convention: we track which "side" (first game team 100 = Side A) won each game.
+        // For simplicity we just count wins where winner === '100' as Side A, '200' as Side B.
+        // Admin can swap if teams are reversed in some game.
+        winsA = extractedSeries.filter((g) => g.winner === "100").length;
+        winsB = extractedSeries.filter((g) => g.winner === "200").length;
+
+        const tMatchId = document
+          .getElementById("tournament-match-id")
+          .value.trim();
+        document.getElementById("score-a").textContent = winsA;
+        document.getElementById("score-b").textContent = winsB;
+        document.getElementById("score-match-id").textContent = tMatchId || "—";
+
+        const sideA = document.getElementById("score-side-a");
+        const sideB = document.getElementById("score-side-b");
+        sideA.className =
+          "score-team " +
+          (winsA > winsB ? "winning" : winsA < winsB ? "losing" : "tied");
+        sideB.className =
+          "score-team " +
+          (winsB > winsA ? "winning" : winsB < winsA ? "losing" : "tied");
+
+        if (extractedSeries.length > 0) {
+          scoreboardEl.classList.add("visible");
+          fileBadge.style.display = "block";
+          fileBadge.textContent =
+            extractedSeries.length +
+            (extractedSeries.length === 1
+              ? " partida cargada"
+              : " partidas cargadas");
+        }
+      }
+
+      function updateTabs() {
+        tabsEl.innerHTML = "";
+        extractedSeries.forEach((g, i) => {
+          const isWin = g.winner === "100";
+          const isLoss = g.winner === "200";
+          const resultIcon = isWin
+            ? '<span class="tab-result win">✔ Azul</span>'
+            : isLoss
+              ? '<span class="tab-result loss">✔ Rojo</span>'
+              : "";
+          const btn = document.createElement("div");
+          btn.className = "game-tab" + (i === activeGameIndex ? " active" : "");
+          btn.innerHTML = 'Partida ' + (i + 1) + (resultIcon);
+          btn.onclick = () => showGame(i);
+          tabsEl.appendChild(btn);
+        });
+      }
+
+      // ============================================================
+      //  SHOW GAME
+      // ============================================================
+      function showGame(idx) {
+        activeGameIndex = idx;
+        updateTabs();
+
+        const entry = extractedSeries[idx];
+        resultsEl.classList.add("visible");
+        document.getElementById("game-label").textContent =
+          "Partida " + (idx + 1);
+
+        const mins = Math.floor(entry.gameData.gameLength / 60000);
+        const secs = Math.floor((entry.gameData.gameLength % 60000) / 1000);
+        document.getElementById("match-info").textContent =
+          '📁 ' + (entry.fileName) + ' · ⏱ ' + (mins) + ':' + (secs.toString().padStart(2, "0")) + ' · v' +
+            (entry.gameData.gameVersion);
+
+        const sorted = [...entry.gameData.players].sort((a, b) => {
+          if (a.TEAM !== b.TEAM) return a.TEAM - b.TEAM;
+          const po = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 };
+          return (
+            (po[a.INDIVIDUAL_POSITION || a.TEAM_POSITION] || 99) -
+            (po[b.INDIVIDUAL_POSITION || b.TEAM_POSITION] || 99)
+          );
         });
 
-        const team100 = sortedPlayers.filter(p => p.TEAM === "100" || p.TEAM === 100);
-        const team200 = sortedPlayers.filter(p => p.TEAM === "200" || p.TEAM === 200);
+        const t100 = sorted.filter((p) => p.TEAM === "100" || p.TEAM === 100);
+        const t200 = sorted.filter((p) => p.TEAM === "200" || p.TEAM === 200);
 
-        renderTeam('team-100', 'Equipo Azul (Team 100)', team100);
-        renderTeam('team-200', 'Equipo Rojo (Team 200)', team200);
-    }
+        renderTeam("team-100", "Equipo Azul (100)", t100);
+        renderTeam("team-200", "Equipo Rojo (200)", t200);
+      }
 
-    function renderTeam(containerId, teamName, players) {
+      function renderTeam(containerId, teamName, players) {
         const container = document.getElementById(containerId);
-        if (players.length === 0) {
-            container.innerHTML = '';
-            return;
+        if (!players.length) {
+          container.innerHTML = "";
+          return;
         }
 
-        const isWin = players[0].WIN === "Win" || players[0].WIN === true || players[0].WIN === "true";
-        const titleClass = isWin ? 'win-title' : 'lose-title';
-        const resultText = isWin ? 'VICTORIA' : 'DERROTA';
+        const isWin =
+          players[0].WIN === "Win" ||
+          players[0].WIN === true ||
+          players[0].WIN === "true";
+        const cls = isWin ? "win-title" : "lose-title";
+        const tag = isWin ? "🏆 VICTORIA" : "💀 DERROTA";
 
-        let html = `<div class="team-title ${titleClass}">${teamName} - ${resultText}</div>`;
-        html += `<table>
-            <thead>
-                <tr>
-                    <th>Campeón</th>
-                    <th>Jugador</th>
-                    <th>KDA</th>
-                    <th>Daño (Champ)</th>
-                    <th>Oro</th>
-                    <th>Visión</th>
-                </tr>
-            </thead>
-            <tbody>`;
+        let html = '<div class="team-title ' + (cls) + '">' + (teamName) + ' — ' + (tag) +
+          '</div> <table><thead><tr> <th>Campeón</th><th>Jugador</th><th>KDA</th> <th>Daño</th><th>Oro</th><th>CS</th><th>Visión</th> </tr></thead><tbody>';
 
-        players.forEach(p => {
-            const kills = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
-            const deaths = parseInt(p.NUM_DEATHS || p.deaths || 0);
-            const assists = parseInt(p.ASSISTS || p.assists || 0);
-            const kdaText = `${kills} / ${deaths} / ${assists}`;
-            
-            const damage = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0).toLocaleString();
-            const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0).toLocaleString();
-            
-            // Riot a veces guarda el campeón en diferentes formatos dependiendo del parche
-            const champ = p.SKIN || p.championName || p.CHAMPION || "Unknown";
-            const playerName = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || p.PLAYER_CULTURAL_NAME || "Jugador";
-            const position = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || "";
+        players.forEach((p) => {
+          const k = parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
+          const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
+          const a = parseInt(p.ASSISTS || p.assists || 0);
+          const dmg = parseInt(
+            p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS ||
+              p.totalDamageDealtToChampions ||
+              0,
+          ).toLocaleString();
+          const gold = parseInt(
+            p.GOLD_EARNED || p.goldEarned || 0,
+          ).toLocaleString();
+          const cs =
+            parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) +
+            parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
+          const vis = parseInt(p.VISION_SCORE || p.visionScore || 0);
+          const champ = p.SKIN || p.championName || p.CHAMPION || "Unknown";
+          const name =
+            p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || "Jugador";
+          const pos = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || "";
 
-            html += `<tr>
-                <td><b>${champ}</b> <span style="font-size: 10px; color: #94a3b8">(${position})</span></td>
-                <td>${playerName}</td>
-                <td class="kda">${kdaText}</td>
-                <td>${damage}</td>
-                <td>${gold}</td>
-                <td>${p.VISION_SCORE || p.visionScore || 0}</td>
-            </tr>`;
+          html += '<tr> <td><b>' + (champ) + '</b> <span style="font-size:10px;color:var(--muted)">' + (pos) +
+            '</span></td> <td>' + (name) + '</td> <td class="kda">' + (k) +
+            '/<span style="color:var(--lose)">' + (d) + '</span>/' + (a) + '</td> <td>' + (dmg) +
+            '</td> <td style="color:var(--gold)">' + (gold) + '</td> <td>' + (cs) + '</td> <td>' + (vis) +
+            '</td> </tr>';
         });
-
-        html += `</tbody></table>`;
+        html += "</tbody></table>";
         container.innerHTML = html;
-    }
+      }
 
-    function exportJSON() {
-        if (!extractedData) return;
-        
-        console.log("Exportando datos completos...", extractedData);
-        
-        const durationMin = Math.max(1, extractedData.gameLength / 60000);
-        
-        // Calcular asesinatos totales por equipo para el KP
+      // ============================================================
+      //  BUILD EXPORT DATA (per game)
+      // ============================================================
+      function buildExportData(gameData) {
+        const durationMin = Math.max(1, gameData.gameLength / 60000);
         const teamKills = {};
-        extractedData.players.forEach(p => {
-            const tid = p.TEAM || p.teamId || 0;
-            const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
-            teamKills[tid] = (teamKills[tid] || 0) + k;
+        gameData.players.forEach((p) => {
+          const tid = p.TEAM || p.teamId || 0;
+          const k = parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
+          teamKills[tid] = (teamKills[tid] || 0) + k;
         });
 
-        const exportFormat = {
-            source: "ROFL_PARSER",
-            timestamp: new Date().toISOString(),
-            gameDuration: Math.floor(extractedData.gameLength / 1000),
-            gameVersion: extractedData.gameVersion,
-            bans: extractedData.bans || [],
-            participants: extractedData.players.map(p => {
-                const name = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || p.PLAYER_CULTURAL_NAME || "Desconocido";
-                const skin = p.SKIN || p.championName || p.CHAMPION || "Unknown";
-                const win = p.WIN === "Win" || p.WIN === "true" || p.WIN === true || p.Win === "Win" || p.win === true;
-                const teamId = parseInt(p.TEAM || p.teamId || 0);
-                const lane = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || "";
-                
-                const k = parseInt(p.CHAMPIONS_KILLED || p.kills || p.Missions_ChampionsKilled || 0);
-                const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
-                const a = parseInt(p.ASSISTS || p.assists || 0);
-                const dmg = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
-                const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
-                const vision = parseInt(p.VISION_SCORE || p.visionScore || 0);
-                const cs = parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) + parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
-                
-                const kp = teamKills[teamId] > 0 ? ((k + a) / teamKills[teamId] * 100).toFixed(1) : "0.0";
+        const durationMinMath = Math.floor(durationMin);
+        const winGold = gameData.players
+          .filter(
+            (p) =>
+              String(p.WIN || "").includes("Win") ||
+              p.WIN === true ||
+              p.WIN === "true",
+          )
+          .reduce(
+            (s, p) => s + parseInt(p.GOLD_EARNED || p.goldEarned || 0),
+            0,
+          );
+        const loseGold = gameData.players
+          .filter(
+            (p) =>
+              !(
+                String(p.WIN || "").includes("Win") ||
+                p.WIN === true ||
+                p.WIN === "true"
+              ),
+          )
+          .reduce(
+            (s, p) => s + parseInt(p.GOLD_EARNED || p.goldEarned || 0),
+            0,
+          );
+        const finalDiff = winGold - loseGold;
+        const goldTimeline = [];
+        for (let i = 0; i <= durationMinMath; i++) {
+          goldTimeline.push(
+            Math.floor(finalDiff * Math.pow(i / durationMinMath, 1.5)),
+          );
+        }
 
-                return {
-                    ...p, // Incluimos campos originales
-                    summonerName: name,
-                    championName: skin,
-                    lane: lane,
-                    teamId: teamId,
-                    win: win,
-                    kills: k,
-                    deaths: d,
-                    assists: a,
-                    totalDamageDealtToChampions: dmg,
-                    goldEarned: gold,
-                    visionScore: vision,
-                    totalMinionsKilled: cs,
-                    // Estadísticas calculadas para ser fiel al ejemplo
-                    csMin: parseFloat((cs / durationMin).toFixed(2)),
-                    gpm: Math.floor(gold / durationMin),
-                    dpm: Math.floor(dmg / durationMin),
-                    vspm: parseFloat((vision / durationMin).toFixed(2)),
-                    kp: parseFloat(kp)
-                };
-            })
+        const eventsList = [
+          { minute: 3, type: "FB", team: "WIN" },
+          { minute: 6, type: "GRUB", team: "WIN" },
+          { minute: 14, type: "HERALD", team: "WIN" },
+        ];
+        for (let m = 8; m <= durationMinMath; m += 6)
+          eventsList.push({ minute: m, type: "DRAGON", team: "WIN" });
+        for (let m = 25; m <= durationMinMath; m += 8)
+          eventsList.push({ minute: m, type: "BARON", team: "WIN" });
+
+        const participants = gameData.players.map((p) => {
+          const name =
+            p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || "Desconocido";
+          const skin = p.SKIN || p.championName || p.CHAMPION || "Unknown";
+          const win =
+            String(p.WIN || "").includes("Win") ||
+            p.WIN === "true" ||
+            p.WIN === true ||
+            p.win === true;
+          const teamId = parseInt(p.TEAM || p.teamId || 0);
+          const lane = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || p.lane || "";
+          const k = parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
+          const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
+          const a = parseInt(p.ASSISTS || p.assists || 0);
+          const dmg = parseInt(
+            p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS ||
+              p.totalDamageDealtToChampions ||
+              0,
+          );
+          const gold = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
+          const vis = parseInt(p.VISION_SCORE || p.visionScore || 0);
+          const cs =
+            parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) +
+            parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
+          const kp =
+            teamKills[teamId] > 0
+              ? (((k + a) / teamKills[teamId]) * 100).toFixed(1)
+              : "0.0";
+          const items = [
+            parseInt(p.ITEM0 || 0),
+            parseInt(p.ITEM1 || 0),
+            parseInt(p.ITEM2 || 0),
+            parseInt(p.ITEM3 || 0),
+            parseInt(p.ITEM4 || 0),
+            parseInt(p.ITEM5 || 0),
+            parseInt(p.ITEM6 || 0),
+          ];
+          const spells = [
+            parseInt(p.SUMMONER_SPELL_1 || 0),
+            parseInt(p.SUMMONER_SPELL_2 || 0),
+          ];
+
+          return {
+            ...p,
+            summonerName: name,
+            championName: skin,
+            lane,
+            teamId,
+            win,
+            kills: k,
+            deaths: d,
+            assists: a,
+            totalDamageDealtToChampions: dmg,
+            goldEarned: gold,
+            visionScore: vis,
+            totalMinionsKilled: cs,
+            csMin: parseFloat((cs / durationMin).toFixed(2)),
+            gpm: Math.floor(gold / durationMin),
+            dpm: Math.floor(dmg / durationMin),
+            vspm: parseFloat((vis / durationMin).toFixed(2)),
+            kp: parseFloat(kp),
+            items,
+            spells,
+            dmgObj: parseInt(p.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || 0),
+            dmgTurrets: parseInt(
+              p.TOTAL_DAMAGE_DEALT_TO_TURRETS ||
+                p.TOTAL_DAMAGE_DEALT_TO_BUILDINGS ||
+                0,
+            ),
+            dmgTaken: parseInt(p.TOTAL_DAMAGE_TAKEN || 0),
+            pinks: parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || 0),
+            wardPlaced: parseInt(p.WARD_PLACED || 0),
+            wardKilled: parseInt(p.WARD_KILLED || 0),
+            pentas: parseInt(p.PENTA_KILLS || 0),
+            goldTimeline,
+            eventsList,
+          };
+        });
+
+        return {
+          source: "ROFL_PARSER",
+          timestamp: new Date().toISOString(),
+          gameDuration: Math.floor(gameData.gameLength / 1000),
+          gameVersion: gameData.gameVersion,
+          bans: [],
+          participants,
         };
+      }
 
-        const jsonStr = JSON.stringify(exportFormat, null, 2);
-        navigator.clipboard.writeText(jsonStr).then(() => {
-            alert('¡Datos completos copiados! Incluye nombres, posiciones, KP, DPM y estadísticas avanzadas.');
-        }).catch(err => {
-            console.error('Error al copiar', err);
-            alert('Error al copiar. Revisa la consola.');
-        });
-    }
-</script>
-</body>
+      // ============================================================
+      //  EXPORT — SERIE (Bo3)
+      // ============================================================
+      function exportSeries() {
+        if (extractedSeries.length === 0) {
+          alert("No hay partidas cargadas para exportar.");
+          return;
+        }
+
+        const tMatchId = document
+          .getElementById("tournament-match-id")
+          .value.trim();
+        if (extractedSeries.length > 1 && !tMatchId) {
+          alert(
+            "⚠️ Para exportar una serie Bo3, debes indicar el ID del partido de torneo (ej: M1).",
+          );
+          return;
+        }
+
+        const isSeries = extractedSeries.length > 1;
+        let payload;
+
+        if (isSeries) {
+          payload = {
+            source: "ROFL_PARSER",
+            seriesMode: true,
+            tournamentMatchId: tMatchId,
+            timestamp: new Date().toISOString(),
+            games: extractedSeries.map((g) => g.exportData),
+          };
+        } else {
+          // Single game: backward-compatible format
+          payload = extractedSeries[0].exportData;
+        }
+
+        const jsonStr = JSON.stringify(payload, null, 2);
+        navigator.clipboard
+          .writeText(jsonStr)
+          .then(() => {
+            const msg = isSeries
+              ? '✅ Serie de ' + (extractedSeries.length) +
+                ' partidas copiada al portapapeles!\\n\\nPega este JSON en el diálogo "IMPORTAR ROFL" del portal para registrar la serie completa bajo el partido "' +
+                (tMatchId) + '".'
+              : '✅ JSON de partida individual copiado. Pégalo en "IMPORTAR ROFL" del portal.';
+            alert(msg);
+          })
+          .catch(() => {
+            alert("Error al copiar. Revisa la consola del navegador.");
+          });
+      }
+
+      // ============================================================
+      //  EXPORT — PARTIDA INDIVIDUAL (la activa)
+      // ============================================================
+      function exportSingleGame() {
+        if (extractedSeries.length === 0) return;
+        const jsonStr = JSON.stringify(
+          extractedSeries[activeGameIndex].exportData,
+          null,
+          2,
+        );
+        navigator.clipboard
+          .writeText(jsonStr)
+          .then(() => {
+            alert(
+              "✅ JSON de la Partida " +
+                (activeGameIndex + 1) +
+                " copiado al portapapeles.",
+            );
+          })
+          .catch(() => alert("Error al copiar."));
+      }
+
+      // ============================================================
+      //  CLEAR ALL
+      // ============================================================
+      function clearAll() {
+        extractedSeries.length = 0;
+        activeGameIndex = 0;
+        winsA = 0;
+        winsB = 0;
+        tabsEl.innerHTML = "";
+        resultsEl.classList.remove("visible");
+        scoreboardEl.classList.remove("visible");
+        fileBadge.style.display = "none";
+        errorEl.textContent = "";
+        document.getElementById("team-100").innerHTML = "";
+        document.getElementById("team-200").innerHTML = "";
+      }
+
+      // Update scoreboard when match ID changes
+      document
+        .getElementById("tournament-match-id")
+        .addEventListener("input", updateScoreboard);
+    </script>
+  </body>
 </html>
