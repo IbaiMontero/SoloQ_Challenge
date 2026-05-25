@@ -18759,7 +18759,7 @@ function resolveSeriesScoreByRoster_(tMatchId, games) {
   games.forEach(function(game) {
     const parts = game.participants || [];
     const winners = parts.filter(function(p) {
-      return p.win === true || p.win === 'true' || p.WIN .toString().includes('Win') || p.WIN === true;
+      return isMatchWinResult_(p.win) || isMatchWinResult_(p.WIN);
     });
     if (!winners.length) return;
     let countA = 0, countB = 0;
