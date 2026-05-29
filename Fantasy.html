@@ -967,6 +967,7 @@
   }
 
   function fetchAllLigaData(callback) {
+    // 🚀 Si ya tenemos los datos (cargados por getFantasyFullBundle), retornamos al instante
     if (
       isLigaDataLoaded &&
       typeof globalStatsData !== "undefined" &&
@@ -975,41 +976,23 @@
       if (callback) callback();
       return;
     }
+    // Fallback: si por algún motivo no se cargó vía bundle, usamos el bundle igualmente
     google.script.run
       .withFailureHandler(function (err) {
         if (callback) callback();
       })
-      .withSuccessHandler(function (tData) {
-        tournamentDataCache = tData;
-        fantasyTeamsCache = tData.teams || [];
-
-        let pending = tData.matches.filter((m) => m.status !== "COMPLETED");
-        window.fantasyActiveRound =
-          pending.length > 0
-            ? pending[0].round
-            : tData.matches.length > 0
-              ? tData.matches[tData.matches.length - 1].round
-              : "ALL";
-
-        google.script.run
-          .withFailureHandler(function (err) {
-            if (callback) callback();
-          })
-          .withSuccessHandler(function (dataAll) {
-            globalStatsData = dataAll && dataAll.stats ? dataAll.stats : [];
-
-            google.script.run
-              .withSuccessHandler(function (dataLive) {
-                window.liveStatsData =
-                  dataLive && dataLive.stats ? dataLive.stats : [];
-                isLigaDataLoaded = true;
-                if (callback) callback();
-              })
-              .getTournamentStatsForWeb(window.fantasyActiveRound);
-          })
-          .getTournamentStatsForWeb("ALL");
+      .withSuccessHandler(function (bundle) {
+        if (bundle && bundle.success) {
+          globalStatsData = bundle.statsAll || [];
+          window.liveStatsData = bundle.statsLive || [];
+          fantasyTeamsCache = bundle.teams || [];
+          window.fantasyActiveRound = bundle.activeRound || "ALL";
+          if (fantasyTeamsCache.length > 0) tournamentDataCache = { teams: fantasyTeamsCache };
+          isLigaDataLoaded = true;
+        }
+        if (callback) callback();
       })
-      .getTournamentData();
+      .getFantasyFullBundle(currentManager ? currentManager.name : "", null);
   }
 
   function getSafeTeamName(playerName) {
@@ -1125,20 +1108,37 @@
     if (!currentManager) return;
     document.getElementById("ui-manager-name").innerText = currentManager.name;
 
+    // 🚀 OPTIMIZACIÓN: UNA SOLA LLAMADA al backend (antes eran 4-5 en cascada)
     google.script.run
       .withFailureHandler(function (err) {
         alert("Error de conexión: " + err.message);
       })
-      .withSuccessHandler(function (res) {
-        if (!res.success) return alert("Error cargando tu Club: " + res.error);
+      .withSuccessHandler(function (bundle) {
+        if (!bundle || !bundle.success) {
+          return alert("Error cargando tu Club: " + (bundle ? bundle.error : "sin respuesta"));
+        }
+
+        // 1. Hidratar caches de liga desde el bundle (sin más round-trips)
+        globalStatsData = bundle.statsAll || [];
+        window.liveStatsData = bundle.statsLive || [];
+        fantasyTeamsCache = bundle.teams || [];
+        window.fantasyActiveRound = bundle.activeRound || "ALL";
+        if (fantasyTeamsCache.length > 0) {
+          tournamentDataCache = { teams: fantasyTeamsCache };
+        }
+        isLigaDataLoaded = true;
+
+        // 2. Datos del manager
+        const res = bundle.init;
+        if (!res || !res.success) {
+          return alert("Error cargando tu Club: " + (res ? res.error : "datos del manager vacíos"));
+        }
         dashboardLoaded = true;
 
         currentManager.budget = res.financials.budget;
         document.getElementById("ui-budget").innerText =
           formatMoney(res.financials.budget) + " Disp.";
-        document.getElementById("ui-bids-budget").innerText = formatMoney(
-          res.financials.bids,
-        );
+        document.getElementById("ui-bids-budget").innerText = formatMoney(res.financials.bids);
 
         window.allFantasyRosters = res.allRosters || [];
         window.currentRankingData = res.ranking || [];
@@ -1147,26 +1147,14 @@
         renderFantasyActivity(res.activity);
 
         currentRoster = res.roster || {
-          top: "",
-          jgl: "",
-          mid: "",
-          adc: "",
-          sup: "",
-          captain: "NONE",
-          sub: "",
-          isLocked: false,
-          activeCard: "",
+          top: "", jgl: "", mid: "", adc: "", sup: "",
+          captain: "NONE", sub: "", isLocked: false, activeCard: "",
         };
-        renderFantasyCharts(window.lastFantasyCharts, 0);
 
         if (document.getElementById("market-budget-disp"))
-          document.getElementById("market-budget-disp").innerText = formatMoney(
-            res.financials.budget,
-          );
+          document.getElementById("market-budget-disp").innerText = formatMoney(res.financials.budget);
         if (document.getElementById("market-budget-ret"))
-          document.getElementById("market-budget-ret").innerText = formatMoney(
-            res.financials.bids,
-          );
+          document.getElementById("market-budget-ret").innerText = formatMoney(res.financials.bids);
 
         const setSlotState = (id, player) => {
           let el = document.getElementById(id);
@@ -1174,8 +1162,7 @@
             el.innerText = "🪑";
             if (player && player !== "") {
               el.classList.remove("grayscale", "opacity-50");
-              el.style.filter =
-                "hue-rotate(150deg) saturate(3) brightness(0.8)";
+              el.style.filter = "hue-rotate(150deg) saturate(3) brightness(0.8)";
             } else {
               el.classList.add("grayscale", "opacity-50");
               el.style.filter = "none";
@@ -1190,55 +1177,37 @@
         setSlotState("slot-ind-sub", currentRoster.sub);
 
         let activeBanner = document.getElementById("gacha-active-banner");
-        if (
-          activeBanner &&
-          currentRoster.activeCard &&
-          currentRoster.activeCard !== ""
-        ) {
-          document.getElementById("gacha-active-name").innerText =
-            currentRoster.activeCard;
+        if (activeBanner && currentRoster.activeCard && currentRoster.activeCard !== "") {
+          document.getElementById("gacha-active-name").innerText = currentRoster.activeCard;
           let unequipBtn = document.getElementById("btn-unequip-card");
-          if (unequipBtn)
-            unequipBtn.style.display = currentRoster.isLocked
-              ? "none"
-              : "block";
+          if (unequipBtn) unequipBtn.style.display = currentRoster.isLocked ? "none" : "block";
           activeBanner.classList.remove("hidden");
         } else if (activeBanner) activeBanner.classList.add("hidden");
 
-        fetchAllLigaData(function () {
-          let myLivePts = calculateManagerLivePoints(currentRoster);
-          document.getElementById("ui-points").innerText =
-            myLivePts.toFixed(1) + " PTS";
+        // 3. Cálculo de live scoring directamente (ya tenemos todos los datos)
+        let myLivePts = calculateManagerLivePoints(currentRoster);
+        document.getElementById("ui-points").innerText = myLivePts.toFixed(1) + " PTS";
 
-          window.currentRankingData.forEach((m) => {
-            if (
-              String(m.name).trim().toLowerCase() ===
-              String(currentManager.name).trim().toLowerCase()
-            ) {
-              m.livePoints = myLivePts;
-            } else {
-              let rObj = window.allFantasyRosters.find(
-                (x) =>
-                  String(x.manager).trim().toLowerCase() ===
-                  String(m.name).trim().toLowerCase(),
-              );
-              m.livePoints = rObj ? calculateManagerLivePoints(rObj) : 0;
-            }
-          });
-
-          window.currentRankingData.sort(
-            (a, b) => b.livePoints - a.livePoints || b.teamValue - a.teamValue,
-          );
-          renderFantasyRanking(window.currentRankingData);
-          renderFantasyCharts(window.lastFantasyCharts, myLivePts);
-          renderRoster();
-          if (
-            document.getElementById("f-tab-market").classList.contains("block")
-          )
-            loadMarket();
+        window.currentRankingData.forEach((m) => {
+          if (String(m.name).trim().toLowerCase() === String(currentManager.name).trim().toLowerCase()) {
+            m.livePoints = myLivePts;
+          } else {
+            let rObj = window.allFantasyRosters.find(
+              (x) => String(x.manager).trim().toLowerCase() === String(m.name).trim().toLowerCase()
+            );
+            m.livePoints = rObj ? calculateManagerLivePoints(rObj) : 0;
+          }
         });
+
+        window.currentRankingData.sort(
+          (a, b) => b.livePoints - a.livePoints || b.teamValue - a.teamValue
+        );
+        renderFantasyRanking(window.currentRankingData);
+        renderFantasyCharts(window.lastFantasyCharts, myLivePts);
+        renderRoster();
+        if (document.getElementById("f-tab-market").classList.contains("block")) loadMarket();
       })
-      .getFantasyInitData(currentManager.name);
+      .getFantasyFullBundle(currentManager.name, null);
   }
 
   // 🔥 Función que faltaba: Clausulazo directo desde un hueco vacío del roster
