@@ -3463,10 +3463,11 @@
         google.script.run
           .withSuccessHandler(function (payload) {
             // 🟢 UNIFIED: Un solo objeto con todo
-            if (!payload) {
-              console.error('refreshData: payload nulo recibido del backend.');
+            if (!payload || payload.__error) {
+              const msg = payload ? payload.errorMessage : 'El servidor no devolvió información.';
+              console.error('refreshData: error del backend ->', msg);
               document.getElementById('loading-state').style.display = 'none';
-              alert('❌ Error al cargar datos: El servidor no devolvió información. Revisa los logs de Apps Script.');
+              alert('❌ Error del servidor: ' + msg + '\n\nRevisa Apps Script → Ejecuciones para ver el stack completo.');
               return;
             }
             const data = payload.tournament;

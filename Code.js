@@ -20543,7 +20543,7 @@ function getAllDashboardData(roundFilter) {
   };
   } catch (e) {
     Logger.log('ERROR en getAllDashboardData: ' + e.message + '\n' + e.stack);
-    throw new Error('getAllDashboardData falló: ' + e.message);
+    return { __error: true, errorMessage: e.message };
   }
 }
 
