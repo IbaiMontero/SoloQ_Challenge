@@ -1,0 +1,6 @@
+node_modules/
+*.xlsx
+Code.js.txt
+onclicks.txt
+fix.js
+inject.js
