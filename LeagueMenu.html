@@ -3463,6 +3463,12 @@
         google.script.run
           .withSuccessHandler(function (payload) {
             // 🟢 UNIFIED: Un solo objeto con todo
+            if (!payload) {
+              console.error('refreshData: payload nulo recibido del backend.');
+              document.getElementById('loading-state').style.display = 'none';
+              alert('❌ Error al cargar datos: El servidor no devolvió información. Revisa los logs de Apps Script.');
+              return;
+            }
             const data = payload.tournament;
             calculatePowerScores(data);
             tournamentDataCache = data;

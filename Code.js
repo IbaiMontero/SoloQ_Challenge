@@ -20280,6 +20280,7 @@ function getMetaStats() {
    Elimina ~17 lecturas redundantes por carga de página.
    ========================================================== */
 function getAllDashboardData(roundFilter) {
+  try {
   roundFilter = roundFilter || 'ALL';
   const ss = SpreadsheetApp.getActive();
 
@@ -20540,6 +20541,10 @@ function getAllDashboardData(roundFilter) {
     casinoRanking: casinoRanking,
     playoffsActive: playoffsActive
   };
+  } catch (e) {
+    Logger.log('ERROR en getAllDashboardData: ' + e.message + '\n' + e.stack);
+    throw new Error('getAllDashboardData falló: ' + e.message);
+  }
 }
 
 /* ==========================================================
