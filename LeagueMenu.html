@@ -3460,6 +3460,12 @@
           ? document.getElementById("filter-round").value
           : "ALL";
 
+        // 🧪 PING: Verificar que el servidor responde
+        google.script.run
+          .withSuccessHandler(function(ping) { console.log('[PING servidor]', ping); })
+          .withFailureHandler(function(err) { console.error('[PING ERROR]', err); })
+          .pingServer();
+
         google.script.run
           .withSuccessHandler(function (payload) {
             // 🟢 UNIFIED: Un solo objeto con todo

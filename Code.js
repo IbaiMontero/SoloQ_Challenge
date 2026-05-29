@@ -20281,8 +20281,10 @@ function getMetaStats() {
    ========================================================== */
 function getAllDashboardData(roundFilter) {
   try {
+  Logger.log('[GDD] Inicio - roundFilter: ' + roundFilter);
   roundFilter = roundFilter || 'ALL';
   const ss = SpreadsheetApp.getActive();
+  Logger.log('[GDD] SpreadsheetApp OK');
 
   // ── 1. LEER CADA HOJA UNA SOLA VEZ ──
   const infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
@@ -20392,7 +20394,7 @@ function getAllDashboardData(roundFilter) {
     if (validMatchIds.has(matchId) || matchId.toString().startsWith('ROFL_')) {
       const pNameRaw = String(mData[i][2]).trim(); const pNameLow = normalizeName(pNameRaw);
       const result = mData[i][5]; let pTeam = playerTeamMap[pNameLow] || "Agente Libre";
-      if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0 }; }
+      if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0, totalHealTotal: 0, damageSelfMitigatedTotal: 0, timeCCingOthersTotal: 0, magicDamageTotal: 0, physicalDamageTotal: 0, trueDamageTotal: 0, firstBloodKills: 0, firstTowerKills: 0 }; }
       let s = pStats[pNameLow]; s.games++; if ((String(result) || '').includes('Win')) s.wins++;
       s.form.push((String(result) || '').includes('Win') ? 'W' : 'L');
       s.kills += Number(mData[i][6]||0); s.deaths += Number(mData[i][7]||0); s.assists += Number(mData[i][8]||0);
@@ -23545,4 +23547,17 @@ function processRoflSingleGame_(data, overrideMatchId) {
   });
 
   return { importedCount: importedCount, winnerSide: winnerSide };
+}
+
+// =========================================================
+// 🧪 FUNCIÓN DE DIAGNÓSTICO
+// =========================================================
+function pingServer() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheets = ss.getSheets().map(function(s) { return s.getName(); });
+    return { ok: true, ts: new Date().toISOString(), sheets: sheets };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
 }
