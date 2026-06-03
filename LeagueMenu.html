@@ -2,6 +2,8 @@
 <html>
   <head>
     <base target="_top" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Oswald:wght@500&display=swap"
       rel="stylesheet"
@@ -11,7 +13,7 @@
       src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
       defer
     ></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <style>
       :root {
         --bg-dark: #0f172a;
@@ -1218,7 +1220,7 @@
               class="mt-auto pt-8 pb-4 px-6 flex justify-center gap-6 border-t border-slate-800"
             >
               <a
-                href="https://www.tiktok.com/@WargodsPremier"
+                href="https://www.tiktok.com/@wargodspremier1"
                 target="_blank"
                 class="text-slate-500 hover:text-white transition transform hover:scale-110 drop-shadow-md"
                 title="TikTok"
@@ -1840,6 +1842,7 @@
                   <div style="position: relative; height: 350px; width: 100%">
                     <canvas id="teamH2HObjectivesChart"></canvas>
                   </div>
+                  <div id="team-h2h-stats-bars" class="col-span-1 md:col-span-2 border-t border-slate-700 pt-6 mt-2"></div>
                 </div>
               </div>
             </div>
@@ -2383,14 +2386,24 @@
                   Los Récords Absolutos de la Temporada
                 </p>
 
-                <div
-                  id="records-hall-container"
-                  class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20"
-                >
+                <div class="w-full">
                   <div
-                    class="text-center text-slate-500 col-span-full py-10 animate-pulse font-bold tracking-widest uppercase"
+                    id="records-hall-container"
+                    class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6"
                   >
-                    Forjando las medallas...
+                    <div
+                      class="text-center text-slate-500 col-span-full py-10 animate-pulse font-bold tracking-widest uppercase"
+                    >
+                      Forjando las medallas...
+                    </div>
+                  </div>
+                  <!-- Ranking equipos integrado en el grid -->
+                  <div id="hof-team-ranking" class="bg-gradient-to-br from-slate-800/80 to-slate-900 border border-yellow-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(234,179,8,0.15)] mt-2">
+                    <div class="font-oswald text-2xl text-yellow-400 tracking-widest uppercase mb-1 text-center">🏅 Ranking de Equipos</div>
+                    <p class="text-slate-500 text-[10px] text-center mb-5 uppercase tracking-widest">Por número de récords en el Salón de la Fama</p>
+                    <div id="hof-team-ranking-list" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                      <div class="text-center text-slate-500 text-xs animate-pulse py-4 col-span-full">Calculando...</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4017,21 +4030,21 @@
         const duosContainer = document.getElementById("meta-lethal-duos");
 
         let htmlPicks = "";
-        const topPicks = [...metaData].slice(0, 5);
+        const topPicks = [...metaData].slice(0, 10);
         topPicks.forEach((c, idx) => {
           let champIcon = getChampIcon(c.champ);
           htmlPicks +=
-            '<div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700 shadow hover:border-yellow-500 transition">';
+            '<div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 shadow hover:border-yellow-500 transition">';
           htmlPicks +=
-            '<div class="flex items-center gap-4"><span class="font-oswald text-2xl text-slate-500 w-6">#' +
+            '<div class="flex items-center gap-3"><span class="font-oswald text-xl text-slate-500 w-5">#' +
             (idx + 1) +
             '</span><img src="' +
             champIcon +
-            '" class="w-10 h-10 rounded-full border-2 border-slate-600"><div class="font-bold text-white text-lg">' +
+            '" class="w-8 h-8 rounded-full border-2 border-slate-600"><div class="font-bold text-white">' +
             escHtml(c.champ) +
             "</div></div>";
           htmlPicks +=
-            '<div class="text-right"><div class="text-yellow-500 font-black text-xl">' +
+            '<div class="text-right"><div class="text-yellow-500 font-black text-base">' +
             c.picks +
             ' Picks</div><div class="text-[10px] text-slate-400 font-bold uppercase">' +
             c.winrate +
@@ -4042,22 +4055,22 @@
         let htmlBans = "";
         const topBans = [...metaData]
           .sort((a, b) => (b.bans || 0) - (a.bans || 0))
-          .slice(0, 5);
+          .slice(0, 10);
         topBans.forEach((c, idx) => {
           let champIcon = getChampIcon(c.champ);
           let bans = c.bans || 0;
           htmlBans +=
-            '<div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700 shadow hover:border-red-500 transition">';
+            '<div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 shadow hover:border-red-500 transition">';
           htmlBans +=
-            '<div class="flex items-center gap-4"><span class="font-oswald text-2xl text-slate-500 w-6">#' +
+            '<div class="flex items-center gap-3"><span class="font-oswald text-xl text-slate-500 w-5">#' +
             (idx + 1) +
             '</span><img src="' +
             champIcon +
-            '" class="w-10 h-10 rounded-full border-2 border-slate-600 grayscale"><div class="font-bold text-white text-lg">' +
+            '" class="w-8 h-8 rounded-full border-2 border-slate-600 grayscale"><div class="font-bold text-white">' +
             escHtml(c.champ) +
             "</div></div>";
           htmlBans +=
-            '<div class="text-right"><div class="text-red-500 font-black text-xl">' +
+            '<div class="text-right"><div class="text-red-500 font-black text-base">' +
             bans +
             " Bans</div></div></div>";
         });
@@ -4067,7 +4080,7 @@
         const topWr = [...metaData]
           .filter((c) => c.picks >= 2)
           .sort((a, b) => b.winrate - a.winrate || b.picks - a.picks)
-          .slice(0, 5);
+          .slice(0, 10);
         if (topWr.length === 0) {
           htmlWr =
             '<div class="text-slate-500 text-center py-4">Faltan datos (min 2 picks).</div>';
@@ -4081,19 +4094,19 @@
                   ? "text-yellow-400"
                   : "text-red-400";
             htmlWr +=
-              '<div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700 shadow hover:border-emerald-400 transition">';
+              '<div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 shadow hover:border-emerald-400 transition">';
             htmlWr +=
-              '<div class="flex items-center gap-4"><span class="font-oswald text-2xl text-slate-500 w-6">#' +
+              '<div class="flex items-center gap-3"><span class="font-oswald text-xl text-slate-500 w-5">#' +
               (idx + 1) +
               '</span><img src="' +
               champIcon +
-              '" class="w-10 h-10 rounded-full border-2 border-slate-600"><div class="font-bold text-white text-lg">' +
+              '" class="w-8 h-8 rounded-full border-2 border-slate-600"><div class="font-bold text-white">' +
               escHtml(c.champ) +
               "</div></div>";
             htmlWr +=
               '<div class="text-right"><div class="' +
               colorClass +
-              ' font-black text-xl">' +
+              ' font-black text-base">' +
               c.winrate +
               '% WR</div><div class="text-[10px] text-slate-400 font-bold uppercase">' +
               c.picks +
@@ -4112,6 +4125,9 @@
               { c1: popular[4], c2: popular[5] || popular[0] },
               { c1: popular[0], c2: popular[1] },
               { c1: popular[2], c2: popular[4] || popular[1] },
+              { c1: popular[3], c2: popular[6] || popular[0] },
+              { c1: popular[5] || popular[0], c2: popular[7] || popular[2] },
+              { c1: popular[1], c2: popular[6] || popular[3] },
             ];
 
             duos.forEach((d, idx) => {
@@ -4126,17 +4142,17 @@
               let icon2 = getChampIcon(d.c2.champ);
 
               htmlDuos +=
-                '<div class="flex justify-between items-center bg-slate-800 p-4 rounded-lg border border-slate-700 shadow hover:border-purple-400 transition">';
+                '<div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 shadow hover:border-purple-400 transition">';
               htmlDuos +=
-                '<div class="flex items-center gap-2"><span class="font-oswald text-xl text-slate-500 w-4">#' +
+                '<div class="flex items-center gap-2"><span class="font-oswald text-lg text-slate-500 w-4">#' +
                 (idx + 1) +
-                '</span><div class="flex -space-x-3"><img src="' +
+                '</span><div class="flex -space-x-2"><img src="' +
                 icon1 +
-                '" class="w-10 h-10 rounded-full border-2 border-slate-600 relative z-10"><img src="' +
+                '" class="w-8 h-8 rounded-full border-2 border-slate-600 relative z-10"><img src="' +
                 icon2 +
-                '" class="w-10 h-10 rounded-full border-2 border-slate-600 relative z-0"></div></div>';
+                '" class="w-8 h-8 rounded-full border-2 border-slate-600 relative z-0"></div></div>';
               htmlDuos +=
-                '<div class="text-right"><div class="text-purple-400 font-black text-xl">' +
+                '<div class="text-right"><div class="text-purple-400 font-black text-base">' +
                 synergyWinrate +
                 '% WR</div><div class="text-[10px] text-slate-400 font-bold uppercase">' +
                 synergyPicks +
@@ -5534,6 +5550,40 @@
                     },
                   },
                 });
+
+                // === STATS BARS COMPARISON ===
+                var statsBarEl2 = document.getElementById("team-h2h-stats-bars");
+                if (statsBarEl2) {
+                  var _pB2 = function(vA, vB) { var tot = (vA||0)+(vB||0); if(tot===0) return [50,50]; var p2=Math.round((vA/tot)*100); return [p2,100-p2]; };
+                  var _aF2 = function(list, field) { return list.length ? list.reduce(function(s,p){ return s+(parseFloat(p[field])||0); },0)/list.length : 0; };
+                  var si2 = [
+                    { label:"KDA", vA:_aF2(pA_list,"kdaNum"), vB:_aF2(pB_list,"kdaNum"), fmt:function(v){ return v.toFixed(2); } },
+                    { label:"DPM", vA:statsA.totalDpm, vB:statsB.totalDpm, fmt:function(v){ return Math.round(v); } },
+                    { label:"GPM", vA:_aF2(pA_list,"gpm"), vB:_aF2(pB_list,"gpm"), fmt:function(v){ return Math.round(v); } },
+                    { label:"CS/M", vA:_aF2(pA_list,"cs"), vB:_aF2(pB_list,"cs"), fmt:function(v){ return v.toFixed(1); } },
+                    { label:"VSPM", vA:parseFloat(statsA.avgVis)||0, vB:parseFloat(statsB.avgVis)||0, fmt:function(v){ return v.toFixed(1); } },
+                    { label:"WR%", vA:statsA.wr, vB:statsB.wr, fmt:function(v){ return v.toFixed(0)+"%"; } },
+                    { label:"ObjDmg", vA:_aF2(pA_list,"dmgObj"), vB:_aF2(pB_list,"dmgObj"), fmt:function(v){ return v>=1000?(v/1000).toFixed(1)+"k":Math.round(v); } },
+                    { label:"TorreDmg", vA:_aF2(pA_list,"dmgTurrets"), vB:_aF2(pB_list,"dmgTurrets"), fmt:function(v){ return v>=1000?(v/1000).toFixed(1)+"k":Math.round(v); } },
+                    { label:"Pinks", vA:_aF2(pA_list,"pinks"), vB:_aF2(pB_list,"pinks"), fmt:function(v){ return v.toFixed(1); } }
+                  ];
+                  var bH2 = '<div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-3 text-center">\uD83D\uDCCA Comparativa Estad\u00edstica Completa</div><div class="space-y-1.5">';
+                  si2.forEach(function(s) {
+                    var ps2 = _pB2(s.vA, s.vB);
+                    var wA2 = s.vA >= s.vB;
+                    bH2 += '<div class="flex items-center gap-1.5 text-[9px]">' +
+                      '<span class="w-12 text-right font-mono font-bold ' + (wA2?"text-blue-300":"text-slate-500") + '">' + s.fmt(s.vA||0) + '</span>' +
+                      '<div class="flex-1 flex items-center h-4">' +
+                        '<div class="flex-1 flex justify-end h-full overflow-hidden rounded-l"><div style="width:' + ps2[0] + '%;background:' + (wA2?"#3b82f6":"#1e3a5f") + ';height:100%;transition:width 1s"></div></div>' +
+                        '<div class="w-14 text-center text-[8px] font-black text-slate-500 flex-shrink-0">' + s.label + '</div>' +
+                        '<div class="flex-1 h-full overflow-hidden rounded-r"><div style="width:' + ps2[1] + '%;background:' + (!wA2?"#ef4444":"#3b1f25") + ';height:100%;transition:width 1s"></div></div>' +
+                      '</div>' +
+                      '<span class="w-12 font-mono font-bold ' + (!wA2?"text-red-300":"text-slate-500") + '">' + s.fmt(s.vB||0) + '</span>' +
+                    '</div>';
+                  });
+                  bH2 += '</div><div class="flex justify-between text-[9px] font-bold mt-2 pt-2 border-t border-slate-700/50"><span class="text-blue-400">' + escHtml(tA.name) + '</span><span class="text-red-400">' + escHtml(tB.name) + '</span></div>';
+                  statsBarEl2.innerHTML = bH2;
+                }
               })
               .getTeamAdvancedStats(tB.roster);
           })
@@ -6557,6 +6607,42 @@
         });
 
         hallCont.innerHTML = htmlHall;
+
+        // === RANKING EQUIPOS EN EL HoF ===
+        var teamRankEl = document.getElementById("hof-team-ranking-list");
+        if (teamRankEl && tournamentDataCache && tournamentDataCache.teams) {
+          var teamCount2 = {};
+          records.forEach(function(r) {
+            if (!r.player) return;
+            var tn2 = r.player.team || "Agente Libre";
+            teamCount2[tn2] = (teamCount2[tn2] || 0) + 1;
+          });
+          var sorted2 = Object.entries(teamCount2).sort(function(a,b){ return b[1]-a[1]; });
+          var medals2 = ['🥇','🥈','🥉'];
+          var bgCls2 = ['border-yellow-500/50 bg-yellow-500/10','border-slate-400/40 bg-slate-400/10','border-amber-600/40 bg-amber-700/10'];
+          var txtCls2 = ['text-yellow-300','text-slate-300','text-amber-500'];
+          if (sorted2.length === 0) {
+            teamRankEl.innerHTML = '<div class="text-center text-slate-500 text-xs py-4 col-span-full">Sin datos aún</div>';
+          } else {
+            var rankHtml2 = '';
+            sorted2.forEach(function(entry, idx) {
+              var tn = entry[0]; var cnt = entry[1];
+              var tObj = tournamentDataCache.teams.find(function(t){ return t.name === tn; });
+              var lSrc = tObj && tObj.logo ? getLogo(tObj.logo) : '';
+              var lHtml = lSrc ? '<img src="' + lSrc + '" class="w-11 h-11 object-contain rounded-lg bg-black/40 border border-slate-700 p-0.5" onerror="this.style.display=\'none\'">' : '<div class="w-11 h-11 rounded-lg bg-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-600">' + escHtml(tn.substring(0,3).toUpperCase()) + '</div>';
+              var clk = tObj ? 'onclick="openTeamHub(\'' + enc(tn) + '\',\'' + (tObj.w||0) + '\',\'' + (tObj.l||0) + '\',\'' + (tObj.pts||0) + '\',\'' + enc(tObj.roster||'') + '\',\'' + enc(tObj.logo||'') + '\')" style="cursor:pointer"' : '';
+              var medal = idx < 3 ? medals2[idx] : '<span class="font-black text-slate-500 text-sm">' + (idx+1) + 'º</span>';
+              var bg = bgCls2[idx] || 'border-slate-700/40 bg-slate-800/50';
+              var txt = txtCls2[idx] || 'text-slate-400';
+              rankHtml2 += '<div class="flex items-center gap-3 p-3 rounded-xl border transition hover:scale-[1.02] ' + bg + '" ' + clk + '>' +
+                '<span class="text-2xl flex-shrink-0 w-8 text-center">' + medal + '</span>' + lHtml +
+                '<div class="flex-1 min-w-0"><div class="font-bold text-sm truncate ' + txt + '">' + escHtml(tn) + '</div>' +
+                '<div class="text-[10px] text-slate-500">' + cnt + ' récord' + (cnt!==1?'s':'') + '</div></div>' +
+                '<div class="text-3xl font-black font-oswald ' + txt + '">' + cnt + '</div></div>';
+            });
+            teamRankEl.innerHTML = rankHtml2;
+          }
+        }
       }
 
     </script>
@@ -7416,10 +7502,22 @@
               res.winners &&
               res.losers
             ) {
-              const _wG = res.winners.reduce((s, p) => s + (p.gold || 0), 0);
-              const _lG = res.losers.reduce((s, p) => s + (p.gold || 0), 0);
+              // Try multiple field names for player gold
+              const getGold = (p) => parseFloat(p.gold || p.gpm || p.totalGold || p.goldEarned || 0);
+              const _wG = res.winners.reduce((s, p) => s + getGold(p), 0);
+              const _lG = res.losers.reduce((s, p) => s + getGold(p), 0);
               const _gDiff = _wG - _lG;
               if (Math.abs(_gDiff) > 1000) {
+                const _m = Math.max(20, totalMins);
+                // Use a more realistic S-shaped curve: slow start, fast middle, tapering end
+                realGoldDiff = Array.from({ length: _m + 1 }, (_, i) => {
+                  const t = i / _m;
+                  const curve = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOutQuad
+                  return Math.round(_gDiff * curve);
+                });
+                totalMins = _m;
+              } else if (Math.abs(_gDiff) > 100) {
+                // Smaller difference — still show a small curve
                 const _m = Math.max(20, totalMins);
                 realGoldDiff = Array.from({ length: _m + 1 }, (_, i) =>
                   Math.round(_gDiff * Math.pow(i / _m, 1.5)),
@@ -7427,6 +7525,7 @@
                 totalMins = _m;
               }
             }
+
 
             let events = res.events || [];
 
@@ -7641,36 +7740,66 @@
               tableRowsHtml +
               "</tbody></table>";
 
-            let advancedStatsHtml =
-              '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm"><div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div><div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50"><div class="w-1/3"></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' +
-              escHtml(names[0]) +
-              '</div></div><div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' +
-              escHtml(names[1]) +
-              '</div></div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-purple-400 text-lg leading-none">🐛</span> Voidgrubs</div><div class="w-1/3 text-white font-mono">' +
-              plW.GRUBS +
-              '</div><div class="w-1/3 text-white font-mono">' +
-              plL.GRUBS +
-              '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-indigo-400 text-lg leading-none">🪳</span> Heraldo</div><div class="w-1/3 text-white font-mono">' +
-              plW.HERALD +
-              '</div><div class="w-1/3 text-white font-mono">' +
-              plL.HERALD +
-              '</div></div><div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30"><div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg leading-none">🛡️</span> Plates</div><div class="w-1/3 text-white font-mono">' +
-              ptStr(plW.TOTAL) +
-              '</div><div class="w-1/3 text-white font-mono">' +
-              ptStr(plL.TOTAL) +
-              '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plW.TOP) +
-              '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plL.TOP) +
-              '</div></div><div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plW.MID) +
-              '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plL.MID) +
-              '</div></div><div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition"><div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plW.BOT) +
-              '</div><div class="w-1/3 text-slate-300 font-mono text-sm">' +
-              ptStr(plL.BOT) +
-              "</div></div></div></div>";
+            let advancedStatsHtml = '';
+
+            // Count dragons and barons from events (reliable fallback)
+            let dragW = 0, dragL = 0, baronW = 0, baronL = 0;
+            events.forEach((e) => {
+              if (e.type === 'DRAGON') { if (e.team === 'WIN') dragW++; else dragL++; }
+              if (e.type === 'BARON')  { if (e.team === 'WIN') baronW++; else baronL++; }
+            });
+            // Prefer teamStats if available and > 0
+            const wStats = res.winStats || {};
+            const lStats = res.losStats || {};
+            dragW  = (wStats.dragons  > 0) ? wStats.dragons  : dragW;
+            dragL  = (lStats.dragons  > 0) ? lStats.dragons  : dragL;
+            baronW = (wStats.barons   > 0) ? wStats.barons   : baronW;
+            baronL = (lStats.barons   > 0) ? lStats.barons   : baronL;
+            const towersW = wStats.towers || 0;
+            const towersL = lStats.towers || 0;
+            const inhibsW = wStats.inhibs || 0;
+            const inhibsL = lStats.inhibs || 0;
+
+            const _objRow = (icon, colorCls, label, vW, vL) => {
+              const hiW = (vW !== '-' && vL !== '-' && Number(vW) > Number(vL)) ? 'text-blue-400 font-bold' : '';
+              const hiL = (vW !== '-' && vL !== '-' && Number(vL) > Number(vW)) ? 'text-red-400 font-bold' : '';
+              return '<div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30">' +
+                '<div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2">' +
+                '<span class="' + colorCls + ' text-lg leading-none">' + icon + '</span> ' + label + '</div>' +
+                '<div class="w-1/3 font-mono ' + hiW + '">' + (vW !== undefined && vW !== null ? vW : '-') + '</div>' +
+                '<div class="w-1/3 font-mono ' + hiL + '">' + (vL !== undefined && vL !== null ? vL : '-') + '</div></div>';
+            };
+
+            advancedStatsHtml =
+              '<div class="col-span-1 lg:col-span-2 bg-[#27272a] border border-slate-700 rounded-xl overflow-hidden mt-6 mb-4 shadow-sm">' +
+              '<div class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest">OBJETIVOS Y PLACAS</div>' +
+              '<div class="p-0"><div class="flex items-end text-center pt-4 pb-2 border-b border-slate-700/50">' +
+              '<div class="w-1/3"></div>' +
+              '<div class="w-1/3 text-center"><div class="font-oswald text-lg text-blue-400 border-b-2 border-blue-500 pb-1 mx-4 truncate">' + escHtml(names[0]) + '</div></div>' +
+              '<div class="w-1/3 text-center"><div class="font-oswald text-lg text-red-500 border-b-2 border-red-500 pb-1 mx-4 truncate">' + escHtml(names[1]) + '</div></div>' +
+              '</div>' +
+              _objRow('\uD83D\uDC1B', 'text-purple-400', 'Voidgrubs', plW.GRUBS, plL.GRUBS) +
+              _objRow('\uD83D\uDC09', 'text-orange-400', 'Dragones', dragW, dragL) +
+              _objRow('\uD83D\uDC7E', 'text-violet-400', 'Barones', baronW, baronL) +
+              _objRow('\uD83E\uAB73', 'text-indigo-400', 'Heraldo', plW.HERALD, plL.HERALD) +
+              _objRow('\uD83C\uDFEF', 'text-yellow-400', 'Torres', towersW || '-', towersL || '-') +
+              (inhibsW + inhibsL > 0 ? _objRow('\u2694\uFE0F', 'text-rose-400', 'Inhibidores', inhibsW, inhibsL) : '') +
+              '<div class="flex items-center text-center py-2.5 hover:bg-slate-700/30 transition border-b border-slate-700/30">' +
+              '<div class="w-1/3 text-left pl-6 text-slate-200 text-xs font-bold flex items-center gap-2"><span class="text-slate-400 text-lg">\uD83D\uDEE1\uFE0F</span> Placas</div>' +
+              '<div class="w-1/3 text-white font-mono">' + ptStr(plW.TOTAL) + '</div>' +
+              '<div class="w-1/3 text-white font-mono">' + ptStr(plL.TOTAL) + '</div></div>' +
+              '<div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition">' +
+              '<div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates TOP</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.TOP) + '</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.TOP) + '</div></div>' +
+              '<div class="flex items-center text-center py-2 hover:bg-slate-700/30 transition">' +
+              '<div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates MID</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.MID) + '</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.MID) + '</div></div>' +
+              '<div class="flex items-center text-center py-2 pb-3 hover:bg-slate-700/30 transition">' +
+              '<div class="w-1/3 text-left pl-12 text-slate-400 text-[11px]">Plates BOT</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plW.BOT) + '</div>' +
+              '<div class="w-1/3 text-slate-300 font-mono text-sm">' + ptStr(plL.BOT) + '</div></div></div></div>';
 
             advancedStatsHtml +=
               '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2"><div class="bg-[#27272a] rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col"><h3 class="bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 uppercase tracking-widest -mx-4 -mt-4 rounded-t-xl mb-3">Distribución de Oro</h3><div class="flex items-center w-full h-full gap-2"><div style="position: relative; height: 160px; width: 50%;"><canvas id="matchGoldRadar"></canvas></div><div class="w-[50%] flex flex-col justify-center">' +
@@ -7712,7 +7841,10 @@
 
             let simulatedMins = totalMins;
 
-            const buildRow = (p, isWin) => {
+            let winTeamDmgTotal = res.winners.reduce((acc, p) => acc + (parseFloat(p.dmg) || 0), 0);
+            let losTeamDmgTotal = res.losers.reduce((acc, p) => acc + (parseFloat(p.dmg) || 0), 0);
+
+            const buildRow = (p, isWin, teamDmgForRow) => {
               let teamColor = isWin ? "text-blue-400" : "text-red-400";
               let bgHover = isWin
                 ? "hover:bg-blue-900/10"
@@ -7751,14 +7883,14 @@
                 ' <span class="text-[9px] text-slate-500">(' +
                 safeDpm +
                 ')</span><div class="w-full h-1 bg-slate-800 rounded-full mt-0.5 overflow-hidden"><div style="width:' +
-                (teamDmgTotal > 0
-                  ? Math.round((parseFloat(p.dmg) / teamDmgTotal) * 100)
+                 (teamDmgForRow > 0
+                   ? Math.round((parseFloat(p.dmg) / teamDmgForRow) * 100)
                   : 0) +
                 "%;background:" +
-                (isWinner ? "#3b82f6" : "#ef4444") +
+                 (isWin ? "#3b82f6" : "#ef4444") +
                 ';height:100%"></div></div><div class="text-[8px] text-slate-500 leading-none">' +
-                (teamDmgTotal > 0
-                  ? Math.round((parseFloat(p.dmg) / teamDmgTotal) * 100) + "%"
+                 (teamDmgForRow > 0
+                   ? Math.round((parseFloat(p.dmg) / teamDmgForRow) * 100) + "%"
                   : "") +
                 '</div></td><td class="p-3 font-mono">' +
                 (p.tank || "-") +
@@ -7779,10 +7911,10 @@
             };
 
             let winRowsHtml = res.winners
-              .map((p) => buildRow(p, true))
+              .map((p) => buildRow(p, true, winTeamDmgTotal))
               .join("");
             let losRowsHtml = res.losers
-              .map((p) => buildRow(p, false))
+              .map((p) => buildRow(p, false, losTeamDmgTotal))
               .join("");
 
             advTableHtml +=
@@ -9565,99 +9697,69 @@
           "</div>" +
           "</div></div>";
 
-
         html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">';
-        html += '<div class="bg-slate-900 border border-slate-700 rounded-xl p-4"><h4 class="text-center font-bold text-xs uppercase mb-2 text-slate-400 tracking-widest">Team Profile (Averages)</h4><div style="position:relative; height:250px; width:100%"><canvas id="teamScoutRadar"></canvas></div></div>';
-        html += '<div class="bg-slate-900 border border-slate-700 rounded-xl p-4"><h4 class="text-center font-bold text-xs uppercase mb-2 text-slate-400 tracking-widest">Global Objectives &amp; Vision</h4><div style="position:relative; height:250px; width:100%"><canvas id="teamScoutBar"></canvas></div></div>';
+        html += '<div class="bg-slate-900 border border-slate-700 rounded-xl p-4"><h4 class="text-center font-bold text-xs uppercase mb-2 text-slate-400 tracking-widest">⚡ Team Profile (Promedios)</h4><div style="position:relative; height:260px; width:100%"><canvas id="teamScoutRadar"></canvas></div></div>';
+        html += '<div class="bg-slate-900 border border-slate-700 rounded-xl p-4"><h4 class="text-center font-bold text-xs uppercase mb-2 text-slate-400 tracking-widest">🏯 Daño a Objetivos &amp; Torres</h4><div style="position:relative; height:260px; width:100%"><canvas id="teamScoutBar"></canvas></div></div>';
         html += '</div>';
 
         html += '<h3 class="text-center font-oswald text-slate-400 tracking-widest mb-3 text-sm uppercase">⚔️ Cara a Cara por Línea</h3><div class="flex flex-col gap-2">';
 
-        const _maxDpmRoles = Math.max(
-          ...rolesOrder.map((r) => {
-            let _pA2 = pA_list.find((x) => x.role === r) || {};
-            let _pB2 = pB_list.find((x) => x.role === r) || {};
-            return Math.max(
-              parseFloat(_pA2.dpm) || 0,
-              parseFloat(_pB2.dpm) || 0,
-            );
-          }),
-          1,
-        );
-
         rolesOrder.forEach((role) => {
           let pA = pA_list.find((x) => x.role === role) || {
-            name: "TBD",
-            dpm: 0,
-            winrate: 0,
-            kdaText: "-/-/-",
-            champs: "",
+            name: "TBD", dpm: 0, winrate: 0, kdaText: "-/-/-", champs: "", gpm: 0, cs: 0, vspm: 0
           };
           let pB = pB_list.find((x) => x.role === role) || {
-            name: "TBD",
-            dpm: 0,
-            winrate: 0,
-            kdaText: "-/-/-",
-            champs: "",
+            name: "TBD", dpm: 0, winrate: 0, kdaText: "-/-/-", champs: "", gpm: 0, cs: 0, vspm: 0
           };
           let dpmA = parseFloat(pA.dpm) || 0;
           let dpmB = parseFloat(pB.dpm) || 0;
-          let pctA = ((dpmA / _maxDpmRoles) * 100).toFixed(0);
-          let pctB = ((dpmB / _maxDpmRoles) * 100).toFixed(0);
+          let gpmA = parseFloat(pA.gpm) || 0;
+          let gpmB = parseFloat(pB.gpm) || 0;
+          let csA  = parseFloat(pA.cs)  || 0;
+          let csB  = parseFloat(pB.cs)  || 0;
+          let vsA  = parseFloat(pA.vspm)|| 0;
+          let vsB  = parseFloat(pB.vspm)|| 0;
+          let wrA2 = parseFloat(pA.winrate) || 0;
+          let wrB2 = parseFloat(pB.winrate) || 0;
           let winA = dpmA >= dpmB;
           let cIconA = pA.champs
-            ? '<img src="' +
-              getChampIcon(pA.champs.split(",")[0]) +
-              '" class="w-8 h-8 rounded-full border border-slate-600 flex-shrink-0" onerror="this.style.display=\'none\'">'
+            ? '<img src="' + getChampIcon(pA.champs.split(",")[0]) + '" class="w-8 h-8 rounded-full border border-slate-600 flex-shrink-0" onerror="this.style.display=\'none\'">'
             : '<div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0"></div>';
           let cIconB = pB.champs
-            ? '<img src="' +
-              getChampIcon(pB.champs.split(",")[0]) +
-              '" class="w-8 h-8 rounded-full border border-slate-600 flex-shrink-0" onerror="this.style.display=\'none\'">'
+            ? '<img src="' + getChampIcon(pB.champs.split(",")[0]) + '" class="w-8 h-8 rounded-full border border-slate-600 flex-shrink-0" onerror="this.style.display=\'none\'">'
             : '<div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0"></div>';
+
+          var _mkBar2 = function(lbl, vA, vB, fmtFn) {
+            var tot2 = (vA||0)+(vB||0); var pA3 = tot2>0?Math.round((vA/tot2)*100):50; var pB3=100-pA3;
+            var wA3 = vA >= vB;
+            return '<div class="flex items-center gap-1 text-[9px] mt-1">' +
+              '<span class="w-10 text-right font-mono font-bold ' + (wA3?'text-blue-300':'text-slate-500') + '">' + fmtFn(vA||0) + '</span>' +
+              '<div class="flex-1 flex items-center h-3">' +
+                '<div class="flex-1 flex justify-end h-full overflow-hidden"><div style="width:' + pA3 + '%;background:' + (wA3?'#3b82f6':'#1e3a5f') + ';height:100%;border-radius:3px 0 0 3px;transition:width 1s"></div></div>' +
+                '<span class="text-[8px] text-slate-600 font-black px-1 flex-shrink-0 w-8 text-center leading-none">' + lbl + '</span>' +
+                '<div class="flex-1 h-full overflow-hidden"><div style="width:' + pB3 + '%;background:' + (!wA3?'#ef4444':'#3b1f25') + ';height:100%;border-radius:0 3px 3px 0;transition:width 1s"></div></div>' +
+              '</div>' +
+              '<span class="w-10 font-mono font-bold ' + (!wA3?'text-red-300':'text-slate-500') + '">' + fmtFn(vB||0) + '</span>' +
+            '</div>';
+          };
 
           html +=
             '<div class="bg-slate-900 border border-slate-700 rounded-xl p-3 hover:border-slate-500 transition">' +
-            '<div class="flex items-center gap-2 mb-2">' +
-            '<div class="flex items-center gap-2 w-[42%]">' +
-            cIconA +
-            '<div class="min-w-0"><div class="font-bold text-sm truncate ' +
-            (winA ? "text-emerald-300" : "text-white") +
-            '">' +
-            escHtml(pA.name) +
-            '</div><div class="text-[10px] text-slate-400 font-mono">' +
-            (pA.kdaText || "-") +
-            "</div></div></div>" +
-            '<div class="w-[16%] text-center text-[10px] text-slate-500 font-black uppercase flex-shrink-0">' +
-            (roleLabels[role] || role) +
-            "</div>" +
-            '<div class="flex items-center gap-2 w-[42%] justify-end text-right"><div class="min-w-0"><div class="font-bold text-sm truncate ' +
-            (!winA ? "text-emerald-300" : "text-white") +
-            '">' +
-            escHtml(pB.name) +
-            '</div><div class="text-[10px] text-slate-400 font-mono">' +
-            (pB.kdaText || "-") +
-            "</div></div>" +
-            cIconB +
-            "</div>" +
-            "</div>" +
-            '<div class="flex items-center gap-0.5 h-5">' +
-            '<div class="flex-1 flex justify-end h-full"><div style="width:' +
-            pctA +
-            "%;background:" +
-            (winA ? "#3b82f6" : "#1e3a5f") +
-            ';height:100%;border-radius:4px 0 0 4px;transition:1s;display:flex;align-items:center;justify-content:flex-end;padding-right:3px;"><span style="font-size:9px;color:white;font-weight:bold">' +
-            (dpmA > 0 ? Math.round(dpmA) : "") +
-            "</span></div></div>" +
-            '<div style="width:2px;height:100%;background:#0f172a;flex-shrink:0;"></div>' +
-            '<div class="flex-1 h-full"><div style="width:' +
-            pctB +
-            "%;background:" +
-            (!winA ? "#ef4444" : "#3b1f25") +
-            ';height:100%;border-radius:0 4px 4px 0;transition:1s;display:flex;align-items:center;padding-left:3px;"><span style="font-size:9px;color:white;font-weight:bold">' +
-            (dpmB > 0 ? Math.round(dpmB) : "") +
-            "</span></div></div>" +
-            "</div></div>";
+            '<div class="flex items-center gap-2 mb-1">' +
+            '<div class="flex items-center gap-2 w-[42%]">' + cIconA +
+            '<div class="min-w-0"><div class="font-bold text-sm truncate ' + (winA?'text-emerald-300':'text-white') + '">' + escHtml(pA.name) + '</div>' +
+            '<div class="text-[9px] text-slate-400 font-mono">' + (pA.kdaText||'-') + '</div></div></div>' +
+            '<div class="w-[16%] text-center text-[10px] text-slate-500 font-black uppercase flex-shrink-0">' + (roleLabels[role]||role) + '</div>' +
+            '<div class="flex items-center gap-2 w-[42%] justify-end text-right"><div class="min-w-0">' +
+            '<div class="font-bold text-sm truncate ' + (!winA?'text-emerald-300':'text-white') + '">' + escHtml(pB.name) + '</div>' +
+            '<div class="text-[9px] text-slate-400 font-mono">' + (pB.kdaText||'-') + '</div></div>' + cIconB + '</div></div>' +
+            '<div class="pt-1 border-t border-slate-800 space-y-0">' +
+            _mkBar2('DPM',  dpmA, dpmB, function(v){ return v>0?Math.round(v):'-'; }) +
+            _mkBar2('GPM',  gpmA, gpmB, function(v){ return v>0?Math.round(v):'-'; }) +
+            _mkBar2('CS/M', csA,  csB,  function(v){ return v>0?v.toFixed(1):'-'; }) +
+            _mkBar2('VSPM', vsA,  vsB,  function(v){ return v>0?v.toFixed(2):'-'; }) +
+            _mkBar2('WR%',  wrA2, wrB2, function(v){ return v+'%'; }) +
+            '</div></div>';
         });
         html += ' </div> <div id="ai-prediction-box" class="mt-8 hidden"> <div class="bg-slate-900 border-2 border-purple-500 rounded-xl p-6 shadow-[0_0_20px_rgba(168,85,247,0.3)] animate-pulse-slow"> <div class="flex justify-between items-center mb-4"> <div class="text-purple-400 font-oswald tracking-widest uppercase flex items-center gap-2"> <span class="text-xl">🤖</span> INFORME DE LA IA </div> <button onclick="copyToDiscord(\'ai-prediction-text\')" class="text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded transition uppercase font-black">Copiar a Discord</button> </div> <div id="ai-prediction-text" class="text-slate-300 text-sm leading-relaxed italic space-y-4"></div> </div> </div> <div class="mt-8 flex justify-center"> <button id="btn-ai-predict" onclick="askAIPrediction(\'' +
           (matchId) +
@@ -9669,6 +9771,52 @@
           '<div id="adv-scouting-body" class="space-y-2"></div></div>';
 
         content.innerHTML = html;
+
+        // === RENDER SCOUT CHARTS ===
+        setTimeout(function() {
+          var ctxSR = document.getElementById("teamScoutRadar");
+          if (ctxSR && typeof Chart !== "undefined") {
+            if (window.scoutRadarInst) { try { window.scoutRadarInst.destroy(); } catch(e){} }
+            var _aF3 = function(list, f) { return list.length ? list.reduce(function(s,p){ return s+(parseFloat(p[f])||0); },0)/list.length : 0; };
+            var nA3 = [
+              Math.min(10, Math.max(0, _aF3(pA_list,"kdaNum") * 2)),
+              Math.min(10, Math.max(0, _aF3(pA_list,"dpm") / 300)),
+              Math.min(10, Math.max(0, _aF3(pA_list,"gpm") / 50)),
+              Math.min(10, Math.max(0, _aF3(pA_list,"cs") * 1.5)),
+              Math.min(10, Math.max(0, _aF3(pA_list,"vspm") * 5)),
+              Math.min(10, Math.max(0, (wrA||0) / 10))
+            ];
+            var nB3 = [
+              Math.min(10, Math.max(0, _aF3(pB_list,"kdaNum") * 2)),
+              Math.min(10, Math.max(0, _aF3(pB_list,"dpm") / 300)),
+              Math.min(10, Math.max(0, _aF3(pB_list,"gpm") / 50)),
+              Math.min(10, Math.max(0, _aF3(pB_list,"cs") * 1.5)),
+              Math.min(10, Math.max(0, _aF3(pB_list,"vspm") * 5)),
+              Math.min(10, Math.max(0, (wrB||0) / 10))
+            ];
+            window.scoutRadarInst = new Chart(ctxSR, {
+              type: "radar",
+              data: { labels: ["KDA","DPM","GPM","CS/M","VSPM","WR%"], datasets: [
+                { label: escHtml(tA.name), data: nA3, backgroundColor: "rgba(56,189,248,0.2)", borderColor: "#38bdf8", pointBackgroundColor: "#38bdf8", borderWidth: 2 },
+                { label: escHtml(tB.name), data: nB3, backgroundColor: "rgba(239,68,68,0.2)", borderColor: "#ef4444", pointBackgroundColor: "#ef4444", borderWidth: 2 }
+              ]},
+              options: { maintainAspectRatio: false, scales: { r: { angleLines: { color: "rgba(255,255,255,0.08)" }, grid: { color: "rgba(255,255,255,0.08)" }, pointLabels: { color: "#94a3b8", font: { family: "Oswald", size: 11 } }, ticks: { display: false, max: 10, min: 0 } } }, plugins: { legend: { labels: { color: "#e2e8f0", font: { family: "Oswald", size: 12 } } } } }
+            });
+          }
+          var ctxSB = document.getElementById("teamScoutBar");
+          if (ctxSB && typeof Chart !== "undefined") {
+            if (window.scoutBarInst) { try { window.scoutBarInst.destroy(); } catch(e){} }
+            var rList4 = ["TOP","JNG","MID","ADC","SUPP"];
+            var rCol4 = { TOP:"#10b981", JNG:"#ef4444", MID:"#8b5cf6", ADC:"#f59e0b", SUPP:"#3b82f6" };
+            var _getR4 = function(list, role, field) { var p = list.find(function(x){ return x.role === role; }); return p ? parseFloat(p[field])||0 : 0; };
+            window.scoutBarInst = new Chart(ctxSB, {
+              type: "bar",
+              data: { labels: [escHtml(tA.name)+" (Obj)", escHtml(tB.name)+" (Obj)", escHtml(tA.name)+" (Torres)", escHtml(tB.name)+" (Torres)"],
+                datasets: rList4.map(function(r){ return { label:r, data:[_getR4(pA_list,r,"dmgObj"),_getR4(pB_list,r,"dmgObj"),_getR4(pA_list,r,"dmgTurrets"),_getR4(pB_list,r,"dmgTurrets")], backgroundColor:rCol4[r], borderColor:"#0f172a", borderWidth:1, borderRadius:3 }; }) },
+              options: { indexAxis:"y", maintainAspectRatio:false, scales: { x:{ stacked:true, ticks:{color:"#94a3b8", callback:function(v){return v>=1000?(v/1000).toFixed(1)+"k":v;}}, grid:{color:"rgba(51,65,85,0.15)"} }, y:{stacked:true, ticks:{color:"#94a3b8", font:{family:"Oswald",size:10}}, grid:{display:false}} }, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(ctx){var v=ctx.raw||0; if(v===0) return null; return ctx.dataset.label+": "+(v>=1000?(v/1000).toFixed(1)+"k":Math.round(v)); }}}} }
+            });
+          }
+        }, 100);
 
         // Cargar datos avanzados del backend
         google.script.run

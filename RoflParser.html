@@ -880,6 +880,9 @@
         const t100 = sorted.filter((p) => p.TEAM === "100" || p.TEAM === 100);
         const t200 = sorted.filter((p) => p.TEAM === "200" || p.TEAM === 200);
 
+        // Store game duration in minutes for per-minute stat calculations
+        window._lastGameDuration = Math.max(1, entry.gameData.gameLength / 60000);
+
         renderTeam("team-100", "Equipo Azul (100)", t100);
         renderTeam("team-200", "Equipo Rojo (200)", t200);
       }
@@ -898,37 +901,95 @@
         const cls = isWin ? "win-title" : "lose-title";
         const tag = isWin ? "🏆 VICTORIA" : "💀 DERROTA";
 
-        let html = '<div class="team-title ' + (cls) + '">' + (teamName) + ' — ' + (tag) +
-          '</div> <table><thead><tr> <th>Campeón</th><th>Jugador</th><th>KDA</th> <th>Daño</th><th>Oro</th><th>CS</th><th>Visión</th> </tr></thead><tbody>';
+        // Calculate team totals for percentages
+        const teamDmg = players.reduce((s, p) => s + parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0), 0);
+        const teamGold = players.reduce((s, p) => s + parseInt(p.GOLD_EARNED || p.goldEarned || 0), 0);
+        const teamKills = players.reduce((s, p) => s + parseInt(p.CHAMPIONS_KILLED || p.kills || 0), 0);
+        const durationMin = window._lastGameDuration || 30;
+
+        const pct = (v, t) => t > 0 ? ((v / t) * 100).toFixed(0) + '%' : '0%';
+        const fmtK = (v) => { const n = parseInt(v || 0); return n >= 1000 ? (n/1000).toFixed(1) + 'k' : n; };
+        const fmtRatio = (k, d, a) => d === 0 ? (k + a) + ':1 (\u221e)' : ((k + a) / d).toFixed(2) + ':1';
+
+        const advId = containerId + '-adv';
+
+        let html = '<div class="team-title ' + cls + '">' + teamName + ' \u2014 ' + tag + '</div>';
+        // Main table
+        html += '<table><thead><tr><th>Campe\u00f3n</th><th>Jugador</th><th>KDA</th><th>Da\u00f1o (% equipo)</th><th>Oro (GPM)</th><th>CS (cs/m)</th><th>Visi\u00f3n (VSPM)</th><th>KP%</th></tr></thead><tbody>';
 
         players.forEach((p) => {
           const k = parseInt(p.CHAMPIONS_KILLED || p.kills || 0);
           const d = parseInt(p.NUM_DEATHS || p.deaths || 0);
           const a = parseInt(p.ASSISTS || p.assists || 0);
-          const dmg = parseInt(
-            p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS ||
-              p.totalDamageDealtToChampions ||
-              0,
-          ).toLocaleString();
-          const gold = parseInt(
-            p.GOLD_EARNED || p.goldEarned || 0,
-          ).toLocaleString();
-          const cs =
-            parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) +
-            parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
+          const dmgVal = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
+          const goldVal = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
+          const cs = parseInt(p.MINIONS_KILLED || p.totalMinionsKilled || 0) + parseInt(p.NEUTRAL_MINIONS_KILLED || 0);
           const vis = parseInt(p.VISION_SCORE || p.visionScore || 0);
           const champ = p.SKIN || p.championName || p.CHAMPION || "Unknown";
-          const name =
-            p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || "Jugador";
+          const name = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || "Jugador";
           const pos = p.INDIVIDUAL_POSITION || p.TEAM_POSITION || "";
+          const gpm = Math.round(goldVal / Math.max(1, durationMin));
+          const csm = (cs / Math.max(1, durationMin)).toFixed(1);
+          const vspm = (vis / Math.max(1, durationMin)).toFixed(2);
+          const kp = teamKills > 0 ? Math.round(((k + a) / teamKills) * 100) : 0;
+          const dmgPct = pct(dmgVal, teamDmg);
+          const fbKill = p.FIRST_BLOOD_KILL || p.firstBloodKill || '';
+          const ftKill = p.FIRST_TOWER_KILL || p.firstTowerKill || '';
+          const fb = (String(fbKill).includes('true') || fbKill === true || fbKill === '1') ? ' <span style="color:#f59e0b;font-size:9px;font-weight:700">FB</span>' : '';
+          const ft = (String(ftKill).includes('true') || ftKill === true || ftKill === '1') ? ' <span style="color:#f59e0b;font-size:9px;font-weight:700">FT</span>' : '';
 
-          html += '<tr> <td><b>' + (champ) + '</b> <span style="font-size:10px;color:var(--muted)">' + (pos) +
-            '</span></td> <td>' + (name) + '</td> <td class="kda">' + (k) +
-            '/<span style="color:var(--lose)">' + (d) + '</span>/' + (a) + '</td> <td>' + (dmg) +
-            '</td> <td style="color:var(--gold)">' + (gold) + '</td> <td>' + (cs) + '</td> <td>' + (vis) +
-            '</td> </tr>';
+          html += '<tr><td><b>' + champ + '</b>' + fb + ft + ' <span style="font-size:10px;color:var(--muted)">' + pos + '</span></td>' +
+            '<td>' + name + '</td>' +
+            '<td class="kda">' + k + '/<span style="color:var(--lose)">' + d + '</span>/' + a +
+              '<div style="font-size:9px;color:var(--muted)">' + fmtRatio(k, d, a) + '</div></td>' +
+            '<td>' + fmtK(dmgVal) + ' <span style="color:var(--muted);font-size:9px">(' + dmgPct + ')</span>' +
+              '<div style="height:3px;background:rgba(59,130,246,0.2);border-radius:2px;margin-top:2px">' +
+              '<div style="height:100%;width:' + dmgPct + ';background:' + (isWin ? '#3b82f6' : '#ef4444') + ';border-radius:2px"></div></div></td>' +
+            '<td style="color:var(--gold)">' + fmtK(goldVal) + ' <span style="color:var(--muted);font-size:9px">(' + gpm + ' gpm)</span></td>' +
+            '<td>' + cs + ' <span style="color:var(--muted);font-size:9px">(' + csm + '/m)</span></td>' +
+            '<td>' + vis + ' <span style="color:var(--muted);font-size:9px">(' + vspm + '/m)</span></td>' +
+            '<td style="color:var(--accent2)">' + kp + '%</td></tr>';
         });
-        html += "</tbody></table>";
+        html += '</tbody></table>';
+
+        // Collapsible Advanced Stats
+        html += '<button onclick="document.getElementById(\'' + advId + '\').classList.toggle(\'hidden\')" style="margin-top:8px;width:100%;background:rgba(59,130,246,0.1);border:1px solid var(--border);color:var(--accent2);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase;transition:all 0.2s">\uD83D\uDCCA VER ESTAD\u00CDSTICAS AVANZADAS COMPLETAS</button>';
+        html += '<div id="' + advId + '" class="hidden" style="margin-top:8px;overflow-x:auto">';
+        html += '<table><thead><tr><th>Jugador</th><th>DPM</th><th>GPM</th><th>Dmg Obj</th><th>Dmg Torretas</th><th>Dmg Recibido</th><th>Wards (+/-)</th><th>Pinks</th><th>CC (seg)</th><th>Curaci\u00F3n</th><th>Escudo</th><th>Pentakills</th></tr></thead><tbody>';
+
+        players.forEach((p) => {
+          const name2 = p.RIOT_ID_GAME_NAME || p.NAME || p.summonerName || "Jugador";
+          const goldVal2 = parseInt(p.GOLD_EARNED || p.goldEarned || 0);
+          const dmgVal2 = parseInt(p.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || p.totalDamageDealtToChampions || 0);
+          const gpm2 = Math.round(goldVal2 / Math.max(1, durationMin));
+          const dpm2 = Math.round(dmgVal2 / Math.max(1, durationMin));
+          const dmgObj = parseInt(p.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || p.dmgObj || 0);
+          const dmgTurrets = parseInt(p.TOTAL_DAMAGE_DEALT_TO_TURRETS || p.TOTAL_DAMAGE_DEALT_TO_BUILDINGS || p.dmgTurrets || 0);
+          const dmgTaken = parseInt(p.TOTAL_DAMAGE_TAKEN || p.dmgTaken || 0);
+          const wardPlaced = parseInt(p.WARD_PLACED || p.wardPlaced || 0);
+          const wardKilled = parseInt(p.WARD_KILLED || p.wardKilled || 0);
+          const pinks2 = parseInt(p.VISION_WARDS_BOUGHT_IN_GAME || p.VISION_WARDS_BOUGHT || p.pinks || 0);
+          const cc = parseInt(p.TIME_CCING_OTHERS || p.timeCCingOthers || 0);
+          const heal = parseInt(p.TOTAL_HEAL || p.totalHeal || 0);
+          const shield = parseInt(p.TOTAL_DAMAGE_SHIELDED_ON_TEAMMATES || p.totalDamageShieldedOnTeammates || 0);
+          const pentas = parseInt(p.PENTA_KILLS || p.pentaKills || p.pentas || 0);
+
+          html += '<tr>' +
+            '<td><b>' + name2 + '</b></td>' +
+            '<td style="color:var(--lose)">' + dpm2 + '</td>' +
+            '<td style="color:var(--gold)">' + gpm2 + '</td>' +
+            '<td>' + fmtK(dmgObj) + '</td>' +
+            '<td>' + fmtK(dmgTurrets) + '</td>' +
+            '<td style="color:var(--accent2)">' + fmtK(dmgTaken) + '</td>' +
+            '<td>' + wardPlaced + '/<span style="color:var(--lose)">' + wardKilled + '</span></td>' +
+            '<td style="color:#ec4899">' + pinks2 + '</td>' +
+            '<td>' + cc + 's</td>' +
+            '<td style="color:var(--win)">' + fmtK(heal) + '</td>' +
+            '<td style="color:#a855f7">' + fmtK(shield) + '</td>' +
+            '<td style="color:var(--gold)">' + (pentas > 0 ? '\uD83C\uDF1F ' + pentas : '\u2014') + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table></div>';
         container.innerHTML = html;
       }
 
