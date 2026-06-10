@@ -4,6 +4,9 @@
     <base target="_top" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Oswald:wght@500&display=swap"
       rel="stylesheet"
@@ -742,6 +745,39 @@
       .wg-nav-amber.active { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.12); }
       .wg-nav-amber.active .wg-nav-text { color: #fde68a; }
       .wg-nav-amber.active::before { background: #fbbf24; }
+      .wg-nav-violet.active { background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.12); }
+      .wg-nav-violet.active .wg-nav-text { color: #c4b5fd; }
+      .wg-nav-violet.active::before { background: #8b5cf6; }
+      /* ===== SOLO-AGENT MODULE ===== */
+      .sa-card {
+        background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+        border: 1px solid rgba(139,92,246,0.15);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      }
+      .sa-card:hover {
+        border-color: rgba(139,92,246,0.45);
+        transform: translateY(-2px);
+        box-shadow: 0 0 24px rgba(139,92,246,0.12);
+      }
+      .sa-role-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(139,92,246,0.15);
+        border: 1px solid rgba(139,92,246,0.3);
+        color: #c4b5fd;
+        font-size: 11px; font-weight: 700;
+        padding: 2px 10px; border-radius: 999px;
+        letter-spacing: .06em; text-transform: uppercase;
+      }
+      .sa-elo-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11px; font-weight: 700;
+        padding: 2px 10px; border-radius: 999px;
+        letter-spacing: .06em; text-transform: uppercase;
+      }
+      .sa-empty { text-align: center; padding: 4rem 2rem; color: #475569; }
+      .sa-line-clamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
       /* PLAYOFF special */
       .wg-nav-playoff { display: none !important; }
       .wg-nav-playoff.show, .wg-nav-playoff:not(.hidden) { display: flex !important; }
@@ -758,26 +794,22 @@
       class="w-full bg-[#0a0a0c] p-4 flex justify-between items-center z-50 flex-shrink-0"
     >
       <div class="font-oswald text-2xl text-yellow-500 tracking-widest">
-        WARGODS<span class="text-white">PREMIER</span>
+        WARGODS<span class="text-white">PREMIER</span><span class="text-white"> LEAGUE</span>
         <span class="text-xs text-slate-500 ml-2" id="header-role"
           >OFFICIAL DASHBOARD</span
         >
       </div>
       <div class="flex gap-4 items-center">
         <div
-          onclick="AchievementManager.showGallery()"
-          class="bg-indigo-600/20 border border-indigo-500/50 px-4 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-indigo-500/30 transition shadow-lg"
+          class="hidden sm:flex flex-col items-end leading-none mr-1"
         >
-          <span class="text-indigo-400">🏅</span>
-          <span
-            class="font-bold text-xs text-indigo-200 uppercase tracking-widest pr-1"
-            >Trofeos</span
-          >
+          <span class="font-oswald text-sm text-yellow-500 tracking-[0.2em] uppercase">Season 2026</span>
+          <span class="text-[10px] text-slate-400 font-bold tracking-[0.25em] uppercase">Split 1</span>
         </div>
 
         <div
           class="bg-yellow-500/10 border border-yellow-500/50 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-[0_0_10px_rgba(251,191,36,0.2)] cursor-pointer"
-          onclick="loadWalletBalance()"
+          onclick="handleWalletClick()"
         >
           <span class="text-yellow-500">🪙</span>
           <span
@@ -821,7 +853,7 @@
           <h1
             class="text-6xl font-oswald text-white tracking-wider mb-2 text-shadow drop-shadow-lg"
           >
-            WARGODS<span class="text-yellow-500">PREMIER</span>
+            WARGODS<span class="text-yellow-500">PREMIER</span> LEAGUE
           </h1>
           <p class="text-slate-400 font-bold tracking-widest uppercase mb-12">
             Selecciona tu experiencia
@@ -1038,12 +1070,6 @@
               </div>
             </div>
             <button
-              onclick="openDailyRoulette()"
-              class="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black px-3 py-2 rounded text-sm font-black transition flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-            >
-              🎰 LOGIN DIARIO
-            </button>
-            <button
               onclick="openProfileModal()"
               class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold transition flex items-center gap-2"
             >
@@ -1195,6 +1221,10 @@
               <div class="wg-nav-item wg-nav-cyan" id="btn-tab-teamh2h" onclick="switchTab('teamh2h', this)">
                 <span class="wg-nav-icon">🛡️</span>
                 <span class="wg-nav-text">Team Scouting</span>
+              </div>
+              <div class="wg-nav-item wg-nav-violet" id="btn-tab-solo-agent" onclick="switchTab('solo-agent', this)">
+                <span class="wg-nav-icon">🎯</span>
+                <span class="wg-nav-text">Solo-Agent</span>
               </div>
             </div>
 
@@ -2197,6 +2227,184 @@
               </div>
             </div>
 
+            <!-- ===== TAB: SOLO-AGENT ===== -->
+            <div id="tab-solo-agent" class="content-pane overflow-auto p-4 md:p-8">
+              <div class="w-full max-w-[1400px] mx-auto space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 class="font-oswald text-3xl text-white tracking-widest uppercase flex items-center gap-3">
+                      <span class="text-violet-400">🎯</span> SOLO-AGENT
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">Tablón de jugadores <span class="text-violet-300 font-bold">LFT</span> · Looking For Team</p>
+                  </div>
+                  <button onclick="openSoloAgentForm()"
+                    class="bg-violet-600 hover:bg-violet-500 text-white font-black px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all hover:scale-105 tracking-widest uppercase text-sm flex items-center gap-2 shrink-0">
+                    <span>➕</span> PUBLICAR MI PERFIL
+                  </button>
+                </div>
+
+                <div class="bg-[#111827] border border-slate-700/50 rounded-2xl p-4">
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Rol</label>
+                      <select id="sa-filter-role" onchange="renderSoloAgents()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">Todos los roles</option>
+                        <option value="TOP">🛡️ TOP</option>
+                        <option value="JNG">🌲 JUNGLE</option>
+                        <option value="MID">🔥 MID</option>
+                        <option value="ADC">🏹 ADC</option>
+                        <option value="SUPP">💖 SUPPORT</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Elo Actual</label>
+                      <select id="sa-filter-elo" onchange="renderSoloAgents()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">Todos los elos</option>
+                        <option value="Iron">🔩 Iron</option>
+                        <option value="Bronze">🥉 Bronze</option>
+                        <option value="Silver">🥈 Silver</option>
+                        <option value="Gold">🥇 Gold</option>
+                        <option value="Platinum">🟢 Platinum</option>
+                        <option value="Emerald">💚 Emerald</option>
+                        <option value="Diamond">💎 Diamond</option>
+                        <option value="Master">🏆 Master</option>
+                        <option value="Grandmaster">🌟 Grandmaster</option>
+                        <option value="Challenger">🔥 Challenger</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Disponibilidad</label>
+                      <select id="sa-filter-avail" onchange="renderSoloAgents()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">Cualquiera</option>
+                        <option value="Flexible">Flexible</option>
+                        <option value="Entre semana">Entre semana</option>
+                        <option value="Fines de semana">Fines de semana</option>
+                        <option value="Noches">Solo noches</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Buscar</label>
+                      <input id="sa-search" type="text" placeholder="Nickname..." oninput="renderSoloAgents()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-800">
+                    <span id="sa-count" class="text-[11px] text-slate-500 font-bold tracking-widest uppercase">Cargando...</span>
+                    <button onclick="loadSoloAgents()" class="text-[11px] text-slate-500 hover:text-violet-400 transition font-bold uppercase tracking-widest">↻ Actualizar</button>
+                  </div>
+                </div>
+
+                <div id="sa-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div>
+                  <div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div>
+                  <div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== MODAL: REGISTRO SOLO-AGENT ===== -->
+            <div id="sa-form-modal" style="display:none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+              <div class="bg-[#0f172a] border border-violet-500/30 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div class="flex items-center justify-between p-6 border-b border-slate-700/60 sticky top-0 bg-[#0f172a] z-10">
+                  <div>
+                    <h3 class="font-oswald text-xl text-white tracking-widest uppercase">🎯 Publicar Perfil LFT</h3>
+                    <p class="text-slate-500 text-xs mt-0.5">Los equipos podrán contactarte para fichar</p>
+                  </div>
+                  <button onclick="closeSoloAgentForm()" class="text-slate-500 hover:text-white text-xl font-bold transition">✕</button>
+                </div>
+                <div class="p-6 space-y-4">
+                  <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Nickname en la Liga <span class="text-red-400">*</span></label>
+                    <input id="sa-input-nick" type="text" maxlength="40" placeholder="Tu Invocador en Wargods" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition" />
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Enlace OP.GG</label>
+                    <input id="sa-input-opgg" type="url" maxlength="200" placeholder="https://www.op.gg/summoners/euw/..." class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Rol Principal <span class="text-red-400">*</span></label>
+                      <select id="sa-input-role-main" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">-- Selecciona --</option>
+                        <option value="TOP">🛡️ TOP</option>
+                        <option value="JNG">🌲 JUNGLE</option>
+                        <option value="MID">🔥 MID</option>
+                        <option value="ADC">🏹 ADC</option>
+                        <option value="SUPP">💖 SUPPORT</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Rol Secundario</label>
+                      <select id="sa-input-role-sec" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">-- Ninguno --</option>
+                        <option value="TOP">🛡️ TOP</option>
+                        <option value="JNG">🌲 JUNGLE</option>
+                        <option value="MID">🔥 MID</option>
+                        <option value="ADC">🏹 ADC</option>
+                        <option value="SUPP">💖 SUPPORT</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Elo Actual <span class="text-red-400">*</span></label>
+                      <select id="sa-input-elo-current" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">-- Selecciona --</option>
+                        <option value="Iron">🔩 Iron</option>
+                        <option value="Bronze">🥉 Bronze</option>
+                        <option value="Silver">🥈 Silver</option>
+                        <option value="Gold">🥇 Gold</option>
+                        <option value="Platinum">🟢 Platinum</option>
+                        <option value="Emerald">💚 Emerald</option>
+                        <option value="Diamond">💎 Diamond</option>
+                        <option value="Master">🏆 Master</option>
+                        <option value="Grandmaster">🌟 Grandmaster</option>
+                        <option value="Challenger">🔥 Challenger</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Peak Elo</label>
+                      <select id="sa-input-elo-peak" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 transition">
+                        <option value="">-- Selecciona --</option>
+                        <option value="Iron">🔩 Iron</option>
+                        <option value="Bronze">🥉 Bronze</option>
+                        <option value="Silver">🥈 Silver</option>
+                        <option value="Gold">🥇 Gold</option>
+                        <option value="Platinum">🟢 Platinum</option>
+                        <option value="Emerald">💚 Emerald</option>
+                        <option value="Diamond">💎 Diamond</option>
+                        <option value="Master">🏆 Master</option>
+                        <option value="Grandmaster">🌟 Grandmaster</option>
+                        <option value="Challenger">🔥 Challenger</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Disponibilidad</label>
+                    <select id="sa-input-avail" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 transition">
+                      <option value="Flexible">Flexible (cualquier horario)</option>
+                      <option value="Entre semana">Entre semana (L-V)</option>
+                      <option value="Fines de semana">Fines de semana (S-D)</option>
+                      <option value="Noches">Solo noches</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Discord (para contacto)</label>
+                    <input id="sa-input-discord" type="text" maxlength="60" placeholder="usuario o @usuario" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition" />
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-1.5">Descripción breve <span class="text-slate-600">(máx. 280)</span></label>
+                    <textarea id="sa-input-desc" maxlength="280" rows="3" oninput="document.getElementById('sa-desc-counter').textContent=this.value.length+'/280'" placeholder="Tu estilo de juego, experiencia competitiva, qué tipo de equipo buscas..." class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition resize-none"></textarea>
+                    <div class="flex justify-end mt-1"><span id="sa-desc-counter" class="text-[10px] text-slate-600">0/280</span></div>
+                  </div>
+                  <div id="sa-form-msg" class="hidden rounded-lg p-3 text-sm font-medium border"></div>
+                </div>
+                <div class="flex justify-end gap-3 px-6 pb-6">
+                  <button onclick="closeSoloAgentForm()" class="px-5 py-2.5 text-slate-400 hover:text-white font-bold text-sm transition hover:bg-slate-800 rounded-lg">CANCELAR</button>
+                  <button id="sa-submit-btn" onclick="submitSoloAgent()" class="bg-violet-600 hover:bg-violet-500 text-white font-black px-8 py-2.5 rounded-lg text-sm shadow-lg transition flex items-center gap-2"><span>📤</span> PUBLICAR PERFIL</button>
+                </div>
+              </div>
+            </div>
+
             <!-- 🎰 ROULETTE MODAL -->
             <div
               id="roulette-modal"
@@ -3038,6 +3246,73 @@
       </div>
     </div>
 
+      <!-- =============================================
+           🔗 MODAL: VINCULAR CUENTA DE INVOCADOR
+           ============================================= -->
+      <div
+        id="link-account-modal"
+        class="modal-overlay"
+        onclick="closeModal('link-account-modal')"
+      >
+        <div
+          class="modal-box bg-slate-900 border-2 border-yellow-500 relative"
+          style="max-width:440px"
+          onclick="event.stopPropagation()"
+        >
+          <button
+            onclick="closeModal('link-account-modal')"
+            class="absolute right-4 top-4 text-slate-400 hover:text-white text-2xl font-bold"
+          >
+            &times;
+          </button>
+
+          <!-- Header -->
+          <div class="text-center mb-6">
+            <div class="text-5xl mb-3">🪙</div>
+            <h2 class="text-2xl font-oswald text-yellow-400 tracking-widest uppercase">Vincular Cuenta</h2>
+            <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+              Introduce tu <strong class="text-white">Nombre de Invocador</strong> para acceder a tu
+              Cartera Virtual y participar en las apuestas de la liga.
+            </p>
+          </div>
+
+          <!-- Summoner input -->
+          <div class="mb-4">
+            <label class="block text-xs text-slate-400 uppercase tracking-widest mb-2 font-bold">Nombre de Invocador</label>
+            <input
+              id="link-account-input"
+              type="text"
+              placeholder="Ej: Faker, Caps, Doublelift..."
+              class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-500 text-white px-4 py-3 rounded-lg text-sm font-mono outline-none transition"
+              onkeydown="if(event.key==='Enter') submitLinkAccount()"
+            />
+          </div>
+
+          <!-- Error message -->
+          <div id="link-account-error" class="hidden text-red-400 text-xs mb-4 text-center font-bold"></div>
+
+          <!-- Buttons -->
+          <button
+            id="btn-link-account"
+            onclick="submitLinkAccount()"
+            class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3 rounded-lg tracking-widest uppercase text-sm transition shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)]"
+          >
+            🔗 VINCULAR CUENTA
+          </button>
+
+          <!-- Unlink option (only shown when already linked) -->
+          <div id="link-account-unlink-section" class="hidden mt-4 pt-4 border-t border-slate-700 text-center">
+            <p class="text-slate-500 text-xs mb-2">Cuenta vinculada: <span id="link-account-current" class="text-yellow-400 font-bold"></span></p>
+            <button
+              onclick="unlinkAccount()"
+              class="text-red-400 hover:text-red-300 text-xs underline transition"
+            >
+              🔓 Desvincular cuenta
+            </button>
+          </div>
+        </div>
+      </div>
+
     <div id="mvp-export-area"></div>
     <div id="summary-export-area"></div>
     <div
@@ -3312,9 +3587,7 @@
         return html + "</div>";
       }
 
-      window.onload = function () {
-        setupDragToScroll();
-      };
+      // (window.onload consolidado más abajo — ver loadWalletBalance)
 
       // LOGIN MODO LIGA NORMAL Y ADMIN
       function loginAs(role) {
@@ -7977,6 +8250,21 @@
             // Renderizar gráficos (Chart.js)
             renderGoldChart(realGoldDiff);
 
+            // Aviso de estimación: el .rofl no trae datos minuto a minuto reales
+            if (res.isEstimated) {
+              try {
+                var _goldHdr = document.querySelector('#overview-tab .bg-\\[\\#3eb4c0\\]');
+                if (_goldHdr && !_goldHdr.querySelector('.sa-est-badge')) {
+                  var _b = document.createElement('span');
+                  _b.className = 'sa-est-badge';
+                  _b.title = 'Un archivo .rofl solo contiene estadísticas finales, no datos minuto a minuto. Esta curva y los objetivos son una estimación basada en el oro final.';
+                  _b.style.cssText = 'margin-left:auto;background:rgba(0,0,0,0.25);padding:1px 8px;border-radius:999px;font-size:9px;letter-spacing:.05em;cursor:help;';
+                  _b.textContent = '~ ESTIMADO';
+                  _goldHdr.appendChild(_b);
+                }
+              } catch (e) {}
+            }
+
             const objIcons = {
               FB: {
                 icon: "🩸",
@@ -10278,6 +10566,101 @@
         loadWalletBalance();
       };
 
+      // 🔗 VINCULAR CUENTA: función inteligente del botón del header
+      function handleWalletClick() {
+        let summoner = localStorage.getItem("my_summoner_name");
+        if (!summoner) {
+          openLinkAccountModal();
+        } else {
+          // Ya vinculada: recarga el saldo
+          loadWalletBalance();
+        }
+      }
+
+      // 🔗 Abre el modal de vinculación de cuenta
+      function openLinkAccountModal() {
+        let summoner = localStorage.getItem("my_summoner_name");
+        let input = document.getElementById("link-account-input");
+        let errDiv = document.getElementById("link-account-error");
+        let unlinkSection = document.getElementById("link-account-unlink-section");
+        let currentSpan = document.getElementById("link-account-current");
+
+        // Limpiar estado
+        if (errDiv) { errDiv.innerText = ""; errDiv.classList.add("hidden"); }
+        if (input) input.value = summoner || "";
+
+        if (summoner) {
+          // Mostrar sección de desvincular
+          if (unlinkSection) unlinkSection.classList.remove("hidden");
+          if (currentSpan) currentSpan.innerText = summoner;
+        } else {
+          if (unlinkSection) unlinkSection.classList.add("hidden");
+        }
+
+        document.getElementById("link-account-modal").style.display = "flex";
+        setTimeout(function() { if (input) input.focus(); }, 100);
+      }
+
+      // 🔗 Confirmar y guardar la cuenta vinculada
+      function submitLinkAccount() {
+        let input = document.getElementById("link-account-input");
+        let btn = document.getElementById("btn-link-account");
+        let errDiv = document.getElementById("link-account-error");
+
+        let summoner = input ? input.value.trim() : "";
+        if (!summoner) {
+          if (errDiv) { errDiv.innerText = "❌ Debes introducir tu nombre de invocador."; errDiv.classList.remove("hidden"); }
+          return;
+        }
+
+        btn.innerText = "⏳ VINCULANDO...";
+        btn.disabled = true;
+        if (errDiv) errDiv.classList.add("hidden");
+
+        // Guardamos en localStorage
+        localStorage.setItem("my_summoner_name", summoner);
+
+        // Verificamos que el invocador tenga cartera (o creamos una)
+        google.script.run
+          .withSuccessHandler(function(res) {
+            btn.innerText = "🔗 VINCULAR CUENTA";
+            btn.disabled = false;
+            if (res.success) {
+              window.myLigaWalletBalance = res.balance;
+              document.getElementById("header-wallet-balance").innerText =
+                parseInt(res.balance).toLocaleString() + " WG";
+              closeModal("link-account-modal");
+              // Mostrar confirmación sutil
+              let balEl = document.getElementById("header-wallet-balance");
+              if (balEl) {
+                balEl.style.color = "#10b981";
+                setTimeout(function() { balEl.style.color = ""; }, 2000);
+              }
+            } else {
+              // Si no tiene cartera todavía, simplemente guardamos el nombre
+              document.getElementById("header-wallet-balance").innerText = "0 WG";
+              closeModal("link-account-modal");
+            }
+          })
+          .withFailureHandler(function(err) {
+            btn.innerText = "🔗 VINCULAR CUENTA";
+            btn.disabled = false;
+            // Aunque falle el servidor, el nombre ya está guardado en localStorage
+            document.getElementById("header-wallet-balance").innerText = "✓ " + summoner;
+            closeModal("link-account-modal");
+          })
+          .getWalletBalance(summoner);
+      }
+
+      // 🔓 Desvincular cuenta
+      function unlinkAccount() {
+        if (!confirm("¿Seguro que quieres desvincular tu cuenta? Perderás acceso a tu cartera en este dispositivo.")) return;
+        localStorage.removeItem("my_summoner_name");
+        window.myLigaWalletBalance = 0;
+        document.getElementById("header-wallet-balance").innerText = "VINCULAR CUENTA";
+        closeModal("link-account-modal");
+      }
+
       function loadWalletBalance() {
         let summoner = localStorage.getItem("my_summoner_name");
         if (!summoner) {
@@ -10869,12 +11252,8 @@
           .spinDailyRoulette(summoner);
       }
 
-      // Auto-check roulette 2 seconds after loading
-      setTimeout(() => {
-        try {
-          autoOpenRoulette();
-        } catch (e) {}
-      }, 2000);
+      // Ruleta diaria desactivada (eliminada de la cabecera)
+      // setTimeout(() => { try { autoOpenRoulette(); } catch (e) {} }, 2000);
 
       // ============================================================
       // 🗞️ CHIRINGUITO PREMIER
@@ -12289,6 +12668,185 @@
             sessionStorage.getItem("wg_admin_pw") || "",
           );
       }
+    </script>
+
+    <script>
+      // ======================================================
+      // SOLO-AGENT MODULE
+      // ======================================================
+      var _soloAgentCache = null;
+
+      var SA_ELO_COLORS = {
+        Iron:        { bg:'rgba(120,113,108,0.2)', border:'rgba(120,113,108,0.5)', text:'#a8a29e' },
+        Bronze:      { bg:'rgba(180,83,9,0.2)',    border:'rgba(180,83,9,0.5)',    text:'#fdba74' },
+        Silver:      { bg:'rgba(148,163,184,0.2)', border:'rgba(148,163,184,0.5)', text:'#cbd5e1' },
+        Gold:        { bg:'rgba(234,179,8,0.2)',   border:'rgba(234,179,8,0.5)',   text:'#fde047' },
+        Platinum:    { bg:'rgba(20,184,166,0.2)',  border:'rgba(20,184,166,0.5)',  text:'#5eead4' },
+        Emerald:     { bg:'rgba(16,185,129,0.2)',  border:'rgba(16,185,129,0.5)',  text:'#6ee7b7' },
+        Diamond:     { bg:'rgba(56,189,248,0.2)',  border:'rgba(56,189,248,0.5)',  text:'#7dd3fc' },
+        Master:      { bg:'rgba(168,85,247,0.2)',  border:'rgba(168,85,247,0.5)',  text:'#d8b4fe' },
+        Grandmaster: { bg:'rgba(239,68,68,0.2)',   border:'rgba(239,68,68,0.5)',   text:'#fca5a5' },
+        Challenger:  { bg:'rgba(251,191,36,0.2)',  border:'rgba(251,191,36,0.5)',  text:'#fbbf24' }
+      };
+      var SA_ROLE_ICONS = { TOP:'🛡️', JNG:'🌲', MID:'🔥', ADC:'🏹', SUPP:'💖' };
+
+      function saEscape(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function loadSoloAgents() {
+        var grid = document.getElementById('sa-grid');
+        if (!grid) return;
+        grid.innerHTML = '<div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div><div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div><div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 animate-pulse h-48"></div>';
+        var cnt = document.getElementById('sa-count');
+        if (cnt) cnt.textContent = 'Cargando...';
+
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (res && res.ok) {
+              _soloAgentCache = res.agents || [];
+              renderSoloAgents();
+            } else {
+              grid.innerHTML = '<div class="sa-empty" style="grid-column:1/-1"><p class="text-2xl mb-2">⚠️</p><p>' + saEscape(res ? res.error : 'Error desconocido') + '</p></div>';
+            }
+          })
+          .withFailureHandler(function (err) {
+            grid.innerHTML = '<div class="sa-empty" style="grid-column:1/-1"><p class="text-2xl mb-2">🔌</p><p>Error de conexión: ' + saEscape(err.message) + '</p></div>';
+          })
+          .getSoloAgents();
+      }
+
+      function renderSoloAgents() {
+        if (!_soloAgentCache) { loadSoloAgents(); return; }
+        var agents = _soloAgentCache;
+
+        var fRole  = document.getElementById('sa-filter-role').value;
+        var fElo   = document.getElementById('sa-filter-elo').value;
+        var fAvail = document.getElementById('sa-filter-avail').value;
+        var fSearch = (document.getElementById('sa-search').value || '').trim().toLowerCase();
+
+        var filtered = agents.filter(function (a) {
+          if (fRole && a.role_main !== fRole && a.role_secondary !== fRole) return false;
+          if (fElo && a.elo_current !== fElo) return false;
+          if (fAvail && a.availability !== fAvail) return false;
+          if (fSearch && String(a.nickname).toLowerCase().indexOf(fSearch) === -1) return false;
+          return true;
+        });
+
+        var cnt = document.getElementById('sa-count');
+        if (cnt) cnt.textContent = filtered.length + ' agente' + (filtered.length !== 1 ? 's' : '') + ' disponible' + (filtered.length !== 1 ? 's' : '');
+
+        var grid = document.getElementById('sa-grid');
+        if (filtered.length === 0) {
+          grid.innerHTML = '<div class="sa-empty" style="grid-column:1/-1"><p class="text-4xl mb-3">🔍</p><p class="text-slate-500 font-bold text-lg">Sin resultados</p><p class="text-slate-600 text-sm mt-1">Prueba con otros filtros o sé el primero en publicar tu perfil</p></div>';
+          return;
+        }
+
+        grid.innerHTML = filtered.map(function (a) {
+          var eloC = SA_ELO_COLORS[a.elo_current] || { bg:'rgba(100,116,139,0.15)', border:'rgba(100,116,139,0.4)', text:'#94a3b8' };
+          var eloP = SA_ELO_COLORS[a.elo_peak] || eloC;
+          var ri = SA_ROLE_ICONS[a.role_main] || '❓';
+          var riSec = a.role_secondary ? (SA_ROLE_ICONS[a.role_secondary] || '') : '';
+
+          var daysAgo = '';
+          if (a.created_at) {
+            var diff = Math.floor((Date.now() - new Date(a.created_at)) / 86400000);
+            daysAgo = isNaN(diff) ? '' : (diff <= 0 ? 'hoy' : diff === 1 ? 'ayer' : 'hace ' + diff + ' días');
+          }
+
+          var opggBtn = a.opgg ? '<a href="' + saEscape(a.opgg) + '" target="_blank" rel="noopener" class="text-[10px] text-slate-400 hover:text-sky-400 transition font-bold uppercase tracking-widest">🔗 OP.GG</a>' : '';
+          var discordBtn = a.discord ? '<span class="text-[10px] text-slate-500 font-mono">' + saEscape(a.discord) + '</span>' : '';
+          var desc = a.description ? '<p class="text-slate-400 text-xs leading-relaxed sa-line-clamp mt-2">' + saEscape(a.description) + '</p>' : '';
+          var peakStr = (a.elo_peak && a.elo_peak !== a.elo_current) ? '<span class="text-[9px] text-slate-600 font-bold tracking-widest uppercase">Peak: <span style="color:' + eloP.text + '">' + saEscape(a.elo_peak) + '</span></span>' : '';
+
+          return '<div class="sa-card">'
+            + '<div class="flex items-start justify-between gap-2 mb-3">'
+            +   '<div><p class="font-oswald text-white text-lg tracking-wider leading-none">' + saEscape(a.nickname) + '</p>'
+            +   (daysAgo ? '<p class="text-[10px] text-slate-600 mt-0.5 uppercase tracking-widest">' + daysAgo + '</p>' : '') + '</div>'
+            +   '<div class="flex flex-col items-end gap-1">'
+            +     '<span class="sa-elo-badge" style="background:' + eloC.bg + ';border-color:' + eloC.border + ';color:' + eloC.text + '">' + saEscape(a.elo_current) + '</span>' + peakStr
+            +   '</div>'
+            + '</div>'
+            + '<div class="flex items-center gap-2 flex-wrap mb-1">'
+            +   '<span class="sa-role-badge">' + ri + ' ' + saEscape(a.role_main) + '</span>'
+            +   (a.role_secondary ? '<span class="sa-role-badge" style="background:rgba(71,85,105,0.2);border-color:rgba(71,85,105,0.4);color:#94a3b8">' + riSec + ' ' + saEscape(a.role_secondary) + '</span>' : '')
+            +   (a.availability ? '<span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest border border-slate-700 px-2 py-0.5 rounded-full">🕐 ' + saEscape(a.availability) + '</span>' : '')
+            + '</div>'
+            + desc
+            + '<div class="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">' + (discordBtn || '<span></span>') + opggBtn + '</div>'
+            + '</div>';
+        }).join('');
+      }
+
+      function openSoloAgentForm() {
+        document.getElementById('sa-form-modal').style.display = 'flex';
+        document.getElementById('sa-form-msg').classList.add('hidden');
+      }
+      function closeSoloAgentForm() {
+        document.getElementById('sa-form-modal').style.display = 'none';
+      }
+
+      function showSaMsg(msg, type) {
+        var el = document.getElementById('sa-form-msg');
+        el.classList.remove('hidden');
+        var styles = {
+          ok:   'bg-green-500/10 border-green-500/30 text-green-400',
+          warn: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+          err:  'bg-red-500/10 border-red-500/30 text-red-400'
+        };
+        el.className = 'rounded-lg p-3 text-sm font-medium border ' + (styles[type] || styles.err);
+        el.textContent = msg;
+      }
+
+      function submitSoloAgent() {
+        var btn = document.getElementById('sa-submit-btn');
+        var data = {
+          nickname:       document.getElementById('sa-input-nick').value.trim(),
+          opgg:           document.getElementById('sa-input-opgg').value.trim(),
+          role_main:      document.getElementById('sa-input-role-main').value,
+          role_secondary: document.getElementById('sa-input-role-sec').value,
+          elo_current:    document.getElementById('sa-input-elo-current').value,
+          elo_peak:       document.getElementById('sa-input-elo-peak').value,
+          availability:   document.getElementById('sa-input-avail').value,
+          description:    document.getElementById('sa-input-desc').value.trim(),
+          discord:        document.getElementById('sa-input-discord').value.trim()
+        };
+        if (!data.nickname)    { showSaMsg('⚠️ El nickname es obligatorio.', 'warn'); return; }
+        if (!data.role_main)   { showSaMsg('⚠️ Selecciona tu rol principal.', 'warn'); return; }
+        if (!data.elo_current) { showSaMsg('⚠️ Selecciona tu elo actual.', 'warn'); return; }
+
+        btn.innerHTML = '<span>⏳</span> Publicando...';
+        btn.disabled = true;
+
+        google.script.run
+          .withSuccessHandler(function (res) {
+            btn.innerHTML = '<span>📤</span> PUBLICAR PERFIL';
+            btn.disabled = false;
+            if (res && res.ok) {
+              showSaMsg(res.msg, 'ok');
+              _soloAgentCache = null;
+              setTimeout(function () { closeSoloAgentForm(); loadSoloAgents(); }, 1800);
+            } else {
+              showSaMsg((res && res.error) || 'Error desconocido.', 'err');
+            }
+          })
+          .withFailureHandler(function (err) {
+            btn.innerHTML = '<span>📤</span> PUBLICAR PERFIL';
+            btn.disabled = false;
+            showSaMsg('❌ Error de red: ' + err.message, 'err');
+          })
+          .registerSoloAgent(data);
+      }
+
+      // Hook: cargar la pestaña al activarla
+      (function () {
+        var _origSwitch = window.switchTab;
+        window.switchTab = function (tabId, el) {
+          if (typeof _origSwitch === 'function') _origSwitch(tabId, el);
+          if (tabId === 'solo-agent' && !_soloAgentCache) loadSoloAgents();
+        };
+      })();
     </script>
   </body>
 </html>
