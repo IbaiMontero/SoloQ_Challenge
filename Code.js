@@ -20510,9 +20510,34 @@ function getAllDashboardData(roundFilter, divisionFilter) {
           else if (sB > sA) { streaksTracker[tB] = cB > 0 ? cB + 1 : 1; streaksTracker[tA] = cA < 0 ? cA - 1 : -1; }
         }
       }
-      teams.forEach(t => { t.streak = streaksTracker[t.id] || 0; });
+      teams.forEach(function(t) { t.streak = streaksTracker[String(t.id)] || 0; });
+
+      // Recalcular victorias/derrotas EN MEMORIA desde los partidos filtrados
+      // (no desde la hoja) para que partidos ya jugados siempre aparezcan bien
+      var liveStats = {};
+      teams.forEach(function(t) { liveStats[String(t.id)] = { w: 0, l: 0, d: 0, pts: 0 }; });
+      matches.forEach(function(m) {
+        if (m.status === 'COMPLETED') {
+          var tA2 = String(m.tA); var tB2 = String(m.tB); var winner2 = String(m.winner);
+          if (winner2 === tA2) {
+            if (liveStats[tA2]) { liveStats[tA2].w++; liveStats[tA2].pts += 3; }
+            if (liveStats[tB2]) { liveStats[tB2].l++; }
+          } else if (winner2 === tB2) {
+            if (liveStats[tB2]) { liveStats[tB2].w++; liveStats[tB2].pts += 3; }
+            if (liveStats[tA2]) { liveStats[tA2].l++; }
+          } else if (winner2 === 'DRAW') {
+            if (liveStats[tA2]) { liveStats[tA2].d++; liveStats[tA2].pts += 1; }
+            if (liveStats[tB2]) { liveStats[tB2].d++; liveStats[tB2].pts += 1; }
+          }
+        }
+      });
+      teams.forEach(function(t) {
+        var ls = liveStats[String(t.id)];
+        if (ls) { t.w = ls.w; t.l = ls.l; t.d = ls.d; t.pts = ls.pts; }
+      });
+
       teams = sortTeamsHelper(teams, matches);
-      teams.forEach((t, idx) => t.pos = idx + 1);
+      teams.forEach(function(t, idx) { t.pos = idx + 1; });
       tournament = { status: status, format: format, teams: teams, matches: matches };
     }
   }
@@ -24823,10 +24848,11 @@ function getAvailableDivisions() {
       if (WPL_DIVISIONS.indexOf(d) === -1) ordered.push(d);
     });
 
-    // Detectar divisiones padre con sub-grupos
+    // ── Detectar divisiones padre con sub-grupos ──
     // Ej: si existen 'Aspirante A' y 'Aspirante B', 'Aspirante' es padre
     var subGroups = {}; // { 'Aspirante': ['Aspirante A', 'Aspirante B'] }
     var uniqueRaw = Object.keys(found);
+    var allSubDivisions = []; // lista plana de todas las divisiones que son sub-grupos
     WPL_DIVISIONS.forEach(function(parent) {
       var pn = _normDiv_(parent);
       var subs = uniqueRaw.filter(function(d) {
@@ -24835,10 +24861,14 @@ function getAvailableDivisions() {
       });
       if (subs.length > 0) {
         subGroups[parent] = subs.sort();
+        subs.forEach(function(s) { allSubDivisions.push(s); });
         // Anadir el padre como opcion 'Liga Total' si no esta ya
         if (ordered.indexOf(parent) === -1) ordered.unshift(parent);
       }
     });
+
+    // Eliminar los sub-grupos del listado principal (aparecen en el filtro secundario)
+    ordered = ordered.filter(function(d) { return allSubDivisions.indexOf(d) === -1; });
 
     return {
       divisions: ordered,

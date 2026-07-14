@@ -5661,58 +5661,34 @@
         var sel = document.getElementById("filter-division");
         if (!sel || !divInfo) return;
 
-        // Guardar sub-grupos para uso en onDivisionChange
+        // Guardar sub-grupos para uso en _updateSubgroupFilter
         _divisionSubGroups = divInfo.subGroups || {};
 
-        // Mostrar el selector solo si hay mas de una division real
+        // divInfo.divisions ya viene limpio del backend (sin sub-grupos duplicados)
         var realDivs = divInfo.divisions || [];
-        // Contar divisiones unicas de primer nivel (incluyendo padres)
-        var topLevel = [];
         var icons = { 'Premier': '&#128081;', 'Aspirante': '&#9876;&#65039;', 'Elite': '&#128142;', 'Promesas': '&#128175;', 'Academia': '&#127891;' };
 
-        // Obtener divisiones de primer nivel: las del WPL_DIVISIONS que existen,
-        // mas las que son sub-grupos seran representadas por su padre
-        var parentsDone = {};
-        realDivs.forEach(function(d) {
-          // Buscar si pertenece a un padre WPL
-          var parent = null;
-          var wplDivs = ['Premier', 'Aspirante', 'Elite', 'Promesas', 'Academia'];
-          for (var w = 0; w < wplDivs.length; w++) {
-            var dn = d.trim().toLowerCase();
-            var pn = wplDivs[w].toLowerCase();
-            if (dn !== pn && (dn.indexOf(pn + ' ') === 0 || dn.indexOf(pn + '-') === 0)) {
-              parent = wplDivs[w]; break;
-            }
-          }
-          if (parent) {
-            if (!parentsDone[parent]) { topLevel.push({ key: parent, label: parent, isParent: true }); parentsDone[parent] = true; }
-          } else {
-            topLevel.push({ key: d, label: d, isParent: false });
-          }
-        });
-
-        if (topLevel.length > 1 || realDivs.length > 1) {
+        if (realDivs.length > 1 || divInfo.multiDivision) {
           sel.classList.remove("hidden");
         } else {
           sel.classList.add("hidden");
         }
 
         if (_divisionSelectorPopulated) {
-          // Solo actualizar sub-group si es necesario
           _updateSubgroupFilter();
           return;
         }
         var saved = sessionStorage.getItem("wg_active_division") || "ALL";
         var html = '<option value="ALL">&#127942; Todas las divisiones</option>';
-        topLevel.forEach(function(item) {
-          var ic = icons[item.key] || '&#127885;';
-          var selAttr = (item.key === saved) ? ' selected' : '';
-          html += '<option value="' + item.key + '"' + selAttr + '>' + ic + ' ' + item.label + '</option>';
+        realDivs.forEach(function(d) {
+          var ic = icons[d] || '&#127885;';
+          var selAttr = (d === saved) ? ' selected' : '';
+          html += '<option value="' + d + '"' + selAttr + '>' + ic + ' ' + d + '</option>';
         });
         sel.innerHTML = html;
         if (saved !== "ALL") {
           sel.value = saved;
-          if (!sel.value) sel.value = 'ALL';
+          if (!sel.value) sel.value = "ALL";
         }
         _divisionSelectorPopulated = true;
         _updateSubgroupFilter();
