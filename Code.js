@@ -24755,7 +24755,7 @@ function updateTeamPool(data) {
 ================================================================= */
 
 // Orden oficial de divisiones (de mayor a menor categoría)
-var WPL_DIVISIONS = ['Premier', 'Aspirante', 'Élite', 'Promesas', 'Academia'];
+var WPL_DIVISIONS = ['Premier', 'Aspirante', 'Aspirante A', 'Aspirante B', 'Élite', 'Promesas', 'Academia'];
 
 // Índices de la columna División en cada hoja
 // K(10)=PIN_Capitan · L(11)=ID_Discord_Roles · M(12)=División
@@ -24848,33 +24848,11 @@ function getAvailableDivisions() {
       if (WPL_DIVISIONS.indexOf(d) === -1) ordered.push(d);
     });
 
-    // ── Detectar divisiones padre con sub-grupos ──
-    // Ej: si existen 'Aspirante A' y 'Aspirante B', 'Aspirante' es padre
-    var subGroups = {}; // { 'Aspirante': ['Aspirante A', 'Aspirante B'] }
-    var uniqueRaw = Object.keys(found);
-    var allSubDivisions = []; // lista plana de todas las divisiones que son sub-grupos
-    WPL_DIVISIONS.forEach(function(parent) {
-      var pn = _normDiv_(parent);
-      var subs = uniqueRaw.filter(function(d) {
-        var dn = _normDiv_(d);
-        return dn !== pn && (dn.indexOf(pn + ' ') === 0 || dn.indexOf(pn + '-') === 0);
-      });
-      if (subs.length > 0) {
-        subGroups[parent] = subs.sort();
-        subs.forEach(function(s) { allSubDivisions.push(s); });
-        // Anadir el padre como opcion 'Liga Total' si no esta ya
-        if (ordered.indexOf(parent) === -1) ordered.unshift(parent);
-      }
-    });
-
-    // Eliminar los sub-grupos del listado principal (aparecen en el filtro secundario)
-    ordered = ordered.filter(function(d) { return allSubDivisions.indexOf(d) === -1; });
-
     return {
       divisions: ordered,
       multiDivision: ordered.length > 1 || uniqueRaw.length > 1,
       all: WPL_DIVISIONS.slice(),
-      subGroups: subGroups
+      subGroups: {}
     };
   } catch(e) {
     return { divisions: [], multiDivision: false, all: WPL_DIVISIONS.slice(), subGroups: {}, error: e.message };

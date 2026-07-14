@@ -1266,13 +1266,6 @@
             >
               <option value="ALL">&#127942; Todas las divisiones</option>
             </select>
-            <select
-              id="filter-subgroup"
-              onchange="onSubgroupChange()"
-              class="hidden bg-slate-800 border border-amber-500/50 text-amber-300 px-3 py-2 rounded text-sm font-bold transition outline-none focus:border-amber-400"
-              title="Filtrar por grupo"
-            >
-            </select>
             <button
               id="btn-season-manager"
               onclick="openSeasonManager()"
@@ -5643,14 +5636,7 @@
       // ============================================================
       // SISTEMA MULTI-DIVISION
       // ============================================================
-      // Almacena la info de sub-grupos del backend
-      var _divisionSubGroups = {};
-
       function getActiveDivision() {
-        var subSel = document.getElementById("filter-subgroup");
-        if (subSel && !subSel.classList.contains("hidden") && subSel.value && subSel.value !== "__ALL__") {
-          return subSel.value;
-        }
         var sel = document.getElementById("filter-division");
         if (sel && sel.value) return sel.value;
         return sessionStorage.getItem("wg_active_division") || "ALL";
@@ -5661,12 +5647,8 @@
         var sel = document.getElementById("filter-division");
         if (!sel || !divInfo) return;
 
-        // Guardar sub-grupos para uso en _updateSubgroupFilter
-        _divisionSubGroups = divInfo.subGroups || {};
-
-        // divInfo.divisions ya viene limpio del backend (sin sub-grupos duplicados)
         var realDivs = divInfo.divisions || [];
-        var icons = { 'Premier': '&#128081;', 'Aspirante': '&#9876;&#65039;', 'Elite': '&#128142;', 'Promesas': '&#128175;', 'Academia': '&#127891;' };
+        var icons = { 'Premier': '&#128081;', 'Aspirante': '&#9876;&#65039;', 'Aspirante A': '&#128200;', 'Aspirante B': '&#128200;', 'Elite': '&#128142;', 'Promesas': '&#128175;', 'Academia': '&#127891;' };
 
         if (realDivs.length > 1 || divInfo.multiDivision) {
           sel.classList.remove("hidden");
@@ -5674,10 +5656,8 @@
           sel.classList.add("hidden");
         }
 
-        if (_divisionSelectorPopulated) {
-          _updateSubgroupFilter();
-          return;
-        }
+        if (_divisionSelectorPopulated) return;
+
         var saved = sessionStorage.getItem("wg_active_division") || "ALL";
         var html = '<option value="ALL">&#127942; Todas las divisiones</option>';
         realDivs.forEach(function(d) {
@@ -5691,58 +5671,15 @@
           if (!sel.value) sel.value = "ALL";
         }
         _divisionSelectorPopulated = true;
-        _updateSubgroupFilter();
-      }
-
-      function _updateSubgroupFilter() {
-        var sel = document.getElementById("filter-division");
-        var subSel = document.getElementById("filter-subgroup");
-        if (!sel || !subSel) return;
-        var current = sel.value;
-        var subs = _divisionSubGroups[current];
-        if (subs && subs.length > 0) {
-          // Construir opciones: Liga Total + cada sub-grupo
-          var html = '<option value="__ALL__">&#9878; Liga Total (' + current + ')</option>';
-          subs.forEach(function(g) {
-            // Extraer nombre corto del grupo (ej: 'Aspirante A' -> 'Grupo A')
-            var shortName = g.replace(current, '').trim().replace(/^[-:]\s*/, '');
-            if (!shortName) shortName = g;
-            html += '<option value="' + g + '">&#128200; Grupo ' + shortName + '</option>';
-          });
-          subSel.innerHTML = html;
-          // Restaurar seleccion previa de sub-grupo si existe
-          var savedSub = sessionStorage.getItem("wg_active_subgroup_" + current) || "__ALL__";
-          subSel.value = savedSub;
-          if (!subSel.value) subSel.value = "__ALL__";
-          subSel.classList.remove("hidden");
-        } else {
-          subSel.classList.add("hidden");
-          subSel.innerHTML = '';
-        }
       }
 
       function onDivisionChange() {
         var sel = document.getElementById("filter-division");
         var val = sel ? sel.value : "ALL";
         sessionStorage.setItem("wg_active_division", val);
-        // Limpiar sub-grupo al cambiar division
-        var subSel = document.getElementById("filter-subgroup");
-        if (subSel) {
-          subSel.value = "__ALL__";
-          sessionStorage.removeItem("wg_active_subgroup_" + val);
-        }
-        _updateSubgroupFilter();
         refreshData();
       }
 
-      function onSubgroupChange() {
-        var sel = document.getElementById("filter-division");
-        var subSel = document.getElementById("filter-subgroup");
-        var divVal = sel ? sel.value : "ALL";
-        var subVal = subSel ? subSel.value : "__ALL__";
-        sessionStorage.setItem("wg_active_subgroup_" + divVal, subVal);
-        refreshData();
-      }
 
       // ============================================================
       // 🗂️ GESTIÓN DE TEMPORADA (Admin)
