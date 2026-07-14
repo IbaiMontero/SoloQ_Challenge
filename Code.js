@@ -1275,7 +1275,7 @@ function normalSyncMatches() {
     const tag = (playersData[i][1] || '').toString().trim();
     let puuid = (playersData[i][2] || '').toString().trim();
     let lastMatch = (playersData[i][3] || '').toString().trim();
-    const active = ((playersData[i][4] || 'Sí').toString().toLowerCase());
+    const active = ((playersData[i][4] || 'Sí')?.toString()?.toLowerCase());
     let currentStreak = Number(playersData[i][5] || 0); 
 
     // Solo saltamos si el usuario ya est     marcado como "no" manualmente
@@ -1804,7 +1804,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
           h_Deaths += Number(allMatchesData[r][7] || 0);
           h_Assists += Number(allMatchesData[r][8] || 0);
 
-          if (allMatchesData[r][5] === "Win") {
+          if ((String(allMatchesData[r][5]) || '').includes('Win')) {
              champWins++;
              currentChampStreak++;
           } else {
@@ -1819,7 +1819,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
     h_Deaths += d_stats;
     h_Assists += a;
 
-    if (result === "Win") {
+    if ((String(result) || '').includes('Win')) {
         champWins++;
         currentChampStreak++;
     } else {
@@ -1883,18 +1883,18 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         // 1. Bono Especialista (Pool peque    a)
         if (totalUniqueChamps <= (cfg.specialist_threshold || 8)) {
             // ... (L    gica de Especialista se mantiene) ...
-             if (result === "Win" && isGoodPerformance && champGames >= 5) {
+             if ((String(result) || '').includes('Win') && isGoodPerformance && champGames >= 5) {
                 pointsObj.total = safeAdd(pointsObj.total, 0.25);
                 pointsObj.notes.push(`       Especialista`);
             } 
-            else if (result !== "Win" && !isGoodPerformance && champGames >= 10) {
+            else if (!(String(result))().includes("Win") && !isGoodPerformance && champGames >= 10) {
                  pointsObj.total = safeAdd(pointsObj.total, -1.0); 
                  pointsObj.notes.push(`             OTP Gap (Especialista fallido)`);
             }
         }
 
         // 2. C    lculo de Maestr    a PRO (Solo Victorias)
-        if (result === "Win") {
+        if ((String(result) || '').includes('Win')) {
             if (typeof champGames !== 'undefined' && typeof realWR !== 'undefined') {
                 
                 if (!isGoodPerformance) {
@@ -2162,16 +2162,16 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
         if (m.Tipo === 'KDA_SINGLE_GAME' && kda_val >= m.ValorRequerido) {
           completedThisGame = true;
         } 
-        else if (m.Tipo === 'PERFECT_GAME' && d_stats === 0 && result === 'Win') {
+        else if (m.Tipo === 'PERFECT_GAME' && d_stats === 0 && (String(result) || '').includes('Win')) {
           completedThisGame = true;
         } 
-        else if (m.Tipo === 'DEATHS_LESS_THAN' && d_stats <= m.ValorRequerido && result === 'Win') {
+        else if (m.Tipo === 'DEATHS_LESS_THAN' && d_stats <= m.ValorRequerido && (String(result) || '').includes('Win')) {
           completedThisGame = true; 
         }
         
         // 1. SUPP_DIFF
         else if (m.Tipo === 'STAT_COMPARISON' && m.Objetivo === 'KILLS_GT_ADC') {
-            if ((lane === 'UTILITY' || lane === 'SUPPORT') && result === 'Win') {
+            if ((lane === 'UTILITY' || lane === 'SUPPORT') && (String(result) || '').includes('Win')) {
                 const myADC = participants.find(mate => mate.teamId === p.teamId && mate.teamPosition === 'BOTTOM');
                 if (myADC && k > (Number(myADC.kills) || 0)) {
                     completedThisGame = true;
@@ -2287,7 +2287,7 @@ function processMatch(matchId, puuid, summonerName, currentStreak, cfg, champDat
 
       /// C    LCULO DE RACHA (CORREGIDO)
     let newStreak = currentStreak;
-    if (result === "Win") {
+    if ((String(result) || '').includes('Win')) {
       newStreak = (currentStreak > 0) ? currentStreak + 1 : 1;
       
       // CORRECCI     N 2: Usar safeAdd y valores por defecto si falta la config
@@ -7556,7 +7556,7 @@ function updateRanking() {
     stats.matches++;
     totalMatches++;
 
-    if (result === 'Win') {
+    if ((String(result) || '').includes('Win')) {
         stats.wins++;
         if (stats.currentStreak >= 0) stats.currentStreak++;
         else stats.currentStreak = 1;
@@ -8142,7 +8142,7 @@ function getComparisonData(playerNames) {
          const pts = Number(row[12] || 0);
 
          // Acumuladores b    sicos
-         if (result === 'Win') stats.wins++; else stats.losses++;
+         if ((String(result) || '').includes('Win')) stats.wins++; else stats.losses++;
          stats.kills += Number(row[6] || 0);
          stats.deaths += Number(row[7] || 0);
          stats.assists += Number(row[8] || 0);
@@ -8531,7 +8531,7 @@ function calculateStatsFromRows(rows) {
         const result = row[5]; // Columna F (Win/Loss)
         // Nota: En SoloQ individual no suele haber "Blue/Red side" guardado expl    citamente 
         // a menos que lo tengas. Aqu     contaremos Victorias/Derrotas globales.
-        if (result === 'Win') stats.blueWins++; // Usamos blueWins como contador de Victorias totales
+        if ((String(result) || '').includes('Win')) stats.blueWins++; // Usamos blueWins como contador de Victorias totales
         else stats.redWins++; // Usamos redWins como contador de Derrotas totales
 
         // Sumar Roles
@@ -8689,7 +8689,7 @@ function getPlayerData(summonerName) {
              
             const stats = champMap.get(champ);
             stats.played++;
-            if (result === 'Win') {
+            if ((String(result) || '').includes('Win')) {
                stats.wins++;
                summary.totalWins++;
             } else {
@@ -8786,7 +8786,7 @@ function getDataForDashboardV12() {
 
     if (roleStats[lane] && !isNaN(points)) {
       roleStats[lane].games++;
-      if (result === 'Win') roleStats[lane].wins++;
+      if ((String(result) || '').includes('Win')) roleStats[lane].wins++;
       roleStats[lane].totalPoints += points;
       roleStats[lane].pointsHistory.push(points);
       totalGames++;
@@ -8857,7 +8857,7 @@ function recalculateAllStreaks() {
 
       if (!streakMap[summ]) streakMap[summ] = 0;
 
-      if (result === 'Win') {
+      if ((String(result) || '').includes('Win')) {
           // Si ya estaba en racha positiva, suma 1. Si ven    a de derrota, empieza en 1.
           streakMap[summ] = (streakMap[summ] >= 0) ? streakMap[summ] + 1 : 1;
       } else if (result === 'Loss') {
@@ -8932,20 +8932,23 @@ function getBestPlayersByRoleV12() {
       for (const summ in rolePlayers[role]) {
         const stats = rolePlayers[role][summ];
         
-        // ---               NUEVA F     RMULA DE VETERAN    A ---
-        // 1. M    nimo 5 partidas para optar al t    tulo.
-        if (stats.games >= 5) {
+        // --- FÓRMULA DE VETERANÍA ---
+        // Mínimo 1 partida para optar al título (antes era 5, muy restrictivo).
+        // Con pocas partidas el factor de confianza penaliza la media.
+        if (stats.games >= 1) {
              const avg = stats.totalPoints / stats.games;
              
              // FACTOR DE CONFIANZA:
-             // - Si tienes < 10 partidas: Se reduce tu media (Castigo por muestra peque    a)
-             // - Si tienes > 10 partidas: Se bonifica tu media un 1.5% por cada partida extra.
-             // Ejemplo: 30 partidas = Media * 1.30 (+30% bonus por constancia)
-             let confidenceMult = 1.0 + ((stats.games - 10) * 0.015);
+             // - Si tienes < 3 partidas: se reduce tu media (muestra muy pequeña)
+             // - Si tienes >= 3 partidas: bonificación por consistencia
+             // Ejemplo: 10 partidas = Media * 1.0 (neutro); 20 = Media * 1.15
+             let confidenceMult = stats.games < 3
+               ? 0.70 + (stats.games * 0.10)  // 1 partida → ×0.80, 2 → ×0.90
+               : 1.0 + ((stats.games - 3) * 0.015);
              
              // Topes de seguridad
-             if (confidenceMult < 0.8) confidenceMult = 0.8; // M    nimo 80% del valor real
-             if (confidenceMult > 1.5) confidenceMult = 1.5; // M    ximo 150% del valor real
+             if (confidenceMult < 0.7) confidenceMult = 0.7;  // Mínimo 70%
+             if (confidenceMult > 1.5) confidenceMult = 1.5;  // Máximo 150%
 
              const weightedScore = avg * confidenceMult;
 
@@ -9071,7 +9074,7 @@ function getGlobalChallengeStats() {
     const duration = Number(row[H.DURATION] || 0); 
     const points = safeParse(row[H.POINTS]); 
     const role = row[H.LANE] || 'UNKNOWN';
-    const isWin = row[H.RESULT] === 'Win';
+    const isWin = (String(row[H.RESULT]) || '').includes('Win');
     const gameKDA = (kills + assists) / (deaths === 0 ? 1 : deaths);
     const champName = row[H.CHAMP];
 
@@ -9380,8 +9383,8 @@ function SincronizarProgresoMisiones() {
 
            let completed = false;
            if (m.Tipo === 'KDA_SINGLE_GAME' && kda >= m.ValorRequerido) completed = true;
-           else if (m.Tipo === 'PERFECT_GAME' && d === 0 && result === 'Win') completed = true;
-           else if (m.Tipo === 'DEATHS_LESS_THAN' && d <= m.ValorRequerido && result === 'Win') completed = true;
+           else if (m.Tipo === 'PERFECT_GAME' && d === 0 && (String(result) || '').includes('Win')) completed = true;
+           else if (m.Tipo === 'DEATHS_LESS_THAN' && d <= m.ValorRequerido && (String(result) || '').includes('Win')) completed = true;
            
            if (completed) singleMissionCompleted[m.MissionID] = 1;
         }
@@ -9485,11 +9488,14 @@ function getEpicRankingData(seasonFilter) {
   if (playersLastRow < 2) return [];
   const pData = playersSheet.getRange(2, 1, playersLastRow - 1, 10).getValues();
   
+  const _normRk = (n) => String(n || '').split('#')[0]
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\xA0]/g, '').toLowerCase();
   const rankingMap = {};
   pData.forEach(row => {
     const name = row[0];
     if (name) {
-        rankingMap[name] = {
+        rankingMap[_normRk(name)] = {
             name: name, points: 0, w: 0, t: 0, 
             streak: Number(row[5] || 0), 
             rank: row[8], lp: row[9],
@@ -9515,10 +9521,11 @@ function getEpicRankingData(seasonFilter) {
             continue; 
         }
 
-        if (rankingMap[summ] && !isNaN(points)) {
-            rankingMap[summ].points += points;
-            rankingMap[summ].t++;
-            if (res === 'Win') rankingMap[summ].w++;
+        const _sNorm = _normRk(summ);
+        if (rankingMap[_sNorm] && !isNaN(points)) {
+            rankingMap[_sNorm].points += points;
+            rankingMap[_sNorm].t++;
+            if ((String(res) || '').includes('Win')) rankingMap[_sNorm].w++;
         }
       }
   }
@@ -9650,7 +9657,7 @@ function sendMatchNotification(player, champ, kda, points, result, notes, priceD
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_URL")) return;
 
-  const isWin = result === "Win";
+  const isWin = (String(result) || '').includes('Win');
   const pts = Number(points);
   
   // --- 1. GESTI     N DE COLORES (Escala Ampliada) ---
@@ -10149,7 +10156,7 @@ function getSynergyData() {
 
           const s = synergies[key];
           s.games++;
-          if (p1.result === 'Win') s.wins++; // Si jugaron juntos, el resultado es el mismo
+          if ((String(p1.result) || '').includes('Win')) s.wins++; // Si jugaron juntos, el resultado es el mismo
           
           // Asignar puntos a quien corresponda
           if (p1.name === s.p1) { s.p1_totalPoints += p1.points; s.p2_totalPoints += p2.points; }
@@ -10502,7 +10509,7 @@ function getBehaviorData() {
 
     if (playersData[summ].timeSlots[slot]) {
       playersData[summ].timeSlots[slot].games++;
-      if (result === 'Win') playersData[summ].timeSlots[slot].wins++;
+      if ((String(result) || '').includes('Win')) playersData[summ].timeSlots[slot].wins++;
     }
   }
 
@@ -10641,7 +10648,7 @@ function getPlayerAnalytics(summonerName) {
         keysToUpdate.forEach(k => {
             const s = dataMap[k];
             s.games++;
-            if (result === 'Win') s.wins++; else s.losses++;
+            if ((String(result) || '').includes('Win')) s.wins++; else s.losses++;
             s.k += Number(matchesData[i][6] || 0);
             s.d += Number(matchesData[i][7] || 0);
             s.a += Number(matchesData[i][8] || 0);
@@ -14738,7 +14745,7 @@ function forceRecalculatePlayerStats() {
         // B. Calcular Racha
         let currentS = playerStats[playerName].streak;
 
-        if (result === 'Win') {
+        if ((String(result) || '').includes('Win')) {
             currentS = (currentS >= 0) ? currentS + 1 : 1;
         } else if (result === 'Loss') {
             currentS = (currentS <= 0) ? currentS - 1 : -1;
@@ -14817,7 +14824,7 @@ function checkSponsorships(targetPlayer, result) {
     // Condici    n: Que sea el jugador objetivo Y que el patrocinio est     ACTIVO
     if (target === targetPlayer && status === 'ACTIVE') {
        
-       if (result === 'Win') {
+       if ((String(result) || '').includes('Win')) {
           // --- CASO VICTORIA: PAGO DOBLE ---
           const payout = amount * 2;
           const investorRow = walletMap[investor];
@@ -15249,7 +15256,7 @@ function syncRoleMissionsFromHistory() {
 
       if (rowName === String(summonerName).trim().toLowerCase()) {
         games++;
-        if (result === 'Win') wins++;
+        if ((String(result) || '').includes('Win')) wins++;
       }
     }
 
@@ -17513,6 +17520,66 @@ function testEarlyLaneGap(p, opponent, role) {
 /* ==========================================================
              ACTUALIZAR RESULTADO Y ENLAZAR CON STATS (CORREGIDO)
    ========================================================== */
+/** Avance automático en bracket de playoffs (P1â€“P12, doble eliminación 10 equipos) */
+function advancePlayoffBracket_(matchesSheet, completedMatchId, winnerTeamId, loserTeamId, winnerName, loserName) {
+  const ADVANCE = {
+    'P1': { win: { id: 'P3', slot: 'A' }, lose: { id: 'P8', slot: 'A' } },
+    'P2': { win: { id: 'P3', slot: 'B' }, lose: { id: 'P9', slot: 'A' } },
+    'P3': { win: { id: 'P12', slot: 'A' }, lose: { id: 'P11', slot: 'A' } },
+    'P4': { win: { id: 'P6', slot: 'B' } },
+    'P5': { win: { id: 'P7', slot: 'B' } },
+    'P6': { win: { id: 'P8', slot: 'B' } },
+    'P7': { win: { id: 'P9', slot: 'B' } },
+    'P8': { win: { id: 'P10', slot: 'A' } },
+    'P9': { win: { id: 'P10', slot: 'B' } },
+    'P10': { win: { id: 'P11', slot: 'B' } },
+    'P11': { win: { id: 'P12', slot: 'B' } }
+  };
+
+  const cfg = ADVANCE[String(completedMatchId)];
+  if (!cfg || !winnerTeamId || winnerTeamId === 'DRAW') return;
+
+  const mData = matchesSheet.getDataRange().getValues();
+  const teamsSheet = SpreadsheetApp.getActive().getSheetByName('TOURNAMENT_TEAMS');
+  const teamNameById = function(tid) {
+    if (!teamsSheet || !tid) return String(tid || '');
+    const tData = teamsSheet.getDataRange().getValues();
+    for (let i = 1; i < tData.length; i++) {
+      if (String(tData[i][0]) === String(tid)) return String(tData[i][1]);
+    }
+    return String(tid);
+  };
+
+  const applySlot = function(targetId, slot, teamId, displayName) {
+    for (let r = 1; r < mData.length; r++) {
+      if (String(mData[r][0]) !== String(targetId)) continue;
+      const row = r + 1;
+      const name = displayName || teamNameById(teamId);
+      let nA = String(mData[r][9]).split(' vs ')[0] || 'TBD';
+      let nB = String(mData[r][9]).split(' vs ')[1] || 'TBD';
+      if (slot === 'A') {
+        matchesSheet.getRange(row, 4).setValue(teamId);
+        nA = name;
+      } else {
+        matchesSheet.getRange(row, 5).setValue(teamId);
+        nB = name;
+      }
+      matchesSheet.getRange(row, 10).setValue(nA.trim() + ' vs ' + nB.trim());
+      const newA = matchesSheet.getRange(row, 4).getValue();
+      const newB = matchesSheet.getRange(row, 5).getValue();
+      if (newA && newB && !String(newA).startsWith('W_') && !String(newA).startsWith('L_') &&
+          !String(newB).startsWith('W_') && !String(newB).startsWith('L_')) {
+        const st = String(matchesSheet.getRange(row, 9).getValue());
+        if (st === 'LOCKED' || st === '') matchesSheet.getRange(row, 9).setValue('PENDING');
+      }
+      break;
+    }
+  };
+
+  if (cfg.win) applySlot(cfg.win.id, cfg.win.slot, winnerTeamId, winnerName);
+  if (cfg.lose && loserTeamId && loserTeamId !== 'DRAW') applySlot(cfg.lose.id, cfg.lose.slot, loserTeamId, loserName);
+}
+
 function updateMatchResult(matchId, scoreA, scoreB, riotId) {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
@@ -17554,21 +17621,28 @@ function updateMatchResult(matchId, scoreA, scoreB, riotId) {
 
       updated = true;
       try { announceTournamentResultToDiscord(names[0], names[1], scoreA, scoreB); } catch(e){}
+
+      if (String(matchId).match(/^P\d+$/i) && winnerId && winnerId !== 'DRAW') {
+        try { advancePlayoffBracket_(matchesSheet, matchId, winnerId, loserId, winnerName, loserName); } catch(e) {
+          Logger.log('advancePlayoffBracket_: ' + e.message);
+        }
+      }
       break;
     }
   }
 
-  if (updated && winnerId !== 'DRAW') {
-    recalculateStandings(); 
+  if (updated) {
+    // Siempre recalculamos aunque sea empate
+    try { recalculateStandings(); } catch(eRS) { Logger.log('recalculateStandings error: ' + eRS.message); }
     
-    if (format.includes('elim')) {
-        const winTag = `W_${matchId}`; const loseTag = `L_${matchId}`;
+    if (winnerId !== 'DRAW' && format.includes('elim')) {
+        const winTag = 'W_' + matchId; const loseTag = 'L_' + matchId;
         for (let j = 1; j < mData.length; j++) {
             let rowNames = String(mData[j][9]).split(' vs '); let modified = false;
-            if (mData[j][3] === winTag) { matchesSheet.getRange(j + 1, 4).setValue(winnerId); matchesSheet.getRange(j + 1, 10).setValue(`${winnerName} vs ${rowNames[1]}`); modified = true; } 
-            else if (mData[j][4] === winTag) { matchesSheet.getRange(j + 1, 5).setValue(winnerId); matchesSheet.getRange(j + 1, 10).setValue(`${rowNames[0]} vs ${winnerName}`); modified = true; }
-            if (mData[j][3] === loseTag) { matchesSheet.getRange(j + 1, 4).setValue(loserId); matchesSheet.getRange(j + 1, 10).setValue(`${loserName} vs ${rowNames[1]}`); modified = true; } 
-            else if (mData[j][4] === loseTag) { matchesSheet.getRange(j + 1, 5).setValue(loserId); matchesSheet.getRange(j + 1, 10).setValue(`${rowNames[0]} vs ${loserName}`); modified = true; }
+            if (mData[j][3] === winTag) { matchesSheet.getRange(j + 1, 4).setValue(winnerId); matchesSheet.getRange(j + 1, 10).setValue(winnerName + ' vs ' + rowNames[1]); modified = true; } 
+            else if (mData[j][4] === winTag) { matchesSheet.getRange(j + 1, 5).setValue(winnerId); matchesSheet.getRange(j + 1, 10).setValue(rowNames[0] + ' vs ' + winnerName); modified = true; }
+            if (mData[j][3] === loseTag) { matchesSheet.getRange(j + 1, 4).setValue(loserId); matchesSheet.getRange(j + 1, 10).setValue(loserName + ' vs ' + rowNames[1]); modified = true; } 
+            else if (mData[j][4] === loseTag) { matchesSheet.getRange(j + 1, 5).setValue(loserId); matchesSheet.getRange(j + 1, 10).setValue(rowNames[0] + ' vs ' + loserName); modified = true; }
 
             if (modified) {
                 let newA = matchesSheet.getRange(j + 1, 4).getValue(); let newB = matchesSheet.getRange(j + 1, 5).getValue();
@@ -17578,12 +17652,12 @@ function updateMatchResult(matchId, scoreA, scoreB, riotId) {
             }
         }
     } 
-    else if (format === 'swiss') {
-        checkAndGenerateSwissRound();
+    else if (winnerId !== 'DRAW' && format === 'swiss') {
+        try { checkAndGenerateSwissRound(); } catch(eSW) {}
     }
-    return { success: true, msg: "  Resultado guardado y estad    sticas enlazadas!" };
+    return { success: true, msg: 'Resultado guardado y clasificacion actualizada!' };
   }
-  return { success: false, msg: "Error al actualizar." };
+  return { success: false, msg: 'Error al actualizar.' };
 }
 
 //          MOTOR DIN    MICO SUIZO
@@ -17827,7 +17901,7 @@ function sendDiscordAlert(mensaje) {
 
 function sendNegotiationDiscordNotification(actionType, actingTeamName, opponentDiscordId, opponentTeamName, matchRound, proposedDate, notes) {
   // Usando el MISMO webhook que sendDiscordAlert (el que funciona)
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo";
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng";
   
   // Enlace dinámico a tu Web App (así nunca se rompe si cambias la URL)
   const WEB_LINK = ScriptApp.getService().getUrl();
@@ -17837,11 +17911,11 @@ function sendNegotiationDiscordNotification(actionType, actingTeamName, opponent
   let contentMsg = "";
 
   if (actionType === 'PROPOSE') {
-      contentMsg = `📢 **¡NUEVA PROPUESTA DE HORARIO!** ${mention}\n\nEl equipo **${actingTeamName}** ha propuesto una fecha para vuestro partido de **${matchRound}**.\n\n🗓️ **Fecha Propuesta:** ${proposedDate}\n📝 **Notas:** ${notes || "Ninguna"}\n\n👉 [Entra aquí para Aceptar o Rechazar la fecha](${WEB_LINK})`;
+      contentMsg = `ðŸ“¢ **¡NUEVA PROPUESTA DE HORARIO!** ${mention}\n\nEl equipo **${actingTeamName}** ha propuesto una fecha para vuestro partido de **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Propuesta:** ${proposedDate}\nðŸ“ **Notas:** ${notes || "Ninguna"}\n\nðŸ‘‰ [Entra aquí para Aceptar o Rechazar la fecha](${WEB_LINK})`;
   } else if (actionType === 'ACCEPT') {
-      contentMsg = `✅ **¡PACTO SELLADO!** ${mention}\n\nEl equipo **${actingTeamName}** ha **ACEPTADO** vuestra propuesta para la **${matchRound}**.\n\n🗓️ **Fecha Oficial:** ${proposedDate}\n\n¡Preparad las armas! ⚔️`;
+      contentMsg = `âœ… **¡PACTO SELLADO!** ${mention}\n\nEl equipo **${actingTeamName}** ha **ACEPTADO** vuestra propuesta para la **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Oficial:** ${proposedDate}\n\n¡Preparad las armas! âš”ï¸`;
   } else if (actionType === 'REJECT') {
-      contentMsg = `❌ **¡PROPUESTA RECHAZADA!** ${mention}\n\nEl equipo **${actingTeamName}** ha **RECHAZADO** vuestra propuesta de horario para la **${matchRound}**.\n\n👉 [Entra aquí para proponer otra fecha](${WEB_LINK})`;
+      contentMsg = `âŒ **¡PROPUESTA RECHAZADA!** ${mention}\n\nEl equipo **${actingTeamName}** ha **RECHAZADO** vuestra propuesta de horario para la **${matchRound}**.\n\nðŸ‘‰ [Entra aquí para proponer otra fecha](${WEB_LINK})`;
   }
 
   if (!contentMsg) return;
@@ -17865,20 +17939,41 @@ function sendNegotiationDiscordNotification(actionType, actingTeamName, opponent
   }
 }
 
-function formatDiscordDate(d) {
-    if (!d) return "";
+const LEAGUE_TIMEZONE = 'Europe/Madrid';
+
+/** Interpreta "YYYY-MM-DD HH:mm" / "YYYY-MM-DDTHH:mm" como hora de península (sin depender del TZ del Sheet). */
+function parseLeagueDateTime(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date && !isNaN(dateStr.getTime())) return dateStr;
+  const normalized = String(dateStr).trim().replace('T', ' ');
+  try {
+    return Utilities.parseDate(normalized, LEAGUE_TIMEZONE, 'yyyy-MM-dd HH:mm');
+  } catch (e1) {
     try {
-        let dateObj = new Date(d);
-        if (isNaN(dateObj.getTime())) return String(d);
-        let day = ("0" + dateObj.getDate()).slice(-2);
-        let month = ("0" + (dateObj.getMonth() + 1)).slice(-2);
-        let year = dateObj.getFullYear();
-        let hours = ("0" + dateObj.getHours()).slice(-2);
-        let mins = ("0" + dateObj.getMinutes()).slice(-2);
-        return `${day}/${month}/${year} ${hours}:${mins}`;
-    } catch(e) {
-        return String(d);
+      return Utilities.parseDate(String(dateStr).trim(), LEAGUE_TIMEZONE, "yyyy-MM-dd'T'HH:mm");
+    } catch (e2) {
+      return null;
     }
+  }
+}
+
+/** Serializa fechas de partido siempre como "yyyy-MM-dd HH:mm" en hora de Madrid. */
+function formatLeagueDateTime(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return Utilities.formatDate(val, LEAGUE_TIMEZONE, 'yyyy-MM-dd HH:mm');
+  }
+  const parsed = parseLeagueDateTime(val);
+  if (parsed) return Utilities.formatDate(parsed, LEAGUE_TIMEZONE, 'yyyy-MM-dd HH:mm');
+  return String(val).trim();
+}
+
+function formatDiscordDate(d) {
+  const formatted = formatLeagueDateTime(d);
+  if (!formatted) return '';
+  const m = formatted.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+  return formatted;
 }
 
 // ==========================================================
@@ -17917,10 +18012,24 @@ function getTournamentData() {
   }
 
   let votesMap = {};
-  const votesSheet = ss.getSheetByName('TOURNAMENT_VOTES');
-  if (votesSheet && votesSheet.getLastRow() > 1) {
-      let vData = votesSheet.getDataRange().getValues();
-      for (let i = 1; i < vData.length; i++) { votesMap[vData[i][0]] = { a: vData[i][1], b: vData[i][2] }; }
+  const _weeklyVotesSheet = ss.getSheetByName('PICKEMS_WEEKLY');
+  if (_weeklyVotesSheet && _weeklyVotesSheet.getLastRow() > 1) {
+      const _wvData = _weeklyVotesSheet.getDataRange().getValues();
+      for (let i = 1; i < _wvData.length; i++) {
+          const _mId = String(_wvData[i][2] || '').trim();
+          const _tIdx = parseInt(_wvData[i][3]);
+          if (!_mId) continue;
+          if (!votesMap[_mId]) votesMap[_mId] = { a: 0, b: 0 };
+          if (_tIdx === 0) votesMap[_mId].a++;
+          else if (_tIdx === 1) votesMap[_mId].b++;
+      }
+  }
+  if (Object.keys(votesMap).length === 0) {
+      const _lvSheet = ss.getSheetByName('TOURNAMENT_VOTES');
+      if (_lvSheet && _lvSheet.getLastRow() > 1) {
+          const _lvData = _lvSheet.getDataRange().getValues();
+          for (let i = 1; i < _lvData.length; i++) votesMap[_lvData[i][0]] = { a: _lvData[i][1], b: _lvData[i][2] };
+      }
   }
 
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
@@ -17938,9 +18047,9 @@ function getTournamentData() {
      try {
          if (mData[i].length > 11 && mData[i][11]) vodUrl = String(mData[i][11]).trim();
          // Col M (12) Fecha final
-         if (mData[i].length > 12 && mData[i][12]) matchDate = String(mData[i][12]).trim();
+         if (mData[i].length > 12 && mData[i][12]) matchDate = formatLeagueDateTime(mData[i][12]);
          // Col N (13) Fecha Propuesta y Col O (14) Propuesto Por
-         if (mData[i].length > 13 && mData[i][13]) propDate = String(mData[i][13]).trim();
+         if (mData[i].length > 13 && mData[i][13]) propDate = formatLeagueDateTime(mData[i][13]);
          if (mData[i].length > 14 && mData[i][14]) propBy = String(mData[i][14]).trim();
          // Col Q (16) Código de Torneo
          if (mData[i].length > 16 && mData[i][16]) tCode = String(mData[i][16]).trim();
@@ -18029,7 +18138,10 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
 
     // 4. Ejecutamos la acción en el Excel
     if(action === 'PROPOSE') {
-      mSheet.getRange(matchRow, 14).setValue(dateStr.replace("T", " ")); // N (Propuesta)
+      const parsedDate = parseLeagueDateTime(dateStr);
+      if (!parsedDate) return {success: false, msg: "Fecha u hora inválida."};
+      const formattedDate = Utilities.formatDate(parsedDate, LEAGUE_TIMEZONE, 'yyyy-MM-dd HH:mm');
+      mSheet.getRange(matchRow, 14).setValue("'" + formattedDate); // N (Propuesta) — Guardar como texto para evitar timezone shifts
       mSheet.getRange(matchRow, 15).setValue(teamId);  // O (Por quién)
       mSheet.getRange(matchRow, 16).setValue(notesStr); // P (Notas)
       mSheet.getRange(matchRow, 13).setValue(""); // Limpiar M (Hora definida/cerrada)
@@ -18039,8 +18151,8 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
       return {success: true, msg: "✅ Propuesta enviada. El equipo rival debe aceptarla."};
     }
     else if(action === 'ACCEPT') {
-      let propDate = mSheet.getRange(matchRow, 14).getValue();
-      mSheet.getRange(matchRow, 13).setValue(propDate); // Movemos a M (Fecha Final)
+      let propDate = mSheet.getRange(matchRow, 14).getDisplayValue(); // Usamos getDisplayValue para sacar el string puro
+      mSheet.getRange(matchRow, 13).setValue("'" + propDate); // Movemos a M como string (Fecha Final)
       mSheet.getRange(matchRow, 14).setValue(""); // Limpiamos N
       mSheet.getRange(matchRow, 15).setValue(""); // Limpiamos O
       mSheet.getRange(matchRow, 16).setValue(""); // Limpiamos P
@@ -18056,7 +18168,7 @@ function handleMatchNegotiation(action, matchId, teamId, pin, dateStr, notesStr 
 
       try { sendNegotiationDiscordNotification('REJECT', actingName, opponentDiscordId, opponentName, matchRound, "", ""); } catch(e){ Logger.log('DISCORD REJECT ERROR: ' + e.message); }
 
-      return {success: true, msg: "❌ Propuesta rechazada. El cuadro vuelve a estar vacío."};
+      return {success: true, msg: "âŒ Propuesta rechazada. El cuadro vuelve a estar vacío."};
     }
   } catch(e) { return {success: false, msg: "Error: " + e.message}; } 
   finally { lock.releaseLock(); }
@@ -18077,7 +18189,7 @@ function setTournamentCode(matchId, code) {
       // Notificar a Discord
       try {
           const teamNames = String(mData[i][9] || "").split(" vs ");
-          sendDiscordAlert(`🎫 **Código de Torneo Actualizado** para el partido **${teamNames[0]} vs ${teamNames[1]}** (ID: ${matchId}).`);
+          sendDiscordAlert(`ðŸŽ« **Código de Torneo Actualizado** para el partido **${teamNames[0]} vs ${teamNames[1]}** (ID: ${matchId}).`);
       } catch(e) {}
 
       return { success: true, msg: "Código de torneo guardado correctamente." };
@@ -18244,11 +18356,16 @@ function getTournamentArchive() {
 
 
 
-// Esta funci    n lee todos los partidos completados y reconstruye la clasificaci    n desde 0
+// Esta funcion lee todos los partidos completados y reconstruye la clasificacion desde 0
 function recalculateStandings() {
   const ss = SpreadsheetApp.getActive();
   const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+
+  if (!teamsSheet || !matchesSheet) {
+    Logger.log('recalculateStandings: faltan hojas TOURNAMENT_TEAMS o TOURNAMENT_MATCHES');
+    return;
+  }
 
   const tData = teamsSheet.getDataRange().getValues();
   const mData = matchesSheet.getDataRange().getValues();
@@ -18256,31 +18373,36 @@ function recalculateStandings() {
   // 1. Crear un diccionario con todos los equipos a 0
   let stats = {};
   for (let i = 1; i < tData.length; i++) {
-    // Guardamos la fila para luego escribir los datos r    pido
-    stats[tData[i][0]] = { w: 0, l: 0, d: 0, pts: 0, row: i + 1 };
+    var teamId = tData[i][0];
+    if (!teamId && teamId !== 0) continue; // skip rows without ID
+    stats[String(teamId)] = { w: 0, l: 0, d: 0, pts: 0, row: i + 1 };
   }
 
   // 2. Recorrer partidos y sumar victorias/derrotas/puntos (3 pts victoria, 1 pt empate)
   for (let i = 1; i < mData.length; i++) {
-    if (mData[i][8] === 'COMPLETED') { //     ndice 8 es Status
-       const tA = mData[i][3]; // ID Team A
-       const tB = mData[i][4]; // ID Team B
-       const winner = mData[i][7]; // Winner ID o 'DRAW'
+    if (mData[i][8] === 'COMPLETED') { // indice 8 es Status
+       const tA = String(mData[i][3]); // ID Team A
+       const tB = String(mData[i][4]); // ID Team B
+       const winner = String(mData[i][7]); // Winner ID o 'DRAW'
+
+       // Guardias: ignorar partidos con IDs de equipos inexistentes
+       if (!stats[tA] && !stats[tB]) continue;
 
        if (winner === tA) {
-         stats[tA].w++; stats[tA].pts += 3;
-         stats[tB].l++;
+         if (stats[tA]) { stats[tA].w++; stats[tA].pts += 3; }
+         if (stats[tB]) { stats[tB].l++; }
        } else if (winner === tB) {
-         stats[tB].w++; stats[tB].pts += 3;
-         stats[tA].l++;
+         if (stats[tB]) { stats[tB].w++; stats[tB].pts += 3; }
+         if (stats[tA]) { stats[tA].l++; }
        } else if (winner === 'DRAW') {
-         stats[tA].d++; stats[tA].pts += 1;
-         stats[tB].d++; stats[tB].pts += 1;
+         if (stats[tA]) { stats[tA].d++; stats[tA].pts += 1; }
+         if (stats[tB]) { stats[tB].d++; stats[tB].pts += 1; }
        }
     }
   }
 
-  // 3. Volcar los nuevos n    meros a la hoja TOURNAMENT_TEAMS
+  // 3. Volcar los nuevos numeros a la hoja TOURNAMENT_TEAMS en un solo batch
+  var updates = [];
   for (let id in stats) {
     let s = stats[id];
     teamsSheet.getRange(s.row, 3).setValue(s.w);   // Wins
@@ -18290,6 +18412,7 @@ function recalculateStandings() {
   }
   
   SpreadsheetApp.flush();
+  Logger.log('recalculateStandings: completado para ' + Object.keys(stats).length + ' equipos');
 }
 
 
@@ -18514,7 +18637,7 @@ function announcePickemsToDiscord() {
    ========================================================== */
 function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   // PEGA TU WEBHOOK DE DISCORD AQUI
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1499383638654193695/a8vQ-0XJ8C47AG-epHzkpi1ox6Ugdc189RnKJRtHkU1XhxuLHBbgqAu9JlCtGgDqT1ng"; 
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1480713889137299570/GoF0yYvBFPd9fZfRfGLa3aT-isTJkmtPNziY6unLVGItfUPSjvj3bkpHEK6P8JQgt7Yo"; 
 
   if (!WEBHOOK_URL || WEBHOOK_URL.includes("TU_ENLACE_AQUI")) return;
 
@@ -18533,8 +18656,8 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
     if(name === String(teamB).trim()) discordIdB = String(tData[i][11] || "").trim();
   }
   
-  let mentionA = discordIdA ? `<@${discordIdA}>` : teamA;
-  let mentionB = discordIdB ? `<@${discordIdB}>` : teamB;
+  let mentionA = discordIdA ? `<@&${discordIdA}>` : teamA;
+  let mentionB = discordIdB ? `<@&${discordIdB}>` : teamB;
   let mentions = `${mentionA} y ${mentionB}`;
 
   let winner = "";
@@ -18555,7 +18678,7 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   } else {
       // Empate
       const payloadDraw = {
-        content: `🚨 **¡RESULTADO DEL TORNEO!** Atención capitanes: ${mentions}`,
+        content: `ðŸš¨ **¡RESULTADO DEL TORNEO!** Atención capitanes: ${mentions}`,
         embeds: [{
           title: `Empate técnico entre ${teamA} y ${teamB}`,
           description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**. ¡Reparto de puntos para ambos!`,
@@ -18567,10 +18690,10 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   }
 
   const payload = {
-    content: `🏆 **¡NUEVO RESULTADO OFICIAL DE LA LIGA!** Atención capitanes: ${mentions}`,
+    content: `ðŸ† **¡NUEVO RESULTADO OFICIAL DE LA LIGA!** Atención capitanes: ${mentions}`,
     embeds: [{
-      title: `💥 ${winner} aplasta a ${loser} 💥`,
-      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\n👀 *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
+      title: `ðŸ’¥ ${winner} aplasta a ${loser} ðŸ’¥`,
+      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\nðŸ‘€ *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
       color: color,
       image: { url: "https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg" },
       footer: { text: "Wargods Premier - Resultados Oficiales" }
@@ -18591,12 +18714,326 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
 /* ==========================================================
              OBTENER POST-GAME LOBBY (CON TANK, MVP, TIMELINE Y EVENTOS)
    ========================================================== */
+function isMatchWinResult_(result) {
+  const r = String(result || '').trim().toLowerCase();
+  if (!r) return false;
+  if (r.includes('loss') || r === 'l' || r === 'false' || r === '0') return false;
+  return r.includes('win') || r === 'w' || r === 'true' || r === '1' || r === 'victoria';
+}
+
+function normalizeRosterNameForMatch_(n) {
+  return String(n || '').split('#')[0]
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\xA0]/g, '').toLowerCase();
+}
+
+function getTeamRosterSetFromSheet_(teamsSheet, teamId) {
+  const set = {};
+  if (!teamsSheet || !teamId) return set;
+  const tData = teamsSheet.getDataRange().getValues();
+  for (let i = 1; i < tData.length; i++) {
+    if (String(tData[i][0]) !== String(teamId)) continue;
+    const rosterStr = String(tData[i][8] || '');
+    rosterStr.split(',').forEach(function(p) {
+      const clean = normalizeRosterNameForMatch_(p);
+      if (clean) set[clean] = true;
+    });
+    break;
+  }
+  return set;
+}
+
+function exportRoleForWeb_(role) {
+  const up = String(role || '').toUpperCase().trim();
+  const map = { TOP: 'TOP', JNG: 'JNG', JUNGLE: 'JNG', JGL: 'JNG', MID: 'MID', MIDDLE: 'MID', ADC: 'ADC', BOTTOM: 'ADC', BOT: 'ADC', SUPP: 'SUPP', SUPPORT: 'SUPP', UTILITY: 'SUPP' };
+  return map[up] || up || 'FILL';
+}
+
+/** IDs de partida (MATCHES) válidos para una jornada / filtro */
+function buildValidMatchIdsForStats_(tmData, roundFilter) {
+  const validMatchIds = new Set();
+  const availableRounds = new Set();
+  for (let i = 1; i < tmData.length; i++) {
+    const round = String(tmData[i][1] || '').trim();
+    const mId = String(tmData[i][0] || '').trim();
+    const rId = String(tmData[i][10] || '').trim();
+    const isJornada = round && round !== 'Round' && round !== 'Ronda';
+    if (isJornada) availableRounds.add(round);
+    if (!isJornada) continue;
+    
+    if (roundFilter === 'REGULAR') {
+      const jNum = parseInt(round.replace(/[^\d]/g, ''), 10);
+      if (isNaN(jNum) || jNum >= 13) continue;
+    } else if (roundFilter === 'PLAYOFFS') {
+      const jNum = parseInt(round.replace(/[^\d]/g, ''), 10);
+      if (isNaN(jNum) || jNum < 13) continue;
+    } else if (roundFilter !== 'ALL' && round !== roundFilter) {
+      continue;
+    }
+
+    if (mId) validMatchIds.add(mId);
+    if (rId) {
+      rId.split(',').forEach(function(id) {
+        const clean = id.trim();
+        if (clean) validMatchIds.add(clean);
+      });
+    }
+  }
+  return { validMatchIds: validMatchIds, availableRounds: availableRounds };
+}
+
+/** Cuenta mapas ganados por equipo A/B del torneo (no por lado 100/200 del ROFL) */
+function resolveSeriesScoreByRoster_(tMatchId, games) {
+  const ss = SpreadsheetApp.getActive();
+  const tm = ss.getSheetByName('TOURNAMENT_MATCHES');
+  const tt = ss.getSheetByName('TOURNAMENT_TEAMS');
+  if (!tm || !games || !games.length) return { scoreA: 0, scoreB: 0 };
+
+  const tmData = tm.getDataRange().getValues();
+  let tA = '', tB = '';
+  for (let i = 1; i < tmData.length; i++) {
+    if (String(tmData[i][0]) === String(tMatchId)) {
+      tA = String(tmData[i][3]);
+      tB = String(tmData[i][4]);
+      break;
+    }
+  }
+  const rosterA = getTeamRosterSetFromSheet_(tt, tA);
+  const rosterB = getTeamRosterSetFromSheet_(tt, tB);
+  let winsA = 0, winsB = 0;
+
+  games.forEach(function(game) {
+    const parts = game.participants || [];
+    const winners = parts.filter(function(p) {
+      return isMatchWinResult_(p.win) || isMatchWinResult_(p.WIN);
+    });
+    if (!winners.length) return;
+    let countA = 0, countB = 0;
+    winners.forEach(function(p) {
+      const n = normalizeRosterNameForMatch_(p.summonerName || p.RIOT_ID_GAME_NAME || p.NAME || '');
+      if (rosterA[n]) countA++;
+      else if (rosterB[n]) countB++;
+    });
+    if (countA >= countB) winsA++;
+    else winsB++;
+  });
+  return { scoreA: winsA, scoreB: winsB };
+}
+
+/** Corrige marcador en TOURNAMENT_MATCHES leyendo victorias en MATCHES (series ROFL) */
+function repairTournamentSeriesScoreFromMatches_(tMatchId) {
+  const ss = SpreadsheetApp.getActive();
+  const tm = ss.getSheetByName('TOURNAMENT_MATCHES');
+  const tt = ss.getSheetByName('TOURNAMENT_TEAMS');
+  const ms = ss.getSheetByName('MATCHES');
+  if (!tm || !ms) return;
+
+  const tmData = tm.getDataRange().getValues();
+  let row = -1, tA = '', tB = '', riotIds = '';
+  for (let i = 1; i < tmData.length; i++) {
+    if (String(tmData[i][0]) === String(tMatchId)) {
+      row = i + 1;
+      tA = String(tmData[i][3]);
+      tB = String(tmData[i][4]);
+      riotIds = String(tmData[i][10] || '').trim();
+      break;
+    }
+  }
+  if (row < 0 || riotIds.indexOf(',') === -1) return;
+
+  const rosterA = getTeamRosterSetFromSheet_(tt, tA);
+  const rosterB = getTeamRosterSetFromSheet_(tt, tB);
+  const gameIds = riotIds.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  const mData = ms.getDataRange().getValues();
+  let winsA = 0, winsB = 0;
+
+  gameIds.forEach(function(gid) {
+    let countA = 0, countB = 0;
+    for (let i = 1; i < mData.length; i++) {
+      if (String(mData[i][0]).trim() !== gid) continue;
+      if (!isMatchWinResult_(mData[i][5])) continue;
+      const n = normalizeRosterNameForMatch_(mData[i][2]);
+      if (rosterA[n]) countA++;
+      else if (rosterB[n]) countB++;
+    }
+    if (countA >= countB) winsA++;
+    else winsB++;
+  });
+
+  const curA = Number(tm.getRange(row, 6).getValue()) || 0;
+  const curB = Number(tm.getRange(row, 7).getValue()) || 0;
+  if (curA === winsA && curB === winsB) return;
+
+  tm.getRange(row, 6).setValue(winsA);
+  tm.getRange(row, 7).setValue(winsB);
+  if (winsA > winsB) tm.getRange(row, 8).setValue(tA);
+  else if (winsB > winsA) tm.getRange(row, 8).setValue(tB);
+  tm.getRange(row, 9).setValue('COMPLETED');
+}
+
+function parseSingleGameLobby_(data, gameId, currentMatchVotes) {
+  let winners = [];
+  let losers = [];
+  let matchWinStats = null;
+  let matchLosStats = null;
+  let matchTimeline = null;
+  let matchEvents = null;
+  let matchIsEstimated = false;
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() !== String(gameId).trim()) continue;
+    const pName = String(data[i][2]).trim();
+    let cs = '0.0', csTotal = 0, cs15 = 0, plates = 0, gpm = '0', gold = 0, tank = '-', vspm = '0.00', visionScore = 0;
+    let items = [], spells = [], dmgObj = 0, dmgTurrets = 0;
+    let jsonDmg = 0;
+    const rawJson = data[i][15];
+
+    if (rawJson) {
+      try {
+        const adv = JSON.parse(rawJson);
+        let tp = Number(adv.TIME_PLAYED || adv.timePlayed || (Number(data[i][11]||0) * 60) || 1);
+
+        if (adv.csMin) cs = Number(adv.csMin).toFixed(1);
+        else if (adv.MINIONS_KILLED) cs = (Number(adv.MINIONS_KILLED) / (tp/60)).toFixed(1);
+
+        if (adv.cs) csTotal = Number(adv.cs);
+        else if (adv.MINIONS_KILLED) csTotal = Number(adv.MINIONS_KILLED);
+        else if (adv.totalMinionsKilled) csTotal = Number(adv.totalMinionsKilled);
+
+        if (adv.cs15 !== undefined) cs15 = Number(adv.cs15);
+        if (adv.plates !== undefined) plates = Number(adv.plates);
+        
+        if (adv.gpm) gpm = Number(adv.gpm).toFixed(0);
+        else if (adv.GOLD_EARNED || adv.goldEarned) gpm = (Number(adv.GOLD_EARNED || adv.goldEarned) / (tp/60)).toFixed(0);
+
+        if (adv.gold) gold = Number(adv.gold);
+        else if (adv.GOLD_EARNED || adv.goldEarned) gold = Number(adv.GOLD_EARNED || adv.goldEarned);
+
+        if (adv.vspm) vspm = Number(adv.vspm).toFixed(2);
+        else if (adv.VISION_SCORE || adv.visionScore) vspm = (Number(adv.VISION_SCORE || adv.visionScore) / (tp/60)).toFixed(2);
+
+        if (adv.visionScore) visionScore = Number(adv.visionScore);
+        else if (adv.VISION_SCORE) visionScore = Number(adv.VISION_SCORE);
+
+        if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + '%';
+        if (adv.dmgTaken || adv.TOTAL_DAMAGE_TAKEN || adv.damageTaken) tank = (Number(adv.dmgTaken || adv.TOTAL_DAMAGE_TAKEN || adv.damageTaken) / 1000).toFixed(1) + 'k';
+        
+        if (adv.items) items = adv.items;
+        else {
+           let itms = [];
+           for(let k=0; k<=6; k++) if(adv['ITEM'+k] !== undefined) itms.push(Number(adv['ITEM'+k]));
+           if (itms.length > 0) items = itms;
+        }
+
+        if (adv.spells) spells = adv.spells;
+        else if (adv.SUMMONER_SPELL_1 || adv.SUMMONER_SPELL_2) spells = [Number(adv.SUMMONER_SPELL_1||0), Number(adv.SUMMONER_SPELL_2||0)];
+
+        if (adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES) dmgObj = Number(adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES);
+        if (adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS) dmgTurrets = Number(adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS);
+
+        jsonDmg = Number(adv.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS || adv.totalDamageDealtToChampions || 0);
+        if (jsonDmg === 0 && adv.dpm) {
+            var _tp = Number(adv.TIME_PLAYED || adv.timePlayed || (Number(data[i][11] || 0) * 60) || 1);
+            jsonDmg = Math.round(Number(adv.dpm) * (_tp / 60));
+        }
+
+        if (adv.goldTimeline) matchTimeline = adv.goldTimeline;
+        if (adv.winStats) matchWinStats = adv.winStats;
+        if (adv.losStats) matchLosStats = adv.losStats;
+        if (adv.eventsList) matchEvents = adv.eventsList;
+        else if (adv.events) matchEvents = adv.events;
+        if (adv.isEstimated) matchIsEstimated = true;
+      } catch (e) {}
+    }
+
+    let teamId = 100;
+    let isWin = isMatchWinResult_(data[i][5]);
+    if (rawJson) {
+      try {
+        const advMeta = JSON.parse(rawJson);
+        if (advMeta.teamId) teamId = Number(advMeta.teamId) || 100;
+        if (!isWin && (advMeta.win === true || advMeta.win === 'true')) isWin = true;
+      } catch (e) {}
+    }
+
+    let dDmg = Number(data[i][9] || 0);
+    if (dDmg === 0 && jsonDmg > 0) dDmg = jsonDmg;
+
+    const pData = {
+      name: pName, champ: data[i][3], role: data[i][4], teamId: teamId,
+      k: Number(data[i][6] || 0), d: Number(data[i][7] || 0), a: Number(data[i][8] || 0),
+      dmg: dDmg, kp: Number(data[i][10] || 0),
+      points: Number(data[i][12] || 0).toFixed(1), votes: currentMatchVotes[pName] || 0,
+      cs: cs, csTotal: csTotal, cs15: cs15, plates: plates, gpm: gpm, gold: gold,
+      tank: tank, vspm: vspm, visionScore: visionScore, items: items, spells: spells,
+      dmgObj: dmgObj, dmgTurrets: dmgTurrets
+    };
+    if (isWin) winners.push(pData);
+    else losers.push(pData);
+  }
+
+  if (winners.length !== 5 || losers.length !== 5) {
+    const all = winners.concat(losers);
+    if (all.length >= 10) {
+      const byTeam = { 100: [], 200: [] };
+      all.forEach(function(p) {
+        const tid = p.teamId || 100;
+        if (!byTeam[tid]) byTeam[tid] = [];
+        byTeam[tid].push(p);
+      });
+      if (byTeam[100].length === 5 && byTeam[200].length === 5) {
+        const k100 = byTeam[100].reduce(function(a, p) { return a + (p.k || 0); }, 0);
+        const k200 = byTeam[200].reduce(function(a, p) { return a + (p.k || 0); }, 0);
+        if (k100 >= k200) { winners = byTeam[100]; losers = byTeam[200]; }
+        else { winners = byTeam[200]; losers = byTeam[100]; }
+      }
+    }
+  }
+
+  const roleOrder = { TOP: 1, JUNGLE: 2, JNG: 2, MIDDLE: 3, MID: 3, BOTTOM: 4, ADC: 4, SUPPORT: 5, UTILITY: 5, SUPP: 5 };
+  const sortRoles = function(a, b) {
+    return (roleOrder[String(a.role || '').toUpperCase()] || 9) - (roleOrder[String(b.role || '').toUpperCase()] || 9);
+  };
+  winners.sort(sortRoles);
+  losers.sort(sortRoles);
+
+  // â”€â”€ Reconstruir goldTimeline si está a cero (partidas con bug Win) â”€â”€
+  if (!matchTimeline || !matchTimeline.some(function(v) { return Math.abs(v) > 500; })) {
+    var _wG = winners.reduce(function(s, p) { return s + (p.gold || 0); }, 0);
+    var _lG = losers.reduce(function(s, p) { return s + (p.gold || 0); }, 0);
+    var _gDiff = _wG - _lG;
+    if (Math.abs(_gDiff) > 1000) {
+      var _durMins = 0;
+      for (var _di = 1; _di < data.length; _di++) {
+        if (String(data[_di][0]).trim() === String(gameId).trim()) {
+          _durMins = Number(data[_di][11] || 0); break;
+        }
+      }
+      _durMins = Math.max(15, _durMins);
+      matchTimeline = [];
+      for (var _m = 0; _m <= _durMins; _m++) {
+        matchTimeline.push(Math.round(_gDiff * Math.pow(_m / _durMins, 1.5)));
+      }
+    }
+  }
+
+  return {
+    gameId: gameId, winners: winners, losers: losers,
+    winStats: matchWinStats, losStats: matchLosStats,
+    timeline: matchTimeline, events: matchEvents,
+    isEstimated: matchIsEstimated
+  };
+}
+
 function getPostGameLobbyData(matchId) {
   const ss = SpreadsheetApp.getActive();
   const matchesSheet = ss.getSheetByName('MATCHES');
   const mvpSheet = ss.getSheetByName('TOURNAMENT_MVP_VOTES');
   
   if (!matchesSheet) return { error: "Hoja MATCHES no encontrada" };
+
+  const matchIdList = String(matchId || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  if (matchIdList.length === 0) return { error: "ID de partida no válido" };
 
   let currentMatchVotes = {};
   let officialMvp = null;
@@ -18612,7 +19049,7 @@ function getPostGameLobbyData(matchId) {
   if (mvpSheet && mvpSheet.getLastRow() > 1) {
       const vData = mvpSheet.getDataRange().getValues();
       for (let i = 1; i < vData.length; i++) {
-          if (vData[i][2] === matchId) {
+          if (matchIdList.indexOf(String(vData[i][2]).trim()) !== -1) {
               if (vData[i][1] === 'SYSTEM_RESOLVED') {
                   isResolved = true;
                   if (vData[i][4] === 'MVP') officialMvp = String(vData[i][3]).trim();
@@ -18626,113 +19063,64 @@ function getPostGameLobbyData(matchId) {
   }
 
   const data = matchesSheet.getDataRange().getValues();
-  let winners = [];
-  let losers = [];
+  const games = [];
+  matchIdList.forEach(function(gid, idx) {
+    const lobby = parseSingleGameLobby_(data, gid, currentMatchVotes);
+    lobby.label = 'Mapa ' + (idx + 1);
+    games.push(lobby);
+  });
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim() === String(matchId).trim()) {
-      const pName = String(data[i][2]).trim();
-      
-      let cs = "0.0";
-      let csTotal = 0;
-      let cs15 = 0;      //          NUEVO
-      let plates = 0;    //          NUEVO
-      let gpm = "0";
-      let gold = 0;
-      let tank = "-";
-      let vspm = "0.00";
-      let visionScore = 0;
+  const activeIdx = Math.max(0, games.length - 1);
+  const active = games[activeIdx] || { winners: [], losers: [], timeline: [], events: [] };
 
-      let items = [];
-      let spells = [];
-
-      let dmgObj = 0;      //          A     ADIDO
-      let dmgTurrets = 0;  //          A     ADIDO
-
-      const rawJson = data[i][15]; 
-      if (rawJson) {
-          try {
-              let adv = JSON.parse(rawJson);
-              
-              if (adv.csMin) cs = Number(adv.csMin).toFixed(1);
-              if (adv.cs) csTotal = Number(adv.cs);
-              
-              if (adv.cs15 !== undefined) cs15 = Number(adv.cs15);    
-              if (adv.plates !== undefined) plates = Number(adv.plates); 
-              
-              if (adv.gpm) gpm = Number(adv.gpm).toFixed(0);
-              if (adv.gold) gold = Number(adv.gold);
-              if (adv.vspm) vspm = Number(adv.vspm).toFixed(2);
-              if (adv.visionScore) visionScore = Number(adv.visionScore);
-              
-              if (adv.dmgTakenPct) tank = Number(adv.dmgTakenPct).toFixed(0) + "%";
-              if (adv.dmgTaken) tank = (Number(adv.dmgTaken) / 1000).toFixed(1) + "k";
-
-              if (adv.items) items = adv.items;
-              if (adv.spells) spells = adv.spells;
-              
-              if (adv.dmgObj) dmgObj = Number(adv.dmgObj);         //          A     ADIDO
-              if (adv.dmgTurrets) dmgTurrets = Number(adv.dmgTurrets); //          A     ADIDO
-              
-              if (adv.goldTimeline && matchTimeline === null) {
-                  matchTimeline = adv.goldTimeline;
-                  matchWinStats = adv.winStats;
-                  matchLosStats = adv.losStats;
-              }
-              if (adv.eventsList && matchEvents === null) {
-                  matchEvents = adv.eventsList;
-              } else if (adv.events && matchEvents === null) { 
-                  matchEvents = adv.events;
-              }
-          } catch(e) {}
+  let seriesScoreA = 0, seriesScoreB = 0;
+  const tMatchGuess = String(matchIdList[0] || '').match(/^ROFL_(P\d+|M\d+)_/i);
+  const tMid = tMatchGuess ? tMatchGuess[1] : null;
+  if (tMid && games.length > 1) {
+    const ss = SpreadsheetApp.getActive();
+    const tt = ss.getSheetByName('TOURNAMENT_TEAMS');
+    const tm = ss.getSheetByName('TOURNAMENT_MATCHES');
+    let tA = '', tB = '';
+    if (tm) {
+      const tmData = tm.getDataRange().getValues();
+      for (let i = 1; i < tmData.length; i++) {
+        if (String(tmData[i][0]) === String(tMid)) {
+          tA = String(tmData[i][3]);
+          tB = String(tmData[i][4]);
+          break;
+        }
       }
-
-      let pData = {
-        name: pName,
-        champ: data[i][3],
-        role: data[i][4],
-        k: Number(data[i][6] || 0),
-        d: Number(data[i][7] || 0),
-        a: Number(data[i][8] || 0),
-        dmg: Number(data[i][9] || 0),
-        kp: Number(data[i][10] || 0),
-        points: Number(data[i][12] || 0).toFixed(1),
-        votes: currentMatchVotes[pName] || 0,
-        cs: cs,
-        csTotal: csTotal,
-        cs15: cs15,       //          NUEVO
-        plates: plates,   //          NUEVO
-        gpm: gpm,
-        gold: gold,
-        tank: tank,
-        vspm: vspm,
-        visionScore: visionScore,
-        items: items,   //          NUEVO
-        spells: spells,  //          NUEVO
-        dmgObj: dmgObj,        //          A     ADIDO
-        dmgTurrets: dmgTurrets //          A     ADIDO
-      };
-
-      if (data[i][5] === 'Win') winners.push(pData);
-      else losers.push(pData);
     }
+    const rosterA = getTeamRosterSetFromSheet_(tt, tA);
+    const rosterB = getTeamRosterSetFromSheet_(tt, tB);
+    games.forEach(function(g) {
+      if (!g.winners || !g.winners.length) return;
+      const n = normalizeRosterNameForMatch_(g.winners[0].name);
+      if (rosterA[n]) seriesScoreA++;
+      else if (rosterB[n]) seriesScoreB++;
+    });
+  } else if (games.length > 1) {
+    games.forEach(function(g) {
+      if (g.winners && g.winners.length && Number(g.winners[0].teamId) === 200) seriesScoreB++;
+      else if (g.winners && g.winners.length) seriesScoreA++;
+    });
   }
 
-  const roleOrder = { "TOP": 1, "JUNGLE": 2, "MIDDLE": 3, "BOTTOM": 4, "SUPPORT": 5, "UTILITY": 5 };
-  const sortRoles = (a, b) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9);
-  
-  winners.sort(sortRoles); losers.sort(sortRoles);
-
-  return { 
-      winners: winners, 
-      losers: losers, 
-      officialMvp: officialMvp, 
-      officialAce: officialAce, 
-      isResolved: isResolved,
-      winStats: matchWinStats, 
-      losStats: matchLosStats, 
-      timeline: matchTimeline,  
-      events: matchEvents //            ESTO ES LO QUE LE FALTABA A LA WEB PARA PINTAR EL TIMELINE DE OBJETIVOS!
+  return {
+    winners: active.winners,
+    losers: active.losers,
+    officialMvp: officialMvp,
+    officialAce: officialAce,
+    isResolved: isResolved,
+    winStats: active.winStats,
+    losStats: active.losStats,
+    timeline: active.timeline,
+    events: active.events,
+    isEstimated: !!active.isEstimated,
+    seriesScore: { scoreA: seriesScoreA, scoreB: seriesScoreB, winsBlue: seriesScoreA, winsRed: seriesScoreB, games: games.length },
+    gameIds: matchIdList,
+    games: games,
+    activeGameIndex: activeIdx
   };
 }
 
@@ -18929,7 +19317,7 @@ function getMatchScoutingData(matchId) {
                 roles[r] = (roles[r] || 0) + 1;
                 champs[c] = (champs[c] || 0) + 1;
                 
-                if (allMatches[i][5] === 'Win') wins++;
+                if ((String(allMatches[i][5]) || '').includes('Win')) wins++;
                 k += Number(allMatches[i][6]||0); d += Number(allMatches[i][7]||0); a += Number(allMatches[i][8]||0);
                 totalDmg += Number(allMatches[i][9]||0); totalDur += Number(allMatches[i][11]||1);
             }
@@ -18964,7 +19352,7 @@ function getTournamentStatsForWeb(roundFilter) {
 
   if (!teamsSheet || !matchesSheet || !tMatchesSheet) return { stats: [], rounds: [] };
 
-  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
+  const normalizeName = (n) => String(n).split('#')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\xA0]/g, '').toLowerCase();
 
   const tData = teamsSheet.getDataRange().getValues();
   const playerTeamMap = {}; 
@@ -18986,7 +19374,9 @@ function getTournamentStatsForWeb(roundFilter) {
       const rId = String(tmData[i][10] || "").trim(); 
       const round = String(tmData[i][1] || "").trim();
       if (round && round !== 'Round' && round !== 'Ronda') availableRounds.add(round);
-      if (rId && (roundFilter === 'ALL' || round === roundFilter)) validMatchIds.add(rId);
+      if (_rIdField && (roundFilter === 'ALL' || round === roundFilter)) {
+          _rIdField.split(',').forEach(function(_id) { var _t = _id.trim(); if (_t) validMatchIds.add(_t); });
+      }
   }
 
   const playerVotes = {};
@@ -19011,7 +19401,7 @@ function getTournamentStatsForWeb(roundFilter) {
   for (let i = mData.length - 1; i >= 1; i--) {
       const matchId = String(mData[i][0]).trim();
       
-      if (validMatchIds.has(matchId)) {
+      if (validMatchIds.has(matchId) || matchId.toString().startsWith('ROFL_')) {
           const pNameRaw = String(mData[i][2]).trim();
           const pNameLow = normalizeName(pNameRaw);
           const result = mData[i][5]; 
@@ -19036,9 +19426,9 @@ function getTournamentStatsForWeb(roundFilter) {
 
           let s = stats[pNameLow];
           s.games++;
-          if (result === 'Win') s.wins++;
+          if ((String(result) || '').includes('Win')) s.wins++;
           
-          s.form.push(result === 'Win' ? 'W' : 'L');
+          s.form.push((String(result) || '').includes('Win') ? 'W' : 'L');
 
           s.kills += Number(mData[i][6] || 0);
           s.deaths += Number(mData[i][7] || 0);
@@ -19126,18 +19516,32 @@ function getTournamentStatsForWeb(roundFilter) {
 function getNewsAndTrends() {
   const ss = SpreadsheetApp.getActive();
   const infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
-  const statsData = getTournamentStatsForWeb('ALL'); 
+  const statsData = getTournamentStatsForWeb('ALL');
   const players = statsData.stats || [];
+  const tData = getTournamentData();
 
   let rawDate = infoSheet ? infoSheet.getRange('B5').getValue() : "";
   let streamDate = "";
   if (rawDate instanceof Date) {
-      streamDate = rawDate.toISOString(); 
+      streamDate = rawDate.toISOString();
   } else if (typeof rawDate === 'string' && rawDate.trim() !== "") {
-      streamDate = rawDate.trim().replace(" ", "T"); 
+      streamDate = rawDate.trim().replace(" ", "T");
   }
 
   let headlines = [];
+
+  // Helper para elegir un elemento aleatorio de un array de plantillas
+  const pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+
+  // Datos de partidos reales
+  let completedMatches = [];
+  let pendingMatches = [];
+  let teams = [];
+  if (tData && tData.matches) {
+    completedMatches = tData.matches.filter(m => m.status === 'COMPLETED');
+    pendingMatches = tData.matches.filter(m => m.status !== 'COMPLETED');
+  }
+  if (tData && tData.teams) teams = tData.teams;
 
   // 0. NOTICIAS MANUALES (El Admin puede añadir cosas aquí)
   let manualSheet = ss.getSheetByName('NEWS_MANUAL');
@@ -19149,60 +19553,153 @@ function getNewsAndTrends() {
       }
     });
   }
-  
-  // 1. EL ANALISTA IA (PREDICCIÓN DEL PRÓXIMO PARTIDO)
-  const tournamentData = getTournamentData();
-  if (tournamentData && tournamentData.matches) {
-      let pending = tournamentData.matches.filter(m => m.status !== 'COMPLETED');
-      if (pending.length > 0) {
-          let nextMatch = pending.sort((a,b) => ((b.votesA||0)+(b.votesB||0)) - ((a.votesA||0)+(a.votesB||0)))[0];
-          let names = nextMatch.names.split(' vs ');
-          let tA = names[0].trim(); let tB = names[1].trim();
-          
-          let bestA = players.filter(p => p.team === tA).sort((a,b)=>b.points - a.points)[0];
-          let bestB = players.filter(p => p.team === tB).sort((a,b)=>b.points - a.points)[0];
-          
-          if (bestA && bestB) {
-              headlines.push({ type: 'IA ANALYTICS', text: `Análisis del próximo duelo: ¿Podrá el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?`, priority: 1 });
-          } else {
-              headlines.push({ type: 'IA ANALYTICS', text: `Tensión máxima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.`, priority: 1 });
-          }
+
+  // 1. RESULTADOS RECIENTES REALES (lo más importante: lo que acaba de pasar)
+  if (completedMatches.length > 0) {
+    let recent = completedMatches.slice(-3).reverse();
+    recent.forEach(function(m, idx) {
+      let names = String(m.names || '').split(' vs ');
+      let tA = (names[0] || 'Equipo A').trim();
+      let tB = (names[1] || 'Equipo B').trim();
+      let sA = Number(m.sA || 0), sB = Number(m.sB || 0);
+      let winner = sA > sB ? tA : tB;
+      let loser  = sA > sB ? tB : tA;
+      let diff = Math.abs(sA - sB);
+      let plantillas;
+      if (diff >= 2 || (sA + sB >= 2 && Math.min(sA, sB) === 0)) {
+        plantillas = [
+          `¡PALIZA EN LA GRIETA! **${winner}** arrasa a **${loser}** (${sA}-${sB}) en un partido que se les hizo eterno a los derrotados.`,
+          `Sin piedad: **${winner}** firma un contundente ${sA}-${sB} ante **${loser}**. La afición pide explicaciones.`,
+          `**${winner}** no tuvo compasión y se llevó el duelo por ${sA}-${sB}. ¿Está **${loser}** en crisis?`
+        ];
+      } else {
+        plantillas = [
+          `¡INFARTO TOTAL! **${winner}** se impone a **${loser}** por un ajustadísimo ${sA}-${sB}. Se decidió en el último mapa.`,
+          `Partidazo de jornada: **${winner}** sufre pero gana (${sA}-${sB}) a un combativo **${loser}**.`,
+          `**${winner}** sobrevive al asalto de **${loser}** y se lleva el ${sA}-${sB}. Puro espectáculo.`
+        ];
       }
+      headlines.push({ type: idx === 0 ? 'ULTIMA HORA' : 'RESULTADO', text: pick(plantillas), priority: idx === 0 ? 0 : 1 });
+    });
   }
 
-  // 2. JUGADORES "ON FIRE"
+  // 2. EL ANALISTA IA â€” PREDICCIÓN DEL PRÓXIMO PARTIDO (Híbrido IA + plantilla)
+  if (pendingMatches.length > 0) {
+    let nextMatch = pendingMatches.sort((a,b) => ((b.votesA||0)+(b.votesB||0)) - ((a.votesA||0)+(a.votesB||0)))[0];
+    let names = String(nextMatch.names || '').split(' vs ');
+    let tA = (names[0] || '').trim(); let tB = (names[1] || '').trim();
+
+    let bestA = players.filter(p => p.team === tA).sort((a,b)=>b.points - a.points)[0];
+    let bestB = players.filter(p => p.team === tB).sort((a,b)=>b.points - a.points)[0];
+
+    let aiText = null;
+    // Intentar predicción IA (solo si hay API key configurada y datos suficientes)
+    try {
+      const apiKey = getGeminiApiKey();
+      if (apiKey && apiKey.indexOf('...') === -1 && bestA && bestB) {
+        let predPrompt = `Eres el analista estrella de la Wargods Premier League (LoL). En MÁXIMO 2 frases, predice con tono épico y algo de chulería el próximo partido ${tA} vs ${tB}. Jugador clave de ${tA}: ${bestA.name} (${bestA.dpm} DPM). Jugador clave de ${tB}: ${bestB.name} (${bestB.dpm} DPM). No uses asteriscos ni markdown, solo texto plano. Termina con un % de victoria para uno de los dos.`;
+        let r = callGemini(predPrompt);
+        if (r && r.length > 10 && r.indexOf('Error') === -1 && r.indexOf('descansando') === -1) {
+          aiText = r.replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+        }
+      }
+    } catch (e) { aiText = null; }
+
+    if (aiText) {
+      headlines.push({ type: 'IA ANALYTICS', text: aiText, priority: 1 });
+    } else if (bestA && bestB) {
+      let plantillas = [
+        `Análisis del próximo duelo: ¿podrá el poder ofensivo de **${bestA.name}** doblegar a **${bestB.name}**? El ${tA} vs ${tB} promete fuego.`,
+        `La pregunta de la jornada: **${tA}** y **${tB}** se ven las caras. **${bestA.name}** y **${bestB.name}** llevarán el peso de sus equipos.`,
+        `Tensión máxima: **${bestB.name}** tendrá que frenar a un **${bestA.name}** en estado de gracia si **${tB}** quiere ganar a **${tA}**.`
+      ];
+      headlines.push({ type: 'IA ANALYTICS', text: pick(plantillas), priority: 1 });
+    } else if (tA && tB) {
+      headlines.push({ type: 'IA ANALYTICS', text: `Calientan motores: **${tA}** y **${tB}** se preparan para un enfrentamiento decisivo en la Grieta.`, priority: 1 });
+    }
+  }
+
+  // 3. LÍDER Y COLISTA DE LA CLASIFICACIÓN (contexto de jornada)
+  if (teams.length > 0) {
+    let sorted = [...teams].sort((a,b) => (b.pts||0)-(a.pts||0) || (b.w||0)-(a.w||0));
+    let leader = sorted[0];
+    let bottom = sorted[sorted.length - 1];
+    if (leader && leader.name) {
+      headlines.push({ type: 'CLASIFICACIÓN', text: pick([
+        `**${leader.name}** manda en la tabla con ${leader.w||0}V-${leader.l||0}D. El trono tiene dueño... por ahora.`,
+        `Reinado de **${leader.name}**: lidera la Wargods Premier con ${leader.pts||0} puntos. ¿Alguien le toserá?`
+      ]), priority: 2 });
+    }
+    if (bottom && bottom.name && bottom.name !== (leader && leader.name)) {
+      headlines.push({ type: 'CRISIS', text: pick([
+        `Pánico en **${bottom.name}**: hundido en el fondo de la tabla (${bottom.w||0}V-${bottom.l||0}D). La directiva está que trina.`,
+        `**${bottom.name}** busca el botón de pánico. Colista con ${bottom.pts||0} puntos y la moral por los suelos.`
+      ]), priority: 3 });
+    }
+  }
+
+  // 4. RACHAS DE EQUIPO REALES
+  let hotTeam = [...teams].filter(t => (t.streak||0) >= 2).sort((a,b)=>(b.streak||0)-(a.streak||0))[0];
+  let coldTeam = [...teams].filter(t => (t.streak||0) <= -2).sort((a,b)=>(a.streak||0)-(b.streak||0))[0];
+  if (hotTeam) {
+    headlines.push({ type: 'EN RACHA', text: `ðŸ”¥ **${hotTeam.name}** está IMPARABLE: ${hotTeam.streak} victorias seguidas. El rival de turno tiembla.`, priority: 2 });
+  }
+  if (coldTeam) {
+    headlines.push({ type: 'TILT ALERT', text: `â„ï¸ **${coldTeam.name}** en caída libre: ${Math.abs(coldTeam.streak)} derrotas consecutivas. ¿Tocan cambios?`, priority: 3 });
+  }
+
+  // 5. JUGADORES "ON FIRE"
   const onFirePlayers = players.filter(p => p.trend === 'ON_FIRE');
   if (onFirePlayers.length > 0) {
       let pFire = onFirePlayers[Math.floor(Math.random() * onFirePlayers.length)];
-      headlines.push({ type: 'HOT', text: `Estado de gracia: **${pFire.name}** está ON FIRE. Sus rivales deberían plantearse banear sus mejores campeones en el próximo draft.`, priority: 2 });
+      headlines.push({ type: 'HOT', text: pick([
+        `Estado de gracia: **${pFire.name}** está ON FIRE. Sus rivales deberían banear sus mejores campeones ya.`,
+        `**${pFire.name}** no falla una. La liga entera está avisada: cuidado con este ${pFire.role || 'crack'}.`
+      ]), priority: 2 });
   }
 
-  // 3. ALERTA DE TILT
+  // 6. ALERTA DE TILT INDIVIDUAL
   const coldPlayers = players.filter(p => p.trend === 'COLD');
   if (coldPlayers.length > 0) {
       let pCold = coldPlayers[Math.floor(Math.random() * coldPlayers.length)];
-      headlines.push({ type: 'TILT ALERT', text: `Alarma roja para **${pCold.name}**, que atraviesa una racha de derrotas. ¿Podrá romper la maldición en su próximo partido?`, priority: 2 });
+      headlines.push({ type: 'TILT ALERT', text: pick([
+        `Alarma roja para **${pCold.name}**, en plena racha de derrotas. ¿Romperá la maldición?`,
+        `**${pCold.name}** necesita un respiro. La presión puede con el rendimiento.`
+      ]), priority: 3 });
   }
 
-  // 4. RACHA DE MVPs
+  // 7. RACHA DE MVPs
   players.forEach(p => {
     if (p.mvps >= 2) headlines.push({ type: 'ALERTA', text: '¡Incontrolable! **' + p.name + '** encadena ' + p.mvps + ' MVPs y es el terror de la liga.', priority: 3 });
   });
 
-  // 5. MAYOR DPM
+  // 8. REY DEL DAÑO (DPM)
   const topDpmPlayer = [...players].sort((a,b) => b.dpm - a.dpm)[0];
   if (topDpmPlayer && topDpmPlayer.dpm > 800) {
-    headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpmPlayer.name + '** revienta los medidores con una media de DPM de ' + topDpmPlayer.dpm + '.', priority: 3 });
-  }
-  
-  // 11. ULTIMA GACETA (Mención especial si existe)
-  let gazette = getLatestGazette();
-  if (gazette) {
-    headlines.push({ type: '🗞️ GACETA', text: `Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!`, priority: 0 });
+    headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpmPlayer.name + '** revienta los medidores con ' + topDpmPlayer.dpm + ' DPM de media.', priority: 4 });
   }
 
-  if (headlines.length === 0) {
-    headlines.push({ type: 'INFO', text: "La liga está al rojo vivo. Analiza los scouting para preparar tus Pick'ems.", priority: 5 });
+  // 9. REY DEL KDA
+  const topKdaPlayer = [...players].filter(p => (p.games||0) >= 2).sort((a,b) => (b.kdaNum||0) - (a.kdaNum||0))[0];
+  if (topKdaPlayer && topKdaPlayer.kdaNum > 4) {
+    headlines.push({ type: 'REPORTE', text: 'Cirugía en la Grieta: **' + topKdaPlayer.name + '** mantiene un KDA de ' + (topKdaPlayer.kdaText || topKdaPlayer.kdaNum.toFixed(1)) + '. Pura clase.', priority: 4 });
+  }
+
+  // 10. ÚLTIMA GACETA (Chiringuito) â€” mención especial si existe
+  let gazette = getLatestGazette();
+  if (gazette) {
+    headlines.push({ type: 'ðŸ—žï¸ GACETA', text: `¡Nueva edición del CHIRINGUITO PREMIER disponible! Pulsa para leer el análisis más caliente de la liga.`, priority: 0 });
+  }
+
+  // 11. FRASES DE AMBIENTE (relleno con sabor, solo si hay pocas noticias)
+  if (headlines.length < 4) {
+    let ambiente = [
+      { type: 'EDITORIAL', text: 'La Wargods Premier está al rojo vivo. Repasa los scouting y afina tus Pick\'ems antes de la próxima jornada.' },
+      { type: 'EDITORIAL', text: 'Se respira competición en la Grieta. Cada partido cuenta para el sprint final del Split.' },
+      { type: 'EDITORIAL', text: 'Los analistas no se ponen de acuerdo: este Split está siendo de los más igualados que se recuerdan.' }
+    ];
+    let extra = pick(ambiente);
+    headlines.push({ type: extra.type, text: extra.text, priority: 5 });
   }
 
   // Ordenar por prioridad (0 es lo más importante)
@@ -19210,7 +19707,7 @@ function getNewsAndTrends() {
 
   return {
     streamDate: streamDate,
-    headlines: headlines.slice(0, 10)
+    headlines: headlines.slice(0, 12)
   };
 }
 
@@ -19274,7 +19771,7 @@ function getLeagueRecordsAndPickems(roundFilter) {
             const rawJson = mData[i][15]; // Columna P
             
             if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
-            if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+            if ((String(result) || '').includes('Win') && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
             
             if (rawJson) {
                 try {
@@ -19372,7 +19869,7 @@ function getTeamAdvancedStats(rosterStr) {
         }
 
         if (!teamMatches[mId]) {
-            teamMatches[mId] = { k: 0, d: 0, a: 0, dmg: 0, gold: 0, vision: 0, duration: dur, win: result === 'Win' };
+            teamMatches[mId] = { k: 0, d: 0, a: 0, dmg: 0, gold: 0, vision: 0, duration: dur, win: (String(result) || '').includes('Win') };
         }
         
         // Sumamos las stats de este jugador al total de su equipo en esta partida
@@ -19527,10 +20024,10 @@ function registerTournamentMatch(matchId, tournamentCodeOpt) {
       if (errCode === 404) {
         return {
           success: false,
-          msg: "⚠️ Riot devuelve 404: la partida aún no está en match-v5 (normal 3–15 min tras el game) o el ID no coincide. Verifica riot_region en CONFIG (EUW → europe). Si usas código de torneo, el API de torneos requiere clave de producción y permisos."
+          msg: "âš ï¸ Riot devuelve 404: la partida aún no está en match-v5 (normal 3â€“15 min tras el game) o el ID no coincide. Verifica riot_region en CONFIG (EUW → europe). Si usas código de torneo, el API de torneos requiere clave de producción y permisos."
         };
       }
-      return { success: false, msg: `❌ Error ${errCode} de la API de Riot. Comprueba el Match ID y CONFIG.` };
+      return { success: false, msg: `âŒ Error ${errCode} de la API de Riot. Comprueba el Match ID y CONFIG.` };
     }
 
     // =====================================================
@@ -19741,7 +20238,7 @@ function autoResolveTournamentMatch(tMatchId, riotId, tournamentCode) {
 
       const codeResult = getMatchIdFromTournamentCode(tournamentCode);
       if (codeResult.error) {
-        return { success: false, msg: '⚠️ ' + codeResult.msg };
+        return { success: false, msg: 'âš ï¸ ' + codeResult.msg };
       }
       // Usamos el Match ID resuelto por el código de torneo
       riotId = codeResult.matchId;
@@ -19819,14 +20316,14 @@ function autoResolveTournamentMatch(tMatchId, riotId, tournamentCode) {
     if (matchedA > matchedB) { pointsA = 1; pointsB = 0; }
     else if (matchedB > matchedA) { pointsA = 0; pointsB = 1; }
     else {
-        return { success: false, msg: "⚠️ Partida escaneada y guardada, pero no pude deducir automáticamente quién ganó (los jugadores de la partida no coinciden con los Rosters). Pon el 1-0 manualmente y dale a GUARDAR." };
+        return { success: false, msg: "âš ï¸ Partida escaneada y guardada, pero no pude deducir automáticamente quién ganó (los jugadores de la partida no coinciden con los Rosters). Pon el 1-0 manualmente y dale a GUARDAR." };
     }
 
     // 7. Aplicar Resultado Oficial
     const updateRes = updateMatchResult(tMatchId, pointsA, pointsB, riotId);
     
     if (updateRes.success) {
-        return { success: true, msg: `✅ ¡MAGIA PURA! La partida se ha descargado${tournamentCode ? ' (vía Código de Torneo)' : ''}, se detectó al ganador automáticamente y las stats están listas.` };
+        return { success: true, msg: `âœ… ¡MAGIA PURA! La partida se ha descargado${tournamentCode ? ' (vía Código de Torneo)' : ''}, se detectó al ganador automáticamente y las stats están listas.` };
     } else {
         return { success: false, msg: "Fallo al guardar el resultado final en el cuadro." };
     }
@@ -19867,8 +20364,10 @@ function getMetaStats() {
   const tmData = tMatchesSheet.getDataRange().getValues();
   const validMatchIds = new Set();
   for (let i = 1; i < tmData.length; i++) {
-      const rId = String(tmData[i][10] || "").trim();
-      if (rId) validMatchIds.add(rId);
+      const _rIdField = String(tmData[i][10] || "").trim();
+      if (_rIdField) {
+          _rIdField.split(',').forEach(function(_id) { var _t = _id.trim(); if (_t) validMatchIds.add(_t); });
+      }
   }
 
   const mData = matchesSheet.getDataRange().getValues();
@@ -19887,7 +20386,7 @@ function getMetaStats() {
           champStats[champ] = { champ: champ, picks: 0, wins: 0, bans: 0 };
       }
       champStats[champ].picks++;
-      if (result === 'Win') champStats[champ].wins++;
+      if ((String(result) || '').includes('Win')) champStats[champ].wins++;
 
       //           L     GICA DE BANS: Recoger del JSON de la columna P (15)
       if (!processedMatchesBans.has(matchId)) {
@@ -19923,15 +20422,19 @@ function getMetaStats() {
 }
 
 /* ==========================================================
-   🚀 FUNCIÓN MAESTRA UNIFICADA - getAllDashboardData
+   ðŸš€ FUNCIÓN MAESTRA UNIFICADA - getAllDashboardData
    Lee cada hoja UNA SOLA VEZ y devuelve todo lo necesario.
    Elimina ~17 lecturas redundantes por carga de página.
    ========================================================== */
-function getAllDashboardData(roundFilter) {
+function getAllDashboardData(roundFilter, divisionFilter) {
+  try {
+  Logger.log('[GDD] Inicio - roundFilter: ' + roundFilter + ' divisionFilter: ' + divisionFilter);
   roundFilter = roundFilter || 'ALL';
+  divisionFilter = divisionFilter || 'ALL';
   const ss = SpreadsheetApp.getActive();
+  Logger.log('[GDD] SpreadsheetApp OK');
 
-  // ── 1. LEER CADA HOJA UNA SOLA VEZ ──
+  // â”€â”€ 1. LEER CADA HOJA UNA SOLA VEZ â”€â”€
   const infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
   const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
   const tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
@@ -19946,8 +20449,18 @@ function getAllDashboardData(roundFilter) {
   const gazetteSheet = ss.getSheetByName('AI_GAZETTE');
 
   const tData = teamsSheet ? teamsSheet.getDataRange().getValues() : [];
-  const tmData = tMatchesSheet ? tMatchesSheet.getDataRange().getValues() : [];
+  let tmData = tMatchesSheet ? tMatchesSheet.getDataRange().getValues() : [];
   const mData = matchesSheet ? matchesSheet.getDataRange().getValues() : [];
+
+  // Reparar marcadores BO3 antes de construir el objeto torneo
+  for (let ri = 1; ri < tmData.length; ri++) {
+    const mid = String(tmData[ri][0] || '').trim();
+    const rid = String(tmData[ri][10] || '');
+    if (mid && rid.indexOf(',') !== -1 && String(tmData[ri][8]) === 'COMPLETED') {
+      try { repairTournamentSeriesScoreFromMatches_(mid); } catch (e) {}
+    }
+  }
+  if (tMatchesSheet) tmData = tMatchesSheet.getDataRange().getValues();
   const bData = betSheet && betSheet.getLastRow() > 1 ? betSheet.getDataRange().getValues() : [];
   const vData = votesSheet && votesSheet.getLastRow() > 1 ? votesSheet.getDataRange().getValues() : [];
   const mvpData = mvpSheet && mvpSheet.getLastRow() > 1 ? mvpSheet.getDataRange().getValues() : [];
@@ -19955,7 +20468,7 @@ function getAllDashboardData(roundFilter) {
   const walletData = walletSheet && walletSheet.getLastRow() > 1 ? walletSheet.getDataRange().getValues() : [];
   const bpData = bpSheet && bpSheet.getLastRow() > 1 ? bpSheet.getDataRange().getValues() : [];
 
-  // ── 2. TOURNAMENT DATA (antes getTournamentData) ──
+  // â”€â”€ 2. TOURNAMENT DATA (antes getTournamentData) â”€â”€
   let tournament = { status: 'NONE' };
   if (infoSheet && infoSheet.getLastRow() >= 2) {
     const status = infoSheet.getRange('B4').getValue();
@@ -19965,7 +20478,8 @@ function getAllDashboardData(roundFilter) {
       for (let i = 1; i < tData.length; i++) {
         let id = tData[i][0]; let name = tData[i][1];
         if (!id || String(name).trim() === "") continue;
-        teams.push({ id: id, name: name, w: tData[i][2], l: tData[i][3], d: tData[i][4], pts: tData[i][5], roster: String(tData[i][8] || ""), logo: String(tData[i][9] || ""), streak: 0 });
+        if (!_passesDivisionFilter_(_teamDivision_(tData[i]), divisionFilter)) continue;
+        teams.push({ id: id, name: name, w: tData[i][2], l: tData[i][3], d: tData[i][4], pts: tData[i][5], roster: String(tData[i][8] || ""), logo: String(tData[i][9] || ""), division: _teamDivision_(tData[i]), streak: 0 });
       }
       let betsVolume = {};
       for (let i = 1; i < bData.length; i++) {
@@ -19980,15 +20494,16 @@ function getAllDashboardData(roundFilter) {
         let mId = tmData[i][0]; let tA = tmData[i][3]; let tB = tmData[i][4];
         let sA = tmData[i][5]; let sB = tmData[i][6]; let mStatus = tmData[i][8];
         if (!mId) continue;
+        if (!_passesDivisionFilter_(_matchDivision_(tmData[i]), divisionFilter)) continue;
         let vodUrl = "", matchDate = "", propDate = "", propBy = "", tCode = "";
         try {
           if (tmData[i].length > 11 && tmData[i][11]) vodUrl = String(tmData[i][11]).trim();
-          if (tmData[i].length > 12 && tmData[i][12]) matchDate = String(tmData[i][12]).trim();
-          if (tmData[i].length > 13 && tmData[i][13]) propDate = String(tmData[i][13]).trim();
+          if (tmData[i].length > 12 && tmData[i][12]) matchDate = formatLeagueDateTime(tmData[i][12]);
+          if (tmData[i].length > 13 && tmData[i][13]) propDate = formatLeagueDateTime(tmData[i][13]);
           if (tmData[i].length > 14 && tmData[i][14]) propBy = String(tmData[i][14]).trim();
           if (tmData[i].length > 16 && tmData[i][16]) tCode = String(tmData[i][16]).trim();
         } catch(e) {}
-        matches.push({ id: mId, round: tmData[i][1], bracket: tmData[i][2], tA: tA, tB: tB, sA: sA, sB: sB, winner: tmData[i][7], status: mStatus, names: tmData[i][9], riotId: String(tmData[i][10] || ""), vod: vodUrl, date: matchDate, proposedDate: propDate, proposedBy: propBy, tCode: tCode, votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0, volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0 });
+        matches.push({ id: mId, round: tmData[i][1], bracket: tmData[i][2], tA: tA, tB: tB, sA: sA, sB: sB, winner: tmData[i][7], status: mStatus, names: tmData[i][9], riotId: String(tmData[i][10] || ""), vod: vodUrl, date: matchDate, proposedDate: propDate, proposedBy: propBy, tCode: tCode, division: _matchDivision_(tmData[i]), votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0, volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0 });
         if (mStatus === 'COMPLETED') {
           let cA = streaksTracker[tA] || 0; let cB = streaksTracker[tB] || 0;
           if (sA > sB) { streaksTracker[tA] = cA > 0 ? cA + 1 : 1; streaksTracker[tB] = cB < 0 ? cB - 1 : -1; }
@@ -20002,21 +20517,26 @@ function getAllDashboardData(roundFilter) {
     }
   }
 
-  // ── 3. STATS (antes getTournamentStatsForWeb) ──
-  const normalizeName = (n) => String(n).split('#')[0].replace(/[\s\xA0]/g, '').toLowerCase();
+  // â”€â”€ 3. STATS (antes getTournamentStatsForWeb) â”€â”€
+  const normalizeName = (n) => String(n).split('#')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\xA0]/g, '').toLowerCase();
   const playerTeamMap = {};
   for (let i = 1; i < tData.length; i++) {
     const teamName = String(tData[i][1]).trim();
     const rosterStr = String(tData[i][8] || "");
     if (rosterStr) { rosterStr.split(',').forEach(p => { if(p.trim()) playerTeamMap[normalizeName(p)] = teamName; }); }
   }
-  const validMatchIds = new Set(); const availableRounds = new Set();
-  for (let i = 1; i < tmData.length; i++) {
-    const rId = String(tmData[i][10] || "").trim();
-    const round = String(tmData[i][1] || "").trim();
-    if (round && round !== 'Round' && round !== 'Ronda') availableRounds.add(round);
-    if (rId && (roundFilter === 'ALL' || round === roundFilter)) validMatchIds.add(rId);
-  }
+  const idBundle = buildValidMatchIdsForStats_(tmData, roundFilter);
+  const validMatchIds = idBundle.validMatchIds;
+  const availableRounds = idBundle.availableRounds;
+
+  // Filtro por división: set de MatchIDs que pertenecen a la división seleccionada
+  const _divFilterActive = !(_normDiv_(divisionFilter) === '' || _normDiv_(divisionFilter) === 'all' || _normDiv_(divisionFilter) === 'todas');
+  const _divMatchIds = _divFilterActive ? _buildDivisionMatchIdSet_(tmData, divisionFilter) : null;
+  const _inDivision = function(matchId) {
+    if (!_divFilterActive) return true;
+    return !!_divMatchIds[String(matchId).trim()];
+  };
+
   const playerVotes = {};
   for (let i = 1; i < mvpData.length; i++) {
     if (String(mvpData[i][1]) !== 'SYSTEM_RESOLVED') continue;
@@ -20029,22 +20549,36 @@ function getAllDashboardData(roundFilter) {
   const pStats = {};
   for (let i = mData.length - 1; i >= 1; i--) {
     const matchId = String(mData[i][0]).trim();
-    if (validMatchIds.has(matchId)) {
+    if ((validMatchIds.has(matchId) || matchId.toString().startsWith('ROFL_')) && _inDivision(matchId)) {
       const pNameRaw = String(mData[i][2]).trim(); const pNameLow = normalizeName(pNameRaw);
       const result = mData[i][5]; let pTeam = playerTeamMap[pNameLow] || "Agente Libre";
-      if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0 }; }
-      let s = pStats[pNameLow]; s.games++; if (result === 'Win') s.wins++;
-      s.form.push(result === 'Win' ? 'W' : 'L');
+      if (!pStats[pNameLow]) { pStats[pNameLow] = { name: pNameRaw, team: pTeam, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, dmg: 0, duration: 0, kpTotal: 0, csTotal: 0, vsTotal: 0, gpmTotal: 0, points: 0, champs: new Set(), rolesCount: {}, form: [], dmgObjTotal: 0, dmgTurretsTotal: 0, tankTotal: 0, pinksTotal: 0, epicsTotal: 0, pentasTotal: 0, totalHealTotal: 0, damageSelfMitigatedTotal: 0, timeCCingOthersTotal: 0, magicDamageTotal: 0, physicalDamageTotal: 0, trueDamageTotal: 0, firstBloodKills: 0, firstTowerKills: 0 }; }
+      let s = pStats[pNameLow]; s.games++; if ((String(result) || '').includes('Win')) s.wins++;
+      s.form.push((String(result) || '').includes('Win') ? 'W' : 'L');
       s.kills += Number(mData[i][6]||0); s.deaths += Number(mData[i][7]||0); s.assists += Number(mData[i][8]||0);
       s.dmg += Number(mData[i][9]||0); s.kpTotal += Number(mData[i][10]||0); s.duration += Number(mData[i][11]||1); s.points += Number(mData[i][12]||0);
       if (mData[i][3]) s.champs.add(mData[i][3]);
       const rawJson = mData[i][15];
-      if (rawJson) { try { let adv = JSON.parse(rawJson); s.csTotal += Number(adv.csMin||0); s.vsTotal += Number(adv.vspm||0); s.gpmTotal += Number(adv.gpm||0); s.dmgObjTotal += Number(adv.dmgObj||0); s.dmgTurretsTotal += Number(adv.dmgTurrets||0); s.tankTotal += Number(adv.dmgTaken||adv.damageTaken||adv.totalDamageTaken||0); s.pinksTotal += Number(adv.pinks||adv.controlWards||adv.visionWardsBoughtInGame||0); s.epicsTotal += Number(adv.epicMonsters||adv.epics||adv.dragonKills||0); s.pentasTotal += Number(adv.pentas||adv.pentaKills||adv.pentakills||0); } catch(e) {} }
-      let role = String(mData[i][4]).toUpperCase().trim();
+      if (rawJson) { 
+        try { 
+          let adv = JSON.parse(rawJson); 
+          s.csTotal += Number(adv.csMin||0); 
+          s.vsTotal += Number(adv.vspm||0); 
+          s.gpmTotal += Number(adv.gpm||0); 
+          s.dmgObjTotal += Number(adv.dmgObj || adv.TOTAL_DAMAGE_DEALT_TO_OBJECTIVES || 0); 
+          s.dmgTurretsTotal += Number(adv.dmgTurrets || adv.TOTAL_DAMAGE_DEALT_TO_TURRETS || 0); 
+          s.tankTotal += Number(adv.dmgTaken || adv.damageTaken || adv.totalDamageTaken || adv.TOTAL_DAMAGE_TAKEN || 0); 
+          s.pinksTotal += Number(adv.pinks || adv.controlWards || adv.visionWardsBoughtInGame || adv.VISION_WARDS_BOUGHT_IN_GAME || 0); 
+          s.epicsTotal += Number(adv.epicMonsters || adv.epics || adv.dragonKills || 0) + (adv.epicMonsters ? 0 : (Number(adv.DRAGON_KILLS||0) + Number(adv.BARON_KILLS||0) + Number(adv.RIFT_HERALD_KILLS||0))); 
+          s.pentasTotal += Number(adv.pentas || adv.pentaKills || adv.pentakills || adv.PENTA_KILLS || 0); 
+        } catch(e) {} 
+      }
+      let roleRaw = String(mData[i][4]);
+      let role = roleRaw.replace(/[^a-zA-Z]/g, '').toUpperCase().trim();
       if (role === 'UTILITY' || role === 'SUPP') role = 'SUPPORT'; 
       if (role === 'BOT' || role === 'ADC') role = 'BOTTOM'; 
       if (role === 'MID') role = 'MIDDLE';
-      if (role === 'JNG') role = 'JUNGLE';
+      if (role === 'JNG' || role === 'JGL') role = 'JUNGLE';
       s.rolesCount[role] = (s.rolesCount[role] || 0) + 1;
     }
   }
@@ -20056,22 +20590,24 @@ function getAllDashboardData(roundFilter) {
       let trend = 'NORMAL';
       if (s.form.length >= 2) { if (s.form[0]==='W'&&s.form[1]==='W') trend='ON_FIRE'; else if (s.form[0]==='L'&&s.form[1]==='L') trend='COLD'; }
       const myVotes = playerVotes[key] || { mvps: 0, aces: 0 };
-      statsResult.push({ name: s.name, team: s.team, role: Object.keys(s.rolesCount).reduce((a,b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL"), games: s.games, winrate: Math.round((s.wins/s.games)*100), mvps: myVotes.mvps, aces: myVotes.aces, kp: Math.round((s.kpTotal/s.games)*100), kdaNum: kdaNum, kdaText: (s.kills/s.games).toFixed(1)+'/'+(s.deaths/s.games).toFixed(1)+'/'+(s.assists/s.games).toFixed(1), avgDeaths: (s.deaths/s.games).toFixed(1), cs: Number((s.csTotal/s.games).toFixed(1)), vspm: (s.vsTotal/s.games).toFixed(2), dpm: s.duration > 0 ? Math.round(s.dmg/s.duration) : 0, gpm: Math.round(s.gpmTotal/s.games), champs: Array.from(s.champs).join(', '), points: Number((s.points/s.games).toFixed(1)), dmgObj: s.dmgObjTotal, dmgTurrets: s.dmgTurretsTotal, trend: trend, tank: s.tankTotal, pinks: s.pinksTotal, epicMonsters: s.epicsTotal, pentas: s.pentasTotal });
+      const domRole = Object.keys(s.rolesCount).reduce((a,b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL");
+      statsResult.push({ name: s.name, team: s.team, role: exportRoleForWeb_(domRole), games: s.games, winrate: Math.round((s.wins/s.games)*100), mvps: myVotes.mvps, aces: myVotes.aces, kp: Math.round((s.kpTotal/s.games)*100), kdaNum: kdaNum, kdaText: (s.kills/s.games).toFixed(1)+'/'+(s.deaths/s.games).toFixed(1)+'/'+(s.assists/s.games).toFixed(1), avgDeaths: (s.deaths/s.games).toFixed(1), cs: Number((s.csTotal/s.games).toFixed(1)), vspm: (s.vsTotal/s.games).toFixed(2), dpm: s.duration > 0 ? Math.round(s.dmg/s.duration) : 0, gpm: Math.round(s.gpmTotal/s.games), champs: Array.from(s.champs).join(', '), points: Number((s.points/s.games).toFixed(1)), dmgObj: s.dmgObjTotal, dmgTurrets: s.dmgTurretsTotal, trend: trend, tank: s.tankTotal, pinks: s.pinksTotal, epicMonsters: s.epicsTotal, pentas: s.pentasTotal, advanced: { totalHealAvg: Math.round(s.totalHealTotal / s.games), damageSelfMitigatedAvg: Math.round(s.damageSelfMitigatedTotal / s.games), timeCCingOthersAvg: Math.round(s.timeCCingOthersTotal / s.games), magicDamageAvg: Math.round(s.magicDamageTotal / s.games), physicalDamageAvg: Math.round(s.physicalDamageTotal / s.games), trueDamageAvg: Math.round(s.trueDamageTotal / s.games), fbRate: Math.round((s.firstBloodKills / s.games) * 100), ftRate: Math.round((s.firstTowerKills / s.games) * 100) } });
     }
   }
   statsResult.sort((a, b) => b.points - a.points);
   const sortedRounds = Array.from(availableRounds).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
 
-  // ── 4. META (antes getMetaStats) - reutiliza mData y tmData ──
+  // â”€â”€ 4. META (antes getMetaStats) - reutiliza mData y tmData â”€â”€
   const champStats = {}; const processedMatchesBans = new Set();
   const allValidIds = new Set();
   for (let i = 1; i < tmData.length; i++) { const rId = String(tmData[i][10]||"").trim(); if (rId) allValidIds.add(rId); }
   for (let i = 1; i < mData.length; i++) {
     const matchId = String(mData[i][0]).trim(); if (!allValidIds.has(matchId)) continue;
+    if (!_inDivision(matchId)) continue;
     let champ = String(mData[i][3]).trim(); let result = mData[i][5];
     if (!champ || champ === 'undefined') continue;
     if (!champStats[champ]) champStats[champ] = { champ: champ, picks: 0, wins: 0, bans: 0 };
-    champStats[champ].picks++; if (result === 'Win') champStats[champ].wins++;
+    champStats[champ].picks++; if ((String(result) || '').includes('Win')) champStats[champ].wins++;
     if (!processedMatchesBans.has(matchId)) {
       let jsonStr = mData[i][15];
       if (jsonStr && String(jsonStr).startsWith('{')) { try { let st = JSON.parse(jsonStr); if (st.bans && Array.isArray(st.bans)) { st.bans.forEach(b => { if (!champStats[b]) champStats[b] = { champ: b, picks: 0, wins: 0, bans: 0 }; champStats[b].bans++; }); processedMatchesBans.add(matchId); } } catch(e) {} }
@@ -20079,7 +20615,7 @@ function getAllDashboardData(roundFilter) {
   }
   const metaResult = Object.values(champStats).map(s => ({ champ: s.champ, picks: s.picks, wins: s.wins, bans: s.bans, winrate: Math.round((s.wins / Math.max(1, s.picks)) * 100) })).sort((a,b) => b.picks - a.picks || b.winrate - a.winrate);
 
-  // ── 5. RECORDS (antes getLeagueRecordsAndPickems) - reutiliza todo ──
+  // â”€â”€ 5. RECORDS (antes getLeagueRecordsAndPickems) - reutiliza todo â”€â”€
   const matchResultsMap = {};
   for (let i = 1; i < tmData.length; i++) {
     const mId = String(tmData[i][0]); const winnerId = String(tmData[i][7]); const st = String(tmData[i][8]);
@@ -20092,9 +20628,10 @@ function getAllDashboardData(roundFilter) {
   let playerTankAcc = {};
   for (let i = 1; i < mData.length; i++) {
     const mId = String(mData[i][0]).trim(); if (!validMatchIds.has(mId)) continue;
+    if (!_inDivision(mId)) continue;
     const p = String(mData[i][2]); const result = mData[i][5]; const k = Number(mData[i][6]||0); const dmg = Number(mData[i][9]||0);
     if (k > records.bloodiest.val) records.bloodiest = { player: p, val: k, sub: 'Kills' };
-    if (result === 'Win' && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
+    if ((String(result) || '').includes('Win') && dmg > 0 && dmg < records.pacifist.val) records.pacifist = { player: p, val: dmg, sub: 'Daño (Win)' };
     const rawJson = mData[i][15];
     if (rawJson) { try { let adv = JSON.parse(rawJson); if (Number(adv.csMin||0) > records.farmer.val) records.farmer = { player: p, val: Number(adv.csMin).toFixed(1), sub: 'CS/M' }; let pct = 0; if (adv.tank !== undefined) pct = Number(adv.tank); else if (adv.dmgTakenPct !== undefined) pct = Number(adv.dmgTakenPct); if (pct > 0 && pct <= 1) pct = pct * 100; if (pct > 0) { if (!playerTankAcc[p]) playerTankAcc[p] = { sum: 0, count: 0 }; playerTankAcc[p].sum += pct; playerTankAcc[p].count++; } } catch(e) {} }
   }
@@ -20110,7 +20647,7 @@ function getAllDashboardData(roundFilter) {
   }
   let oraclesArr = Object.values(oracles).filter(o => o.correct > 0).sort((a,b) => b.correct - a.correct).slice(0, 5);
 
-  // ── 6. NEWS (antes getNewsAndTrends) - reutiliza tournament y statsResult ──
+  // â”€â”€ 6. NEWS (antes getNewsAndTrends) - reutiliza tournament y statsResult â”€â”€
   let streamDate = "";
   if (infoSheet) { let rawDate = infoSheet.getRange('B5').getValue(); if (rawDate instanceof Date) streamDate = rawDate.toISOString(); else if (typeof rawDate === 'string' && rawDate.trim() !== "") streamDate = rawDate.trim().replace(" ", "T"); }
   let headlines = [];
@@ -20137,11 +20674,11 @@ function getAllDashboardData(roundFilter) {
   const topDpm = [...statsResult].sort((a,b) => b.dpm - a.dpm)[0];
   if (topDpm && topDpm.dpm > 800) headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpm.name + '** revienta los medidores con una media de DPM de ' + topDpm.dpm + '.', priority: 3 });
   let hasGazette = false;
-  if (gazetteSheet && gazetteSheet.getLastRow() >= 2) { hasGazette = true; headlines.push({ type: '🗞️ GACETA', text: 'Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!', priority: 0 }); }
+  if (gazetteSheet && gazetteSheet.getLastRow() >= 2) { hasGazette = true; headlines.push({ type: 'ðŸ—žï¸ GACETA', text: 'Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!', priority: 0 }); }
   if (headlines.length === 0) headlines.push({ type: 'INFO', text: "La liga está al rojo vivo. Analiza los scouting para preparar tus Pick'ems.", priority: 5 });
   headlines.sort((a, b) => (a.priority || 5) - (b.priority || 5));
 
-  // ── 7. CASINO RANKING (antes getCasinoRanking) ──
+  // â”€â”€ 7. CASINO RANKING (antes getCasinoRanking) â”€â”€
   let casinoRanking = [];
   try {
     let userStats = {};
@@ -20152,11 +20689,15 @@ function getAllDashboardData(roundFilter) {
     casinoRanking = Object.keys(userStats).map(k => { let u = userStats[k]; u.winRate = u.betsResolved > 0 ? (u.betsWon / u.betsResolved) * 100 : 0; if (bpMap[k]) { u.title = bpMap[k].title; u.color = bpMap[k].color; } return u; });
   } catch(e) {}
 
-  // ── 8. PLAYOFFS STATUS ──
+  // â”€â”€ 8. PLAYOFFS STATUS â”€â”€
   let playoffsActive = false;
   if (infoSheet) { try { playoffsActive = infoSheet.getRange('B6').getValue() === 'ACTIVE'; } catch(e) {} }
 
-  // ── RETORNO UNIFICADO ──
+  // â”€â”€ 9. DIVISIONES DISPONIBLES (para el selector del frontend) â”€â”€
+  let divisionsInfo = { divisions: [], multiDivision: false, all: WPL_DIVISIONS.slice() };
+  try { divisionsInfo = getAvailableDivisions(); } catch(e) {}
+
+  // â”€â”€ RETORNO UNIFICADO â”€â”€
   return {
     tournament: tournament,
     statsPayload: { stats: statsResult, rounds: sortedRounds },
@@ -20164,8 +20705,14 @@ function getAllDashboardData(roundFilter) {
     meta: metaResult,
     recordsPayload: { records: records, oracles: oraclesArr },
     casinoRanking: casinoRanking,
-    playoffsActive: playoffsActive
+    playoffsActive: playoffsActive,
+    divisions: divisionsInfo,
+    activeDivision: divisionFilter
   };
+  } catch (e) {
+    Logger.log('ERROR en getAllDashboardData: ' + e.message + '\n' + e.stack);
+    return { __error: true, errorMessage: e.message };
+  }
 }
 
 /* ==========================================================
@@ -20188,7 +20735,7 @@ function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
   infoSheet.getRange('B6').setValue(isActive ? 'ACTIVE' : 'INACTIVE');
 
   const matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
-  if (!matchesSheet) return { msg: "❌ No se encontró la hoja TOURNAMENT_MATCHES." };
+  if (!matchesSheet) return { msg: "âŒ No se encontró la hoja TOURNAMENT_MATCHES." };
 
   if (isActive) {
     // Comprobar si ya existen partidos de playoffs
@@ -20199,12 +20746,12 @@ function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
     });
 
     if (hasPlayoffs) {
-      return { msg: "🏆 Playoffs ACTIVADOS. Los partidos ya existían, no se han duplicado." };
+      return { msg: "ðŸ† Playoffs ACTIVADOS. Los partidos ya existían, no se han duplicado." };
     }
 
     // Obtener clasificación actual ordenada por puntos y victorias
     const teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
-    if (!teamsSheet) return { msg: "❌ No se encontró la hoja TOURNAMENT_TEAMS." };
+    if (!teamsSheet) return { msg: "âŒ No se encontró la hoja TOURNAMENT_TEAMS." };
     const tData = teamsSheet.getDataRange().getValues();
     let teams = [];
     for (let i = 1; i < tData.length; i++) {
@@ -20225,7 +20772,7 @@ function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
     teams = sortTeamsHelper(teams, matchesPlayoffs);
 
     if (teams.length < 10) {
-      return { msg: "❌ Se necesitan al menos 10 equipos para generar playoffs. Tienes " + teams.length + "." };
+      return { msg: "âŒ Se necesitan al menos 10 equipos para generar playoffs. Tienes " + teams.length + "." };
     }
 
     // Seeds 1-10
@@ -20267,7 +20814,7 @@ function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
     matchesSheet.getRange(nextRow, 1, playoffRows.length, playoffRows[0].length).setValues(playoffRows);
     Logger.log("Playoffs generados: " + playoffRows.length + " partidos añadidos a partir de fila " + nextRow);
 
-    return { msg: "🏆 ¡PLAYOFFS GENERADOS! 12 partidos creados con la estructura de 10 equipos (5 columnas). Seeds asignados según clasificación actual." };
+    return { msg: "ðŸ† ¡PLAYOFFS GENERADOS! 12 partidos creados con la estructura de 10 equipos (5 columnas). Seeds asignados según clasificación actual." };
   } else {
     // Al desactivar, eliminar filas de playoffs (MatchID empieza por P)
     const allData = matchesSheet.getDataRange().getValues();
@@ -20280,7 +20827,7 @@ function togglePlayoffsBackend(isActive, p1Opponent = null, p2Opponent = null) {
     // Borrar de abajo a arriba para no desplazar índices
     rowsToDelete.forEach(r => matchesSheet.deleteRow(r));
 
-    return { msg: "🔒 Playoffs OCULTOS. Se han eliminado " + rowsToDelete.length + " partidos de playoffs." };
+    return { msg: "ðŸ”’ Playoffs OCULTOS. Se han eliminado " + rowsToDelete.length + " partidos de playoffs." };
   }
 }
 
@@ -21975,7 +22522,7 @@ function addWGCoins(summoner, amount) {
 
 
 // ==========================================================
-// 12. PERIÓDICO SEMANAL IA — "EL CHIRINGUITO PREMIER"
+// 12. PERIÓDICO SEMANAL IA â€” "EL CHIRINGUITO PREMIER"
 // ==========================================================
 function generateWeeklyGazette() {
   const ss = SpreadsheetApp.getActive();
@@ -21991,7 +22538,7 @@ function generateWeeklyGazette() {
 
   // Jugadores con suficientes partidas
   let activePlayers = players.filter(p => (p.games || 0) >= 1);
-  
+
   let topScorer = [...activePlayers].sort((a, b) => (b.points || 0) - (a.points || 0))[0];
   let topKda = [...activePlayers].filter(p => p.games >= 2).sort((a, b) => (b.kdaNum || 0) - (a.kdaNum || 0))[0];
   let topDmg = [...activePlayers].sort((a, b) => (b.dpm || 0) - (a.dpm || 0))[0];
@@ -22000,34 +22547,44 @@ function generateWeeklyGazette() {
   let bottomTeam = [...tData.teams].sort((a, b) => (a.pts || 0) - (b.pts || 0) || (a.w || 0) - (b.w || 0))[0];
   let hotStreakTeam = [...tData.teams].filter(t => (t.streak || 0) > 0).sort((a, b) => (b.streak || 0) - (a.streak || 0))[0];
   let coldStreakTeam = [...tData.teams].filter(t => (t.streak || 0) < 0).sort((a, b) => (a.streak || 0) - (b.streak || 0))[0];
-  
-  // Últimos resultados
+
+  // Resultado más desequilibrado (la "paliza" de la jornada)
+  let blowout = null;
+  completedMatches.forEach(function(m) {
+    let d = Math.abs(Number(m.sA||0) - Number(m.sB||0));
+    if (!blowout || d > blowout._d) { blowout = m; blowout._d = d; }
+  });
+
+  // Últimos resultados (reales)
   let lastResults = completedMatches.slice(-5).map(m => `${m.names} (${m.sA}-${m.sB})`).join(', ');
-  
+
   // Clasificación detallada
   let standingsStr = [...tData.teams]
     .sort((a, b) => (b.pts || 0) - (a.pts || 0))
-    .map((t, i) => `${i+1}º ${t.name} (${t.w || 0}V-${t.l || 0}D, ${t.pts || 0} pts, racha: ${t.streak || 0})`)
+    .map((t, i) => `${i+1}Âº ${t.name} (${t.w || 0}V-${t.l || 0}D, ${t.pts || 0} pts, racha: ${t.streak || 0})`)
     .join('\n  ');
-  
+
   // Próximos partidos
   let upcomingStr = pendingMatches.slice(0, 3).map(m => m.names + (m.date ? ` [${m.date}]` : ' [TBD]')).join(', ');
+  let nextMatch = pendingMatches.length > 0 ? pendingMatches[0] : null;
 
-  let prompt = `Eres Josep-BOT, el director y periodista estrella del programa "EL CHIRINGUITO PREMIER", la versión del famoso programa de debate futbolístico pero para la Wargods Premier League de League of Legends.
+  let prompt = `Eres Josep-BOT, el director y periodista estrella de "EL CHIRINGUITO PREMIER", la versión del famoso programa de debate pero para la Wargods Premier League de League of Legends (Season 2026 - Split 1).
 
-Tu estilo: drama extremo, titulares exagerados, opinión sin filtros, humor ácido y referencias a eventos de la liga. Como si fuera una mezcla de Josep Pedrerol + El Hormiguero.
+Tu estilo: drama extremo, titulares exagerados, opinión sin filtros, humor ácido y referencias a eventos de la liga. Mezcla de Josep Pedrerol + comentarista de eSports.
 
-=== DATOS ACTUALES DE LA LIGA ===
-CLASIFICACIÓN:
+=== DATOS REALES DE LA LIGA ===
+CLASIFICACIÓN ACTUAL:
   ${standingsStr}
 
-Líder actual: ${topTeam ? topTeam.name : 'N/A'}
-Colista sufriendo: ${bottomTeam ? bottomTeam.name : 'N/A'}
+Líder: ${topTeam ? topTeam.name : 'N/A'}
+Colista: ${bottomTeam ? bottomTeam.name : 'N/A'}
 Equipo en racha positiva: ${hotStreakTeam ? hotStreakTeam.name + ' (' + hotStreakTeam.streak + ' victorias seguidas)' : 'Ninguno'}
-Equipo en caida libre: ${coldStreakTeam ? coldStreakTeam.name + ' (' + Math.abs(coldStreakTeam.streak || 0) + ' derrotas seguidas)' : 'Ninguno'}
+Equipo en caída libre: ${coldStreakTeam ? coldStreakTeam.name + ' (' + Math.abs(coldStreakTeam.streak || 0) + ' derrotas seguidas)' : 'Ninguno'}
 
-Últimos resultados: ${lastResults || 'Sin datos'}
-Próximos partidos: ${upcomingStr || 'Sin programar'}
+Últimos resultados reales: ${lastResults || 'Sin datos'}
+Paliza de la jornada: ${blowout ? blowout.names + ' (' + blowout.sA + '-' + blowout.sB + ')' : 'Sin datos'}
+Próximo partido estrella: ${nextMatch ? nextMatch.names + (nextMatch.date ? ' [' + nextMatch.date + ']' : '') : 'Sin programar'}
+Otros próximos: ${upcomingStr || 'Sin programar'}
 
 JUGADOR TOP (Puntos): ${topScorer ? topScorer.name + ' (' + topScorer.points + ' pts, ' + topScorer.role + ', ' + topScorer.team + ')' : 'N/A'}
 Mejor KDA: ${topKda ? topKda.name + ' (KDA: ' + topKda.kdaText + ', ' + topKda.team + ')' : 'N/A'}
@@ -22036,33 +22593,53 @@ Rey de los MVPs: ${topMvps ? topMvps.name + ' (' + (topMvps.mvps || 0) + ' MVPs,
 Partidos jugados: ${completedMatches.length} | Pendientes: ${pendingMatches.length}
 
 === INSTRUCCIONES ===
-Genera una edición completa usando EXACTAMENTE estas secciones:
+Genera una edición completa usando EXACTAMENTE estas secciones (mantén los emojis y los títulos en negrita):
 
-📺 **FLASH DE ÚNTE**: [TITULAR impactante y sensacionalista, más una frase de intro dramática]
+ðŸ“º **FLASH DE ÚLTIMA HORA**: [TITULAR impactante y sensacionalista basado en un resultado REAL, más una frase de intro dramática]
 
-🔥 **LA NOTICIA BOMBA**: [Destaca el resultado más sorprendente o el partido más importante. Sé dramático, menciona nombres reales]
+ðŸ”¥ **LA NOTICIA BOMBA**: [Destaca el resultado más sorprendente o la paliza de la jornada. Menciona el marcador y nombres reales]
 
-🥇 **EL MEJOR DE LA SEMANA**: [Análisis de ${topScorer ? topScorer.name : 'el top jugador'}, con estadísticas reales. Explica por qué es intocable esta semana]
+ðŸ¥‡ **EL MEJOR DE LA SEMANA**: [Análisis de ${topScorer ? topScorer.name : 'el top jugador'} con sus estadísticas reales. Por qué es intocable]
 
-💫 **EL JUGADOR A VIGILAR**: [Destaca a ${topDmg ? topDmg.name : 'el más dañino'} con su DPM brutal. ¿Por qué nadie le puede parar?]
+ðŸ’« **EL JUGADOR A VIGILAR**: [Destaca a ${topDmg ? topDmg.name : 'el más dañino'} con su DPM real. ¿Por qué nadie le para?]
 
-💀 **EL FUNERAL**: [Critica con estilo al equipo que peor lo está haciendo: ${coldStreakTeam ? coldStreakTeam.name : bottomTeam ? bottomTeam.name : 'el colista'}. Sin piedad pero con humor]
+ðŸ’€ **EL FUNERAL**: [Critica con estilo y humor al equipo que peor lo está haciendo: ${coldStreakTeam ? coldStreakTeam.name : (bottomTeam ? bottomTeam.name : 'el colista')}. Sin piedad]
 
-🤫 **EL RUMOR DEL VESTUARIO**: [Inventa un rumor gracioso y creible sobre la liga. Puede ser sobre un posible fichaje, una rivalidad, una conspiración táctica, etc.]
+ðŸ¤« **EL RUMOR DEL VESTUARIO**: [Inventa un rumor gracioso y creíble: fichaje, rivalidad, conspiración táctica, etc.]
 
-🔮 **LA PREDICCIÓN DEL MAESTRO**: [Predicción arriesgada y específica sobre quién ganará el siguiente partido importante. Con confianza extrema]
+ðŸ”® **LA PREDICCIÓN DEL MAESTRO**: [Predicción arriesgada y específica sobre el próximo partido ${nextMatch ? '(' + nextMatch.names + ')' : 'importante'}. Da un % de victoria]
 
-🎪 **CIERRE DE PROGRAMA**: [Una frase final lapidaria, con estilo, que resuma el estado de la liga. Al estilo Pedrerol]
+ðŸŽª **CIERRE DE PROGRAMA**: [Frase final lapidaria al estilo Pedrerol que resuma el estado de la liga]
 
 REGLAS OBLIGATORIAS:
 - Usa nombres REALES de equipos y jugadores de los datos
 - Usa negritas con **texto** para nombres y cifras importantes
-- Tono: epico, dramático, con toques de humor ácido y sarcasmo
+- Tono: épico, dramático, humor ácido y sarcasmo
 - Máximo 450 palabras totales
 - Cada sección debe tener al menos 2-3 frases sustanciales`;
 
-  let gazetteText = callGemini(prompt);
-  if (!gazetteText) return { success: false, msg: 'Error llamando a la IA. Comprueba la API key de Gemini.' };
+  // Intentar IA primero
+  let gazetteText = null;
+  try {
+    const apiKey = getGeminiApiKey();
+    if (apiKey && apiKey.indexOf('...') === -1) {
+      let r = callGemini(prompt);
+      if (r && r.length > 60 && r.indexOf('Error de conexión') === -1 && r.indexOf('descansando') === -1) {
+        gazetteText = r;
+      }
+    }
+  } catch (e) { gazetteText = null; }
+
+  // FALLBACK: plantilla generada con datos reales (sin gastar API)
+  if (!gazetteText) {
+    gazetteText = buildGazetteTemplate_({
+      topTeam: topTeam, bottomTeam: bottomTeam,
+      hotStreakTeam: hotStreakTeam, coldStreakTeam: coldStreakTeam,
+      topScorer: topScorer, topDmg: topDmg, topKda: topKda, topMvps: topMvps,
+      blowout: blowout, nextMatch: nextMatch, lastResults: lastResults,
+      completed: completedMatches.length, pending: pendingMatches.length
+    });
+  }
 
   // Guardar en caché
   let gazetteSheet = ss.getSheetByName('AI_GAZETTE');
@@ -22073,6 +22650,81 @@ REGLAS OBLIGATORIAS:
   gazetteSheet.appendRow([new Date(), gazetteText]);
 
   return { success: true, content: gazetteText };
+}
+
+// === PLANTILLA DE RESPALDO DEL CHIRINGUITO (sin IA) ===
+function buildGazetteTemplate_(d) {
+  const pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+  const NA = 'algún valiente';
+
+  let lider = d.topTeam ? d.topTeam.name : 'el líder';
+  let colista = d.coldStreakTeam ? d.coldStreakTeam.name : (d.bottomTeam ? d.bottomTeam.name : 'el colista');
+  let crack = d.topScorer ? d.topScorer.name : NA;
+  let crackTeam = d.topScorer ? d.topScorer.team : '';
+  let crackPts = d.topScorer ? d.topScorer.points : '?';
+  let bomber = d.topDmg ? d.topDmg.name : NA;
+  let bomberDpm = d.topDmg ? d.topDmg.dpm : '?';
+
+  let bombazo;
+  if (d.blowout) {
+    let names = String(d.blowout.names||'').split(' vs ');
+    let sA = Number(d.blowout.sA||0), sB = Number(d.blowout.sB||0);
+    let win = sA >= sB ? (names[0]||'A') : (names[1]||'B');
+    let los = sA >= sB ? (names[1]||'B') : (names[0]||'A');
+    bombazo = `¡Lo de **${win}** contra **${los}** (${sA}-${sB}) fue un atraco a mano armada! ${los.trim()} salió de la Grieta sin saber ni qué día era. Señoras y señores, ESTO es la Wargods Premier.`;
+  } else {
+    bombazo = `La jornada nos ha dejado partidos para enmarcar. La liga está más viva que nunca y nadie quiere quedarse atrás.`;
+  }
+
+  let prediccion;
+  if (d.nextMatch) {
+    let names = String(d.nextMatch.names||'').split(' vs ');
+    let tA = (names[0]||'A').trim(), tB = (names[1]||'B').trim();
+    let pct = 50 + Math.floor(Math.random()*30);
+    prediccion = `Me la juego: en el **${tA} vs ${tB}** lo tengo clarísimo. **${tA}** gana con un ${pct}% de probabilidades. Y si me equivoco, me como el micrófono. ¡PALABRA!`;
+  } else {
+    prediccion = `Aún no hay próximo partido confirmado, pero cuando lo haya... ¡prepárense para mi predicción estrella!`;
+  }
+
+  let secciones = [];
+  secciones.push(`ðŸ“º **FLASH DE ÚLTIMA HORA**\n${pick([
+    `¡PARÓN GENERAL! **${lider}** ha puesto la liga patas arriba y nadie habla de otra cosa.`,
+    `¡ATENCIÓN! Lo que ha pasado esta jornada en la Wargods Premier no estaba en el guion de nadie.`,
+    `¡SE ROMPE LA GRIETA! **${lider}** manda, pero esto está más caliente que nunca.`
+  ])}`);
+
+  secciones.push(`ðŸ”¥ **LA NOTICIA BOMBA**\n${bombazo}`);
+
+  secciones.push(`ðŸ¥‡ **EL MEJOR DE LA SEMANA**\n${pick([
+    `**${crack}** (${crackTeam}) es INTOCABLE. ${crackPts} puntos que lo colocan en otra dimensión. El resto, a verlo por la tele.`,
+    `Quítense el sombrero ante **${crack}**. Con ${crackPts} puntos está jugando a un nivel que asusta. ${crackTeam} tiene un diamante.`
+  ])}`);
+
+  secciones.push(`ðŸ’« **EL JUGADOR A VIGILAR**\n${pick([
+    `**${bomber}** es una máquina de hacer daño: ${bomberDpm} DPM de media. Cuando se enciende, no hay tanque que lo aguante.`,
+    `Ojo con **${bomber}** y sus ${bomberDpm} DPM. Si os toca enfrentaros a él, mejor banearle lo que más le guste.`
+  ])}`);
+
+  secciones.push(`ðŸ’€ **EL FUNERAL**\n${pick([
+    `Y ahora, el drama: **${colista}**. Lo de este equipo es de psicólogo. ${d.coldStreakTeam ? Math.abs(d.coldStreakTeam.streak) + ' derrotas seguidas' : 'Sin rumbo'}. La afición ya pide explicaciones.`,
+    `Pobre **${colista}**. Da penita verlos. Necesitan un milagro, un cambio de coach, o directamente un exorcismo. Sin acritud... bueno, con un poco.`
+  ])}`);
+
+  secciones.push(`ðŸ¤« **EL RUMOR DEL VESTUARIO**\n${pick([
+    `Me llega que en **${lider}** no todo es tan bonito como parece. Dicen que el éxito ha subido egos. ¿Habrá guerra interna? El tiempo dirá...`,
+    `Fuentes cercanas aseguran que **${crack}** está siendo tanteado por equipos rivales. ¿Bombazo de fichaje a la vista? Yo solo cuento lo que sé.`,
+    `Se rumorea una rivalidad personal en el vestuario de **${colista}**. Cuando se pierde, los trapos sucios salen a la luz...`
+  ])}`);
+
+  secciones.push(`ðŸ”® **LA PREDICCIÓN DEL MAESTRO**\n${prediccion}`);
+
+  secciones.push(`ðŸŽª **CIERRE DE PROGRAMA**\n${pick([
+    `Esto es la Wargods Premier, donde un día eres leyenda y al siguiente, meme. ¡Hasta la próxima edición!`,
+    `Y recuerden: en esta liga no se rinde NADIE hasta que el Nexo cae. Buenas noches y buena suerte.`,
+    `La grieta nunca duerme, y este Chiringuito tampoco. ¡Nos vemos en la próxima jornada, campeones!`
+  ])}`);
+
+  return secciones.join('\n\n');
 }
 
 function getAllGazettes() {
@@ -22144,13 +22796,13 @@ function submitWeeklyPickem(summonerName, matchId, teamIdx) {
           // Actualizar en vez de duplicar
           sheet.getRange(i + 1, 4).setValue(teamIdx);
           sheet.getRange(i + 1, 1).setValue(new Date());
-          return { success: true, msg: '✅ Predicción actualizada!' };
+          return { success: true, msg: 'âœ… Predicción actualizada!' };
         }
       }
     }
 
     sheet.appendRow([new Date(), summonerName, matchId, teamIdx, '', 0]);
-    return { success: true, msg: '✅ ¡Predicción registrada! Buena suerte.' };
+    return { success: true, msg: 'âœ… ¡Predicción registrada! Buena suerte.' };
   } catch(e) { return { success: false, msg: 'Error: ' + e.message }; }
   finally { lock.releaseLock(); }
 }
@@ -22259,7 +22911,7 @@ function getPlayerComparison(playerA, playerB) {
 
 
 // ==========================================================
-// 15. MURO DE TRASH TALK — "EL VESTUARIO"
+// 15. MURO DE TRASH TALK â€” "EL VESTUARIO"
 // ==========================================================
 function getTrashTalkMessages() {
   const ss = SpreadsheetApp.getActive();
@@ -22327,11 +22979,11 @@ function postTrashTalkMessage(author, message) {
           if (now - ts < 3600000) recentCount++;
         }
       }
-      if (recentCount >= 3) return { success: false, msg: '⏳ Máximo 3 mensajes por hora. Espera un poco.' };
+      if (recentCount >= 3) return { success: false, msg: 'â³ Máximo 3 mensajes por hora. Espera un poco.' };
     }
 
     sheet.appendRow([new Date(), author, message]);
-    return { success: true, msg: '💬 ¡Mensaje publicado en El Vestuario!' };
+    return { success: true, msg: 'ðŸ’¬ ¡Mensaje publicado en El Vestuario!' };
   } catch(e) { return { success: false, msg: 'Error: ' + e.message }; }
   finally { lock.releaseLock(); }
 }
@@ -22348,7 +23000,7 @@ function addHighlight(data) {
     sheet.appendRow(['Fecha', 'MatchNames', 'Jugador', 'Tipo', 'Descripcion']);
   }
   sheet.appendRow([new Date(), data.matchNames || '', data.player || '', data.type || 'EPIC', data.desc || '']);
-  return { success: true, msg: '🎬 Momento épico registrado!' };
+  return { success: true, msg: 'ðŸŽ¬ Momento épico registrado!' };
 }
 
 function getHighlights() {
@@ -22487,16 +23139,16 @@ function getBattlePassRewards(currentLevel) {
   for (let lvl = 5; lvl <= 50; lvl += 5) {
     let unlocked = currentLevel >= lvl;
     let reward = { level: lvl, unlocked: unlocked };
-    if (lvl === 5) { reward.name = '🥉 Bronce'; reward.desc = '250 WG Coins'; }
-    else if (lvl === 10) { reward.name = '🥈 Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
-    else if (lvl === 15) { reward.name = '🥇 Oro'; reward.desc = '750 WG Coins'; }
-    else if (lvl === 20) { reward.name = '💎 Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
-    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
-    else if (lvl === 30) { reward.name = '⚡ Ascendido'; reward.desc = '2000 WG Coins'; }
-    else if (lvl === 35) { reward.name = '🌟 Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
-    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins'; }
-    else if (lvl === 45) { reward.name = '🌀 Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
-    else if (lvl === 50) { reward.name = '🏆 WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
+    if (lvl === 5) { reward.name = 'ðŸ¥‰ Bronce'; reward.desc = '250 WG Coins'; }
+    else if (lvl === 10) { reward.name = 'ðŸ¥ˆ Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
+    else if (lvl === 15) { reward.name = 'ðŸ¥‡ Oro'; reward.desc = '750 WG Coins'; }
+    else if (lvl === 20) { reward.name = 'ðŸ’Ž Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
+    else if (lvl === 25) { reward.name = 'ðŸ‘‘ Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
+    else if (lvl === 30) { reward.name = 'âš¡ Ascendido'; reward.desc = '2000 WG Coins'; }
+    else if (lvl === 35) { reward.name = 'ðŸŒŸ Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
+    else if (lvl === 40) { reward.name = 'ðŸ”¥ Infernal'; reward.desc = '3000 WG Coins'; }
+    else if (lvl === 45) { reward.name = 'ðŸŒ€ Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
+    else if (lvl === 50) { reward.name = 'ðŸ† WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
     rewards.push(reward);
   }
   return rewards;
@@ -22668,7 +23320,7 @@ function processRoflJson(jsonStr) {
 }
 
 // ==========================================================
-// 🎲 SISTEMA DE JUEGOS DE CASINO (WALL STREET)
+// ðŸŽ² SISTEMA DE JUEGOS DE CASINO (WALL STREET)
 // ==========================================================
 
 function checkAndDeductBalance(summoner, amount, reason) {
@@ -22816,7 +23468,7 @@ function pokerStartGame() {
   } finally { lock.releaseLock(); }
 }
 
-/* ───────────────── SYSTEM TIE-BREAKER HELPER (v25.0) ───────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SYSTEM TIE-BREAKER HELPER (v25.0) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function sortTeamsHelper(teams, matches) {
   if (!teams || teams.length <= 1) return teams;
   
@@ -22932,3 +23584,1714 @@ function resolveTiedGroup(group, matches) {
 
 
 
+
+// ---------------------------------------------------------------------------
+// Devuelve los partidos PENDIENTES del torneo activo para el modal ROFL
+// Retorna: [{ id, name, round }]
+// ---------------------------------------------------------------------------
+function getPendingTournamentMatches(divisionFilter) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var tmSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    var ttSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+    if (!tmSheet) return [];
+
+    var data = tmSheet.getDataRange().getValues();
+    var teams = {};
+    if (ttSheet) {
+      var td = ttSheet.getDataRange().getValues();
+      for (var i = 1; i < td.length; i++) {
+        teams[String(td[i][0]).trim()] = String(td[i][1] || '').trim(); // id -> name
+      }
+    }
+
+    var result = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var id     = String(row[0] || '').trim();
+      var status = String(row[1] || '').trim().toLowerCase();
+      var round  = String(row[2] || '').trim();
+      var teamA  = String(row[3] || '').trim();
+      var teamB  = String(row[4] || '').trim();
+      if (!id) continue;
+      if (status === 'done' || status === 'completado' || status === 'resuelto') continue;
+      // Filtrar por división si se pide
+      if (typeof _passesDivisionFilter_ === 'function' && !_passesDivisionFilter_(_matchDivision_(row), divisionFilter)) continue;
+      var nameA = teams[teamA] || teamA;
+      var nameB = teams[teamB] || teamB;
+      var rowDiv = (typeof _matchDivision_ === 'function') ? _matchDivision_(row) : '';
+      result.push({ id: id, name: nameA + ' vs ' + nameB, round: round, division: rowDiv });
+    }
+    return result;
+  } catch(e) {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// processRoflJsonBackend: Processes ROFL JSON from the web portal modal
+// Works for both single game and Bo3 series
+// ---------------------------------------------------------------------------
+function processRoflJsonBackend(jsonStr, adminKey) {
+  try {
+    var _cfgSheet = SpreadsheetApp.getActive().getSheetByName('CONFIG');
+    var _cfgData = _cfgSheet ? _cfgSheet.getDataRange().getValues() : [];
+    var _adminRow = _cfgData.find(function(r) { return r[0] === 'admin_password'; });
+    var _adminPw = _adminRow ? String(_adminRow[1]).trim() : null;
+    if (!_adminPw || adminKey !== _adminPw) {
+      return { success: false, msg: 'â›” Acceso denegado. Solo el administrador puede importar archivos ROFL.' };
+    }
+  } catch(e) {
+    return { success: false, msg: 'â›” Error verificando permisos: ' + e.message };
+  }
+  try {
+    var data = JSON.parse(jsonStr);
+    if (!data || data.source !== 'ROFL_PARSER') {
+      return { success: false, msg: 'Formato JSON no válido. Asegúrate de usar el parser integrado.' };
+    }
+
+    var ss = SpreadsheetApp.getActive();
+    var tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    var tTeamsSheet   = ss.getSheetByName('TOURNAMENT_TEAMS');
+    var playersSheet  = ss.getSheetByName('PLAYERS');
+
+    // â”€â”€ SERIES MODE (Bo3) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    if (data.seriesMode === true && Array.isArray(data.games) && data.games.length > 0) {
+      var tMatchId = String(data.tournamentMatchId || '').trim();
+      if (!tMatchId) return { success: false, msg: 'Falta el ID del partido de torneo.' };
+
+      var roflIds = [];
+
+      data.games.forEach(function(game, idx) {
+        var gameMatchId = 'ROFL_' + tMatchId + '_G' + (idx + 1) + '_' + Date.now().toString().slice(-4);
+        processRoflSingleGame_(game, gameMatchId);
+        roflIds.push(gameMatchId);
+      });
+
+      var seriesScores = resolveSeriesScoreByRoster_(tMatchId, data.games);
+      var allIdsStr = roflIds.join(',');
+      var updateRes = updateMatchResult(tMatchId, seriesScores.scoreA, seriesScores.scoreB, allIdsStr);
+
+      updateScores();
+      if (typeof beautifySpreadsheet === 'function') beautifySpreadsheet();
+
+      if (updateRes.success) {
+        return { success: true, msg: 'Serie importada correctamente!\n\nResultado: ' + seriesScores.scoreA + ' - ' + seriesScores.scoreB + '\nPartidas: ' + roflIds.length + '\nPartido actualizado: ' + tMatchId };
+      } else {
+        return { success: false, msg: 'Estadísticas importadas pero fallo al actualizar el score: ' + updateRes.msg };
+      }
+    }
+
+    // â”€â”€ SINGLE GAME MODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var tMatchId = String(data.tournamentMatchId || '').trim();
+    var gameMatchId = tMatchId ? ('ROFL_' + tMatchId + '_G1_' + Date.now().toString().slice(-4)) : ('ROFL_' + Date.now().toString().slice(-6));
+    var result = processRoflSingleGame_(data, gameMatchId);
+
+    if (tMatchId) {
+      var singleScores = resolveSeriesScoreByRoster_(tMatchId, [data]);
+      updateMatchResult(tMatchId, singleScores.scoreA, singleScores.scoreB, gameMatchId);
+    }
+
+    updateScores();
+    if (typeof beautifySpreadsheet === 'function') beautifySpreadsheet();
+
+    return { success: true, msg: 'Partida importada correctamente!\n\nJugadores: ' + result.importedCount + '\nMatchID: ' + gameMatchId };
+
+  } catch(err) {
+    return { success: false, msg: 'Error procesando JSON: ' + err.message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// processRoflSingleGame_: Imports one ROFL game's participant data to MATCHES
+// ---------------------------------------------------------------------------
+function processRoflSingleGame_(data, overrideMatchId) {
+  var ss = SpreadsheetApp.getActive();
+  var matchesSheet = ss.getSheetByName('MATCHES');
+  var config = readConfigMap();
+  var invSheet = ss.getSheetByName('INVENTORY');
+  var allMatchesData = matchesSheet.getDataRange().getValues();
+  var configSheet = ss.getSheetByName('CONFIG');
+  var currentSeason = configSheet ? configSheet.getRange('B2').getValue() : 'S1';
+
+  var matchId = overrideMatchId || ('ROFL_' + Date.now().toString().slice(-6));
+  var matchStartTime = new Date(data.timestamp || new Date());
+  var durationMin = Math.max(1, Math.floor((data.gameDuration || 0) / 60));
+
+  var teamKills = {};
+  (data.participants || []).forEach(function(p) {
+    var tid = p.teamId || 0;
+    teamKills[tid] = (teamKills[tid] || 0) + (p.kills || 0);
+  });
+
+  // â”€â”€ Datos a NIVEL DE PARTIDA (timeline y eventos vienen del parser ROFL) â”€â”€
+  // NOTA: un .rofl NO contiene datos minuto a minuto reales; el parser genera
+  // una ESTIMACIÓN a partir del oro final. Lo persistimos para que el acta
+  // pinte los gráficos, marcado como estimación (isEstimated).
+  var parts = data.participants || [];
+  var gameGoldTimeline = null;
+  var gameEventsList = null;
+  for (var gi = 0; gi < parts.length; gi++) {
+    if (parts[gi].goldTimeline && parts[gi].goldTimeline.length) gameGoldTimeline = parts[gi].goldTimeline;
+    if (parts[gi].eventsList && parts[gi].eventsList.length) gameEventsList = parts[gi].eventsList;
+    if (gameGoldTimeline && gameEventsList) break;
+  }
+
+  // Construir winStats / losStats (oro por rol) que necesita el radar del acta
+  var _roleKey = function(r) {
+    var u = String(r || '').toUpperCase();
+    if (u === 'MIDDLE') return 'MID';
+    if (u === 'BOTTOM' || u === 'BOT') return 'ADC';
+    if (u === 'UTILITY' || u === 'SUPPORT' || u === 'SUPP') return 'SUP';
+    if (u === 'JUNGLE' || u === 'JNG') return 'JGL';
+    return u;
+  };
+  var gameWinStats = { gold: { TOP:0, JGL:0, MID:0, ADC:0, SUP:0 } };
+  var gameLosStats = { gold: { TOP:0, JGL:0, MID:0, ADC:0, SUP:0 } };
+  parts.forEach(function(p) {
+    var rk = _roleKey(p.lane || p.INDIVIDUAL_POSITION || p.TEAM_POSITION);
+    var bucket = p.win ? gameWinStats : gameLosStats;
+    if (bucket.gold[rk] !== undefined) bucket.gold[rk] += Number(p.goldEarned || 0);
+  });
+
+  var importedCount = 0;
+  var winnerSide = null;
+
+  (data.participants || []).forEach(function(p) {
+    try {
+      var tid = p.teamId || 0;
+      var totalTeamKills = teamKills[tid] || 1;
+      var kpReal = ((p.kills + p.assists) / Math.max(1, totalTeamKills));
+
+      var mockP = {
+        championName: p.championName, teamId: p.teamId, win: p.win,
+        kills: p.kills, deaths: p.deaths, assists: p.assists,
+        totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+        goldEarned: p.goldEarned, visionScore: p.visionScore,
+        challenges: {
+          damagePerMinute: p.totalDamageDealtToChampions / Math.max(1, durationMin),
+          killParticipation: kpReal, maxGoldDeficit: 0
+        }
+      };
+      var teamInfo = {
+        dragonsCount:0,baronCount:0,heraldCount:0,hordeCount:0,
+        towerCount:0,inhibitorCount:0,elderPresent:false,
+        enemyDragons:0,enemyBarons:0,enemyHeralds:0,enemyHorde:0
+      };
+
+      var pointsObj = computePointsDetailed(
+        mockP, data.participants, durationMin,
+        teamInfo, config, p.summonerName,
+        invSheet, allMatchesData, matchId
+      );
+
+      var kpClean = parseFloat(kpReal.toFixed(2));
+      var finalNotes = (pointsObj.notes || []).join('; ');
+
+      var enrichedStats = {
+        summonerName: p.summonerName, championName: p.championName,
+        teamId: p.teamId, win: p.win,
+        kills: p.kills, deaths: p.deaths, assists: p.assists,
+        totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+        goldEarned: p.goldEarned, visionScore: p.visionScore,
+        totalMinionsKilled: p.totalMinionsKilled,
+        epicMonsters: parseInt(p.epicMonsters || 0),
+        totalHeal: parseInt(p.totalHeal || 0),
+        totalDamageShieldedOnTeammates: parseInt(p.totalDamageShieldedOnTeammates || 0),
+        damageSelfMitigated: parseInt(p.damageSelfMitigated || 0),
+        timeCCingOthers: parseInt(p.timeCCingOthers || 0),
+        firstBloodKill: p.firstBloodKill || false,
+        firstTowerKill: p.firstTowerKill || false,
+        magicDamageDealtToChampions: parseInt(p.magicDamageDealtToChampions || 0),
+        physicalDamageDealtToChampions: parseInt(p.physicalDamageDealtToChampions || 0),
+        trueDamageDealtToChampions: parseInt(p.trueDamageDealtToChampions || 0),
+        csMin: p.csMin || parseFloat(((p.totalMinionsKilled||0) / Math.max(1, durationMin)).toFixed(2)),
+        gpm:  p.gpm  || Math.round((p.goldEarned||0) / Math.max(1, durationMin)),
+        dpm:  p.dpm  || Math.round((p.totalDamageDealtToChampions||0) / Math.max(1, durationMin)),
+        vspm: p.vspm || parseFloat(((p.visionScore||0) / Math.max(1, durationMin)).toFixed(2)),
+        kp: parseFloat((kpReal * 100).toFixed(1)),
+        // â”€â”€ Datos avanzados del ROFL (ya traducidos a camelCase por el parser) â”€â”€
+        dmgObj:      parseInt(p.dmgObj || 0),
+        dmgTurrets:  parseInt(p.dmgTurrets || 0),
+        dmgTaken:    parseInt(p.dmgTaken || 0),
+        pinks:       parseInt(p.pinks || 0),
+        controlWards: parseInt(p.pinks || 0),
+        wardsPlaced: parseInt(p.wardPlaced || 0),
+        wardsKilled: parseInt(p.wardKilled || 0),
+        pentas:      parseInt(p.pentas || 0),
+        pentaKills:  parseInt(p.pentas || 0),
+        epicMonsters: parseInt(p.epicMonsters || 0),
+        // Campos de compatibilidad con el Salón de la Fama (nombres alternativos)
+        damageTaken:      parseInt(p.dmgTaken || 0),
+        totalDamageTaken: parseInt(p.dmgTaken || 0),
+        visionWardsBoughtInGame: parseInt(p.pinks || 0),
+        items: p.items || [], spells: p.spells || [],
+        // â”€â”€ Datos a nivel de partida para los gráficos del acta (ESTIMADOS) â”€â”€
+        goldTimeline: gameGoldTimeline || null,
+        eventsList:   gameEventsList || null,
+        winStats:     gameWinStats,
+        losStats:     gameLosStats,
+        isEstimated:  true
+      };
+
+      var lane = p.lane || '';
+      if (lane === 'MIDDLE') lane = 'MID';
+      else if (lane === 'BOTTOM') lane = 'ADC';
+      else if (lane === 'UTILITY') lane = 'SUPP';
+      else if (lane === 'JUNGLE') lane = 'JNG';
+
+      matchesSheet.appendRow([
+        matchId, matchStartTime, p.summonerName, p.championName, lane,
+        (p.win ? 'Win' : 'Loss'),
+        p.kills, p.deaths, p.assists,
+        p.totalDamageDealtToChampions, kpClean, durationMin,
+        Number(pointsObj.total), finalNotes, currentSeason,
+        JSON.stringify(enrichedStats)
+      ]);
+
+      if (p.win && winnerSide === null) winnerSide = p.teamId || 100;
+      importedCount++;
+    } catch(e) {
+      Logger.log('Error importando jugador ' + p.summonerName + ': ' + e.message);
+    }
+  });
+
+  return { importedCount: importedCount, winnerSide: winnerSide };
+}
+
+// =========================================================
+// ðŸ§ª FUNCIÓN DE DIAGNÓSTICO
+// =========================================================
+function pingServer() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheets = ss.getSheets().map(function(s) { return s.getName(); });
+    return { ok: true, ts: new Date().toISOString(), sheets: sheets };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// =========================================================
+// ðŸŽ¯ SOLO-AGENT SYSTEM â€” MERCADO DE JUGADORES LFT
+// =========================================================
+
+/**
+ * Devuelve la hoja SOLO_AGENTS, creándola con cabeceras si no existe.
+ */
+function getSoloAgentSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName('SOLO_AGENTS');
+  if (!sheet) {
+    sheet = ss.insertSheet('SOLO_AGENTS');
+    sheet.getRange('A1:K1').setValues([[
+      'nickname', 'opgg', 'role_main', 'role_secondary',
+      'elo_current', 'elo_peak', 'availability', 'description',
+      'discord', 'created_at', 'active'
+    ]]).setFontWeight('bold').setBackground('#0a1428').setFontColor('#a855f7');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, 11, 160);
+  }
+  return sheet;
+}
+
+/**
+ * Lee todos los agentes LFT activos.
+ */
+function getSoloAgents() {
+  try {
+    const sheet = getSoloAgentSheet_();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { ok: true, agents: [] };
+
+    const data = sheet.getRange(1, 1, lastRow, 11).getValues();
+    const headers = data[0];
+    const agents = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+      const active = row[10];
+      if (active === false || active === 'false' || active === 0 || active === 'FALSE') continue;
+
+      const obj = {};
+      headers.forEach((h, idx) => {
+        let v = row[idx];
+        // Normalizar fecha a ISO string para el frontend
+        if (h === 'created_at' && v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      obj._row = i + 1;
+      agents.push(obj);
+    }
+    return { ok: true, agents: agents };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
+ * Registra un nuevo jugador LFT.
+ */
+function registerSoloAgent(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(8000);
+  } catch (e) {
+    return { ok: false, error: 'Servidor ocupado, reintenta en un momento.' };
+  }
+  try {
+    if (!data || !data.nickname || !data.role_main || !data.elo_current) {
+      return { ok: false, error: 'Faltan campos obligatorios (nickname, rol principal y elo actual).' };
+    }
+
+    const sheet = getSoloAgentSheet_();
+    const lastRow = sheet.getLastRow();
+    const nickLower = String(data.nickname).trim().toLowerCase();
+
+    if (lastRow > 1) {
+      const existing = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
+      for (let i = 0; i < existing.length; i++) {
+        const active = existing[i][10];
+        const isActive = !(active === false || active === 'false' || active === 0 || active === 'FALSE');
+        if (isActive && String(existing[i][0]).trim().toLowerCase() === nickLower) {
+          return { ok: false, error: 'âš ï¸  Ya existe un perfil activo con ese nickname. Edítalo desde la web o pide ayuda a un admin.' };
+        }
+      }
+    }
+
+    const now = new Date();
+    sheet.appendRow([
+      String(data.nickname).trim().substring(0, 40),
+      String(data.opgg || '').trim().substring(0, 200),
+      String(data.role_main || '').trim(),
+      String(data.role_secondary || '').trim(),
+      String(data.elo_current || '').trim(),
+      String(data.elo_peak || '').trim(),
+      String(data.availability || '').trim(),
+      String(data.description || '').trim().substring(0, 280),
+      String(data.discord || '').trim().substring(0, 60),
+      now,
+      true
+    ]);
+
+    return { ok: true, msg: 'âœ… Perfil publicado. ¡Ya eres visible para todos los equipos!' };
+  } catch (e) {
+    return { ok: false, error: 'âŒ Error al guardar: ' + e.message };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+/**
+ * Desactiva (soft-delete) un perfil LFT por nickname.
+ */
+function deactivateSoloAgent(nickname) {
+  try {
+    const sheet = getSoloAgentSheet_();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { ok: false, error: 'No hay perfiles.' };
+    const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    const nickLower = String(nickname).trim().toLowerCase();
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim().toLowerCase() === nickLower) {
+        sheet.getRange(i + 2, 11).setValue(false);
+        return { ok: true, msg: 'ðŸ—‘ï¸ Perfil eliminado del tablón.' };
+      }
+    }
+    return { ok: false, error: 'No se encontró ese nickname.' };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+
+/**
+ * Actualiza un perfil Solo-Agent por índice de fila (solo admins).
+ * Columnas SOLO_AGENTS (1-based):
+ *   1=nickname  2=opgg  3=role_main  4=role_secondary
+ *   5=elo_current  6=elo_peak  7=availability  8=description  9=discord
+ */
+function updateSoloAgent(data) {
+  try {
+    if (!checkAdminPassword(data.adminKey)) {
+      return { ok: false, error: 'Acceso denegado. Clave de administrador incorrecta.' };
+    }
+    const sheet = getSoloAgentSheet_();
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { ok: false, error: 'Indice de fila invalido.' };
+    if (!data.nickname || !data.role_main || !data.elo_current) {
+      return { ok: false, error: 'Faltan campos obligatorios.' };
+    }
+    sheet.getRange(row, 1).setValue(String(data.nickname).trim().substring(0, 40));
+    sheet.getRange(row, 2).setValue(String(data.opgg || '').trim().substring(0, 200));
+    sheet.getRange(row, 3).setValue(String(data.role_main || '').trim());
+    sheet.getRange(row, 4).setValue(String(data.role_secondary || '').trim());
+    sheet.getRange(row, 5).setValue(String(data.elo_current || '').trim());
+    sheet.getRange(row, 6).setValue(String(data.elo_peak || '').trim());
+    sheet.getRange(row, 7).setValue(String(data.availability || '').trim());
+    sheet.getRange(row, 8).setValue(String(data.description || '').trim().substring(0, 280));
+    sheet.getRange(row, 9).setValue(String(data.discord || '').trim().substring(0, 60));
+    return { ok: true, msg: 'Perfil actualizado correctamente.' };
+  } catch(e) {
+    return { ok: false, error: 'Error al actualizar: ' + e.message };
+  }
+}
+
+
+/* ==========================================================
+   MÓDULO DE RECLUTAMIENTO â€” BACKEND (Code.js)
+   
+   Añadir estas funciones a tu Code.js existente.
+   Requiere crear las hojas:
+     Â· LFT_TEAMS      (A: timestamp, B: teamName, C: division, D: roles, E: eloMin, F: discord, G: desc)
+     Â· SCRIM_POOL     (A: timestamp, B: nick, C: division, D: roleMain, E: roleSec, F: timeSlot, G: discord, H: scrimDate)
+     Â· SCRIM_TEAMS    (A: timestamp, B: teamName, C: division, D: timeSlot, E: discord, F: players, G: scrimDate, H: boType)
+   ========================================================== */
+
+
+/* ----------------------------------------------------------
+   LFT TEAMS â€” Equipos buscando jugadores
+---------------------------------------------------------- */
+
+/**
+ * Registra un anuncio de equipo que busca jugadores.
+ * Llamado desde: submitLftTeam() en LeagueMenu.html
+ */
+function registerLftTeam(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    let sheet = ss.getSheetByName('LFT_TEAMS');
+    if (!sheet) {
+      sheet = ss.insertSheet('LFT_TEAMS');
+      sheet.appendRow(['Timestamp', 'TeamName', 'Division', 'Roles', 'EloMin', 'Discord', 'Desc', 'Opgg']);
+    }
+
+    if (!data.teamName || !data.discord || !data.roles) {
+      return { success: false, error: 'Faltan campos obligatorios.' };
+    }
+
+    sheet.appendRow([
+      new Date(),
+      data.teamName.trim(),
+      data.division || '',
+      data.roles || '',
+      data.eloMin || 'Sin requisito',
+      data.discord.trim(),
+      (data.desc || '').trim(),
+      (data.opgg || '').trim()
+    ]);
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Devuelve todos los anuncios activos de LFT Teams.
+ * Llamado desde: loadLftTeams() en LeagueMenu.html
+ */
+function getLftTeams() {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('LFT_TEAMS');
+    if (!sheet) return { teams: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const teams = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[1]) continue; // Saltar filas vacías
+      teams.push({
+        _rowIndex: i + 1,          // fila real en Sheets (para borrado)
+        date:      row[0] ? new Date(row[0]).toLocaleDateString('es-ES') : '',
+        teamName:  row[1] || '',
+        division:  row[2] || '',
+        roles:     row[3] || '',
+        eloMin:    row[4] || '',
+        discord:   row[5] || '',
+        desc:      row[6] || '',
+        opgg:      row[7] || ''
+      });
+    }
+
+    // Más recientes primero
+    teams.reverse();
+    return { teams: teams };
+  } catch (e) {
+    return { teams: [], error: e.message };
+  }
+}
+
+
+/* ----------------------------------------------------------
+   SCRIM POOL â€” Jugadores individuales para inhouses
+---------------------------------------------------------- */
+
+/**
+ * Apunta a un jugador individual al pool de inhouses.
+ * Llamado desde: submitScrimIndividual() en LeagueMenu.html
+ */
+function registerScrimPlayer(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    let sheet = ss.getSheetByName('SCRIM_POOL');
+    if (!sheet) {
+      sheet = ss.insertSheet('SCRIM_POOL');
+      sheet.appendRow(['Timestamp', 'Nick', 'Division', 'RoleMain', 'RoleSec', 'TimeSlot', 'Discord', 'ScrimDate']);
+    }
+
+    if (!data.nick || !data.roleMain || !data.timeSlot) {
+      return { success: false, error: 'Faltan campos obligatorios.' };
+    }
+
+    // Comprobar si ya está apuntado (evitar duplicados por nick)
+    const existing = sheet.getDataRange().getValues();
+    for (let i = 1; i < existing.length; i++) {
+      if (String(existing[i][1]).toLowerCase() === data.nick.toLowerCase()) {
+        // Actualizar fila existente en lugar de duplicar
+        sheet.getRange(i + 1, 1, 1, 8).setValues([[
+          new Date(),
+          data.nick.trim(),
+          data.division || '',
+          data.roleMain,
+          data.roleSec || '',
+          data.timeSlot,
+          data.discord || '',
+          data.scrimDate || ''
+        ]]);
+        sendScrimDiscordNotification('INHOUSE_UPDATE', data);
+        return { success: true };
+      }
+    }
+
+    sheet.appendRow([
+      new Date(),
+      data.nick.trim(),
+      data.division || '',
+      data.roleMain,
+      data.roleSec || '',
+      data.timeSlot,
+      data.discord || '',
+      data.scrimDate || ''
+    ]);
+
+    // Notificar Discord (mention by adding <> if needed)
+    sendScrimDiscordNotification('INHOUSE', data);
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Devuelve el pool actual de jugadores apuntados a inhouses.
+ * Llamado desde: loadScrimPool() en LeagueMenu.html
+ */
+function getScrimPool() {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('SCRIM_POOL');
+    if (!sheet) return { players: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const players = [];
+
+    const now = new Date();
+    const cutoff48 = new Date();
+    cutoff48.setHours(cutoff48.getHours() - 48);
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[1]) continue;
+      const ts = row[0] ? new Date(row[0]) : null;
+
+      // Filtrar por fecha de scrim si existe (columna H = índice 7)
+      const scrimDateStr = row[7] || '';
+      if (scrimDateStr) {
+        const scrimDate = new Date(scrimDateStr);
+        scrimDate.setHours(23, 59, 59);
+        if (scrimDate < now) continue; // fecha pasada → ocultar
+      } else {
+        if (ts && ts < cutoff48) continue; // sin fecha: caducidad 48h
+      }
+
+      players.push({
+        _rowIndex: i + 1,
+        nick:      row[1] || '',
+        division:  row[2] || '',
+        roleMain:  row[3] || '',
+        roleSec:   row[4] || '',
+        timeSlot:  row[5] || '',
+        discord:   row[6] || ''
+      });
+    }
+
+    return { players: players };
+  } catch (e) {
+    return { players: [], error: e.message };
+  }
+}
+
+
+/* ----------------------------------------------------------
+   SCRIM TEAMS â€” Equipos completos buscando rival (5v5)
+---------------------------------------------------------- */
+
+/**
+ * Registra un equipo que busca scrim 5v5.
+ * Llamado desde: submitScrimTeam() en LeagueMenu.html
+ */
+function registerScrimTeam(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    let sheet = ss.getSheetByName('SCRIM_TEAMS');
+    if (!sheet) {
+      sheet = ss.insertSheet('SCRIM_TEAMS');
+      sheet.appendRow(['Timestamp', 'TeamName', 'Division', 'TimeSlot', 'Discord', 'Players', 'ScrimDate', 'BoType']);
+    }
+
+    if (!data.teamName || !data.discord || !data.timeSlot) {
+      return { success: false, error: 'Faltan campos obligatorios.' };
+    }
+
+    sheet.appendRow([
+      new Date(),
+      data.teamName.trim(),
+      data.division || '',
+      data.timeSlot,
+      data.discord.trim(),
+      data.players || '',
+      data.scrimDate || '',
+      data.boType || 'Bo1'
+    ]);
+
+    // Notificar Discord
+    sendScrimDiscordNotification('SCRIM_5V5', data);
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Devuelve los equipos que buscan scrim actualmente.
+ * Llamado desde: loadScrimTeams() en LeagueMenu.html
+ */
+function getScrimTeams() {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('SCRIM_TEAMS');
+    if (!sheet) return { teams: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const teams = [];
+
+    // Solo últimas 72h
+    const cutoff = new Date();
+    cutoff.setHours(cutoff.getHours() - 72);
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[1]) continue;
+      const ts = row[0] ? new Date(row[0]) : null;
+      if (ts && ts < cutoff) continue;
+      teams.push({
+        _rowIndex: i + 1,
+        date:      ts ? ts.toLocaleDateString('es-ES') : '',
+        teamName:  row[1] || '',
+        division:  row[2] || '',
+        timeSlot:  row[3] || '',
+        discord:   row[4] || '',
+        players:   row[5] || ''
+      });
+    }
+
+    teams.reverse(); // Más recientes primero
+    return { teams: teams };
+  } catch (e) {
+    return { teams: [], error: e.message };
+  }
+}
+
+
+/* ----------------------------------------------------------
+   UTILIDAD: Setup inicial de hojas (ejecutar una vez)
+---------------------------------------------------------- */
+
+/**
+ * Crea las tres hojas del módulo de Reclutamiento si no existen.
+ * Ejecutar manualmente desde el editor de Apps Script.
+ */
+function setupReclutamientoSheets() {
+  const ss = SpreadsheetApp.getActive();
+
+  const sheets = [
+    { name: 'LFT_TEAMS',   headers: ['Timestamp', 'TeamName', 'Division', 'Roles', 'EloMin', 'Discord', 'Desc'] },
+    { name: 'SCRIM_POOL',  headers: ['Timestamp', 'Nick', 'Division', 'RoleMain', 'RoleSec', 'TimeSlot', 'Discord'] },
+    { name: 'SCRIM_TEAMS', headers: ['Timestamp', 'TeamName', 'Division', 'TimeSlot', 'Discord', 'Players'] }
+  ];
+
+  const created = [];
+  sheets.forEach(s => {
+    if (!ss.getSheetByName(s.name)) {
+      const sheet = ss.insertSheet(s.name);
+      sheet.appendRow(s.headers);
+      sheet.getRange(1, 1, 1, s.headers.length)
+           .setFontWeight('bold')
+           .setBackground('#1e293b')
+           .setFontColor('#fbbf24');
+      created.push(s.name);
+    }
+  });
+
+  const msg = created.length > 0
+    ? 'âœ… Hojas creadas: ' + created.join(', ')
+    : 'â„¹ï¸ Todas las hojas ya existían.';
+
+  Logger.log(msg);
+
+  // Intentar mostrar alerta en UI (solo funciona cuando se ejecuta desde el editor
+  // con una sesión activa de Sheets; falla silenciosamente en otros contextos).
+  try {
+    SpreadsheetApp.getUi().alert(msg);
+  } catch (uiErr) {
+    // Contexto sin UI (trigger, web app, etc.) â€” el log es suficiente.
+    Logger.log('UI no disponible en este contexto: ' + uiErr.message);
+  }
+
+  return { ok: true, created: created, msg: msg };
+}
+
+
+/* =================================================================
+   MÓDULO RECLUTAMIENTO — BORRADO DE POSTS
+================================================================= */
+
+function _checkAdminOrAuthor_(adminKey, requesterNick, storedValue) {
+  try {
+    const cfg = SpreadsheetApp.getActive().getSheetByName('CONFIG');
+    if (cfg) {
+      const cfgData = cfg.getDataRange().getValues();
+      const row = cfgData.find(r => r[0] === 'admin_password');
+      if (row && String(row[1]).trim() && adminKey === String(row[1]).trim()) return true;
+    }
+  } catch(e) {}
+  if (requesterNick && storedValue &&
+      String(requesterNick).trim().toLowerCase() === String(storedValue).trim().toLowerCase()) return true;
+  return false;
+}
+
+function deleteLftTeam(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('LFT_TEAMS');
+    if (!sheet) return { success: false, error: 'Hoja no encontrada.' };
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { success: false, error: 'Indice invalido.' };
+    const rowData = sheet.getRange(row, 1, 1, 8).getValues()[0];
+    const storedDiscord = String(rowData[5] || '').trim();
+    const storedTeam    = String(rowData[1] || '').trim();
+    const ok = _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedDiscord) ||
+               _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedTeam);
+    if (!ok) return { success: false, error: 'No tienes permisos. Introduce tu Discord o nombre de equipo exacto.' };
+    sheet.deleteRow(row);
+    return { success: true };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+function deleteScrimPlayer(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('SCRIM_POOL');
+    if (!sheet) return { success: false, error: 'Hoja no encontrada.' };
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { success: false, error: 'Indice invalido.' };
+    const storedNick = String(sheet.getRange(row, 2).getValue() || '').trim();
+    const ok = _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedNick);
+    if (!ok) return { success: false, error: 'No tienes permisos. Introduce tu nickname exacto.' };
+    sheet.deleteRow(row);
+    return { success: true };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+function deleteScrimTeam(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('SCRIM_TEAMS');
+    if (!sheet) return { success: false, error: 'Hoja no encontrada.' };
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { success: false, error: 'Indice invalido.' };
+    const rowData = sheet.getRange(row, 1, 1, 6).getValues()[0];
+    const storedDiscord  = String(rowData[4] || '').trim();
+    const storedTeamName = String(rowData[1] || '').trim();
+    const ok = _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedDiscord) ||
+               _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedTeamName);
+    if (!ok) return { success: false, error: 'No tienes permisos. Introduce tu Discord o nombre de equipo exacto.' };
+    sheet.deleteRow(row);
+    return { success: true };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+
+/* =================================================================
+   SCRIMS — NOTIFICACION DISCORD WEBHOOK
+================================================================= */
+
+function sendScrimDiscordNotification(type, data) {
+  const SCRIMS_WEBHOOK = 'https://discord.com/api/webhooks/1514658778434502767/J21nQFShQUd-vDpb82L9UbDK4mLAN9wIGXoX_i_4-6-G2fTMRC-loU2rUBQ_GxgRRX-M';
+  try {
+    let embed;
+    let content = ''; // Para el @mention en el mensaje principal
+
+    if (type === 'INHOUSE' || type === 'INHOUSE_UPDATE') {
+      const ROLE_EMOJIS = { TOP:'🛡️', JNG:'🌲', MID:'🔥', ADC:'🏹', SUPP:'💖', JUNGLE:'🌲', SUPPORT:'💖' };
+      const roleEmoji = ROLE_EMOJIS[(data.roleMain || '').toUpperCase()] || '🎮';
+      const dateField = data.scrimDate ? [{ name: '📅 Fecha del Scrim', value: data.scrimDate, inline: true }] : [];
+
+      // Mention al discord del jugador si existe
+      if (data.discord) content = `📣 **¡Nuevo jugador disponible para Inhouse!** Contacta con ${data.discord} si te interesa.`;
+
+      embed = {
+        title: type === 'INHOUSE_UPDATE' ? '🔄 Jugador actualizado en Pool de Inhouse' : '⚔️ ¡Nuevo jugador en el Pool de Inhouse!',
+        color: 0xe11d48,
+        fields: [
+          { name: '👤 Nickname',    value: data.nick     || '-',   inline: true },
+          { name: roleEmoji + ' Rol', value: (data.roleMain || '-') + (data.roleSec ? ' / ' + data.roleSec : ''), inline: true },
+          { name: '🕐 Horario',     value: data.timeSlot || 'Flexible', inline: true },
+          { name: '🏆 División',    value: data.division || 'Sin definir', inline: true },
+          { name: '💬 Discord',     value: data.discord  || 'No especificado', inline: true },
+          ...dateField
+        ],
+        description: data.discord ? `📨 Para aceptar, contacta con **${data.discord}**` : undefined,
+        footer: { text: 'Wargods Scrims · Inhouse Pool' },
+        timestamp: new Date().toISOString()
+      };
+    } else if (type === 'SCRIM_5V5') {
+      const dateField   = data.scrimDate ? [{ name: '📅 Fecha del Scrim', value: data.scrimDate, inline: true }] : [];
+      const boTypeField = [{ name: '🎮 Formato', value: data.boType || 'Bo1', inline: true }];
+
+      // Mention al capitán si existe
+      if (data.discord) content = `⚔️ **¡${data.teamName || 'Un equipo'} busca rival para Scrim!** Si aceptas, contacta con ${data.discord}`;
+
+      embed = {
+        title: '🛡️ ¡Equipo buscando Scrim 5v5!',
+        color: 0xf97316,
+        description: data.discord ? `✅ Para aceptar el reto, contacta directamente con **${data.discord}**` : undefined,
+        fields: [
+          { name: '🏷️ Equipo',    value: data.teamName || '-',          inline: true },
+          { name: '🏆 División',   value: data.division || 'Sin definir', inline: true },
+          { name: '🕐 Horario',    value: data.timeSlot || 'Flexible',   inline: true },
+          ...dateField,
+          ...boTypeField,
+          { name: '💬 Contacto',   value: data.discord  || '-',          inline: true },
+          ...(data.players ? [{ name: '👥 Jugadores', value: data.players, inline: false }] : [])
+        ],
+        footer: { text: 'Wargods Scrims · 5v5' },
+        timestamp: new Date().toISOString()
+      };
+    } else { return; }
+
+    const payload = { embeds: [embed] };
+    if (content) payload.content = content;
+
+    UrlFetchApp.fetch(SCRIMS_WEBHOOK, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch(e) { Logger.log('sendScrimDiscordNotification error: ' + e.message); }
+}
+
+
+/* =================================================================
+   MÓDULO: BOLSA DE EQUIPOS — TEAM POOL
+   Hoja requerida: TEAM_POOL
+   Columnas: A=Timestamp  B=Name  C=Server  D=Division  E=AvgElo
+             F=Captain    G=Discord  H=Opgg  I=Logo  J=Desc  K=Active
+================================================================= */
+
+/**
+ * Devuelve la hoja TEAM_POOL, creándola con cabeceras si no existe.
+ */
+function getTeamPoolSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName('TEAM_POOL');
+  if (!sheet) {
+    sheet = ss.insertSheet('TEAM_POOL');
+    const headers = ['Timestamp','Name','Server','Division','AvgElo','Captain','Discord','Opgg','Logo','Desc','Active'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers])
+      .setFontWeight('bold')
+      .setBackground('#1a0f05')
+      .setFontColor('#fb923c');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, headers.length, 180);
+  }
+  return sheet;
+}
+
+/**
+ * Registra un nuevo equipo en la bolsa.
+ * Llamado desde: submitTeamPool() en LeagueMenu.html
+ */
+function registerTeamPool(data) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); }
+  catch(e) { return { success: false, error: 'Servidor ocupado, reintenta en un momento.' }; }
+
+  try {
+    if (!data || !data.name || !data.server || !data.division || !data.avgElo || !data.captain || !data.discord) {
+      return { success: false, error: 'Faltan campos obligatorios.' };
+    }
+
+    const sheet = getTeamPoolSheet_();
+    const lastRow = sheet.getLastRow();
+    const nameLower = String(data.name).trim().toLowerCase();
+
+    // Evitar duplicados activos por nombre
+    if (lastRow > 1) {
+      const existing = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
+      for (let i = 0; i < existing.length; i++) {
+        const isActive = !(existing[i][10] === false || existing[i][10] === 'false' || existing[i][10] === 0 || existing[i][10] === 'FALSE');
+        if (isActive && String(existing[i][1]).trim().toLowerCase() === nameLower) {
+          return { success: false, error: '⚠️ Ya existe un equipo activo con ese nombre en la bolsa.' };
+        }
+      }
+    }
+
+    sheet.appendRow([
+      new Date(),
+      String(data.name).trim().substring(0, 40),
+      String(data.server).trim(),
+      String(data.division).trim(),
+      String(data.avgElo).trim(),
+      String(data.captain).trim().substring(0, 40),
+      String(data.discord).trim().substring(0, 60),
+      String(data.opgg || '').trim().substring(0, 400),
+      String(data.logo || '').trim().substring(0, 400),
+      String(data.desc || '').trim().substring(0, 300),
+      true
+    ]);
+
+    return { success: true, msg: '✅ Equipo inscrito en la cola. ¡El staff se pondrá en contacto cuando haya plaza!' };
+  } catch(e) {
+    return { success: false, error: '❌ Error al guardar: ' + e.message };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+/**
+ * Devuelve todos los equipos activos de la bolsa, ordenados por fecha (más antiguo primero = posición en cola).
+ * Llamado desde: loadTeamPool() en LeagueMenu.html
+ */
+function getTeamPool() {
+  try {
+    const sheet = getTeamPoolSheet_();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { teams: [] };
+
+    const data = sheet.getRange(1, 1, lastRow, 11).getValues();
+    const headers = data[0];
+    const teams = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[1]) continue; // fila vacía
+
+      // Filtrar inactivos
+      const active = row[10];
+      if (active === false || active === 'false' || active === 0 || active === 'FALSE') continue;
+
+      const obj = {};
+      headers.forEach(function(h, idx) {
+        let v = row[idx];
+        if (h === 'Timestamp' && v instanceof Date) v = v.toISOString();
+        obj[h.toLowerCase()] = v; // lowercase keys para el frontend
+      });
+      obj._row = i + 1; // fila real en Sheets para borrado
+
+      // Alias amigables (el frontend usa estos nombres)
+      teams.push({
+        _row:       obj._row,
+        created_at: obj.timestamp || '',
+        name:       obj.name || '',
+        server:     obj.server || '',
+        division:   obj.division || '',
+        avgElo:     obj.avgelo || '',
+        captain:    obj.captain || '',
+        discord:    obj.discord || '',
+        opgg:       obj.opgg || '',
+        logo:       obj.logo || '',
+        desc:       obj.desc || ''
+      });
+    }
+
+    // Orden cronológico ASC → posición en cola real
+    teams.sort(function(a, b) {
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+
+    return { teams: teams };
+  } catch(e) {
+    return { teams: [], error: e.message };
+  }
+}
+
+/**
+ * Elimina (soft-delete) un equipo de la bolsa.
+ * Solo el capitán (por Discord o nombre) o un admin pueden borrar.
+ * Llamado desde: confirmDelete() en LeagueMenu.html cuando type==='team-pool'
+ */
+function deleteTeamPool(data) {
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('TEAM_POOL');
+    if (!sheet) return { success: false, error: 'Hoja no encontrada.' };
+
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { success: false, error: 'Índice inválido.' };
+
+    const rowData = sheet.getRange(row, 1, 1, 11).getValues()[0];
+    const storedName    = String(rowData[1]  || '').trim();
+    const storedDiscord = String(rowData[6]  || '').trim();
+    const storedCaptain = String(rowData[5]  || '').trim();
+
+    const ok = _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedDiscord)
+            || _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedCaptain)
+            || _checkAdminOrAuthor_(data.adminKey, data.requesterNick, storedName);
+
+    if (!ok) return { success: false, error: 'No tienes permisos. Introduce el Discord del capitán, su nickname o el nombre del equipo exacto.' };
+
+    // Soft-delete: marcar Active = false en columna K (índice 11)
+    sheet.getRange(row, 11).setValue(false);
+    return { success: true };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Actualiza los datos de un equipo en la bolsa (solo admins).
+ * Llamado desde: submitEditTeamPool() en LeagueMenu.html
+ * Columnas TEAM_POOL: A=Timestamp B=Name C=Server D=Division E=AvgElo
+ *                     F=Captain  G=Discord H=Opgg I=Logo J=Desc K=Active
+ */
+function updateTeamPool(data) {
+  try {
+    if (!checkAdminPassword(data.adminKey)) {
+      return { success: false, error: '⛔ Acceso denegado. Clave de administrador incorrecta.' };
+    }
+
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName('TEAM_POOL');
+    if (!sheet) return { success: false, error: 'Hoja TEAM_POOL no encontrada.' };
+
+    const row = parseInt(data.rowIndex);
+    if (!row || row < 2) return { success: false, error: 'Índice de fila inválido.' };
+
+    if (!data.name || !data.server || !data.division || !data.avgElo || !data.captain || !data.discord) {
+      return { success: false, error: 'Faltan campos obligatorios.' };
+    }
+
+    // Actualizar columnas B-J (1-based en Sheets)
+    sheet.getRange(row, 2).setValue(String(data.name).trim().substring(0, 40));
+    sheet.getRange(row, 3).setValue(String(data.server).trim());
+    sheet.getRange(row, 4).setValue(String(data.division).trim());
+    sheet.getRange(row, 5).setValue(String(data.avgElo).trim());
+    sheet.getRange(row, 6).setValue(String(data.captain).trim().substring(0, 40));
+    sheet.getRange(row, 7).setValue(String(data.discord).trim().substring(0, 60));
+    sheet.getRange(row, 8).setValue(String(data.opgg || '').trim().substring(0, 400));
+    sheet.getRange(row, 9).setValue(String(data.logo || '').trim().substring(0, 400));
+    sheet.getRange(row, 10).setValue(String(data.desc || '').trim().substring(0, 300));
+
+    return { success: true, msg: '✅ Equipo actualizado correctamente.' };
+  } catch(e) {
+    return { success: false, error: '❌ Error al actualizar: ' + e.message };
+  }
+}
+
+
+/* =================================================================
+   ╔═════════════════════════════════════════════════════════════════╗
+   ║   MÓDULO MULTI-DIVISIÓN  ·  WPL SEASON 2026                    ║
+   ║   Divisiones: Premier · Aspirante · Élite · Promesas · Academia║
+   ╠═════════════════════════════════════════════════════════════════╣
+   ║   Layout de TOURNAMENT_TEAMS (columnas A-M):                   ║
+   ║   A=TeamID  B=Name  C=Wins  D=Losses  E=Draws  F=Points        ║
+   ║   G=Tiebreaker  H=Status  I=Roster  J=Logo                     ║
+   ║   K=PIN_Capitan  L=ID_Discord_Roles  M=División (índice 12)    ║
+   ║   TOURNAMENT_MATCHES → División en columna R (índice 17)       ║
+   ╚═════════════════════════════════════════════════════════════════╝
+================================================================= */
+
+// Orden oficial de divisiones (de mayor a menor categoría)
+var WPL_DIVISIONS = ['Premier', 'Aspirante', 'Élite', 'Promesas', 'Academia'];
+
+// Índices de la columna División en cada hoja
+// K(10)=PIN_Capitan · L(11)=ID_Discord_Roles · M(12)=División
+var DIV_COL_MATCHES = 17; // 0-based índice (columna R)
+var DIV_COL_TEAMS   = 12; // 0-based índice (columna M)
+
+/**
+ * Normaliza el valor de división para comparaciones robustas.
+ * "premier", "PREMIER", "Premier " → "premier"
+ */
+function _normDiv_(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
+/**
+ * Devuelve la división de una fila de TOURNAMENT_MATCHES de forma segura.
+ * Si está vacía (datos antiguos), devuelve '' (se interpretará como "todas").
+ */
+function _matchDivision_(row) {
+  if (!row || row.length <= DIV_COL_MATCHES) return '';
+  return String(row[DIV_COL_MATCHES] || '').trim();
+}
+
+/**
+ * Devuelve la división de una fila de TOURNAMENT_TEAMS de forma segura.
+ */
+function _teamDivision_(row) {
+  if (!row || row.length <= DIV_COL_TEAMS) return '';
+  return String(row[DIV_COL_TEAMS] || '').trim();
+}
+
+/**
+ * Indica si una fila pasa el filtro de division.
+ * - filtro 'ALL' o '' pasa todo.
+ * - fila sin division asignada pasa siempre (compatibilidad con datos legacy).
+ * - Soporta filtrado por division padre: filtro 'Aspirante' tambien incluye
+ *   'Aspirante A', 'Aspirante B', 'Aspirante - Grupo A', etc.
+ */
+function _passesDivisionFilter_(rowDivision, filter) {
+  var f = _normDiv_(filter);
+  if (!f || f === 'all' || f === 'todas') return true;
+  var d = _normDiv_(rowDivision);
+  if (!d) return true; // legacy: filas sin division no se ocultan
+  // Coincidencia exacta
+  if (d === f) return true;
+  // Coincidencia parcial: el filtro es division padre (ej: 'aspirante' filtra 'aspirante a', 'aspirante b')
+  // Solo si la division de la fila comienza con el filtro seguido de espacio o guion
+  if (d.indexOf(f + ' ') === 0 || d.indexOf(f + '-') === 0) return true;
+  return false;
+}
+
+/**
+ * Indica si un filtro es una division padre (contiene sub-grupos).
+ * Ej: 'Aspirante' es padre si existen 'Aspirante A' y 'Aspirante B'.
+ */
+function _isParentDivision_(filter, allDivisions) {
+  var f = _normDiv_(filter);
+  if (!f || f === 'all' || f === 'todas') return false;
+  for (var i = 0; i < allDivisions.length; i++) {
+    var d = _normDiv_(allDivisions[i]);
+    if (d !== f && (d.indexOf(f + ' ') === 0 || d.indexOf(f + '-') === 0)) return true;
+  }
+  return false;
+}
+
+/**
+ * Devuelve la lista de divisiones que tienen al menos un equipo o partido,
+ * más metadatos para que el frontend monte el selector dinámicamente.
+ * Llamado desde: initDivisionFilter() en LeagueMenu.html
+ */
+function getAvailableDivisions() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+    var found = {};
+    var allRaw = []; // todas las divisiones reales en el sheet
+
+    if (teamsSheet && teamsSheet.getLastRow() > 1) {
+      var tData = teamsSheet.getDataRange().getValues();
+      for (var i = 1; i < tData.length; i++) {
+        var d = _teamDivision_(tData[i]);
+        if (d) { found[d] = true; allRaw.push(d); }
+      }
+    }
+
+    // Ordenar según el orden oficial; las desconocidas van al final
+    var ordered = [];
+    WPL_DIVISIONS.forEach(function(d) { if (found[d]) ordered.push(d); });
+    Object.keys(found).forEach(function(d) {
+      if (WPL_DIVISIONS.indexOf(d) === -1) ordered.push(d);
+    });
+
+    // Detectar divisiones padre con sub-grupos
+    // Ej: si existen 'Aspirante A' y 'Aspirante B', 'Aspirante' es padre
+    var subGroups = {}; // { 'Aspirante': ['Aspirante A', 'Aspirante B'] }
+    var uniqueRaw = Object.keys(found);
+    WPL_DIVISIONS.forEach(function(parent) {
+      var pn = _normDiv_(parent);
+      var subs = uniqueRaw.filter(function(d) {
+        var dn = _normDiv_(d);
+        return dn !== pn && (dn.indexOf(pn + ' ') === 0 || dn.indexOf(pn + '-') === 0);
+      });
+      if (subs.length > 0) {
+        subGroups[parent] = subs.sort();
+        // Anadir el padre como opcion 'Liga Total' si no esta ya
+        if (ordered.indexOf(parent) === -1) ordered.unshift(parent);
+      }
+    });
+
+    return {
+      divisions: ordered,
+      multiDivision: ordered.length > 1 || uniqueRaw.length > 1,
+      all: WPL_DIVISIONS.slice(),
+      subGroups: subGroups
+    };
+  } catch(e) {
+    return { divisions: [], multiDivision: false, all: WPL_DIVISIONS.slice(), subGroups: {}, error: e.message };
+  }
+}
+
+/**
+ * Asigna (o reasigna) la división de un partido concreto en TOURNAMENT_MATCHES.
+ * Se llama automáticamente al importar un ROFL si el partido aún no tiene división.
+ */
+function _setMatchDivisionIfEmpty_(tMatchId, division) {
+  if (!tMatchId || !division) return;
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    if (!sheet) return;
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(tMatchId).trim()) {
+        var current = _matchDivision_(data[i]);
+        if (!current) {
+          // Escribir en columna R (índice 17 → columna 18 en notación 1-based)
+          sheet.getRange(i + 1, DIV_COL_MATCHES + 1).setValue(division);
+        }
+        return;
+      }
+    }
+  } catch(e) {
+    Logger.log('_setMatchDivisionIfEmpty_ error: ' + e.message);
+  }
+}
+
+/**
+ * Devuelve el set de MatchIDs (ROFL_ ids incluidos) que pertenecen a una división.
+ * Sirve para filtrar stats / meta por división, ya que MATCHES no tiene columna división
+ * pero se enlaza con TOURNAMENT_MATCHES por el campo RiotIds (índice 10).
+ */
+function _buildDivisionMatchIdSet_(tmData, divisionFilter) {
+  var set = {};
+  var f = _normDiv_(divisionFilter);
+  var filterAll = (!f || f === 'all' || f === 'todas');
+
+  for (var i = 1; i < tmData.length; i++) {
+    var row = tmData[i];
+    var rowDiv = _matchDivision_(row);
+    // Si filtramos y esta fila NO es de la división → saltar (salvo legacy sin división)
+    if (!filterAll && rowDiv && _normDiv_(rowDiv) !== f) continue;
+
+    var rId = String(row[10] || '').trim();
+    if (rId) {
+      rId.split(',').forEach(function(id) {
+        var clean = id.trim();
+        if (clean) set[clean] = true;
+      });
+    }
+    // También el propio MatchID del torneo
+    var mId = String(row[0] || '').trim();
+    if (mId) set[mId] = true;
+  }
+  return set;
+}
+
+/* =================================================================
+   FINALIZACIÓN DE TEMPORADA + PODIO EN SALÓN DE LA FAMA
+   Hoja: SEASON_PODIUMS
+   Columnas: A=Date B=SeasonLabel C=Division D=Pos1 E=Pos2 F=Pos3 G=Pos4
+             H=Format I=Champion J=Notes
+================================================================= */
+
+function _getSeasonPodiumsSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName('SEASON_PODIUMS');
+  if (!sheet) {
+    sheet = ss.insertSheet('SEASON_PODIUMS');
+    var headers = ['Date','Season','Division','Pos1','Pos2','Pos3','Pos4','Format','Champion','Notes'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers])
+      .setFontWeight('bold').setBackground('#1e293b').setFontColor('#fbbf24');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/**
+ * Calcula el TOP 4 de una división de la clasificación actual (orden por puntos + tiebreakers).
+ * Devuelve [{pos, id, name, w, l, pts}, ...] máximo 4.
+ */
+function _computeDivisionTop4_(divisionFilter) {
+  var ss = SpreadsheetApp.getActive();
+  var teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS');
+  var tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+  if (!teamsSheet) return [];
+
+  var tData = teamsSheet.getDataRange().getValues();
+  var tmData = tMatchesSheet ? tMatchesSheet.getDataRange().getValues() : [];
+
+  var teams = [];
+  for (var i = 1; i < tData.length; i++) {
+    var id = tData[i][0];
+    var name = tData[i][1];
+    if (!id || String(name).trim() === '') continue;
+    if (!_passesDivisionFilter_(_teamDivision_(tData[i]), divisionFilter)) continue;
+    teams.push({
+      id: id, name: name,
+      w: Number(tData[i][2]) || 0, l: Number(tData[i][3]) || 0,
+      d: Number(tData[i][4]) || 0, pts: Number(tData[i][5]) || 0,
+      streak: 0
+    });
+  }
+
+  // Construir matches de esta división para el desempate H2H
+  var matches = [];
+  for (var j = 1; j < tmData.length; j++) {
+    if (!_passesDivisionFilter_(_matchDivision_(tmData[j]), divisionFilter)) continue;
+    if (String(tmData[j][8]) === 'COMPLETED') {
+      matches.push({ tA: tmData[j][3], tB: tmData[j][4], sA: tmData[j][5], sB: tmData[j][6], winner: tmData[j][7], status: 'COMPLETED' });
+    }
+  }
+
+  try {
+    if (typeof sortTeamsHelper === 'function') {
+      teams = sortTeamsHelper(teams, matches);
+    } else {
+      teams.sort(function(a, b) { return b.pts - a.pts || b.w - a.w; });
+    }
+  } catch(e) {
+    teams.sort(function(a, b) { return b.pts - a.pts || b.w - a.w; });
+  }
+
+  return teams.slice(0, 4).map(function(t, idx) {
+    return { pos: idx + 1, id: t.id, name: t.name, w: t.w, l: t.l, pts: t.pts };
+  });
+}
+
+/**
+ * Finaliza una división (o todas) guardando el TOP 4 en SEASON_PODIUMS.
+ * NO borra datos — solo archiva el podio. El borrado se hace aparte con archiveAndResetSeason().
+ * @param {string} divisionFilter - división a finalizar, o 'ALL' para todas las que existan
+ * @param {string} seasonLabel    - ej: "Season 2026 - Split 1"
+ * @param {string} adminKey
+ */
+function finalizeSeasonPodiums(divisionFilter, seasonLabel, adminKey) {
+  if (!checkAdminPassword(adminKey)) {
+    return { success: false, msg: '⛔ Acceso denegado. Solo administradores.' };
+  }
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var infoSheet = ss.getSheetByName('TOURNAMENT_INFO');
+    var format = infoSheet ? String(infoSheet.getRange('B2').getValue() || '') : '';
+    var label = String(seasonLabel || 'Season ' + new Date().getFullYear()).trim();
+
+    var podiumSheet = _getSeasonPodiumsSheet_();
+
+    // Determinar qué divisiones procesar
+    var avail = getAvailableDivisions();
+    var targets;
+    var f = _normDiv_(divisionFilter);
+    if (!f || f === 'all' || f === 'todas') {
+      targets = avail.divisions.length ? avail.divisions : [''];
+    } else {
+      targets = [divisionFilter];
+    }
+
+    var saved = [];
+    targets.forEach(function(div) {
+      var top4 = _computeDivisionTop4_(div);
+      if (!top4.length) return;
+      var names = [top4[0], top4[1], top4[2], top4[3]].map(function(t) { return t ? t.name : ''; });
+      podiumSheet.appendRow([
+        new Date(), label, div || 'General',
+        names[0], names[1], names[2], names[3],
+        format, names[0], 'Top 4 archivado automáticamente'
+      ]);
+      saved.push((div || 'General') + ': 🥇 ' + names[0]);
+    });
+
+    if (!saved.length) {
+      return { success: false, msg: '⚠️ No se encontraron equipos clasificados para archivar.' };
+    }
+    SpreadsheetApp.flush();
+    return { success: true, msg: '🏆 Podios archivados:\n' + saved.join('\n'), count: saved.length };
+  } catch(e) {
+    return { success: false, msg: '❌ Error: ' + e.message };
+  }
+}
+
+/**
+ * Lee todos los podios archivados para mostrarlos en el Salón de la Fama.
+ * Llamado desde: loadSeasonPodiums() en LeagueMenu.html
+ */
+function getSeasonPodiums() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('SEASON_PODIUMS');
+    if (!sheet || sheet.getLastRow() < 2) return { podiums: [] };
+
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
+    var podiums = data.map(function(r) {
+      return {
+        date: r[0] instanceof Date ? r[0].toISOString() : String(r[0]),
+        season: String(r[1] || ''),
+        division: String(r[2] || 'General'),
+        top4: [String(r[3] || ''), String(r[4] || ''), String(r[5] || ''), String(r[6] || '')].filter(Boolean),
+        format: String(r[7] || ''),
+        champion: String(r[8] || ''),
+        notes: String(r[9] || '')
+      };
+    }).reverse(); // más reciente primero
+
+    return { podiums: podiums };
+  } catch(e) {
+    return { podiums: [], error: e.message };
+  }
+}
+
+/* =================================================================
+   CREACIÓN DE NUEVA LIGA MULTI-DIVISIÓN DESDE LA BOLSA DE EQUIPOS
+================================================================= */
+
+/**
+ * Vista previa: agrupa los equipos de la bolsa (TEAM_POOL) por división,
+ * para que el admin organice quién entra en cada división antes de crear la liga.
+ * Llamado desde: openSeasonBuilder() en LeagueMenu.html
+ */
+function getSeasonBuilderData(adminKey) {
+  if (!checkAdminPassword(adminKey)) {
+    return { success: false, msg: '⛔ Acceso denegado.' };
+  }
+  try {
+    var pool = getTeamPool();
+    var teams = (pool && pool.teams) ? pool.teams : [];
+
+    // Agrupar por la división que el equipo eligió al inscribirse
+    var byDivision = {};
+    WPL_DIVISIONS.forEach(function(d) { byDivision[d] = []; });
+    byDivision['_sin_asignar'] = [];
+
+    teams.forEach(function(t) {
+      var d = t.division && WPL_DIVISIONS.indexOf(t.division) !== -1 ? t.division : '_sin_asignar';
+      byDivision[d].push({
+        row: t._row,
+        name: t.name,
+        captain: t.captain,
+        avgElo: t.avgElo,
+        server: t.server,
+        discord: t.discord,
+        logo: t.logo,
+        preferredDivision: t.division || ''
+      });
+    });
+
+    return {
+      success: true,
+      divisions: WPL_DIVISIONS.slice(),
+      byDivision: byDivision,
+      totalTeams: teams.length
+    };
+  } catch(e) {
+    return { success: false, msg: '❌ Error: ' + e.message };
+  }
+}
+
+/**
+ * Crea una nueva liga multi-división de una sola vez.
+ * Reinicia TOURNAMENT_TEAMS / TOURNAMENT_MATCHES / TOURNAMENT_INFO y los rellena
+ * con las divisiones que el admin haya organizado.
+ *
+ * @param {Object} config
+ *   config.seasonLabel  - "Season 2026 - Split 2"
+ *   config.format       - 'rr_single' | 'rr_double' (round robin por división)
+ *   config.divisions    - [{ name:'Premier', teams:[{name, roster, logo}, ...] }, ...]
+ *   config.archiveFirst - bool: archivar el podio de la liga actual antes de borrar
+ * @param {string} adminKey
+ */
+function createMultiDivisionLeague(config, adminKey) {
+  if (!checkAdminPassword(adminKey)) {
+    return { success: false, msg: '⛔ Acceso denegado. Solo administradores.' };
+  }
+  if (!config || !Array.isArray(config.divisions) || config.divisions.length === 0) {
+    return { success: false, msg: '❌ No se han definido divisiones con equipos.' };
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); }
+  catch(e) { return { success: false, msg: '⏳ Servidor ocupado, reintenta.' }; }
+
+  try {
+    var ss = SpreadsheetApp.getActive();
+
+    // 1. Archivar podio de la liga actual si se pide
+    if (config.archiveFirst) {
+      try { finalizeSeasonPodiums('ALL', (config.previousSeasonLabel || 'Temporada anterior'), adminKey); } catch(e) {}
+    }
+
+    // 2. Recrear las hojas base
+    var infoSheet = ss.getSheetByName('TOURNAMENT_INFO') || ss.insertSheet('TOURNAMENT_INFO');
+    var teamsSheet = ss.getSheetByName('TOURNAMENT_TEAMS') || ss.insertSheet('TOURNAMENT_TEAMS');
+    var matchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES') || ss.insertSheet('TOURNAMENT_MATCHES');
+
+    infoSheet.clear(); teamsSheet.clear(); matchesSheet.clear();
+
+    var format = config.format || 'rr_single';
+    var totalTeams = config.divisions.reduce(function(s, d) { return s + (d.teams ? d.teams.length : 0); }, 0);
+
+    infoSheet.getRange('A1:B1').setValues([['Key','Value']]).setFontWeight('bold');
+    infoSheet.getRange('A2:B8').setValues([
+      ['Format', format],
+      ['TeamCount', totalTeams],
+      ['Status', 'ACTIVE'],
+      ['StreamDate', ''],
+      ['PlayoffsActive', 'INACTIVE'],
+      ['SeasonLabel', config.seasonLabel || ('Season ' + new Date().getFullYear())],
+      ['MultiDivision', 'TRUE']
+    ]);
+
+    // 3. Cabeceras con columna División
+    // TOURNAMENT_TEAMS: A-M → K=PIN_Capitan · L=ID_Discord_Roles · M=División
+    teamsSheet.getRange('A1:M1').setValues([[
+      'TeamID','Name','Wins','Losses','Draws','Points','Tiebreaker','Status','Roster','Logo',
+      'PIN_Capitan','ID_Discord_Roles','Division'
+    ]]).setFontWeight('bold');
+
+    // TOURNAMENT_MATCHES: A-Q originales + R=Division (índice 17)
+    matchesSheet.getRange('A1:R1').setValues([[
+      'MatchID','Round','Bracket','TeamA','TeamB','ScoreA','ScoreB','Winner','Status','TeamNames',
+      'RiotIds','VodUrl','MatchDate','PropDate','PropBy','Reserved','TournamentCode','Division'
+    ]]).setFontWeight('bold');
+
+    // 4. Volcar equipos y generar calendario por división
+    var allTeamRows = [];
+    var allMatchRows = [];
+    var globalTeamId = 1;
+    var globalMatchCounter = 1;
+    var divisionsSummary = [];
+
+    config.divisions.forEach(function(div) {
+      var divName = String(div.name || '').trim();
+      var divTeams = (div.teams || []).filter(function(t) { return t && t.name; });
+      if (!divName || divTeams.length < 2) {
+        divisionsSummary.push('⚠️ ' + (divName || '¿?') + ': omitida (mín. 2 equipos)');
+        return;
+      }
+
+      // IDs locales para el cuadre de calendario, mapeados a IDs globales
+      var localIds = [];
+      divTeams.forEach(function(t) {
+        var id = globalTeamId++;
+        localIds.push({ id: id, name: String(t.name).trim() });
+        allTeamRows.push([
+          id, String(t.name).trim(), 0, 0, 0, 0, 0, 'ACTIVE',
+          String(t.roster || ''), String(t.logo || ''),
+          '', // K = PIN_Capitan (se asigna manualmente)
+          '', // L = ID_Discord_Roles (se asigna manualmente)
+          divName // M = División
+        ]);
+      });
+
+      // Round-robin (todos contra todos) dentro de la división
+      var n = localIds.length;
+      var arr = localIds.slice();
+      // Si impar, añadir "BYE" para emparejar
+      var hasBye = false;
+      if (n % 2 !== 0) { arr.push({ id: 'BYE', name: 'Descansa' }); hasBye = true; }
+      var rounds = arr.length - 1;
+      var half = arr.length / 2;
+      var rotation = arr.slice();
+
+      for (var r = 0; r < rounds; r++) {
+        for (var k = 0; k < half; k++) {
+          var t1 = rotation[k];
+          var t2 = rotation[rotation.length - 1 - k];
+          if (t1.id === 'BYE' || t2.id === 'BYE') continue; // saltar descansos
+          var home = (r % 2 === 0) ? t1 : t2;
+          var away = (r % 2 === 0) ? t2 : t1;
+          var mId = 'M' + globalMatchCounter++;
+          // Fila completa con columna División en posición R (índice 17)
+          var matchRow = [
+            mId, 'Jornada ' + (r + 1), 'Regular', home.id, away.id, 0, 0, '', 'PENDING',
+            home.name + ' vs ' + away.name, '', '', '', '', '', '', '', divName
+          ];
+          allMatchRows.push(matchRow);
+        }
+        // Rotación del round-robin (fijar el primero)
+        rotation.splice(1, 0, rotation.pop());
+      }
+
+      // Doble vuelta si se pide
+      if (format === 'rr_double') {
+        var firstLeg = allMatchRows.filter(function(m) { return m[17] === divName; });
+        firstLeg.forEach(function(m) {
+          var jNum = parseInt(String(m[1]).replace(/[^\d]/g, ''), 10) || 1;
+          var mId = 'M' + globalMatchCounter++;
+          var names = String(m[9]).split(' vs ');
+          allMatchRows.push([
+            mId, 'Jornada ' + (jNum + rounds), 'Regular', m[4], m[3], 0, 0, '', 'PENDING',
+            (names[1] || '') + ' vs ' + (names[0] || ''),
+            '', '', '', '', '', '', '', divName
+          ]);
+        });
+      }
+
+      divisionsSummary.push('✅ ' + divName + ': ' + divTeams.length + ' equipos');
+    });
+
+    // 5. Escribir en bloque
+    if (allTeamRows.length > 0) {
+      teamsSheet.getRange(2, 1, allTeamRows.length, 13).setValues(allTeamRows); // 13 cols: A-M
+    }
+    if (allMatchRows.length > 0) {
+      matchesSheet.getRange(2, 1, allMatchRows.length, 18).setValues(allMatchRows);
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      msg: '🎉 ¡Nueva liga creada!\n\n' + divisionsSummary.join('\n') +
+           '\n\nTotal: ' + allTeamRows.length + ' equipos · ' + allMatchRows.length + ' partidos',
+      teams: allTeamRows.length,
+      matches: allMatchRows.length
+    };
+  } catch(e) {
+    return { success: false, msg: '❌ Error creando la liga: ' + e.message };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+/**
+ * Marca como "usados" (Active=false) en la bolsa los equipos que ya entraron en la liga,
+ * para que no aparezcan de nuevo en la cola. Opcional, llamado tras crear la liga.
+ */
+function markTeamPoolTeamsUsed(rowIndexes, adminKey) {
+  if (!checkAdminPassword(adminKey)) {
+    return { success: false, msg: '⛔ Acceso denegado.' };
+  }
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('TEAM_POOL');
+    if (!sheet) return { success: false, msg: 'Hoja TEAM_POOL no encontrada.' };
+    (rowIndexes || []).forEach(function(r) {
+      var row = parseInt(r);
+      if (row >= 2) {
+        try { sheet.getRange(row, 11).setValue(false); } catch(e) {}
+      }
+    });
+    return { success: true, msg: '✅ ' + (rowIndexes || []).length + ' equipos marcados como activos en liga.' };
+  } catch(e) {
+    return { success: false, msg: '❌ Error: ' + e.message };
+  }
+}

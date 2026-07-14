@@ -27,6 +27,25 @@
       min-height: 100vh;
     }
     .font-oswald { font-family: 'Oswald', sans-serif; }
+    .stat-card {
+    background: rgba(30,41,59,0.8);
+    border: 1px solid rgba(51,65,85,0.8);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: rgba(100,120,160,0.6); }
+  .stat-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+  .stat-value { font-family: "Oswald", sans-serif; font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 0.65rem; color: #475569; margin-top: 3px; }
+  .champ-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(51,65,85,0.5); }
+  .champ-row:last-child { border-bottom: none; }
+  .champ-wr-bar { flex: 1; height: 4px; background: rgba(51,65,85,0.5); border-radius: 2px; overflow: hidden; }
+  .champ-wr-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .match-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 0.82rem; }
+  .match-win { background: rgba(16,185,129,0.06); border-left: 3px solid #10b981; }
+  .match-loss { background: rgba(239,68,68,0.06); border-left: 3px solid #ef4444; }
   </style>
 </head>
 <body>
@@ -80,54 +99,70 @@
       </div>
     </div>
 
-    <!-- Stats grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">KDA</div>
-        <div id="stat-kda" class="text-3xl font-oswald text-emerald-400 font-bold"></div>
+    <!-- Stats grid — 8 KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="stat-card">
+        <div class="stat-label">KDA</div>
+        <div id="stat-kda" class="stat-value text-emerald-400"></div>
+        <div id="stat-kda-detail" class="stat-sub"></div>
       </div>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">DPM</div>
-        <div id="stat-dpm" class="text-3xl font-oswald text-red-400 font-bold"></div>
+      <div class="stat-card">
+        <div class="stat-label">DPM</div>
+        <div id="stat-dpm" class="stat-value text-red-400"></div>
+        <div id="stat-dpm-sub" class="stat-sub">Daño/min</div>
       </div>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">GPM</div>
-        <div id="stat-gpm" class="text-3xl font-oswald text-yellow-400 font-bold"></div>
+      <div class="stat-card">
+        <div class="stat-label">GPM</div>
+        <div id="stat-gpm" class="stat-value text-yellow-400"></div>
+        <div id="stat-gpm-sub" class="stat-sub">Oro/min</div>
       </div>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">CS/min</div>
-        <div id="stat-cs" class="text-3xl font-oswald text-blue-400 font-bold"></div>
+      <div class="stat-card">
+        <div class="stat-label">CS/min</div>
+        <div id="stat-cs" class="stat-value text-blue-400"></div>
+        <div id="stat-cs-sub" class="stat-sub">Farm</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">KP%</div>
+        <div id="stat-kp" class="stat-value text-purple-400"></div>
+        <div id="stat-kp-sub" class="stat-sub">Kill Part.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Visión</div>
+        <div id="stat-vspm" class="stat-value text-cyan-400"></div>
+        <div id="stat-vspm-sub" class="stat-sub">VS/min</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pentas</div>
+        <div id="stat-pentas" class="stat-value text-orange-400"></div>
+        <div id="stat-pentas-sub" class="stat-sub">Kills épicos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Partidas</div>
+        <div id="stat-games" class="stat-value text-white"></div>
+        <div id="stat-games-sub" class="stat-sub">Jugadas</div>
       </div>
     </div>
 
-    <!-- Radar + Campeones -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase">Radar de Rendimiento</h3>
-        <div style="height: 280px;"><canvas id="radarChart"></canvas></div>
+    <!-- Radar + Pool de campeones -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6">
+        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase text-sm">⬡ Radar de Rendimiento</h3>
+        <div style="height: 260px;"><canvas id="radarChart"></canvas></div>
       </div>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase">Arsenal Letal</h3>
-        <div id="champs-list" class="flex flex-wrap gap-3"></div>
-        <div class="mt-6 border-t border-slate-700 pt-4 space-y-3">
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-400">Partidas jugadas</span>
-            <span id="info-games" class="font-bold text-white"></span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-400">KP%</span>
-            <span id="info-kp" class="font-bold text-blue-300"></span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-400">Visión (VSPM)</span>
-            <span id="info-vspm" class="font-bold text-purple-300"></span>
-          </div>
-        </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6">
+        <h3 class="font-oswald text-white tracking-widest mb-4 uppercase text-sm">⚔️ Pool de Campeones</h3>
+        <div id="champs-list" class="space-y-2"></div>
       </div>
+    </div>
+
+    <!-- Últimas partidas -->
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-6">
+      <h3 class="font-oswald text-white tracking-widest mb-4 uppercase text-sm">📋 Últimas Partidas</h3>
+      <div id="recent-matches" class="space-y-2"></div>
     </div>
 
     <!-- Footer -->
-    <div class="text-center text-slate-600 text-xs">
+    <div class="text-center text-slate-600 text-xs pb-4">
       <p>Wargods Premier · Datos actualizados automáticamente tras cada jornada</p>
       <a href="<?= ScriptApp.getService().getUrl() ?>" class="text-yellow-600 hover:text-yellow-500 font-bold mt-1 inline-block">
         Ver la clasificación completa →
@@ -178,80 +213,114 @@
 
   function renderProfile(p) {
     document.getElementById('loading').classList.add('hidden');
-    
     if (p.error) {
       document.getElementById('error-state').classList.remove('hidden');
-      // Esto sustituira el texto por el error real del backend
       document.querySelector('#error-state p').textContent = "ERROR: " + p.error.toUpperCase();
       return;
     }
-
     document.getElementById('profile').classList.remove('hidden');
 
     const arch = getArchetype(p);
-    const mainChamp = p.champs ? p.champs.split(',')[0].trim() : '';
+    // Campeón principal — preferimos champDetails si existe
+    const mainChamp = (p.champDetails && p.champDetails.length > 0)
+      ? p.champDetails[0].name
+      : (p.champs ? p.champs.split(',')[0].trim() : '');
 
-    // Fondo splash
     document.getElementById('champ-bg').style.backgroundImage = "url('" + getChampSplash(mainChamp) + "')";
     document.getElementById('champ-icon').src = getChampIcon(mainChamp);
-
-    // Textos principales
     document.getElementById('player-name').textContent = p.name;
-    document.getElementById('player-meta').textContent = p.role + '  ' + p.team;
+    document.getElementById('player-meta').textContent = (p.mainRole || p.role || '') + '  ' + (p.team || '');
     document.getElementById('player-archetype').innerHTML = '<span style="color:' + arch.hex + '">' + arch.icon + ' ' + arch.name + '</span>';
 
-    // Badges
-    document.getElementById('badge-mvps').textContent = ' ' + p.mvps + ' MVPs';
-    document.getElementById('badge-wr').textContent = p.winrate + '% WR';
-    document.getElementById('badge-pts').textContent = p.points + ' PTS';
+    document.getElementById('badge-mvps').textContent = '🏆 ' + (p.mvps || 0) + ' MVPs';
+    document.getElementById('badge-wr').textContent = (p.winrate || 0) + '% WR';
+    document.getElementById('badge-pts').textContent = (p.points || 0) + ' PTS';
 
-    // Stats
-    document.getElementById('stat-kda').textContent = parseFloat(p.kdaNum).toFixed(2);
-    document.getElementById('stat-dpm').textContent = p.dpm;
-    document.getElementById('stat-gpm').textContent = p.gpm;
-    document.getElementById('stat-cs').textContent = parseFloat(p.cs).toFixed(1);
+    // Stats ampliados
+    const dpm  = p.dpmAvg  || p.dpm  || 0;
+    const gpm  = p.gpmAvg  || p.gpm  || 0;
+    const vspm = p.vspmAvg || p.vspm || 0;
+    const cs   = p.csMinAvg|| p.cs   || 0;
+    const kdaN = parseFloat(p.kdaNum || 0);
 
-    // Info lateral
-    document.getElementById('info-games').textContent = p.games + ' partidas';
-    document.getElementById('info-kp').textContent = p.kp + '%';
-    document.getElementById('info-vspm').textContent = parseFloat(p.vspm).toFixed(2);
+    document.getElementById('stat-kda').textContent = kdaN.toFixed(2);
+    document.getElementById('stat-kda-detail').textContent = p.kda || '';
+    document.getElementById('stat-dpm').textContent = Number(dpm).toLocaleString();
+    document.getElementById('stat-gpm').textContent = Number(gpm).toLocaleString();
+    document.getElementById('stat-cs').textContent = parseFloat(cs).toFixed(1);
+    document.getElementById('stat-kp').textContent = (p.kp || 0) + '%';
+    document.getElementById('stat-vspm').textContent = parseFloat(vspm).toFixed(2);
+    document.getElementById('stat-pentas').textContent = p.pentaKills || 0;
+    document.getElementById('stat-pentas-sub').textContent = (p.firstBloods || 0) + ' First Bloods';
+    document.getElementById('stat-games').textContent = p.games || 0;
+    document.getElementById('stat-games-sub').textContent = (p.winrate || 0) + '% WR';
 
-    // Campeones
+    // Pool de campeones detallado
     const champsDiv = document.getElementById('champs-list');
-    (p.champs || '').split(',').forEach(c => {
-      const img = document.createElement('img');
-      img.src = getChampIcon(c.trim());
-      img.title = c.trim();
-      img.className = 'w-14 h-14 rounded-full border-2 border-slate-600 shadow-lg';
-      champsDiv.appendChild(img);
+    champsDiv.innerHTML = '';
+    const champSrc = p.champDetails && p.champDetails.length > 0 ? p.champDetails
+      : (p.champs ? p.champs.split(',').slice(0,6).map(c => ({name: c.trim(), played: '?', wr: 50})) : []);
+    champSrc.forEach(ch => {
+      const wrColor = ch.wr >= 60 ? '#10b981' : ch.wr >= 50 ? '#fbbf24' : '#ef4444';
+      champsDiv.innerHTML += '<div class="champ-row">' +
+        '<img src="' + getChampIcon(ch.name) + '" style="width:32px;height:32px;border-radius:50%;border:2px solid #334155" onerror="this.style.display='none'">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:.8rem;font-weight:700;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + ch.name + '</div>' +
+          '<div class="champ-wr-bar"><div class="champ-wr-fill" style="width:' + (ch.wr||50) + '%;background:' + wrColor + '"></div></div>' +
+        '</div>' +
+        '<div style="font-size:.75rem;font-weight:800;color:' + wrColor + ';min-width:36px;text-align:right">' + (ch.wr||0) + '% WR</div>' +
+        '<div style="font-size:.7rem;color:#64748b;min-width:28px;text-align:right">' + (ch.played||0) + 'G</div>' +
+      '</div>';
     });
+
+    // Últimas partidas
+    const matchDiv = document.getElementById('recent-matches');
+    matchDiv.innerHTML = '';
+    const recentSrc = p.recentMatches || [];
+    if (recentSrc.length === 0) {
+      matchDiv.innerHTML = '<div style="color:#475569;font-size:.85rem;text-align:center;padding:12px">Sin historial reciente disponible</div>';
+    } else {
+      recentSrc.forEach(m => {
+        const isWin = m.result === 'Win';
+        matchDiv.innerHTML += '<div class="match-row ' + (isWin ? 'match-win' : 'match-loss') + '">' +
+          '<img src="' + getChampIcon(m.champion) + '" style="width:28px;height:28px;border-radius:50%;border:1px solid #334155">' +
+          '<span style="font-weight:700;color:' + (isWin ? '#6ee7b7' : '#fca5a5') + ';min-width:48px">' + (isWin ? 'VICTORIA' : 'DERROTA') + '</span>' +
+          '<span style="color:#94a3b8;font-size:.8rem;flex:1">' + (m.role || '') + '  ' + m.champion + '</span>' +
+          '<span style="font-family:monospace;color:#e2e8f0;font-size:.8rem">' + m.kda + '</span>' +
+          '<span style="color:#fbbf24;font-weight:700;font-size:.8rem;min-width:50px;text-align:right">' + (m.points > 0 ? '+' : '') + m.points + 'p</span>' +
+          '<span style="color:#475569;font-size:.72rem;min-width:58px;text-align:right">' + (m.date || '') + '</span>' +
+        '</div>';
+      });
+    }
 
     // Radar
     const ctx = document.getElementById('radarChart').getContext('2d');
     new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: ['Dano', 'KDA', 'Vision', 'Farm', 'Supervivencia'],
+        labels: ['Daño', 'KDA', 'Visión', 'Farm', 'Supervivencia', 'KP'],
         datasets: [{
           data: [
-            Math.min(10, p.dpm / 100),
-            Math.min(10, p.kdaNum),
-            Math.min(10, p.vspm * 3),
-            Math.min(10, p.cs),
-            Math.max(0, 10 - (p.avgDeaths || 3))
+            Math.min(10, dpm / 80),
+            Math.min(10, kdaN * 1.5),
+            Math.min(10, vspm * 5),
+            Math.min(10, parseFloat(cs) * 1.3),
+            Math.max(0, 10 - parseFloat(p.avgDeaths || 3) * 1.5),
+            Math.min(10, parseFloat(p.kp || 0) / 10)
           ],
-          backgroundColor: arch.hex + '33',
+          backgroundColor: arch.hex + '28',
           borderColor: arch.hex,
-          pointBackgroundColor: '#fff',
+          pointBackgroundColor: arch.hex,
+          pointRadius: 4,
           borderWidth: 2
         }]
       },
       options: {
         maintainAspectRatio: false,
         scales: { r: {
-          angleLines: { color: 'rgba(255,255,255,0.1)' },
-          grid: { color: 'rgba(255,255,255,0.1)' },
-          pointLabels: { color: '#94a3b8', font: { family: 'Oswald', size: 13 } },
+          angleLines: { color: 'rgba(255,255,255,0.08)' },
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          pointLabels: { color: '#94a3b8', font: { family: 'Oswald', size: 12 } },
           ticks: { display: false, max: 10, min: 0 }
         }},
         plugins: { legend: { display: false } }
