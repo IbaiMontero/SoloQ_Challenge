@@ -5678,6 +5678,7 @@
         var val = sel ? sel.value : "ALL";
         sessionStorage.setItem("wg_active_division", val);
         refreshData();
+        if (typeof loadPickemData === 'function') loadPickemData();
       }
 
 
@@ -8896,29 +8897,71 @@
         });
       }
 
-      function resolveMatchAwards(matchId) {
-        if (
-          !confirm(
-            "¿Seguro que quieres CERRAR LAS VOTACIONES? Los votos manuales dejarán de contar y se registrará oficialmente.",
-          )
-        )
-          return;
-        document.getElementById("postgame-modal").style.cursor = "wait";
+      async function resolveMatchAwards(matchId) {
+        if (!confirm("¿Seguro que quieres CERRAR LAS VOTACIONES? Los votos manuales dejarán de contar y se registrará oficialmente.")) return;
+        
+        let modal = document.getElementById("postgame-modal");
+        modal.style.cursor = "wait";
+        
+        let targetBtn = event ? event.target : null;
+        let originalText = targetBtn ? targetBtn.innerHTML : "";
+        if (targetBtn) {
+            targetBtn.innerHTML = "⏳ Generando capturas...";
+            targetBtn.disabled = true;
+        }
 
-        google.script.run
-          .withSuccessHandler(function (res) {
-            alert(res.msg);
-            document.getElementById("postgame-modal").style.cursor = "default";
-            if (res.success) {
-              openPostGame(matchId, window.lastPostGameSearchId);
-              refreshStatsOnly();
-            }
-          })
-          .withFailureHandler(function (err) {
-            alert("❌ Error: " + err.message);
-            document.getElementById("postgame-modal").style.cursor = "default";
-          })
-          .resolveMatchAwardsBackend(matchId);
+        try {
+            // Generate both images silently
+            let base64Match = await generateMatchSummaryImage(true);
+            let base64MVP = await generateMVPImage(true);
+            
+            if (targetBtn) targetBtn.innerHTML = "🚀 Subiendo a Discord...";
+
+            // Send to Discord
+            google.script.run
+              .withSuccessHandler(function() {
+                 if (targetBtn) targetBtn.innerHTML = "✅ Cerrando Acta...";
+                 // Finally resolve the match
+                 google.script.run
+                  .withSuccessHandler(function (res) {
+                    alert(res.msg);
+                    modal.style.cursor = "default";
+                    if (res.success) {
+                      openPostGame(matchId, window.lastPostGameSearchId);
+                      refreshStatsOnly();
+                    }
+                  })
+                  .withFailureHandler(function (err) {
+                    alert("❌ Error: " + err.message);
+                    modal.style.cursor = "default";
+                  })
+                  .resolveMatchAwardsBackend(matchId);
+              })
+              .withFailureHandler(function(err) {
+                 console.error("Error subiendo imágenes: ", err);
+                 google.script.run
+                  .withSuccessHandler(function (res) {
+                    alert(res.msg + "\n(⚠️ Hubo un error publicando el resultado en Discord)");
+                    modal.style.cursor = "default";
+                    if (res.success) {
+                      openPostGame(matchId, window.lastPostGameSearchId);
+                      refreshStatsOnly();
+                    }
+                  })
+                  .resolveMatchAwardsBackend(matchId);
+              })
+              .publishMatchResultImages(matchId, base64Match, base64MVP);
+
+        } catch (e) {
+            console.error("Error generando imágenes", e);
+            // Fallback: just close the match without discord images
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    alert(res.msg);
+                    modal.style.cursor = "default";
+                    if (res.success) { openPostGame(matchId, window.lastPostGameSearchId); refreshStatsOnly(); }
+                })
+                .resolveMatchAwardsBackend(matchId);
       }
 
       function getPostGameSeriesIds(matchForLobby, searchId) {
@@ -10117,9 +10160,13 @@
 
     </script>
     <script>
-      function generateMatchSummaryImage() {
-        let data = window.lastPostGameData;
-        if (!data || !data.winners) return alert("No hay datos del partido.");
+      function generateMatchSummaryImage(silent = false) {
+        return new Promise((resolve, reject) => {
+          let data = window.lastPostGameData;
+          if (!data || !data.winners) {
+            if (!silent) alert("No hay datos del partido.");
+            return reject("No data");
+          }
 
         let winKills = data.winners.reduce((acc, p) => acc + p.k, 0);
         let losKills = data.losers.reduce((acc, p) => acc + p.k, 0);
@@ -10196,12 +10243,19 @@
             useCORS: true,
             allowTaint: false,
           }).then((canvas) => {
-            let link = document.createElement("a");
-            link.download = "Wargods_Resumen_Match.png";
-            link.href = canvas.toDataURL();
-            link.click();
-          });
+            let base64 = canvas.toDataURL("image/png");
+            if (silent) {
+              resolve(base64);
+            } else {
+              let link = document.createElement("a");
+              link.download = "Wargods_Resumen_Match.png";
+              link.href = base64;
+              link.click();
+              resolve(base64);
+            }
+          }).catch(reject);
         }, 800);
+        });
       }
 
       function voteMvpAce(matchId, searchId, nameEnc, type) {
@@ -10269,12 +10323,19 @@
             useCORS: true,
             allowTaint: false,
           }).then((canvas) => {
-            let link = document.createElement("a");
-            link.download = "MVP_" + mvp.name + ".png";
-            link.href = canvas.toDataURL();
-            link.click();
-          });
+            let base64 = canvas.toDataURL("image/png");
+            if (silent) {
+              resolve(base64);
+            } else {
+              let link = document.createElement("a");
+              link.download = "MVP_" + mvp.name + ".png";
+              link.href = base64;
+              link.click();
+              resolve(base64);
+            }
+          }).catch(reject);
         }, 500);
+        });
       }
 
       let seismographChart = null;
@@ -12920,12 +12981,13 @@
       // ============================================================
       function loadPickemData() {
         let summoner = localStorage.getItem("my_summoner_name") || "";
+        let division = getActiveDivision();
         google.script.run
           .withSuccessHandler(function (data) {
             renderPickemMatches(data.matches);
             renderPickemLeaderboard(data.leaderboard);
           })
-          .getWeeklyPickemData(summoner);
+          .getWeeklyPickemData(summoner, division);
       }
 
       function renderPickemMatches(matches) {

@@ -17911,11 +17911,11 @@ function sendNegotiationDiscordNotification(actionType, actingTeamName, opponent
   let contentMsg = "";
 
   if (actionType === 'PROPOSE') {
-      contentMsg = `ðŸ“¢ **¡NUEVA PROPUESTA DE HORARIO!** ${mention}\n\nEl equipo **${actingTeamName}** ha propuesto una fecha para vuestro partido de **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Propuesta:** ${proposedDate}\nðŸ“ **Notas:** ${notes || "Ninguna"}\n\nðŸ‘‰ [Entra aquí para Aceptar o Rechazar la fecha](${WEB_LINK})`;
+      contentMsg = `📢 **¡NUEVA PROPUESTA DE HORARIO!** ${mention}\n\nEl equipo **${actingTeamName}** ha propuesto una fecha para vuestro partido de **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Propuesta:** ${proposedDate}\nðŸ“ **Notas:** ${notes || "Ninguna"}\n\n👉 [Entra aquí para Aceptar o Rechazar la fecha](${WEB_LINK})`;
   } else if (actionType === 'ACCEPT') {
-      contentMsg = `âœ… **¡PACTO SELLADO!** ${mention}\n\nEl equipo **${actingTeamName}** ha **ACEPTADO** vuestra propuesta para la **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Oficial:** ${proposedDate}\n\n¡Preparad las armas! âš”ï¸`;
+      contentMsg = `✅ **¡PACTO SELLADO!** ${mention}\n\nEl equipo **${actingTeamName}** ha **ACEPTADO** vuestra propuesta para la **${matchRound}**.\n\nðŸ—“ï¸ **Fecha Oficial:** ${proposedDate}\n\n¡Preparad las armas! âš”ï¸`;
   } else if (actionType === 'REJECT') {
-      contentMsg = `âŒ **¡PROPUESTA RECHAZADA!** ${mention}\n\nEl equipo **${actingTeamName}** ha **RECHAZADO** vuestra propuesta de horario para la **${matchRound}**.\n\nðŸ‘‰ [Entra aquí para proponer otra fecha](${WEB_LINK})`;
+      contentMsg = `âŒ **¡PROPUESTA RECHAZADA!** ${mention}\n\nEl equipo **${actingTeamName}** ha **RECHAZADO** vuestra propuesta de horario para la **${matchRound}**.\n\n👉 [Entra aquí para proponer otra fecha](${WEB_LINK})`;
   }
 
   if (!contentMsg) return;
@@ -18061,6 +18061,7 @@ function getTournamentData() {
          riotId: String(mData[i][10] || ""), vod: vodUrl,      
          date: matchDate, proposedDate: propDate, proposedBy: propBy, 
          tCode: tCode, // Añadimos el código de torneo
+         div: String(mData[i][DIV_COL_MATCHES] || ""),
          votesA: votesMap[mId] ? Number(votesMap[mId].a) : 0, votesB: votesMap[mId] ? Number(votesMap[mId].b) : 0,
          volA: betsVolume[mId] ? betsVolume[mId].volA : 0, volB: betsVolume[mId] ? betsVolume[mId].volB : 0
      });
@@ -18678,7 +18679,7 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   } else {
       // Empate
       const payloadDraw = {
-        content: `ðŸš¨ **¡RESULTADO DEL TORNEO!** Atención capitanes: ${mentions}`,
+        content: `🚨 **¡RESULTADO DEL TORNEO!** Atención capitanes: ${mentions}`,
         embeds: [{
           title: `Empate técnico entre ${teamA} y ${teamB}`,
           description: `El partido ha finalizado en tablas con un **${scoreA} - ${scoreB}**. ¡Reparto de puntos para ambos!`,
@@ -18692,8 +18693,8 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
   const payload = {
     content: `ðŸ† **¡NUEVO RESULTADO OFICIAL DE LA LIGA!** Atención capitanes: ${mentions}`,
     embeds: [{
-      title: `ðŸ’¥ ${winner} aplasta a ${loser} ðŸ’¥`,
-      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\nðŸ‘€ *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
+      title: `💥 ${winner} aplasta a ${loser} 💥`,
+      description: `El enfrentamiento ha terminado con un contundente **${displayScore}** a favor de **${winner}**.\n\n👀 *Revisando las quinielas (Pick'ems)... los que apostaron por ${loser} acaban de perder su oro.*`,
       color: color,
       image: { url: "https://images.contentstack.io/api/v1/assets/5931bc10-d8d5-4dc2-a720-032a84352a16/e4df94cc-19d1-41d8-a1fb-3b4ee3f7e5d8/Summoners_Rift_1.jpg" },
       footer: { text: "Wargods Premier - Resultados Oficiales" }
@@ -18710,6 +18711,69 @@ function announceTournamentResultToDiscord(teamA, teamB, scoreA, scoreB) {
     Logger.log("Error mandando resultado a Discord: " + e.message);
   }
 }
+
+function publishMatchResultImages(matchId, base64Match, base64MVP) {
+  // El webhook de resultados proporcionado por el usuario
+  const RESULTS_WEBHOOK_URL = "https://discord.com/api/webhooks/1441052410402570360/FRdkGyD-gdtgadnofato00bxOizHgXf7KV6Yjulu3mnKRAtT3owNaBlEJS7J8QIjFQo1";
+  
+  if (!base64Match || !base64MVP) return { success: false, msg: "Faltan las imágenes." };
+
+  try {
+    const boundary = "----WebKitFormBoundary" + Utilities.getUuid().replace(/-/g, "");
+    let dataPieces = [];
+
+    // Texto del mensaje principal
+    dataPieces.push("--" + boundary);
+    dataPieces.push("Content-Disposition: form-data; name=\"payload_json\"");
+    dataPieces.push("Content-Type: application/json\r\n");
+    dataPieces.push(JSON.stringify({
+      content: `🏆 **NUEVO ACTA OFICIAL: PARTIDO ${matchId}** 🏆\n\nResultados y MVP del enfrentamiento generados en la web oficial.`,
+    }));
+
+    // Blob de Match
+    let b64MatchData = base64Match.split(',')[1];
+    let blobMatch = Utilities.newBlob(Utilities.base64Decode(b64MatchData), 'image/png', `Resumen_${matchId}.png`);
+    dataPieces.push("--" + boundary);
+    dataPieces.push(`Content-Disposition: form-data; name="file[0]"; filename="${blobMatch.getName()}"`);
+    dataPieces.push("Content-Type: image/png\r\n");
+    dataPieces.push(blobMatch.getBytes());
+
+    // Blob de MVP
+    let b64MVPData = base64MVP.split(',')[1];
+    let blobMVP = Utilities.newBlob(Utilities.base64Decode(b64MVPData), 'image/png', `MVP_${matchId}.png`);
+    dataPieces.push("--" + boundary);
+    dataPieces.push(`Content-Disposition: form-data; name="file[1]"; filename="${blobMVP.getName()}"`);
+    dataPieces.push("Content-Type: image/png\r\n");
+    dataPieces.push(blobMVP.getBytes());
+
+    dataPieces.push("--" + boundary + "--\r\n");
+
+    let payload = [];
+    for (let i = 0; i < dataPieces.length; i++) {
+      if (typeof dataPieces[i] === "string") {
+        payload = payload.concat(Utilities.newBlob(dataPieces[i] + "\r\n").getBytes());
+      } else {
+        payload = payload.concat(dataPieces[i]);
+        payload = payload.concat(Utilities.newBlob("\r\n").getBytes());
+      }
+    }
+
+    const options = {
+      method: "post",
+      contentType: "multipart/form-data; boundary=" + boundary,
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    let response = UrlFetchApp.fetch(RESULTS_WEBHOOK_URL, options);
+    Logger.log("Discord Publish Code: " + response.getResponseCode());
+    return { success: true };
+  } catch (e) {
+    Logger.log("Error publicando imágenes en Discord: " + e.message);
+    return { success: false, msg: e.message };
+  }
+}
+
 
 /* ==========================================================
              OBTENER POST-GAME LOBBY (CON TANK, MVP, TIMELINE Y EVENTOS)
@@ -19642,7 +19706,7 @@ function getNewsAndTrends() {
   let hotTeam = [...teams].filter(t => (t.streak||0) >= 2).sort((a,b)=>(b.streak||0)-(a.streak||0))[0];
   let coldTeam = [...teams].filter(t => (t.streak||0) <= -2).sort((a,b)=>(a.streak||0)-(b.streak||0))[0];
   if (hotTeam) {
-    headlines.push({ type: 'EN RACHA', text: `ðŸ”¥ **${hotTeam.name}** está IMPARABLE: ${hotTeam.streak} victorias seguidas. El rival de turno tiembla.`, priority: 2 });
+    headlines.push({ type: 'EN RACHA', text: `🔥 **${hotTeam.name}** está IMPARABLE: ${hotTeam.streak} victorias seguidas. El rival de turno tiembla.`, priority: 2 });
   }
   if (coldTeam) {
     headlines.push({ type: 'TILT ALERT', text: `â„ï¸ **${coldTeam.name}** en caída libre: ${Math.abs(coldTeam.streak)} derrotas consecutivas. ¿Tocan cambios?`, priority: 3 });
@@ -20323,7 +20387,7 @@ function autoResolveTournamentMatch(tMatchId, riotId, tournamentCode) {
     const updateRes = updateMatchResult(tMatchId, pointsA, pointsB, riotId);
     
     if (updateRes.success) {
-        return { success: true, msg: `âœ… ¡MAGIA PURA! La partida se ha descargado${tournamentCode ? ' (vía Código de Torneo)' : ''}, se detectó al ganador automáticamente y las stats están listas.` };
+        return { success: true, msg: `✅ ¡MAGIA PURA! La partida se ha descargado${tournamentCode ? ' (vía Código de Torneo)' : ''}, se detectó al ganador automáticamente y las stats están listas.` };
     } else {
         return { success: false, msg: "Fallo al guardar el resultado final en el cuadro." };
     }
@@ -22622,7 +22686,7 @@ Genera una edición completa usando EXACTAMENTE estas secciones (mantén los emo
 
 ðŸ“º **FLASH DE ÚLTIMA HORA**: [TITULAR impactante y sensacionalista basado en un resultado REAL, más una frase de intro dramática]
 
-ðŸ”¥ **LA NOTICIA BOMBA**: [Destaca el resultado más sorprendente o la paliza de la jornada. Menciona el marcador y nombres reales]
+🔥 **LA NOTICIA BOMBA**: [Destaca el resultado más sorprendente o la paliza de la jornada. Menciona el marcador y nombres reales]
 
 ðŸ¥‡ **EL MEJOR DE LA SEMANA**: [Análisis de ${topScorer ? topScorer.name : 'el top jugador'} con sus estadísticas reales. Por qué es intocable]
 
@@ -22718,7 +22782,7 @@ function buildGazetteTemplate_(d) {
     `¡SE ROMPE LA GRIETA! **${lider}** manda, pero esto está más caliente que nunca.`
   ])}`);
 
-  secciones.push(`ðŸ”¥ **LA NOTICIA BOMBA**\n${bombazo}`);
+  secciones.push(`🔥 **LA NOTICIA BOMBA**\n${bombazo}`);
 
   secciones.push(`ðŸ¥‡ **EL MEJOR DE LA SEMANA**\n${pick([
     `**${crack}** (${crackTeam}) es INTOCABLE. ${crackPts} puntos que lo colocan en otra dimensión. El resto, a verlo por la tele.`,
@@ -22765,11 +22829,11 @@ function getAllGazettes() {
 // ==========================================================
 // 13. PICK'EM SEMANAL
 // ==========================================================
-function getWeeklyPickemData(summonerName) {
+function getWeeklyPickemData(summonerName, divisionFilter) {
   const tData = getTournamentData();
   if (!tData) return { matches: [], leaderboard: [] };
 
-  let pendingMatches = tData.matches.filter(m => m.status !== 'COMPLETED');
+  let pendingMatches = tData.matches.filter(m => m.status !== 'COMPLETED' && _passesDivisionFilter_(m.div, divisionFilter));
   
   // Leer predicciones existentes del usuario
   const ss = SpreadsheetApp.getActive();
@@ -22821,13 +22885,13 @@ function submitWeeklyPickem(summonerName, matchId, teamIdx) {
           // Actualizar en vez de duplicar
           sheet.getRange(i + 1, 4).setValue(teamIdx);
           sheet.getRange(i + 1, 1).setValue(new Date());
-          return { success: true, msg: 'âœ… Predicción actualizada!' };
+          return { success: true, msg: '✅ Predicción actualizada!' };
         }
       }
     }
 
     sheet.appendRow([new Date(), summonerName, matchId, teamIdx, '', 0]);
-    return { success: true, msg: 'âœ… ¡Predicción registrada! Buena suerte.' };
+    return { success: true, msg: '✅ ¡Predicción registrada! Buena suerte.' };
   } catch(e) { return { success: false, msg: 'Error: ' + e.message }; }
   finally { lock.releaseLock(); }
 }
@@ -23167,11 +23231,11 @@ function getBattlePassRewards(currentLevel) {
     if (lvl === 5) { reward.name = 'ðŸ¥‰ Bronce'; reward.desc = '250 WG Coins'; }
     else if (lvl === 10) { reward.name = 'ðŸ¥ˆ Plata'; reward.desc = '500 WG Coins + Título "Veterano"'; }
     else if (lvl === 15) { reward.name = 'ðŸ¥‡ Oro'; reward.desc = '750 WG Coins'; }
-    else if (lvl === 20) { reward.name = 'ðŸ’Ž Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
-    else if (lvl === 25) { reward.name = 'ðŸ‘‘ Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
+    else if (lvl === 20) { reward.name = '💎 Diamante'; reward.desc = '1000 WG Coins + Badge Exclusivo'; }
+    else if (lvl === 25) { reward.name = '👑 Rey'; reward.desc = '1500 WG Coins + Título "Leyenda"'; }
     else if (lvl === 30) { reward.name = 'âš¡ Ascendido'; reward.desc = '2000 WG Coins'; }
     else if (lvl === 35) { reward.name = 'ðŸŒŸ Estelar'; reward.desc = '2500 WG Coins + Borde Dorado'; }
-    else if (lvl === 40) { reward.name = 'ðŸ”¥ Infernal'; reward.desc = '3000 WG Coins'; }
+    else if (lvl === 40) { reward.name = '🔥 Infernal'; reward.desc = '3000 WG Coins'; }
     else if (lvl === 45) { reward.name = 'ðŸŒ€ Dimensional'; reward.desc = '4000 WG Coins + Título "Dios"'; }
     else if (lvl === 50) { reward.name = 'ðŸ† WARGOD'; reward.desc = '5000 WG Coins + Nombre Dorado'; }
     rewards.push(reward);
@@ -23999,7 +24063,7 @@ function registerSoloAgent(data) {
       true
     ]);
 
-    return { ok: true, msg: 'âœ… Perfil publicado. ¡Ya eres visible para todos los equipos!' };
+    return { ok: true, msg: '✅ Perfil publicado. ¡Ya eres visible para todos los equipos!' };
   } catch (e) {
     return { ok: false, error: 'âŒ Error al guardar: ' + e.message };
   } finally {
@@ -24374,7 +24438,7 @@ function setupReclutamientoSheets() {
   });
 
   const msg = created.length > 0
-    ? 'âœ… Hojas creadas: ' + created.join(', ')
+    ? '✅ Hojas creadas: ' + created.join(', ')
     : 'â„¹ï¸ Todas las hojas ya existían.';
 
   Logger.log(msg);
