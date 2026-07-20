@@ -1164,6 +1164,13 @@
             magicDamageDealtToChampions: parseInt(p.MAGIC_DAMAGE_DEALT_TO_CHAMPIONS || p.magicDamageDealtToChampions || 0),
             physicalDamageDealtToChampions: parseInt(p.PHYSICAL_DAMAGE_DEALT_TO_CHAMPIONS || p.physicalDamageDealtToChampions || 0),
             trueDamageDealtToChampions: parseInt(p.TRUE_DAMAGE_DEALT_TO_CHAMPIONS || p.trueDamageDealtToChampions || 0),
+            // Objetivos por jugador (el backend los suma por equipo -> teamInfo)
+            dragonKills:   parseInt(p.DRAGON_KILLS || 0),
+            baronKills:    parseInt(p.BARON_KILLS || 0),
+            heraldKills:   parseInt(p.RIFT_HERALD_KILLS || 0),
+            hordeKills:    parseInt(p.HORDE_KILLS || p.VOID_MONSTER_KILL || 0),
+            turretsKilled: parseInt(p.TURRETS_KILLED || 0),
+            inhibitorKills: parseInt(p.BARRACKS_KILLED || p.INHIBITORS_KILLED || 0),
             goldTimeline,
             eventsList,
           };

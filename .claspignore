@@ -18,3 +18,5 @@
 **/package-lock.json
 **/combine_and_check.js
 **/extracted_*.js
+**/fix_emojis.js
+**/scratch/**

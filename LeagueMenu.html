@@ -1294,12 +1294,14 @@
             >
               ↻ RECARGAR
             </button>
-            <button
-              onclick="openRoflImportModal()"
-              class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition"
-            >
-              📄 IMPORTAR ROFL
-            </button>
+            <span id="rofl-import-btn-container" style="display: none;">
+              <button
+                onclick="openRoflImportModal()"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold transition ml-2"
+              >
+                📄 IMPORTAR ROFL
+              </button>
+            </span>
           </div>
         </div>
 
@@ -6277,6 +6279,12 @@
 
       function renderDashboard(data) {
         document.getElementById("dashboard-state").style.display = "flex";
+        if (currentUserRole === 'admin') {
+            document.getElementById("rofl-import-btn-container").style.display = "inline-block";
+        } else {
+            document.getElementById("rofl-import-btn-container").style.display = "none";
+        }
+
 
         const getMatchHypeInfo = (m) => {
           let names = String(m.names || "").split(" vs ");
@@ -7100,14 +7108,15 @@
                     )
                     .join("");
 
+                  let safeTName = enc(teamInfo.name);
                   let html =
-                    '<div class="flex items-center gap-4 mb-4 border-b border-slate-700 pb-4 text-left">';
+                    '<div class="flex items-center gap-4 mb-4 border-b border-slate-700 pb-4 text-left p-2 rounded-xl hover:bg-slate-800/50 cursor-pointer transition-all hover:scale-[1.02]" onclick="openTeamDetails(\'' + safeTName + '\')">';
                   html +=
                     '<img src="' +
                     getLogo(logoUrl) +
                     '" class="w-16 h-16 object-contain bg-black rounded-xl border-2 border-slate-700 p-1 shadow-lg">';
                   html +=
-                    '<div><div class="font-oswald text-2xl text-white tracking-widest truncate w-full">' +
+                    '<div><div class="font-oswald text-2xl text-white tracking-widest truncate w-full hover:text-blue-400 transition">' +
                     escHtml(teamInfo.name) +
                     "</div>";
                   html +=
@@ -8962,6 +8971,7 @@
                     if (res.success) { openPostGame(matchId, window.lastPostGameSearchId); refreshStatsOnly(); }
                 })
                 .resolveMatchAwardsBackend(matchId);
+        }
       }
 
       function getPostGameSeriesIds(matchForLobby, searchId) {
@@ -9819,10 +9829,20 @@
               )
               .join("");
 
+            let bansHtml = "";
+            if (res.bans && res.bans.length > 0) {
+              bansHtml = '<div class="bg-[#1c1c1f] border border-slate-700 rounded-xl p-4 mb-4 flex flex-col gap-2"><div class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1 flex items-center gap-2"><span class="text-red-500 text-sm leading-none">🚫</span> Campeones Baneados</div><div class="flex flex-wrap gap-2">';
+              res.bans.forEach(b => {
+                bansHtml += '<div class="flex items-center gap-2 bg-slate-800/50 rounded-full pr-3 pl-1 py-1 border border-red-900/30"><img src="' + getChampIcon(b) + '" class="w-6 h-6 rounded-full grayscale opacity-80 border border-slate-600" onerror="this.style.display=\'none\'"><span class="text-xs font-bold text-slate-400 line-through decoration-red-500/50">' + escHtml(b) + '</span></div>';
+              });
+              bansHtml += '</div></div>';
+            }
+
             content.innerHTML =
               seriesBanner +
               mapTabsHtml +
               "<div class=\"col-span-1 lg:col-span-2 flex border-b border-slate-700 mb-4 pb-2 gap-4\"><button onclick=\"document.getElementById('overview-tab').classList.remove('hidden'); document.getElementById('map-tab').classList.add('hidden'); this.classList.add('text-white', 'border-b-2', 'border-white'); this.nextElementSibling.classList.remove('text-white', 'border-b-2', 'border-white'); this.nextElementSibling.classList.add('text-slate-500');\" class=\"text-sm font-bold text-white border-b-2 border-white pb-2 px-2 transition\">Resumen (Overview)</button><button onclick=\"document.getElementById('overview-tab').classList.add('hidden'); document.getElementById('map-tab').classList.remove('hidden'); this.classList.add('text-white', 'border-b-2', 'border-white'); this.previousElementSibling.classList.remove('text-white', 'border-b-2', 'border-white'); this.previousElementSibling.classList.add('text-slate-500');\" class=\"text-sm font-bold text-slate-500 pb-2 px-2 transition\">Replay Map</button></div><div id=\"overview-tab\" class=\"col-span-1 lg:col-span-2 w-full\"><div class=\"bg-[#27272a] border border-slate-700 rounded-xl p-4 mb-4 relative\"><div class=\"flex justify-between items-center bg-[#3eb4c0] text-white font-bold text-[10px] px-3 py-1.5 rounded-t-lg -mt-4 -mx-4 mb-4\">GOLD GRAPH & TIMELINE</div><div style=\"height: 200px; width: 100%;\"><canvas id=\"goldTimelineChart\"></canvas></div><div id=\"objective-timeline-container\"></div><div id=\"momentum-tracker-container\" class=\"mt-6 border-t border-slate-700 pt-4\"></div></div>" +
+              bansHtml +
               renderTeam(res.winners, true) +
               renderTeam(res.losers, false) +
               advancedStatsHtml +
@@ -10278,9 +10298,13 @@
           .castMvpVoteBackend(matchId, dec(nameEnc), voter, type);
       }
 
-      function generateMVPImage() {
+      function generateMVPImage(silent = false) {
+        return new Promise((resolve, reject) => {
         let data = window.lastPostGameData;
-        if (!data || !data.winners) return;
+        if (!data || !data.winners) {
+            if (!silent) alert("No hay datos del partido.");
+            return reject("No data");
+        }
 
         let mvpName = data.officialMvp;
         let mvp = null;
@@ -11030,6 +11054,12 @@
         const shortRole =
           roleIcons[p.role ? p.role.toUpperCase() : "FILL"] || "FILL";
 
+        // Equipo + división para mostrar como texto en el cromo
+        const _tdParts = [];
+        if (p.team && p.team !== "Agente Libre") _tdParts.push(p.team);
+        if (p.division) _tdParts.push(p.division);
+        const teamDivText = _tdParts.join("  ·  ");
+
         let cIcon = getChampSplash(
           p.champs ? p.champs.split(",")[0].trim() : "",
         );
@@ -11128,7 +11158,7 @@
           (escHtml(p.name)) + '</div> <div style="color: ' + (arch.hex) +
           '; font-size: 18px; font-weight: bold; letter-spacing: 5px; margin-top: -5px;">' + (arch.icon) +
           ' ' + (arch.name) +
-          '</div> </div> <div style="display: flex; justify-content: space-between; padding: 30px; flex: 1; align-items: center;"> <div style="width: 45%; display: flex; flex-direction: column; gap: 20px;"> <div style="display: flex; justify-content: space-between; font-size: 28px;"> <span style="color: #fff; font-weight: 900;">' +
+          '</div>' + (teamDivText ? ('<div style="color: #cbd5e1; font-size: 16px; font-weight: 600; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; text-shadow: 1px 1px 3px #000;">' + (escHtml(teamDivText)) + '</div>') : '') + ' </div> <div style="display: flex; justify-content: space-between; padding: 30px; flex: 1; align-items: center;"> <div style="width: 45%; display: flex; flex-direction: column; gap: 20px;"> <div style="display: flex; justify-content: space-between; font-size: 28px;"> <span style="color: #fff; font-weight: 900;">' +
           (sc[0].v) + '</span><span style="color: ' + (arch.hex) + '; font-weight: 600;">' + (sc[0].l) +
           '</span> </div> <div style="display: flex; justify-content: space-between; font-size: 28px;"> <span style="color: #fff; font-weight: 900;">' +
           (sc[2].v) + '</span><span style="color: ' + (arch.hex) + '; font-weight: 600;">' + (sc[2].l) +
@@ -12981,13 +13011,13 @@
       // ============================================================
       function loadPickemData() {
         let summoner = localStorage.getItem("my_summoner_name") || "";
-        let division = getActiveDivision();
+        // El Pick'em muestra SIEMPRE los partidos de TODAS las divisiones.
         google.script.run
           .withSuccessHandler(function (data) {
             renderPickemMatches(data.matches);
             renderPickemLeaderboard(data.leaderboard);
           })
-          .getWeeklyPickemData(summoner, division);
+          .getWeeklyPickemData(summoner, 'all');
       }
 
       function renderPickemMatches(matches) {
@@ -13021,7 +13051,10 @@
           html += '<div class="bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-700 rounded-2xl p-4 shadow-lg">' +
             // Cabecera: jornada + votos totales
             '<div class="flex items-center justify-between mb-3">' +
-              '<span class="text-[10px] text-pink-400 font-black uppercase tracking-widest bg-pink-500/10 px-2 py-1 rounded-md border border-pink-500/20">' + escHtml(m.round || "Jornada") + '</span>' +
+              '<div class="flex items-center gap-2">' +
+                '<span class="text-[10px] text-pink-400 font-black uppercase tracking-widest bg-pink-500/10 px-2 py-1 rounded-md border border-pink-500/20">' + escHtml(m.round || "Jornada") + '</span>' +
+                (m.div ? '<span class="text-[10px] text-cyan-300 font-black uppercase tracking-widest bg-cyan-500/10 px-2 py-1 rounded-md border border-cyan-500/20">' + escHtml(m.div) + '</span>' : '') +
+              '</div>' +
               '<span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">' + totalV + ' voto' + (totalV === 1 ? "" : "s") + '</span>' +
             '</div>' +
             // Botones de equipos

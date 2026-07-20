@@ -75,4 +75,11 @@ Suite de herramientas de análisis:
 ## ✒️ Créditos
 
 Desarrollado para la **Wargods Premier League**.  
-*Versión Actual: 16.5 (Master Edition) - "The Omnipotence Update"*
+*Versión Actual: 16.6 (Master Edition) - "The Omnipotence Update"*
+*(Última actualización: 20 de Julio)*
+
+### 🆕 Novedades Recientes (v16.6):
+- **Análisis de Objetivos**: Integración de extracción de objetivos individuales por jugador (Dragones, Barones, Heraldos, Torres, Inhibidores) mediante el `RoflParser`.
+- **Mejoras en LeagueMenu**: Inclusión de baneos de campeones en el resumen post-partida, rediseño de cromos de jugador añadiendo División y Equipo, y soporte global en el Pick'em para encuentros multiligas.
+- **Perfil de Jugador Mejorado**: Nuevo diseño responsivo para la Pool de Campeones incluyendo total de partidas y porcentaje de victorias. Además se ha desglosado el detalle de KDA (Asesinatos/Muertes/Asistencias).
+- **Core (Code.js)**: Optimización del manejo asíncrono para la generación de imágenes y adaptaciones en los endpoints de recolección de estadísticas.

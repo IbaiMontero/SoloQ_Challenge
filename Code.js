@@ -19370,37 +19370,59 @@ function getMatchScoutingData(matchId) {
     function getPlayerScouting(playerName) {
         const nameLow = playerName.toLowerCase();
         let roles = {}; let champs = {};
-        let games = 0, wins = 0, totalDmg = 0, totalDur = 0, k=0, d=0, a=0;
+        let games = 0, wins = 0, totalDmg = 0, totalDur = 0, totalGold = 0, totalVis = 0, k=0, d=0, a=0;
         
         for (let i = 1; i < allMatches.length; i++) {
             if (String(allMatches[i][2]).trim().toLowerCase() === nameLow) {
                 games++;
                 let r = String(allMatches[i][4]).toUpperCase();
                 let c = String(allMatches[i][3]);
-                if(r === 'UTILITY') r = 'SUPPORT'; if(r === 'BOT') r = 'BOTTOM'; if(r === 'MID') r = 'MIDDLE';
                 roles[r] = (roles[r] || 0) + 1;
                 champs[c] = (champs[c] || 0) + 1;
                 
                 if ((String(allMatches[i][5]) || '').includes('Win')) wins++;
                 k += Number(allMatches[i][6]||0); d += Number(allMatches[i][7]||0); a += Number(allMatches[i][8]||0);
                 totalDmg += Number(allMatches[i][9]||0); totalDur += Number(allMatches[i][11]||1);
+                totalGold += Number(allMatches[i][10]||0); totalVis += Number(allMatches[i][13]||0); // Assuming Gold is 10 and Vision is 13.
             }
         }
 
         let mainRole = "FILL"; let maxRole = 0;
         for(let r in roles) { if(roles[r] > maxRole) { maxRole = roles[r]; mainRole = r; } }
+        
+        // Normalize role for frontend
+        if (mainRole === 'SUPPORT') mainRole = 'SUP';
+        if (mainRole === 'BOTTOM') mainRole = 'ADC';
+        if (mainRole === 'MIDDLE') mainRole = 'MID';
+        if (mainRole === 'JUNGLE' || mainRole === 'JUNGLE_NEW') mainRole = 'JNG';
         let topChamps = Object.keys(champs).sort((a,b) => champs[b] - champs[a]).slice(0, 3);
         
         const wr = games > 0 ? Math.round((wins/games)*100) : 0;
         const dpm = totalDur > 0 ? Math.round(totalDmg/totalDur) : 0;
+        const gpm = totalDur > 0 ? Math.round(totalGold/totalDur) : 0;
+        const vspm = totalDur > 0 ? Number((totalVis/totalDur).toFixed(2)) : 0;
         const kda = d > 0 ? ((k+a)/d).toFixed(2) : (k+a).toFixed(2);
 
-        return { name: playerName, mainRole: mainRole, topChamps: topChamps, wr: wr, dpm: dpm, kda: kda };
+        return { name: playerName, mainRole: mainRole, topChamps: topChamps, wr: wr, dpm: dpm, gpm: gpm, vspm: vspm, kda: kda, _games: games, _totalDur: totalDur, _totalVis: totalVis };
     }
 
+    const teamAPlayers = teamA.roster.map(getPlayerScouting);
+    const teamBPlayers = teamB.roster.map(getPlayerScouting);
+
+    const calcTeamAvg = (players) => {
+        let totalD = 0, totalV = 0, gCount = 0;
+        players.forEach(p => { totalD += p._totalDur; totalV += p._totalVis; gCount += p._games; });
+        let avgD = gCount > 0 ? (totalD / gCount).toFixed(1) : "0.0";
+        let avgV = gCount > 0 ? ((totalV / gCount) * 5).toFixed(1) : "0.0";
+        return { avgDur: avgD, avgVis: avgV };
+    };
+
+    const tAAvg = calcTeamAvg(teamAPlayers);
+    const tBAvg = calcTeamAvg(teamBPlayers);
+
     return {
-        teamA: { name: teamA.name, players: teamA.roster.map(getPlayerScouting) },
-        teamB: { name: teamB.name, players: teamB.roster.map(getPlayerScouting) }
+        teamA: { name: teamA.name, players: teamAPlayers, avgDuration: tAAvg.avgDur, avgVision: tAAvg.avgVis },
+        teamB: { name: teamB.name, players: teamBPlayers, avgDuration: tBAvg.avgDur, avgVision: tBAvg.avgVis }
     };
 }
 
@@ -19420,12 +19442,17 @@ function getTournamentStatsForWeb(roundFilter) {
 
   const tData = teamsSheet.getDataRange().getValues();
   const playerTeamMap = {}; 
+  const playerDivisionMap = {}; // jugador -> división (TOURNAMENT_TEAMS col K, índice 10)
   for (let i = 1; i < tData.length; i++) {
       const teamName = String(tData[i][1]).trim();
+      const teamDiv = String(tData[i][10] || "").trim();
       const rosterStr = String(tData[i][8] || ""); 
       if (rosterStr) {
           rosterStr.split(',').forEach(p => {
-              if(p.trim()) playerTeamMap[normalizeName(p)] = teamName;
+              if(p.trim()) {
+                playerTeamMap[normalizeName(p)] = teamName;
+                if (teamDiv) playerDivisionMap[normalizeName(p)] = teamDiv;
+              }
           });
       }
   }
@@ -19551,7 +19578,7 @@ function getTournamentStatsForWeb(roundFilter) {
 
           //          AQU     EMPAQUETAMOS TODO PARA MANDARLO A LA WEB
           result.push({
-              name: s.name, team: s.team, role: Object.keys(s.rolesCount).reduce((a, b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL"), games: s.games,
+              name: s.name, team: s.team, division: playerDivisionMap[key] || '', role: Object.keys(s.rolesCount).reduce((a, b) => s.rolesCount[a] > s.rolesCount[b] ? a : b, "FILL"), games: s.games,
               winrate: winrate, mvps: myVotes.mvps, aces: myVotes.aces,
               kp: avgKp, kdaNum: kdaNum, kdaText: (s.kills/s.games).toFixed(1) + '/' + (s.deaths/s.games).toFixed(1) + '/' + (s.assists/s.games).toFixed(1),
               avgDeaths: (s.deaths/s.games).toFixed(1), cs: avgCs, vspm: (s.vsTotal/s.games).toFixed(2), dpm: dpm, gpm: avgGpm, champs: Array.from(s.champs).join(', '),
@@ -20736,7 +20763,7 @@ function getAllDashboardData(roundFilter, divisionFilter) {
   }
   let oraclesArr = Object.values(oracles).filter(o => o.correct > 0).sort((a,b) => b.correct - a.correct).slice(0, 5);
 
-  // â”€â”€ 6. NEWS (antes getNewsAndTrends) - reutiliza tournament y statsResult â”€â”€
+  // ── 6. NEWS (antes getNewsAndTrends) - reutiliza tournament y statsResult ──
   let streamDate = "";
   if (infoSheet) { let rawDate = infoSheet.getRange('B5').getValue(); if (rawDate instanceof Date) streamDate = rawDate.toISOString(); else if (typeof rawDate === 'string' && rawDate.trim() !== "") streamDate = rawDate.trim().replace(" ", "T"); }
   let headlines = [];
@@ -20744,26 +20771,58 @@ function getAllDashboardData(roundFilter, divisionFilter) {
     let mnData = manualNewsSheet.getRange(2, 1, Math.min(manualNewsSheet.getLastRow() - 1, 5), 3).getValues();
     mnData.forEach(row => { if (row[1]) headlines.push({ type: row[0] || 'ULTIMA HORA', text: row[1], priority: 0 }); });
   }
-  if (tournament.matches) {
-    let pending = tournament.matches.filter(m => m.status !== 'COMPLETED');
+
+  // Generate news by Division
+  WPL_DIVISIONS.forEach((divName) => {
+    const divTeams = (tournament.teams || []).filter(t => t.division === divName);
+    const divPlayers = (statsResult || []).filter(p => p.division === divName);
+    if (divTeams.length === 0 && divPlayers.length === 0) return;
+
+    // IA Analytics: Upcoming match tension
+    let pending = (tournament.matches || []).filter(m => m.status !== 'COMPLETED' && m.division === divName);
     if (pending.length > 0) {
       let nextMatch = pending.sort((a,b) => ((b.votesA||0)+(b.votesB||0)) - ((a.votesA||0)+(a.votesB||0)))[0];
       let names = nextMatch.names.split(' vs '); let tA = names[0].trim(); let tB = names[1].trim();
-      let bestA = statsResult.filter(p => p.team === tA).sort((a,b) => b.points - a.points)[0];
-      let bestB = statsResult.filter(p => p.team === tB).sort((a,b) => b.points - a.points)[0];
-      if (bestA && bestB) headlines.push({ type: 'IA ANALYTICS', text: `Análisis del próximo duelo: ¿Podrá el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?`, priority: 1 });
-      else headlines.push({ type: 'IA ANALYTICS', text: `Tensión máxima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.`, priority: 1 });
+      let bestA = divPlayers.filter(p => p.team === tA).sort((a,b) => b.points - a.points)[0];
+      let bestB = divPlayers.filter(p => p.team === tB).sort((a,b) => b.points - a.points)[0];
+      if (bestA && bestB) {
+          headlines.push({ type: `[${divName.toUpperCase()}] IA ANALYTICS`, text: `Análisis del próximo duelo: ¿Podrá el poder ofensivo de **${bestA.name}** doblegar a la defensa liderada por **${bestB.name}**?`, priority: 1 });
+      } else {
+          headlines.push({ type: `[${divName.toUpperCase()}] IA ANALYTICS`, text: `Tensión máxima en la Grieta: **${tA}** y **${tB}** calientan motores para un enfrentamiento decisivo.`, priority: 1 });
+      }
     }
-  }
-  const onFire = statsResult.filter(p => p.trend === 'ON_FIRE');
-  if (onFire.length > 0) { let pf = onFire[Math.floor(Math.random() * onFire.length)]; headlines.push({ type: 'HOT', text: `Estado de gracia: **${pf.name}** está ON FIRE. Sus rivales deberían plantearse banear sus mejores campeones en el próximo draft.`, priority: 2 }); }
-  const cold = statsResult.filter(p => p.trend === 'COLD');
-  if (cold.length > 0) { let pc = cold[Math.floor(Math.random() * cold.length)]; headlines.push({ type: 'TILT ALERT', text: `Alarma roja para **${pc.name}**, que atraviesa una racha de derrotas. ¿Podrá romper la maldición en su próximo partido?`, priority: 2 }); }
-  statsResult.forEach(p => { if (p.mvps >= 2) headlines.push({ type: 'ALERTA', text: '¡Incontrolable! **' + p.name + '** encadena ' + p.mvps + ' MVPs y es el terror de la liga.', priority: 3 }); });
-  const topDpm = [...statsResult].sort((a,b) => b.dpm - a.dpm)[0];
-  if (topDpm && topDpm.dpm > 800) headlines.push({ type: 'REPORTE', text: 'Poder destructivo: **' + topDpm.name + '** revienta los medidores con una media de DPM de ' + topDpm.dpm + '.', priority: 3 });
-  let hasGazette = false;
-  if (gazetteSheet && gazetteSheet.getLastRow() >= 2) { hasGazette = true; headlines.push({ type: 'ðŸ—žï¸ GACETA', text: 'Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!', priority: 0 }); }
+
+    // ON FIRE / COLD streaks (Teams)
+    let hotTeam = divTeams.filter(t => t.streak >= 2).sort((a,b) => b.streak - a.streak)[0];
+    if (hotTeam) {
+        headlines.push({ type: `[${divName.toUpperCase()}] EN RACHA`, text: `🔥 **${hotTeam.name}** está imparable con ${hotTeam.streak} victorias seguidas.`, priority: 2 });
+    }
+    let coldTeam = divTeams.filter(t => t.streak <= -2).sort((a,b) => (a.streak) - (b.streak))[0];
+    if (coldTeam) {
+        headlines.push({ type: `[${divName.toUpperCase()}] CRISIS`, text: `🚨 **${coldTeam.name}** en caída libre acumulando ${Math.abs(coldTeam.streak)} derrotas consecutivas.`, priority: 2 });
+    }
+
+    // Player Highlights
+    const onFire = divPlayers.filter(p => p.trend === 'ON_FIRE');
+    if (onFire.length > 0) {
+        let pf = onFire[Math.floor(Math.random() * onFire.length)];
+        headlines.push({ type: `[${divName.toUpperCase()}] HOT`, text: `Estado de gracia: **${pf.name}** está ON FIRE. Sus rivales deberían plantearse banear sus campeones.`, priority: 2 });
+    }
+    const cold = divPlayers.filter(p => p.trend === 'COLD');
+    if (cold.length > 0) {
+        let pc = cold[Math.floor(Math.random() * cold.length)];
+        headlines.push({ type: `[${divName.toUpperCase()}] TILT ALERT`, text: `Alarma roja para **${pc.name}**, que atraviesa una dura racha. ¿Podrá romper la maldición?`, priority: 2 });
+    }
+    divPlayers.forEach(p => {
+        if (p.mvps >= 2) headlines.push({ type: `[${divName.toUpperCase()}] ALERTA`, text: `¡Incontrolable! **${p.name}** encadena ${p.mvps} MVPs y es el terror de la liga.`, priority: 3 });
+    });
+    const topDpm = [...divPlayers].sort((a,b) => b.dpm - a.dpm)[0];
+    if (topDpm && topDpm.dpm > 800) {
+        headlines.push({ type: `[${divName.toUpperCase()}] REPORTE`, text: `Poder destructivo: **${topDpm.name}** revienta los medidores con una media de DPM de ${topDpm.dpm}.`, priority: 3 });
+    }
+  });
+
+  if (gazetteSheet && gazetteSheet.getLastRow() >= 2) { headlines.push({ type: '🗞️ GACETA', text: 'Nueva edición disponible: "La Gaceta de Wargods". ¡Haz click en el botón de la derecha para leerla!', priority: 0 }); }
   if (headlines.length === 0) headlines.push({ type: 'INFO', text: "La liga está al rojo vivo. Analiza los scouting para preparar tus Pick'ems.", priority: 5 });
   headlines.sort((a, b) => (a.priority || 5) - (b.priority || 5));
 
@@ -22854,6 +22913,7 @@ function getWeeklyPickemData(summonerName, divisionFilter) {
   return {
     matches: pendingMatches.map(m => ({
       id: m.id, names: m.names, round: m.round,
+      div: m.div || '',
       tA: m.tA, tB: m.tB,
       votesA: m.votesA, votesB: m.votesB,
       userPick: userPicks[String(m.id)] !== undefined ? userPicks[String(m.id)] : -1
@@ -23813,6 +23873,31 @@ function processRoflSingleGame_(data, overrideMatchId) {
     teamKills[tid] = (teamKills[tid] || 0) + (p.kills || 0);
   });
 
+  // â”€â”€ OBJETIVOS POR EQUIPO (agregados desde los campos crudos del .rofl) â”€â”€
+  // El .rofl SÍ trae los objetivos a nivel de jugador (DRAGON_KILLS, BARON_KILLS,
+  // RIFT_HERALD_KILLS, TURRETS_KILLED, HORDE_KILLS, BARRACKS_KILLED). Los sumamos
+  // por equipo para reconstruir teamInfo y que los puntos de objetivos SÍ cuenten.
+  var _num = function(v){ v = parseInt(v, 10); return isNaN(v) ? 0 : v; };
+  var _objOf = function(p, keys){
+    for (var i = 0; i < keys.length; i++){
+      if (p[keys[i]] !== undefined && p[keys[i]] !== null && p[keys[i]] !== '') return _num(p[keys[i]]);
+    }
+    return 0;
+  };
+  var teamObjTotals = {}; // { teamId: {dragon,baron,herald,horde,tower,inhibitor} }
+  (data.participants || []).forEach(function(p) {
+    var tid = p.teamId || 0;
+    if (!teamObjTotals[tid]) teamObjTotals[tid] = { dragon:0, baron:0, herald:0, horde:0, tower:0, inhibitor:0 };
+    var t = teamObjTotals[tid];
+    t.dragon    += _objOf(p, ['dragonKills','DRAGON_KILLS']);
+    t.baron     += _objOf(p, ['baronKills','BARON_KILLS']);
+    t.herald    += _objOf(p, ['heraldKills','RIFT_HERALD_KILLS']);
+    t.horde     += _objOf(p, ['hordeKills','HORDE_KILLS','VOID_MONSTER_KILL']);
+    t.tower     += _objOf(p, ['turretsKilled','TURRETS_KILLED']);
+    t.inhibitor += _objOf(p, ['inhibitorKills','BARRACKS_KILLED','INHIBITORS_KILLED']);
+  });
+  var _objTeamIds = Object.keys(teamObjTotals);
+
   // â”€â”€ Datos a NIVEL DE PARTIDA (timeline y eventos vienen del parser ROFL) â”€â”€
   // NOTA: un .rofl NO contiene datos minuto a minuto reales; el parser genera
   // una ESTIMACIÓN a partir del oro final. Lo persistimos para que el acta
@@ -23862,10 +23947,20 @@ function processRoflSingleGame_(data, overrideMatchId) {
           killParticipation: kpReal, maxGoldDeficit: 0
         }
       };
+      // teamInfo RELATIVO a este jugador: mis objetivos vs objetivos enemigos
+      var _myObj = teamObjTotals[tid] || { dragon:0,baron:0,herald:0,horde:0,tower:0,inhibitor:0 };
+      var _enId  = null;
+      for (var _oi = 0; _oi < _objTeamIds.length; _oi++){
+        if (String(_objTeamIds[_oi]) !== String(tid)) { _enId = _objTeamIds[_oi]; break; }
+      }
+      var _enObj = (_enId != null && teamObjTotals[_enId]) ? teamObjTotals[_enId] : { dragon:0,baron:0,herald:0,horde:0,tower:0,inhibitor:0 };
       var teamInfo = {
-        dragonsCount:0,baronCount:0,heraldCount:0,hordeCount:0,
-        towerCount:0,inhibitorCount:0,elderPresent:false,
-        enemyDragons:0,enemyBarons:0,enemyHeralds:0,enemyHorde:0
+        dragonsCount:_myObj.dragon, baronCount:_myObj.baron, heraldCount:_myObj.herald, hordeCount:_myObj.horde,
+        towerCount:_myObj.tower, inhibitorCount:_myObj.inhibitor,
+        // El .rofl no expone el Dragón Ancestral; usamos el mismo fallback que la API (>=5 dragones)
+        elderPresent: (_myObj.dragon >= 5),
+        enemyDragons:_enObj.dragon, enemyBarons:_enObj.baron, enemyHeralds:_enObj.herald, enemyHorde:_enObj.horde,
+        totalKills: totalTeamKills
       };
 
       var pointsObj = computePointsDetailed(
@@ -23920,6 +24015,15 @@ function processRoflSingleGame_(data, overrideMatchId) {
         eventsList:   gameEventsList || null,
         winStats:     gameWinStats,
         losStats:     gameLosStats,
+        // Objetivos reales por equipo (para el acta / actas de equipo)
+        teamObjectives: {
+          dragons: _myObj.dragon, barons: _myObj.baron, heralds: _myObj.herald,
+          grubs: _myObj.horde, towers: _myObj.tower, inhibitors: _myObj.inhibitor
+        },
+        enemyObjectives: {
+          dragons: _enObj.dragon, barons: _enObj.baron, heralds: _enObj.herald,
+          grubs: _enObj.horde
+        },
         isEstimated:  true
       };
 
