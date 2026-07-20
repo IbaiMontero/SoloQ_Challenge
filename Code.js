@@ -7184,7 +7184,52 @@ if (!p.win && durationMin >= 15) {
         losStats: cachedMatch.customLosStats || null,
         goldTimeline: cachedMatch.customGoldTimeline || null,
         eventsList: cachedMatch.customEventsList || null,
-        bans: cachedMatch.customBans || [] // <--- AÑADIDO: Incluir bans en el payload JSON
+        bans: cachedMatch.customBans || [],
+
+        // ── CAMPOS DE COMPATIBILIDAD CON EL AGGREGADOR Y EL SALÓN DE LA FAMA ──
+        // Antes sólo estaban en el blob ROFL (enrichedStats); aquí los añadimos
+        // al statsPayload de la vía API para que todos los readers lean lo mismo.
+        summonerName: targetName || '',
+        championName: p.championName || '',
+        teamId: p.teamId || 0,
+        win: !!p.win,
+        kills: Number(p.kills || 0),
+        deaths: Number(p.deaths || 0),
+        assists: Number(p.assists || 0),
+        totalDamageDealtToChampions: Number(p.totalDamageDealtToChampions || 0),
+        goldEarned: Number(p.goldEarned || 0),
+        visionScore: Number(p.visionScore || 0),
+        totalMinionsKilled: Number((p.totalMinionsKilled || 0) + (p.neutralMinionsKilled || 0)),
+        // Rol: curación, escudos, mitigación, CC
+        totalHeal: Number(p.totalHeal || 0),
+        totalDamageShieldedOnTeammates: Number(p.totalDamageShieldedOnTeammates || 0),
+        damageSelfMitigated: Number(p.damageSelfMitigated || 0),
+        timeCCingOthers: Number(p.timeCCingOthers || 0),
+        // Tipos de daño
+        magicDamageDealtToChampions: Number(p.magicDamageDealtToChampions || 0),
+        physicalDamageDealtToChampions: Number(p.physicalDamageDealtToChampions || 0),
+        trueDamageDealtToChampions: Number(p.trueDamageDealtToChampions || 0),
+        // Alias para lectores legacy (ROFL y Match Inspector)
+        pinks: Number(p.visionWardsBoughtInGame || 0),
+        dmgTaken: Number(p.totalDamageTaken || 0),
+        damageTaken: Number(p.totalDamageTaken || 0),
+        totalDamageTaken: Number(p.totalDamageTaken || 0),
+        epicMonsters: Number(p.dragonKills || 0) + Number(p.baronKills || 0) + Number(p.riftHeraldKills || 0),
+        pentas: Number(p.pentaKills || 0),
+        pentaKills: Number(p.pentaKills || 0),
+        firstBloodKill: !!p.firstBloodKill,
+        firstTowerKill: !!p.firstTowerKill,
+        // Objetivos de equipo (para recálculo futuro sin reimportar)
+        teamObjectives: {
+            dragons: teamInfo.dragonsCount || 0, barons: teamInfo.baronCount || 0,
+            heralds: teamInfo.heraldCount || 0, grubs: teamInfo.hordeCount || 0,
+            towers: teamInfo.towerCount || 0, inhibitors: teamInfo.inhibitorCount || 0
+        },
+        enemyObjectives: {
+            dragons: teamInfo.enemyDragons || 0, barons: teamInfo.enemyBarons || 0,
+            heralds: teamInfo.enemyHeralds || 0, grubs: teamInfo.enemyHorde || 0
+        },
+        isEstimated: false
     };
 
     return { total, notes, statsPayload };
@@ -20316,6 +20361,125 @@ function registerTournamentMatch(matchId, tournamentCodeOpt) {
 }
 
 /* ==========================================================
+   🔍 AUTO-FIND & IMPORT — Busca la partida reciente del roster y la importa
+   ----------------------------------------------------------
+   Flujo (sin necesitar Match ID ni clave de producción):
+   1. Lee los rosters del partido en TOURNAMENT_TEAMS
+   2. Busca PUUIDs de esos jugadores en PLAYERS
+   3. Consulta el historial reciente de match-v5 (type=tourney primero; fallback: sin filtro)
+   4. Identifica la partida correcta (≥6 PUUIDs conocidos)
+   5. Ejecuta registerTournamentMatch + autoResolveTournamentMatch
+   ========================================================== */
+function autoFindAndImportMatch(tMatchId) {
+  try {
+    var ss  = SpreadsheetApp.getActive();
+    var cfg = readConfigMap();
+    var region = cfg.riot_region || 'europe';
+
+    // ── 1. Rosters del partido ──
+    var tMatchesSheet = ss.getSheetByName('TOURNAMENT_MATCHES');
+    var tTeamsSheet   = ss.getSheetByName('TOURNAMENT_TEAMS');
+    var playersSheet  = ss.getSheetByName('PLAYERS');
+    if (!tMatchesSheet || !tTeamsSheet || !playersSheet)
+      return { success: false, msg: 'Faltan hojas necesarias (TOURNAMENT_MATCHES / TEAMS / PLAYERS).' };
+
+    var tmData = tMatchesSheet.getDataRange().getValues();
+    var tA_id, tB_id;
+    for (var i = 1; i < tmData.length; i++) {
+      if (String(tmData[i][0]) === String(tMatchId)) { tA_id = tmData[i][3]; tB_id = tmData[i][4]; break; }
+    }
+    if (!tA_id || !tB_id) return { success: false, msg: 'Partido ' + tMatchId + ' no encontrado en el torneo.' };
+
+    var tData = tTeamsSheet.getDataRange().getValues();
+    var rosterA = [], rosterB = [];
+    for (var i = 1; i < tData.length; i++) {
+      if (String(tData[i][0]) == String(tA_id)) rosterA = String(tData[i][8]||'').split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean);
+      if (String(tData[i][0]) == String(tB_id)) rosterB = String(tData[i][8]||'').split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean);
+    }
+    var allPlayers = rosterA.concat(rosterB);
+    if (!allPlayers.length) return { success: false, msg: 'Los rosters están vacíos. Añade jugadores a los equipos primero.' };
+
+    // ── 2. PUUIDs de jugadores del roster ──
+    var pData = playersSheet.getDataRange().getValues();
+    var nameToPuuid = {}, allKnownPuuids = new Set();
+    for (var i = 1; i < pData.length; i++) {
+      var nm = String(pData[i][0]||'').trim().toLowerCase();
+      var pu = String(pData[i][2]||'').trim();
+      if (pu) { nameToPuuid[nm] = pu; allKnownPuuids.add(pu); }
+    }
+
+    var candidatePuuids = allPlayers.filter(function(n){ return !!nameToPuuid[n]; }).map(function(n){ return nameToPuuid[n]; });
+    if (!candidatePuuids.length)
+      return { success: false, msg: 'Ningún jugador del partido tiene PUUID en la hoja PLAYERS. Actualiza los perfiles primero.' };
+
+    // ── 3. Buscar partida en el historial reciente ──
+    // Primero intentamos con type=tourney (partidas de código de torneo: Battlefy, propio).
+    // Si no hay resultados (e.g. dev key sin permisos o partida custom sin código),
+    // reintentamos sin filtro de tipo y buscamos entre las últimas 10 partidas.
+    var foundMatchId = null;
+    var matchCache = getGlobalMatchCache();
+
+    for (var pi = 0; pi < Math.min(candidatePuuids.length, 4) && !foundMatchId; pi++) {
+      var puuid = candidatePuuids[pi];
+
+      var idLists = [];
+      // Intento 1: type=tourney (Battlefy / production key)
+      var r1 = riotFetchJson('https://' + region + '.api.riotgames.com/lol/match/v5/matches/by-puuid/' + encodeURIComponent(puuid) + '/ids?type=tourney&count=10');
+      if (r1 && !r1.__error && Array.isArray(r1) && r1.length > 0) idLists.push(r1);
+
+      // Intento 2: sin filtro de tipo (recoge customs con código que aparecen como CUSTOM)
+      var r2 = riotFetchJson('https://' + region + '.api.riotgames.com/lol/match/v5/matches/by-puuid/' + encodeURIComponent(puuid) + '/ids?count=10');
+      if (r2 && !r2.__error && Array.isArray(r2)) idLists.push(r2);
+
+      // Candidatos únicos (eliminar duplicados)
+      var seen = new Set();
+      var candidates = [];
+      idLists.forEach(function(list){ list.forEach(function(id){ if (!seen.has(id)){seen.add(id);candidates.push(id);} }); });
+
+      // ── 4. Identificar la partida correcta ──
+      var matchesSheet = ss.getSheetByName('MATCHES');
+      var alreadyIn = new Set();
+      if (matchesSheet && matchesSheet.getLastRow() > 1) {
+        matchesSheet.getRange(2, 1, matchesSheet.getLastRow()-1, 1).getValues()
+          .forEach(function(r){ alreadyIn.add(String(r[0]).trim()); });
+      }
+
+      for (var ci = 0; ci < candidates.length && !foundMatchId; ci++) {
+        var cid = String(candidates[ci]);
+
+        // Si ya está importado, es el candidato directo (puede que solo necesite el auto-resolve)
+        if (alreadyIn.has(cid)) { foundMatchId = cid; break; }
+
+        // Descargar para verificar participantes
+        var md = matchCache[cid];
+        if (!md) {
+          md = riotFetchJson('https://' + region + '.api.riotgames.com/lol/match/v5/matches/' + encodeURIComponent(cid));
+          if (md && !md.__error) matchCache[cid] = md;
+        }
+        if (!md || md.__error || !md.info) continue;
+
+        // Contar cuántos PUUIDs del partido coinciden con los conocidos
+        var matchPuuids = (md.info.participants || []).map(function(pp){ return pp.puuid; });
+        var matched = matchPuuids.filter(function(pu){ return allKnownPuuids.has(pu); }).length;
+        if (matched >= 6) { foundMatchId = cid; }
+      }
+    }
+
+    if (!foundMatchId)
+      return { success: false, msg: '⚠️ No se encontró ninguna partida reciente de los equipos de este partido. Si acabáis de jugar, esperad 5-10 minutos (Riot tarda en indexarla) e intentadlo de nuevo.' };
+
+    // ── 5. Importar y resolver ──
+    var scanResult = registerTournamentMatch(foundMatchId);
+    if (!scanResult.success) return scanResult;
+
+    return autoResolveTournamentMatch(tMatchId, foundMatchId);
+
+  } catch(e) {
+    return { success: false, msg: 'Error en auto-importación: ' + e.message };
+  }
+}
+
+/* ==========================================================
           AUTO-RESOLUCIÓN MÁGICA DE PARTIDOS DE TORNEO
    ========================================================== */
 // tournamentCode es OPCIONAL. Si se pasa, usamos el Tournament API para obtener el riotId automáticamente.
@@ -20686,7 +20850,16 @@ function getAllDashboardData(roundFilter, divisionFilter) {
           s.tankTotal += Number(adv.dmgTaken || adv.damageTaken || adv.totalDamageTaken || adv.TOTAL_DAMAGE_TAKEN || 0); 
           s.pinksTotal += Number(adv.pinks || adv.controlWards || adv.visionWardsBoughtInGame || adv.VISION_WARDS_BOUGHT_IN_GAME || 0); 
           s.epicsTotal += Number(adv.epicMonsters || adv.epics || adv.dragonKills || 0) + (adv.epicMonsters ? 0 : (Number(adv.DRAGON_KILLS||0) + Number(adv.BARON_KILLS||0) + Number(adv.RIFT_HERALD_KILLS||0))); 
-          s.pentasTotal += Number(adv.pentas || adv.pentaKills || adv.pentakills || adv.PENTA_KILLS || 0); 
+          s.pentasTotal += Number(adv.pentas || adv.pentaKills || adv.pentakills || adv.PENTA_KILLS || 0);
+          // ── FIX aggregador: campos avanzados que estaban declarados pero nunca se leían ──
+          s.totalHealTotal          += Number(adv.totalHeal || 0);
+          s.damageSelfMitigatedTotal+= Number(adv.damageSelfMitigated || 0);
+          s.timeCCingOthersTotal    += Number(adv.timeCCingOthers || adv.ccScore || 0);
+          s.magicDamageTotal        += Number(adv.magicDamageDealtToChampions || 0);
+          s.physicalDamageTotal     += Number(adv.physicalDamageDealtToChampions || 0);
+          s.trueDamageTotal         += Number(adv.trueDamageDealtToChampions || 0);
+          if (adv.firstBloodKill || adv.fb) s.firstBloodKills++;
+          if (adv.firstTowerKill || adv.ft) s.firstTowerKills++; 
         } catch(e) {} 
       }
       let roleRaw = String(mData[i][4]);
@@ -23972,20 +24145,23 @@ function processRoflSingleGame_(data, overrideMatchId) {
       var kpClean = parseFloat(kpReal.toFixed(2));
       var finalNotes = (pointsObj.notes || []).join('; ');
 
+      var _n = function(v){ v = Number(v); return isNaN(v) ? 0 : v; };
       var enrichedStats = {
         summonerName: p.summonerName, championName: p.championName,
         teamId: p.teamId, win: p.win,
-        kills: p.kills, deaths: p.deaths, assists: p.assists,
-        totalDamageDealtToChampions: p.totalDamageDealtToChampions,
-        goldEarned: p.goldEarned, visionScore: p.visionScore,
-        totalMinionsKilled: p.totalMinionsKilled,
+        kills: _n(p.kills), deaths: _n(p.deaths), assists: _n(p.assists),
+        totalDamageDealtToChampions: _n(p.totalDamageDealtToChampions),
+        goldEarned: _n(p.goldEarned), visionScore: _n(p.visionScore),
+        totalMinionsKilled: _n(p.totalMinionsKilled),
+        laneCs: _n(p.laneCs || p.totalMinionsKilled || 0),
+        neutralCs: _n(p.neutralCs || 0),
         epicMonsters: parseInt(p.epicMonsters || 0),
         totalHeal: parseInt(p.totalHeal || 0),
         totalDamageShieldedOnTeammates: parseInt(p.totalDamageShieldedOnTeammates || 0),
         damageSelfMitigated: parseInt(p.damageSelfMitigated || 0),
         timeCCingOthers: parseInt(p.timeCCingOthers || 0),
-        firstBloodKill: p.firstBloodKill || false,
-        firstTowerKill: p.firstTowerKill || false,
+        firstBloodKill: !!p.firstBloodKill,
+        firstTowerKill: !!p.firstTowerKill,
         magicDamageDealtToChampions: parseInt(p.magicDamageDealtToChampions || 0),
         physicalDamageDealtToChampions: parseInt(p.physicalDamageDealtToChampions || 0),
         trueDamageDealtToChampions: parseInt(p.trueDamageDealtToChampions || 0),
@@ -23994,7 +24170,6 @@ function processRoflSingleGame_(data, overrideMatchId) {
         dpm:  p.dpm  || Math.round((p.totalDamageDealtToChampions||0) / Math.max(1, durationMin)),
         vspm: p.vspm || parseFloat(((p.visionScore||0) / Math.max(1, durationMin)).toFixed(2)),
         kp: parseFloat((kpReal * 100).toFixed(1)),
-        // â”€â”€ Datos avanzados del ROFL (ya traducidos a camelCase por el parser) â”€â”€
         dmgObj:      parseInt(p.dmgObj || 0),
         dmgTurrets:  parseInt(p.dmgTurrets || 0),
         dmgTaken:    parseInt(p.dmgTaken || 0),
@@ -24002,20 +24177,45 @@ function processRoflSingleGame_(data, overrideMatchId) {
         controlWards: parseInt(p.pinks || 0),
         wardsPlaced: parseInt(p.wardPlaced || 0),
         wardsKilled: parseInt(p.wardKilled || 0),
-        pentas:      parseInt(p.pentas || 0),
-        pentaKills:  parseInt(p.pentas || 0),
-        epicMonsters: parseInt(p.epicMonsters || 0),
-        // Campos de compatibilidad con el Salón de la Fama (nombres alternativos)
+        pentas:      parseInt(p.pentas || p.pentaKills || 0),
+        pentaKills:  parseInt(p.pentas || p.pentaKills || 0),
+        // ── NUEVOS: multi-kills (extraídos del statsJson del .rofl) ──
+        doubleKills: parseInt(p.doubleKills || p.DOUBLE_KILLS || 0),
+        tripleKills: parseInt(p.tripleKills || p.TRIPLE_KILLS || 0),
+        quadKills:   parseInt(p.quadKills   || p.QUAD_KILLS   || 0),
+        killingSprees:    parseInt(p.killingSprees    || p.KILLING_SPREES          || 0),
+        largestKillSpree: parseInt(p.largestKillSpree || p.LARGEST_KILLING_SPREE   || 0),
+        largestMultiKill: parseInt(p.largestMultiKill || p.LARGEST_MULTI_KILL      || 0),
+        largestCrit:      parseInt(p.largestCrit      || p.LARGEST_CRITICAL_STRIKE || 0),
+        // ── NUEVOS: objetivos individuales ──
+        dragonKills:  parseInt(p.dragonKills  || p.DRAGON_KILLS       || 0),
+        baronKills:   parseInt(p.baronKills   || p.BARON_KILLS        || 0),
+        heraldKills:  parseInt(p.heraldKills  || p.RIFT_HERALD_KILLS  || 0),
+        grubKills:    parseInt(p.grubKills    || p.HORDE_KILLS        || 0),
+        turretKills:  parseInt(p.turretKills  || p.TURRETS_KILLED     || 0),
+        inhibKills:   parseInt(p.inhibKills   || p.BARRACKS_KILLED    || 0),
+        enemyJungleCs: parseInt(p.enemyJungleCs || p.NEUTRAL_MINIONS_KILLED_ENEMY_JUNGLE || 0),
+        // ── NUEVOS: runas completas ──
+        perks:       Array.isArray(p.perks) ? p.perks : [0,0,0,0,0,0],
+        perkPrimary: parseInt(p.perkPrimary || p.PERK_PRIMARY_STYLE || 0),
+        perkSub:     parseInt(p.perkSub     || p.PERK_SUB_STYLE     || 0),
+        // ── NUEVOS: uso de habilidades ──
+        spellCasts:    Array.isArray(p.spellCasts)    ? p.spellCasts    : [0,0,0,0],
+        sumSpellCasts: Array.isArray(p.sumSpellCasts) ? p.sumSpellCasts : [0,0],
+        // ── NUEVOS: extras de jugador ──
+        level: parseInt(p.level || p.LEVEL || 0),
+        exp:   parseInt(p.exp   || p.EXP   || 0),
+        ping:  parseInt(p.ping  || p.PING  || 0),
+        // ── Alias de compatibilidad ──
         damageTaken:      parseInt(p.dmgTaken || 0),
         totalDamageTaken: parseInt(p.dmgTaken || 0),
         visionWardsBoughtInGame: parseInt(p.pinks || 0),
         items: p.items || [], spells: p.spells || [],
-        // â”€â”€ Datos a nivel de partida para los gráficos del acta (ESTIMADOS) â”€â”€
+        // ── Datos de partida para el acta (ESTIMADOS) ──
         goldTimeline: gameGoldTimeline || null,
         eventsList:   gameEventsList || null,
         winStats:     gameWinStats,
         losStats:     gameLosStats,
-        // Objetivos reales por equipo (para el acta / actas de equipo)
         teamObjectives: {
           dragons: _myObj.dragon, barons: _myObj.baron, heralds: _myObj.herald,
           grubs: _myObj.horde, towers: _myObj.tower, inhibitors: _myObj.inhibitor
@@ -24024,7 +24224,7 @@ function processRoflSingleGame_(data, overrideMatchId) {
           dragons: _enObj.dragon, barons: _enObj.baron, heralds: _enObj.herald,
           grubs: _enObj.horde
         },
-        isEstimated:  true
+        isEstimated: true
       };
 
       var lane = p.lane || '';

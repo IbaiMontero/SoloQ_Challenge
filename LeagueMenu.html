@@ -6004,6 +6004,21 @@
         );
         if (dateStr) {
           let safeDateStr = dateStr.replace(" ", "T");
+
+          // ── FIX ZONA HORARIA ──────────────────────────────────────────
+          // Sin offset explícito, el navegador interpreta la fecha como UTC
+          // y la muestra con las horas de tu zona (p.ej. España = UTC+2),
+          // haciendo que el contador vaya 2h adelantado.
+          // Añadimos aquí el offset local para que el string sea inequívoco.
+          if (!safeDateStr.includes('+') && !safeDateStr.includes('Z') && !safeDateStr.match(/[-+]\d{2}:\d{2}$/)) {
+            const off = -new Date().getTimezoneOffset(); // minutos con signo correcto
+            const sign = off >= 0 ? '+' : '-';
+            const hh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+            const mm = String(Math.abs(off) % 60).padStart(2, '0');
+            safeDateStr += sign + hh + ':' + mm;
+          }
+          // ─────────────────────────────────────────────────────────────
+
           const btn = document.getElementById("btn-set-stream");
           btn.innerText = "⏳";
           btn.disabled = true;
@@ -8087,7 +8102,7 @@
         }
       }
 
-      // 🏅 DIBUJAR CARTAS DEL SALÓN DE LA FAMA (15 RÉCORDS ÉPICOS)
+      // 🏅 DIBUJAR CARTAS DEL SALÓN DE LA FAMA (20 RÉCORDS ÉPICOS)
       function renderHallOfFame() {
         const hallCont = document.getElementById("records-hall-container");
         if (!hallCont) return;
@@ -8405,6 +8420,86 @@
             grad: "from-purple-900/80",
             shadow: "rgba(168,85,247,0.3)",
             grayscale: true,
+          },
+          {
+            player: [...bStats].sort(
+              (a, b) =>
+                ((b.advanced && b.advanced.totalHealAvg) || 0) -
+                ((a.advanced && a.advanced.totalHealAvg) || 0),
+            )[0],
+            val: (p) => {
+              let v = (p.advanced && p.advanced.totalHealAvg) || 0;
+              return (v > 1000 ? (v / 1000).toFixed(1) + "k" : v) + " Heal";
+            },
+            title: "MÁS CURACIÓN",
+            sub: "El Sanador",
+            icon: "🩹",
+            border: "border-green-400",
+            text: "text-green-400",
+            textL: "text-green-200",
+            grad: "from-green-900/80",
+            shadow: "rgba(74,222,128,0.3)",
+          },
+          {
+            player: [...bStats].sort(
+              (a, b) =>
+                ((b.advanced && b.advanced.timeCCingOthersAvg) || 0) -
+                ((a.advanced && a.advanced.timeCCingOthersAvg) || 0),
+            )[0],
+            val: (p) =>
+              ((p.advanced && p.advanced.timeCCingOthersAvg) || 0) + "s CC",
+            title: "CONTROL DE MASAS",
+            sub: "Las Cadenas",
+            icon: "⛓️",
+            border: "border-sky-500",
+            text: "text-sky-500",
+            textL: "text-sky-300",
+            grad: "from-sky-900/80",
+            shadow: "rgba(14,165,233,0.3)",
+          },
+          {
+            player: [...bStats].sort(
+              (a, b) =>
+                ((b.advanced && b.advanced.fbRate) || 0) -
+                ((a.advanced && a.advanced.fbRate) || 0),
+            )[0],
+            val: (p) => ((p.advanced && p.advanced.fbRate) || 0) + "% FB",
+            title: "PRIMERA SANGRE",
+            sub: "El Madrugador",
+            icon: "🔪",
+            border: "border-red-400",
+            text: "text-red-400",
+            textL: "text-red-200",
+            grad: "from-red-800/80",
+            shadow: "rgba(248,113,113,0.3)",
+          },
+          {
+            player: [...bStats]
+              .filter((p) => (p.games || 0) >= 3)
+              .sort((a, b) => (b.winrate || 0) - (a.winrate || 0))[0],
+            val: (p) => (p.winrate || 0) + "% WR",
+            title: "MEJOR WINRATE",
+            sub: "La Máquina de Ganar",
+            icon: "📈",
+            border: "border-lime-500",
+            text: "text-lime-500",
+            textL: "text-lime-300",
+            grad: "from-lime-900/80",
+            shadow: "rgba(132,204,22,0.3)",
+          },
+          {
+            player: [...bStats].sort(
+              (a, b) => (parseFloat(b.points) || 0) - (parseFloat(a.points) || 0),
+            )[0],
+            val: (p) => (parseFloat(p.points) || 0).toFixed(1) + " pts",
+            title: "MÁS PUNTOS (MEDIA)",
+            sub: "El Cerebro",
+            icon: "🧠",
+            border: "border-violet-500",
+            text: "text-violet-500",
+            textL: "text-violet-300",
+            grad: "from-violet-900/80",
+            shadow: "rgba(139,92,246,0.3)",
           },
         ];
 
@@ -11799,8 +11894,12 @@
               var wrA   = pA ? pA.wr   : 0,    wrB   = pB ? pB.wr   : 0;
               var gpmA  = pA ? pA.gpm  : 0,    gpmB  = pB ? pB.gpm  : 0;
               var vsA   = pA ? pA.vspm : 0,    vsB   = pB ? pB.vspm : 0;
-              var champsA = pA ? (pA.topChamps || []).slice(0,3).map(function(c){return c.name;}) : [];
-              var champsB = pB ? (pB.topChamps || []).slice(0,3).map(function(c){return c.name;}) : [];
+              var csA   = pA ? (pA.csMin || 0) : 0, csB = pB ? (pB.csMin || 0) : 0;
+              var kpA   = pA ? (pA.kp   || 0) : 0, kpB = pB ? (pB.kp   || 0) : 0;
+              // topChamps puede venir como array de strings o de objetos {name}
+              var _champName = function(c){ return (c && typeof c === "object") ? c.name : c; };
+              var champsA = pA ? (pA.topChamps || []).slice(0,3).map(_champName) : [];
+              var champsB = pB ? (pB.topChamps || []).slice(0,3).map(_champName) : [];
               var advantage = dpmA >= dpmB ? "blue" : "red";
 
               function champIcons(list) {
@@ -11821,6 +11920,8 @@
                       '<span>KDA:' + kdaA + '</span>' +
                       '<span>DPM:' + dpmA + '</span>' +
                       '<span>GPM:' + gpmA + '</span>' +
+                      '<span>CS:' + csA + '</span>' +
+                      '<span>KP:' + kpA + '%</span>' +
                     '</div>' +
                   '</div>' +
                   '<div style="text-align:center;padding:0 10px;min-width:48px;font-family:Oswald,sans-serif;font-size:.75rem;color:#475569;font-weight:700;">' + role + '</div>' +
@@ -11830,6 +11931,8 @@
                       '<span style="font-weight:700;font-size:.82rem;color:' + (advantage==="red" ? "#fca5a5" : "#f1f5f9") + '">' + escHtml(nameB) + '</span>' +
                     '</div>' +
                     '<div style="display:flex;gap:8px;font-size:.68rem;color:#64748b;justify-content:flex-end;">' +
+                      '<span>KP:' + kpB + '%</span>' +
+                      '<span>CS:' + csB + '</span>' +
                       '<span>GPM:' + gpmB + '</span>' +
                       '<span>DPM:' + dpmB + '</span>' +
                       '<span>KDA:' + kdaB + '</span>' +

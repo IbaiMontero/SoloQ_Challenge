@@ -31,7 +31,7 @@ Un sistema de backend ultra-detallado en `Code.js` que analiza cada partida vía
 ### 4. 🎁 Progresión y Gamificación
 *   **Battle Pass**: Sistema de niveles con XP por actividad, desbloqueando títulos y cosméticos.
 *   **Daily Roulette**: Ruleta de premios diaria para fomentar el login recurrente.
-*   **Salón de la Fama**: 15 récords absolutos con generación dinámica de medallas y "Cromos" de jugador exportables.
+*   **Salón de la Fama**: 20 récords absolutos con generación dinámica de medallas y "Cromos" de jugador exportables.
 *   **Pick'em**: Sistema de predicciones semanales con recompensas en WG Coins.
 
 ### 5. 🔬 Centro de Datos Avanzado
@@ -79,7 +79,8 @@ Desarrollado para la **Wargods Premier League**.
 *(Última actualización: 20 de Julio)*
 
 ### 🆕 Novedades Recientes (v16.6):
-- **Análisis de Objetivos**: Integración de extracción de objetivos individuales por jugador (Dragones, Barones, Heraldos, Torres, Inhibidores) mediante el `RoflParser`.
-- **Mejoras en LeagueMenu**: Inclusión de baneos de campeones en el resumen post-partida, rediseño de cromos de jugador añadiendo División y Equipo, y soporte global en el Pick'em para encuentros multiligas.
-- **Perfil de Jugador Mejorado**: Nuevo diseño responsivo para la Pool de Campeones incluyendo total de partidas y porcentaje de victorias. Además se ha desglosado el detalle de KDA (Asesinatos/Muertes/Asistencias).
-- **Core (Code.js)**: Optimización del manejo asíncrono para la generación de imágenes y adaptaciones en los endpoints de recolección de estadísticas.
+- **Parser Avanzado (RoflParser)**: Extracción masiva de estadísticas detalladas (tipos de kills, CS en jungla, runas, hechizos, visión y daño) para métricas avanzadas. Integración de extracción de objetivos individuales por jugador.
+- **Salón de la Fama Extendido**: Ampliación de 15 a 20 récords épicos en el `LeagueMenu`, añadiendo métricas como Más Curación, Control de Masas, Primera Sangre, Mejor Winrate y Más Puntos (Media).
+- **Mejoras en LeagueMenu**: Corrección de offset de zona horaria en el temporizador del Pick'em, inclusión de baneos en el resumen post-partida y ampliación del Team Scouting H2H con estadísticas de CS y KP.
+- **Perfil de Jugador Mejorado**: Nuevo diseño responsivo para la Pool de Campeones incluyendo total de partidas y porcentaje de victorias. Desglose del detalle de KDA y soporte para cromos con División y Equipo.
+- **Core (Code.js)**: Optimización asíncrona para la generación de imágenes y adaptaciones en los endpoints de recolección de estadísticas.
