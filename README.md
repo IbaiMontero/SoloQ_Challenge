@@ -1,4 +1,4 @@
-# 🏆 Wargods Premier League - Ecosystem v16.5 (Master Edition)
+# 🏆 Wargods Premier League - Ecosystem v16.9 (Master Edition)
 
 **Wargods Premier** es el motor de gestión competitiva definitivo para League of Legends. Es un ecosistema masivo que transforma Google Sheets en una plataforma de eSports de alto rendimiento, integrando analíticas avanzadas, economía virtual, sistemas sociales y gamificación profunda.
 
@@ -75,10 +75,21 @@ Suite de herramientas de análisis:
 ## ✒️ Créditos
 
 Desarrollado para la **Wargods Premier League**.  
-*Versión Actual: 16.6 (Master Edition) - "The Omnipotence Update"*
-*(Última actualización: 20 de Julio)*
+*Versión Actual: 16.9 (Master Edition) - "Advanced Leaderboards Update"*
+*(Última actualización: 21 de Julio)*
 
-### 🆕 Novedades Recientes (v16.6):
+### 🆕 Novedades Recientes (v16.9):
+- **Leaderboards Avanzados (`Code.js` & `LeagueMenu.html`)**: Incorporado el sistema para leer, procesar y renderizar estadísticas avanzadas de jugadores (CS/Min, G/M, Kp%, VSN, etc.) directamente desde Google Sheets (Columnas Q-Z).
+- **Corrección de Huso Horario Global (`Code.js`)**: Solucionado un problema crítico de desincronización de horas (+9 horas) entre el Spreadsheet y la web extrayendo de forma dinámica el huso horario original del documento en `formatLeagueDateTime`.
+- **Parseo Seguro de Fechas (`LeagueMenu.html`)**: Mejorada la lógica `parseMadridDate` y `formatNiceDate` para soportar distintos formatos ("DD/MM/YYYY HH:mm") sin depender ciegamente del motor `Intl` del navegador, solucionando desajustes en cuentas atrás y renderizado de cartas.
+- **Botón VOD Dinámico**: Los botones de VOD ahora se renderizan condicionalmente solo si el campo correspondiente en Google Sheets no está vacío ni es nulo.
+
+### Novedades Anteriores (v16.7):
+- **Actualización de Datos Base**: Nuevos perfiles de jugador, detalles de partidas y core logic optimizado con la última recolección de estadísticas de la liga.
+- **Player Profile**: Mejoras integradas para manejar el nuevo formato de detalles de jugador.
+- **Match Details**: Sincronización de los últimos resultados y analíticas post-partida.
+
+### Novedades Anteriores (v16.6):
 - **Parser Avanzado (RoflParser)**: Extracción masiva de estadísticas detalladas (tipos de kills, CS en jungla, runas, hechizos, visión y daño) para métricas avanzadas. Integración de extracción de objetivos individuales por jugador.
 - **Salón de la Fama Extendido**: Ampliación de 15 a 20 récords épicos en el `LeagueMenu`, añadiendo métricas como Más Curación, Control de Masas, Primera Sangre, Mejor Winrate y Más Puntos (Media).
 - **Mejoras en LeagueMenu**: Corrección de offset de zona horaria en el temporizador del Pick'em, inclusión de baneos en el resumen post-partida y ampliación del Team Scouting H2H con estadísticas de CS y KP.
